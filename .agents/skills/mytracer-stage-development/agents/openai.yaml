@@ -1,0 +1,4 @@
+interface:
+  display_name: "MyTracer Stage Development"
+  short_description: "Run one MyTracer task from contract to Draft PR"
+  default_prompt: "Use $mytracer-stage-development to implement one approved MyTracer task through validation, evidence, commits, and a Draft PR."

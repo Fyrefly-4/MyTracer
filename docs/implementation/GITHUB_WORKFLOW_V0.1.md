@@ -1,0 +1,367 @@
+# MyTracer v0.1 GitHub 工作流
+
+> 文档状态：已批准的开发工作流基线  
+> 批准范围：GW-001～GW-010  
+> 当前事实：本文只定义目标流程；远端仓库、保护规则、PR 模板和 GitHub Actions 尚未据此配置  
+> 适用对象：项目所有者、Codex 和其他经授权 Agent
+
+## 1. 目标
+
+本流程用于：
+
+- 隔离每个 Agent 任务，避免直接污染集成分支；
+- 让代码、测试、评审和验收证据绑定到明确 PR；
+- 保留项目所有者对产品语义、合并、里程碑和发布的控制；
+- 使 `dev` 可以持续集成，`main` 始终代表已验收里程碑；
+- 支持 Codex worktree，但不要求为了并行而并行。
+
+GitHub 官方将 GitHub Flow 定义为轻量分支工作流：独立分支承载一组相关变更，通过 PR 评审和检查后合并，再删除任务分支。MyTracer 在此基础上增加 `dev` 集成门，以适配 v0.1 的阶段验收。参考：[GitHub Flow](https://docs.github.com/en/get-started/using-github/github-flow)。
+
+## 2. GW-001 分支模型
+
+```mermaid
+flowchart LR
+    D["dev：当前集成版本"]
+    T["task/Txxx-short-name"]
+    P["Draft PR：task → dev"]
+    R["里程碑 PR：dev → main"]
+    M["main：已验收里程碑"]
+    H["hotfix/Txxx-short-name"]
+
+    D --> T --> P --> D
+    D --> R --> M
+    M --> H --> M
+    H -->|"同步 PR"| D
+```
+
+### `main`
+
+- 已由项目所有者验收的里程碑和发布来源。
+- 常规功能分支不得直接以 `main` 为 base。
+- 只接受 `dev -> main` 里程碑 PR，或从 `main` 创建的紧急 hotfix PR。
+- tag 和 release 只从 `main` 创建。
+
+### `dev`
+
+- v0.1 当前集成线。
+- 只包含已经完成任务级验证并经项目所有者批准合并的工作。
+- 本地主检出应尽量保持干净，用于集成检查、Electron 前台运行和人工体验验收。
+
+### 短期分支
+
+- `task/Txxx-short-name`：正常实现任务。
+- `fix/Txxx-short-name`：基于 `dev` 的缺陷修复。
+- `docs/Txxx-short-name`：独立文档任务。
+- `hotfix/Txxx-short-name`：基于 `main` 的紧急发布修复。
+
+合并后删除短期远端分支；保留的事实位于 PR、commit、证据和长期分支中。
+
+## 3. GW-002 Codex worktree
+
+每个任务优先使用独立 Codex worktree 或普通任务分支：
+
+```text
+最新授权的 origin/dev
+  → 独立 worktree
+  → 实现和本地验证
+  → 创建 task/Txxx-short-name
+  → commit
+  → push
+  → Draft PR to dev
+```
+
+Codex 桌面版 worktree 可让多个任务使用独立检出；默认可能以 detached HEAD 开始，需要在发布前创建正式分支。同一分支不能同时被多个 worktree checkout。参考：[OpenAI Docs：Worktrees](https://learn.chatgpt.com/docs/environments/git-worktrees)。
+
+约束：
+
+- 不同时并行修改同一 migration、同一领域不变量或大面积重叠文件。
+- 测试只使用临时 SQLite 数据库和临时数据根。
+- 不通过 `.worktreeinclude` 或其他机制批量传播真实 AI key。
+- Electron 只能在本地主环境可靠验证时，使用 Handoff 或经批准的手工迁移流程回到 Local。
+- worktree 中的 `node_modules`、构建输出和临时数据库不得作为可交付证据。
+
+## 4. GW-003 分支和提交命名
+
+分支使用任务而非执行者作为主标识：
+
+```text
+task/T001-electron-shell
+task/T003-sqlite-migrations
+fix/T034-cross-midnight-date
+docs/T090-agent-workflow
+```
+
+不使用 `temp1`、`test-final`、`new-fix` 等无法追踪的名称。
+
+任务分支可以有多个有意义的本地提交。每个提交应表达一个可理解、可撤销的变化，不要求为每个微小修改单独提交，也不把整个阶段压成无法审查的单一开发提交。
+
+PR 标题将作为 task PR 的 squash commit 标题，格式为：
+
+```text
+T001: initialize the Electron application shell
+T011: implement the Goal lifecycle
+T034: fix cross-midnight record assignment
+```
+
+代码、commit、分支和 PR 技术标题使用英文；面向项目所有者的说明和报告可以使用中文。
+
+## 5. GW-004 Draft PR 生命周期
+
+第一个有意义提交完成并获得发布授权后，创建：
+
+```text
+base: dev
+head: task/Txxx-short-name
+state: Draft
+```
+
+Draft PR 用于展示进行中工作和提前运行 CI，不表示已经完成或请求最终验收。GitHub Draft PR 在 Ready 前不能合并。参考：[GitHub Pull Requests](https://docs.github.com/en/pull-requests/reference/pull-requests)。
+
+PR 正文至少包含：
+
+```markdown
+## Task
+Txxx
+
+## Goal
+目标结果
+
+## Requirements
+FR-* / AC-* / D-* / ED-* / GW-*
+
+## Scope
+实际允许和修改的范围
+
+## Exclusions
+明确没有实施的内容
+
+## Changes
+实现摘要
+
+## Verification
+本地命令、环境和结果
+
+## Evidence
+Evidence ID、CI、截图或产物
+
+## Risks and gaps
+风险、未验证项和后续工作
+
+## Dependency changes
+无 / 已批准依赖
+```
+
+### Draft 转 Ready 条件
+
+- 任务合同范围已经完成；
+- 针对性测试和受影响回归实际通过；
+- 最终 diff 已自查，没有意外或无关修改；
+- 没有未批准依赖、延期功能或静默语义变化；
+- 文档和需求追踪与实现一致；
+- 已知缺口明确列出；
+- 分支基于保护规则要求的最新 `dev`；
+- required checks 已针对最新 revision 运行；
+- 独立 Codex review 没有未处理的重大问题；
+- 项目所有者已授权标记 Ready，或亲自执行该操作。
+
+## 6. GW-005/GW-006 合并策略
+
+### 任务 PR：Squash and merge 到 `dev`
+
+- 把一个任务收敛为 `dev` 上的一个提交。
+- PR 仍保留开发提交、讨论和检查历史。
+- squash commit 标题使用 PR 标题。
+- 合并动作必须由项目所有者明确批准。
+
+### 里程碑 PR：Merge commit 从 `dev` 到 `main`
+
+- 保持 `dev` 是 `main` 的祖先，避免长期分支因 squash/rebase 产生反复比较和回灌问题。
+- `main` 不启用“Require linear history”。
+- 里程碑 PR 必须通过完整门禁和人工验收。
+- merge commit、tag 和 release 均由项目所有者批准。
+
+GitHub 支持 merge commit、squash 和 rebase 等不同合并方式；MyTracer 对两类 PR 采用不同策略是为了同时保持任务历史清晰和长期分支祖先关系。参考：[GitHub merge methods](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/configuring-pull-request-merges/about-merge-methods-on-github)。
+
+## 7. GW-007 分支保护目标
+
+在远端仓库和订阅方案支持后，为 `dev` 和 `main` 配置：
+
+| 规则 | `dev` | `main` |
+|---|---:|---:|
+| 必须通过 PR | 是 | 是 |
+| 必须通过 required checks | 是 | 是 |
+| 必须解决所有讨论 | 是 | 是 |
+| 禁止 force push | 是 | 是 |
+| 禁止删除 | 是 | 是 |
+| 要求分支基于最新目标分支 | 是 | 是 |
+| 要求他人批准 | 否 | 否 |
+| 允许管理员常规绕过 | 否 | 否 |
+| 要求线性历史 | 否 | 否 |
+
+当前是单人项目，不设置“一名他人批准”，避免 PR 作者无法批准自己的 PR而永久阻塞。项目所有者亲自执行 merge 是产品与发布批准，但仍必须满足 PR、检查和讨论门禁。
+
+两个长期分支均不启用 GitHub 的线性历史限制。历史整洁度由“任务 PR squash、里程碑与回流 PR merge commit”的合并策略保证，同时保留 hotfix 从 `main` 回流 `dev` 的自然祖先关系。
+
+GitHub 保护规则可以要求 PR、状态检查、讨论解决、禁止强推和删除；具体可用性受仓库类型和订阅方案影响。参考：[GitHub protected branches](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)。
+
+保护规则未实际配置前，README 和报告必须写“目标流程尚未应用”，不能把文档当作远端配置证据。
+
+## 8. GW-008 CI 门禁
+
+### Task PR 到 `dev`
+
+S0 必须建立一个名称稳定、所有相关 PR 都会报告的 required gate。初始目标阶段：
+
+```text
+clean install
+  → format check
+  → lint
+  → TypeScript typecheck
+  → domain/application unit tests
+  → SQLite and adapter integration tests
+  → application build
+```
+
+随着基础设施完成，加入：
+
+- Main/Preload IPC 契约测试；
+- Electron E2E smoke；
+- migration、重开和导出测试；
+- Windows `better-sqlite3` 原生模块加载验证。
+
+### `dev -> main` 里程碑 PR
+
+在 task gate 基础上增加：
+
+- 完整 E2E；
+- Windows build/package；
+- packaged/unpacked app 启动冒烟；
+- SQLite migration 和重开；
+- 完整 JSON 导出契约；
+- Electron 安全设置；
+- 对应 AC 自动化路径；
+- 人工验收状态检查和已知缺口确认。
+
+### CI 设计约束
+
+- Windows runner 是必需验证环境；其他平台只能作为额外快速反馈，不得替代 Windows 证据。
+- required job 名称在 workflows 间保持唯一。
+- required workflow 不使用会导致整个 workflow 不运行的路径过滤；若需要条件，必须保证最终 gate 总是报告明确状态。
+- required check 必须对应 PR 最新 revision。
+- AI 自动化测试使用 fake provider，不向普通 PR 暴露真实 provider key。
+- 只有验证逻辑确实依赖 Git 历史时才使用完整 checkout 历史，并记录原因。
+- 精确 command、Node/Electron 版本和 workflow 文件需在依赖批准和 T002 执行时固定。
+
+GitHub required checks 必须成功后才允许合并；被路径过滤跳过的 required workflow 可能长期 Pending。参考：[GitHub status checks](https://docs.github.com/en/pull-requests/reference/status-checks) 和 [required checks troubleshooting](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks)。
+
+## 9. GW-009 Agent Git 权限
+
+| 操作 | 默认规则 |
+|---|---|
+| 只读检查状态、历史、diff | 任务相关时允许 |
+| 创建本地 worktree/任务分支 | 活跃任务明确授权 Git 工作流后允许 |
+| 创建本地提交 | 活跃任务明确授权后允许 |
+| 推送任务分支 | 任务明确授权“发布 Draft PR”后允许 |
+| 创建/更新 Draft PR 到 `dev` | 同上 |
+| 标记 Ready | 默认由项目所有者确认或执行 |
+| 合并到 `dev` | 每次必须项目所有者明确授权 |
+| 创建或合并 `dev -> main` | 每次必须项目所有者明确授权 |
+| tag / GitHub Release | 每次必须项目所有者明确授权 |
+| force push | 默认禁止；必须针对确切分支单独授权 |
+| 修改 branch protection、Actions secrets、部署设置 | 必须针对确切目标单独授权 |
+
+“实现任务”本身只授权范围内的本地文件修改和非破坏性验证，不自动授权外部 GitHub 写入。推荐在任务合同中一次性勾选允许的 branch、commit、push 和 Draft PR 操作，以减少重复确认；merge、tag 和 release 不提供站立授权。
+
+## 10. GW-010 Code Review
+
+### 本地独立 review
+
+在 Ready 前使用 Codex review 检查：
+
+- 未提交变更；或
+- 相对 `dev` 的完整分支 diff；或
+- 指定 commit。
+
+Codex 的 `/review` 可以读取选择的 diff 并报告按优先级排序的问题，默认不修改工作树。参考：[OpenAI Docs：Code review](https://learn.chatgpt.com/docs/code-review)。
+
+### GitHub Codex Review
+
+若未来连接 Codex cloud，可在 PR 使用 `@codex review` 或自动 review。Review Rules 取自适用的 `AGENTS.md`，但 AI review 不替代测试、分支保护或项目所有者批准。参考：[OpenAI Docs：GitHub PR review](https://learn.chatgpt.com/docs/third-party/github)。
+
+### 初始不采用 Codex GitHub Action 作为 required gate
+
+原因：
+
+- 需要额外 API key 和 Actions secret 管理；
+- AI 结果不具备确定性；
+- MyTracer 的初始门禁应由可重复命令组成；
+- Windows Codex Action 有额外安全取舍。
+
+以后只有在本地 review 流程稳定、成本和权限获得批准后，才评估只读 PR review action。参考：[OpenAI Docs：Codex GitHub Action](https://learn.chatgpt.com/docs/github-action)。
+
+## 11. 里程碑、tag 和 release
+
+建议的 `dev -> main` 节点：
+
+| 节点 | 最低范围 | tag 候选 |
+|---|---|---|
+| G2 工程就绪 | T001～T004 | `v0.1.0-alpha.1` |
+| 核心闭环可试用 | T011～T014 | `v0.1.0-alpha.2` |
+| 数据安全可试用 | T031～T033 | `v0.1.0-beta.1` |
+| G4 Demo 就绪 | AC-01～AC-07 | `v0.1.0-rc.1` 或 `v0.1.0` |
+
+是否在每个候选节点推进 `main` 由项目所有者决定。任务或阶段通过不会自动创建 tag。
+
+Release PR 必须列出：
+
+- 包含的任务和需求；
+- source `dev` revision；
+- required CI run；
+- Windows 打包产物；
+- AC 自动化和人工验收状态；
+- 数据迁移与恢复说明；
+- 已知限制、未完成 SHOULD 和延期项扫描；
+- 建议 tag，但不自动发布。
+
+## 12. Hotfix
+
+只有已发布或已验收 `main` 出现阻断问题时使用：
+
+```text
+main
+  → hotfix/Txxx-name
+  → PR to main
+  → full affected verification
+  → owner-approved merge and patch tag
+  → immediate synchronization PR from main to dev
+```
+
+不得只修 `main` 而让 `dev` 保留缺陷。若 hotfix 会改变冻结语义，仍需先走需求变更流程。
+`main -> dev` 的同步 PR 使用 merge commit，不适用普通任务 PR 的 squash 规则。
+
+## 13. GitHub Issues 和 Projects
+
+- v0.1 实施任务状态以 [`TASK_INDEX_V0.1.md`](TASK_INDEX_V0.1.md) 为唯一账本。
+- 不为每个已规划任务重复创建 GitHub Issue。
+- Issue 适合记录运行中发现的缺陷、阻塞、需求变更提案或外部可协作问题。
+- PR 通过 Task ID 关联任务索引；若存在 Issue，再额外关联 Issue。
+- 当前不引入 GitHub Projects，除非任务数量或协作者数量使文档索引不再有效。
+
+## 14. 启用顺序
+
+1. 创建或确认 GitHub 远端和长期分支。
+2. 批准依赖、工具链和精确验证命令。
+3. T002 创建确定性 CI workflow。
+4. CI 实际成功报告稳定 check 名称后，再配置 required checks。
+5. 配置 `dev`、`main` 保护规则并验证管理员不可常规绕过。
+6. 增加 PR template。
+7. 用一个小型任务执行完整 Draft PR 演练。
+8. 有真实重复需求后再评估 GitHub Codex Review、Codex Action、Hooks、Rules 或 Skills。
+
+顺序不能反转：不存在的 check 不能先设为 required，否则可能阻塞所有 PR。
+
+## 15. 当前结论
+
+- GW-001～GW-010 已批准为 MyTracer v0.1 的目标开发流程。
+- 当前没有证据表明 GitHub 远端、`dev`/`main` 保护、Actions 或 PR template 已配置。
+- 下一步仍是依赖和工具链批准；具体 GitHub 配置必须作为独立获批任务执行并验证。
