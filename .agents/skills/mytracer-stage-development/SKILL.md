@@ -116,7 +116,9 @@ Update documentation only for actual behavior, exact established commands, or re
 
 Use the repository naming rules, normally `task/Txxx-short-name`, `fix/Txxx-short-name`, or `docs/Txxx-short-name`. Use English for branch names, commit subjects, code, and PR technical text.
 
-Create multiple commits when they express independently understandable and reversible concerns, such as a domain contract followed by its adapter/UI integration. Do not create artificial micro-commits, and do not compress a complex task into one opaque final commit. Before each commit:
+For every non-trivial task, plan and create reviewable commits at meaningful development checkpoints instead of waiting to create one large commit at the end. Split by coherent, independently understandable and reversible concerns, such as domain behavior and tests, application or persistence integration, IPC/UI wiring, and final documentation or evidence; include only the checkpoints that the task actually needs.
+
+A single commit is acceptable only when the task is genuinely atomic and splitting it would create incomplete or noisy commits. Do not create artificial micro-commits. Optimize the task-branch history for incremental review and diagnosis; the task PR's squash merge will still produce one task-level commit on `dev`. Before each commit:
 
 1. Inspect the staged diff.
 2. Confirm it contains one coherent concern and no unrelated user changes.
