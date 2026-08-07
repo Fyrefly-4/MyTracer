@@ -1,6 +1,6 @@
 # T001：Electron 应用空壳与进程边界任务合同
 
-> 合同状态：`active`
+> 合同状态：`review`
 > 创建日期：2026-08-08
 > 决策批准依据：项目所有者在 2026-08-08 批准依赖方案，并随后明确授权启动 T001、下载批准依赖和二进制、Windows x64 unsigned NSIS 打包、任务分支/提交/push/Draft PR 及状态和证据更新
 > 本合同是 T001 的活动执行边界；未列入的依赖、功能和外部操作仍不授权
@@ -10,7 +10,7 @@
 - **Task ID**：T001
 - **Title**：Initialize the Electron application shell and process boundaries
 - **Slice / Plan item**：S0 / E0-01
-- **Status**：`active`
+- **Status**：`review`
 - **Base branch**：`dev`
 - **Expected branch**：`task/T001-electron-shell`
 - **已核验基线快照**：`dev`、`main`、`origin/dev`、`origin/main` 均为 `da27afd5c9cfa00be3bfc5e961b34e5696d496f8`
@@ -150,16 +150,16 @@
 
 ## 9. 交付物
 
-- [ ] 精确版本的 `package.json` 和 npm 锁文件。
-- [ ] Main、Preload、Renderer、Domain、Application、contracts、infrastructure 的最小目录和入口。
-- [ ] Today、Progress、Review 的非业务占位导航或等价空壳。
-- [ ] 生效的 Electron 安全配置和窄化 Preload 边界。
-- [ ] `dev`、`build`、`package` 命令。
-- [ ] Windows x64 build/package 产物及启动证据。
-- [ ] AI 零配置启动和非阻塞错误状态。
-- [ ] 与实际命令一致的最小 README 说明。
-- [ ] `EV-T001-001` 或后续未占用 T001 Evidence ID 的实际证据记录。
-- [ ] 相对授权 `dev` 基线的完整 diff 自查和独立 review。
+- [x] 精确版本的 `package.json` 和 npm 锁文件。
+- [x] Main、Preload、Renderer、Domain、Application、contracts、infrastructure 的最小目录和入口。
+- [x] Today、Progress、Review 的非业务占位导航或等价空壳。
+- [x] 生效的 Electron 安全配置和窄化 Preload 边界。
+- [x] `dev`、`build`、`package` 命令。
+- [x] Windows x64 build/package 产物及启动证据。
+- [x] AI 零配置启动和非阻塞错误状态。
+- [x] 与实际命令一致的最小 README 说明。
+- [x] `EV-T001-001` 或后续未占用 T001 Evidence ID 的实际证据记录。
+- [x] 相对授权 `dev` 基线的完整 diff 自查和独立 review。
 
 T001 不交付单元、集成、E2E、lint、format、typecheck 或 CI 命令；这些由 T002 建立并固定。
 
@@ -296,3 +296,13 @@ T001 完成报告必须包含：
 - T002、T003 或 G2 已完成；
 - GitHub 保护或 CI 已生效；
 - 项目所有者尚未执行的人工验收已通过。
+
+## 16. 实际结果与交接状态
+
+- **实现 revision**：`090e848d066f6f56d772181621ff211313667aa6`
+- **实现状态**：合同内代码、Windows x64 unpacked/unsigned NSIS 打包、安装/启动/卸载验证和独立评审已完成。
+- **验收证据**：`EV-T001-001`，详见 `ACCEPTANCE_EVIDENCE_V0.1.md`。
+- **独立评审**：代码与配置 P0～P3 no findings；评审指出的 README/证据文档一致性缺口已由 `EV-T001-001` 收口。
+- **人工验收**：`pending`；项目所有者仍需亲自确认窗口视觉质量、Today/Progress/Review 交互与 Windows 安装体验。
+- **GitHub 状态**：本地实现和证据提交完成后，按已授权范围 push 并创建到 `dev` 的 Draft PR；不标记 Ready、不合并、不创建 tag/release。
+- **范围结论**：未发现冻结需求冲突、范围变更或未批准顶层依赖；T002 测试工具链、T003 SQLite 和所有业务/AI 能力均未提前实现。
