@@ -304,5 +304,5 @@ T001 完成报告必须包含：
 - **验收证据**：`EV-T001-001`，详见 `ACCEPTANCE_EVIDENCE_V0.1.md`。
 - **独立评审**：代码与配置 P0～P3 no findings；评审指出的 README/证据文档一致性缺口已由 `EV-T001-001` 收口。
 - **人工验收**：`pending`；项目所有者仍需亲自确认窗口视觉质量、Today/Progress/Review 交互与 Windows 安装体验。
-- **GitHub 状态**：本地实现和证据提交完成后，按已授权范围 push 并创建到 `dev` 的 Draft PR；不标记 Ready、不合并、不创建 tag/release。
+- **GitHub 状态**：已按授权 push `task/T001-electron-shell` 并创建到 `dev` 的 Draft PR #1（`https://github.com/Fyrefly-4/MyTracer/pull/1`）；保持 Draft，不标记 Ready、不合并、不创建 tag/release。
 - **范围结论**：未发现冻结需求冲突、范围变更或未批准顶层依赖；T002 测试工具链、T003 SQLite 和所有业务/AI 能力均未提前实现。
