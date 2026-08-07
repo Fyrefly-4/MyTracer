@@ -8,8 +8,9 @@ MyTracer 是一个面向个人本地使用的 Windows 桌面应用，用于帮�
 - 架构阶段门 G1 已通过。
 - Electron、React、TypeScript、Vite、SQLite 和 `better-sqlite3` 的架构方向已批准。
 - 仓库级 Agent 规约、任务管理、验收证据和 GitHub 工作流已形成文档基线。
-- 正式工程初始化尚未开始，仍需批准具体依赖、版本、工具链和首个 AI Provider。
-- 当前仓库没有可运行应用，也不存在已经验证的安装、开发、测试或打包命令。
+- T001 已建立可运行的 Electron Main/Preload/Renderer 空壳、Today/Progress/Review 占位入口和安全 IPC 边界。
+- T001 已固定安装、开发、构建和 Windows x64 unsigned NSIS 打包命令；真实结果记录在验收证据中。
+- SQLite、业务能力、测试/lint/CI 工具链和首个 AI Provider 尚未实现，仍由后续任务分别批准和建立。
 
 不要把架构完成理解为产品已经实现。
 
@@ -72,20 +73,22 @@ Electron Main
 
 ## 开发和验证命令
 
-工程尚未初始化。以下命令类别需要在 S0 建立，但当前没有已批准或已验证的具体命令：
+T001 使用 Node.js 24.18.0 和 npm 11.16.0。依赖和 Electron 二进制首次还原需要网络访问。
 
-- 安装；
-- 开发启动；
-- 格式检查；
-- lint；
-- TypeScript 类型检查；
-- 单元测试；
-- SQLite/应用集成测试；
-- Electron E2E；
-- 聚合验证；
-- Windows 构建和打包。
+```powershell
+npm.cmd ci
+npm.cmd run dev
+npm.cmd run build
+npm.cmd run package
+```
 
-S0 完成后必须同时更新本节、`AGENTS.md`、CI 和任务模板，确保所有位置引用相同命令。
+- `dev`：启动 Electron 开发空壳；
+- `build`：构建 Main、Preload 和 Renderer 到 `out/`；
+- `package`：重新构建并生成 Windows x64 unsigned NSIS installer 和 `win-unpacked` 到 `release/`。
+
+T001 尚未建立 format、lint、稳定 typecheck、单元、集成、E2E、聚合 `verify` 或 CI 命令；这些由 T002 批准并固定。不得把 `build` 或 `package` 成功解释为上述检查已经存在或 G2 已通过。
+
+T002 建立稳定验证入口后，必须同步本节、`AGENTS.md`、CI 和任务模板，确保所有位置引用相同命令。
 
 ## GitHub 工作方式
 
@@ -110,10 +113,10 @@ task/Txxx-short-name
 
 ## 下一步
 
-1. 提交并批准最小依赖与版本清单。
-2. 按 `T001`～`T004` 建立 S0 工程基础。
-3. 固定真实的本地和 CI 验证命令。
-4. 验证 Electron 安全边界、SQLite 重开和 Windows 原生模块打包。
+1. 完成 T001 独立评审和项目所有者人工验收。
+2. 在 T002 批准验证依赖后建立稳定的本地和 CI 验证命令。
+3. 在 T003 建立 SQLite、migration 和临时数据根隔离。
+4. 在 T004 收敛日期、诊断、配置和 Windows 原生模块打包冒烟。
 5. 通过 G2 后进入 Goal—Action—Record—Progress 最小闭环。
 
 在这些条件完成前，不得声称 MyTracer Demo 已经可运行或通过验收。
