@@ -10,7 +10,8 @@ MyTracer 是一个面向个人本地使用的 Windows 桌面应用，用于帮�
 - 仓库级 Agent 规约、任务管理、验收证据和 GitHub 工作流已形成文档基线。
 - T001 已建立可运行的 Electron Main/Preload/Renderer 空壳、Today/Progress/Review 占位入口和安全 IPC 边界。
 - T001 已固定安装、开发、构建和 Windows x64 unsigned NSIS 打包命令；真实结果记录在验收证据中。
-- SQLite、业务能力、测试/lint/CI 工具链和首个 AI Provider 尚未实现，仍由后续任务分别批准和建立。
+- T002 已建立精确锁定的 format、lint、typecheck、unit、integration、Electron E2E 和 Windows CI 验证入口，以及测试专用 FakeClock、FakeAiProvider 和临时数据根。
+- SQLite、业务能力和首个真实 AI Provider 尚未实现，仍由后续任务分别批准和建立。
 
 不要把架构完成理解为产品已经实现。
 
@@ -73,22 +74,35 @@ Electron Main
 
 ## 开发和验证命令
 
-T001 使用 Node.js 24.18.0 和 npm 11.16.0。依赖和 Electron 二进制首次还原需要网络访问。
+当前工具链使用 Node.js 24.18.0 和 npm 11.16.0。依赖和 Electron 二进制首次还原需要网络访问；核心自动化不访问 live AI Provider。
 
 ```powershell
 npm.cmd ci
+npm.cmd exec -- install-electron --no
 npm.cmd run dev
 npm.cmd run build
 npm.cmd run package
+npm.cmd run format:check
+npm.cmd run lint
+npm.cmd run typecheck
+npm.cmd run test:unit
+npm.cmd run test:integration
+npm.cmd run test:e2e
+npm.cmd run verify
 ```
 
 - `dev`：启动 Electron 开发空壳；
+- `npm.cmd exec -- install-electron --no`：使用 `node_modules` 中精确锁定的 Electron 包恢复对应二进制；Electron 43 改为首次使用时按需下载，因此干净 `npm ci` 后和 CI 中显式执行；
 - `build`：构建 Main、Preload 和 Renderer 到 `out/`；
 - `package`：重新构建并生成 Windows x64 unsigned NSIS installer 和 `win-unpacked` 到 `release/`。
+- `format:check`：只读检查合同范围内受 Prettier 管理的文件；人工修复使用显式 `npm.cmd run format`，CI 不调用写入命令；
+- `lint`：以零 warning 运行 ESLint flat config，并检查进程/分层依赖边界；
+- `typecheck`：以 TypeScript project references 检查生产源码、测试和工具配置；
+- `test:unit`、`test:integration`：分别运行 Vitest unit 和 integration project；
+- `test:e2e`：先构建，再用 Playwright Electron API 和唯一临时 `userData` 启动真实空壳；
+- `verify`：依次运行只读 format、lint、typecheck、unit、integration 和含 build 的 E2E，是本地与 CI 的聚合门禁。
 
-T001 尚未建立 format、lint、稳定 typecheck、单元、集成、E2E、聚合 `verify` 或 CI 命令；这些由 T002 批准并固定。不得把 `build` 或 `package` 成功解释为上述检查已经存在或 G2 已通过。
-
-T002 建立稳定验证入口后，必须同步本节、`AGENTS.md`、CI 和任务模板，确保所有位置引用相同命令。
+Electron E2E 必须在可启动 Windows 桌面进程的环境运行；所有自动化数据均位于 OS 临时目录下的每测试唯一根，不得指向真实 Electron `userData`。`build`、`package` 或 T002 单独通过都不表示 AC-01～AC-07 或 G2 已通过。
 
 ## GitHub 工作方式
 
@@ -113,10 +127,9 @@ task/Txxx-short-name
 
 ## 下一步
 
-1. 完成 T001 独立评审和项目所有者人工验收。
-2. 在 T002 批准验证依赖后建立稳定的本地和 CI 验证命令。
-3. 在 T003 建立 SQLite、migration 和临时数据根隔离。
-4. 在 T004 收敛日期、诊断、配置和 Windows 原生模块打包冒烟。
-5. 通过 G2 后进入 Goal—Action—Record—Progress 最小闭环。
+1. 完成 T002 的 Draft PR、Windows hosted CI 和项目所有者评审。
+2. 在 T003 建立 SQLite、migration 和数据库级临时数据根隔离。
+3. 在 T004 收敛日期、诊断、配置和 Windows 原生模块打包冒烟。
+4. 通过 G2 后进入 Goal—Action—Record—Progress 最小闭环。
 
 在这些条件完成前，不得声称 MyTracer Demo 已经可运行或通过验收。

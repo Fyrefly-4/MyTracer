@@ -111,7 +111,19 @@ Use `docs/implementation/TASK_TEMPLATE.md`. Do not treat an open question, recom
 
 ## 9. Validation and evidence
 
-The stable commands will be added during S0. Until then, do not invent command names or claim they passed. Once established, README, this file, CI, and task templates must reference the same commands.
+The stable S0 validation commands are:
+
+```powershell
+npm.cmd run format:check
+npm.cmd run lint
+npm.cmd run typecheck
+npm.cmd run test:unit
+npm.cmd run test:integration
+npm.cmd run test:e2e
+npm.cmd run verify
+```
+
+`verify` is the required aggregate and includes build through `test:e2e`. It must remain read-only with respect to tracked source and documentation: it never invokes `format`, packaging, installation, release, migrations, or live AI. Electron E2E must run in an environment that can launch Windows desktop processes, always with a unique temporary `userData` root.
 
 Evidence must bind a claim to:
 
