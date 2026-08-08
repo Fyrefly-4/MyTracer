@@ -1,7 +1,7 @@
 # MyTracer v0.1 任务索引
 
 > 文档状态：v0.1 实施任务基线  
-> 当前阶段：G1 已通过；T001 已完成并进入 Ready for review，T002～T004 仍保持各自门禁
+> 当前阶段：G1 已通过；T001 已合并到 `dev`，T002 已完成并有 hosted Windows 证据，T003～T004 仍保持各自门禁
 > 状态来源：本文件是任务执行状态的唯一账本，架构实施计划只定义范围和顺序
 
 ## 1. 使用规则
@@ -32,7 +32,7 @@ T001 的精确依赖、npm 工具链、Windows x64 unsigned NSIS 目标、隔离
 
 后续门禁仍保持独立：
 
-1. lint、format、单元、集成和 E2E 测试框架只在 T002 批准；
+1. T002 的 lint、format、单元、集成和 E2E 测试框架及精确版本已由项目所有者批准，仅限 T002 合同范围；
 2. `better-sqlite3` 精确版本、SQLite 数据路径和 migration 只在 T003 批准；
 3. T001 不得提前引入上述依赖或实现。
 
@@ -43,7 +43,7 @@ T001 的精确依赖、npm 工具链、Windows x64 unsigned NSIS 目标、隔离
 | Task | Slice | 范围 | 主要需求/决定 | 前置 | 状态 | 证据 |
 |---|---|---|---|---|---|---|
 | T001 | E0-01 | Electron 骨架与 Main/Preload/Renderer 边界 | D-001/003/015～017；ED-001/002/004/019 | 依赖批准 | `done` | `EV-T001-001` |
-| T002 | E0-02 | 验证工具链、FakeClock/FakeAiProvider、临时数据根 | Test Strategy §3/9；GW-008 | T001、测试工具批准 | `pending` | — |
+| T002 | E0-02 | 验证工具链、FakeClock/FakeAiProvider、临时数据根 | Test Strategy §3/9；GW-008 | T001、测试工具批准 | `done` | `EV-T002-001` |
 | T003 | E0-03 | SQLite、初始 schema、migration、Repository 契约 | FR-D01；D-103/106/111；ED-003/018 | T001～T002 | `pending` | — |
 | T004 | E0-04 | LocalDate、诊断、配置、safeStorage 空边界、Windows 打包冒烟 | ED-010/017/019 | T001～T003 | `pending` | — |
 | T011 | E1-01 | Goal 生命周期和当前下一步 | FR-G01～G06；D-002/101；ED-005；AC-01 | G2 | `pending` | — |
@@ -87,6 +87,6 @@ T001 的精确依赖、npm 工具链、Windows x64 unsigned NSIS 目标、隔离
 
 ## 7. 当前结论
 
-- T001 为 `done`，实现、本地 Windows x64 打包、独立评审和项目所有者人工验收均已完成；PR #1 已标记 Ready。
+- T001 为 `done`，实现、本地 Windows x64 打包、独立评审和项目所有者人工验收均已完成；PR #1 已合并到 `dev`。
 - 仓库治理文档完成不等于 G2 工程就绪。
-- 下一项行动由项目所有者决定是否另行授权合并 PR #1；T002～T004 仍保持各自门禁。
+- T002 已按独立合同完成本地验证、独立复核和 hosted Windows CI，证据为 `EV-T002-001`；T003～T004 仍保持各自门禁，G2 未自动通过。

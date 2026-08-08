@@ -82,14 +82,22 @@
 ### 针对性验证
 
 ```powershell
-# 在 S0 固定真实命令后填写
+# 选择并列出本任务实际需要的针对性命令：
+npm.cmd run test:unit
+npm.cmd run test:integration
+npm.cmd run test:e2e
 ```
 
 ### 受影响范围回归
 
 ```powershell
-# 在 S0 固定真实命令后填写
+npm.cmd run format:check
+npm.cmd run lint
+npm.cmd run typecheck
+npm.cmd run verify
 ```
+
+`verify` 已包含 build 和 Electron E2E。若合同需要 `npm.cmd ci`、独立 `npm.cmd run build`、打包、人工步骤或平台专属验证，必须额外逐项列出；不得用 `verify` 声称它未覆盖的结果。
 
 ### 人工步骤
 
