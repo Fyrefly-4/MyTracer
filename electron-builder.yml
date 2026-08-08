@@ -1,0 +1,21 @@
+appId: io.mytracer.desktop
+productName: MyTracer
+asar: true
+npmRebuild: false
+directories:
+  output: release
+files:
+  - out/**/*
+  - package.json
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+artifactName: MyTracer-${version}-${arch}-setup.${ext}
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: false
+  createStartMenuShortcut: true
