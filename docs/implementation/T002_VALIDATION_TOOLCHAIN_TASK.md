@@ -1,6 +1,6 @@
 # T002：验证工具链与隔离测试基础任务合同
 
-> 合同状态：`active`
+> 合同状态：`done`
 > 创建日期：2026-08-08
 > 决策批准依据：项目所有者于 2026-08-08 明确确认“上述通过，可开始执行开发”，批准本合同所列精确依赖、必要下载、任务分支/提交、push/Draft PR 和 GitHub Actions 执行权限
 > 本合同是 T002 的活动执行边界；Ready、merge、branch protection、required-check 配置、tag/release 及未列入范围的操作仍不授权
@@ -10,7 +10,7 @@
 - **Task ID**：T002
 - **Title**：Establish the validation toolchain and isolated test foundations
 - **Slice / Plan item**：S0 / E0-02
-- **Status**：`active`
+- **Status**：`done`
 - **Base branch**：`dev`
 - **Expected branch**：`task/T002-validation-toolchain`
 - **当前已核验基线快照**：本地 `HEAD`、本地 `dev`、本地跟踪的 `origin/dev` 与远端实时 `refs/heads/dev` 均为 `e6f7b933bd4cbce57032a7a1b0da24912f45c3e9`
@@ -74,9 +74,9 @@ T002 完成只证明验证工具链和测试隔离基础成立，不证明 T003 
 - [x] 项目所有者已批准创建或更新到 `dev` 的 Draft PR。
 - [x] 启动实现前已重新核验最新远端 `dev`、工作树和 worktree 状态，且没有重叠的用户修改。
 
-上述开始条件已满足，T002 于 2026-08-08 转为 `active`。
+上述开始条件已满足，T002 于 2026-08-08 转为 `active`，并在本地、独立复核和 hosted Windows CI 均通过后转为 `done`。
 
-## 6. 待批准的精确依赖与工具选择
+## 6. 已批准的精确依赖与工具选择
 
 ### 6.1 保持不变的已批准主机/工程版本
 
@@ -88,9 +88,9 @@ T002 完成只证明验证工具链和测试隔离基础成立，不证明 T003 
 | Vite | 7.3.6 | 不升级 |
 | Electron | 43.3.0 | 不升级 |
 
-### 6.2 提议新增的 `devDependencies`
+### 6.2 已批准新增的 `devDependencies`
 
-以下版本是 2026-08-08 对 npm 官方注册表的只读调研结果，只是待批准提案：
+以下版本是 2026-08-08 对 npm 官方注册表的只读调研结果，并已由项目所有者逐项批准：
 
 | 包 | 精确版本 | 用途与选择依据 |
 |---|---:|---|
@@ -266,17 +266,17 @@ T002 的 fake 只建立可测试控制面；FR-AI01～AI10、最小上下文选�
 
 ## 14. 交付物
 
-- [ ] 第 6.2 节精确版本的 lint、format、unit/integration 和 E2E devDependencies 及锁文件。
-- [ ] ESLint flat config，包含 TypeScript/React 基础规则和 Main/Preload/Renderer/Domain 依赖边界限制。
-- [ ] Prettier config/ignore，以及只读 `format:check`。
-- [ ] 独立 unit/integration Vitest projects 和最小真实测试。
-- [ ] Playwright Electron 空壳 E2E，使用唯一临时 `userData`。
-- [ ] 满足第 8～10 节契约的 FakeClock、FakeAiProvider 和临时数据根 helper。
-- [ ] 第 7 节全部稳定 npm scripts。
-- [ ] `.github/workflows/verify.yml` 的 Windows required gate 候选；workflow 名称固定为 `Verification`，job ID 固定为 `windows-required`，job 名称固定为 `Windows required gate`。
-- [ ] README、`AGENTS.md`、任务模板的统一命令更新。
-- [ ] T002 状态与 `EV-T002-001` 或后续未占用 Evidence ID 的真实证据。
-- [ ] 相对最新授权 `origin/dev` 的完整 diff 自查和独立 review。
+- [x] 第 6.2 节精确版本的 lint、format、unit/integration 和 E2E devDependencies 及锁文件。
+- [x] ESLint flat config，包含 TypeScript/React 基础规则和 Main/Preload/Renderer/Domain 依赖边界限制。
+- [x] Prettier config/ignore，以及只读 `format:check`。
+- [x] 独立 unit/integration Vitest projects 和最小真实测试。
+- [x] Playwright Electron 空壳 E2E，使用唯一临时 `userData`。
+- [x] 满足第 8～10 节契约的 FakeClock、FakeAiProvider 和临时数据根 helper。
+- [x] 第 7 节全部稳定 npm scripts。
+- [x] `.github/workflows/verify.yml` 的 Windows required gate 候选；workflow 名称固定为 `Verification`，job ID 固定为 `windows-required`，job 名称固定为 `Windows required gate`。
+- [x] README、`AGENTS.md`、任务模板的统一命令更新。
+- [x] T002 状态与 `EV-T002-001` 或后续未占用 Evidence ID 的真实证据。
+- [x] 相对最新授权 `origin/dev` 的完整 diff 自查和独立 review。
 
 ## 15. 验收标准
 
@@ -444,4 +444,16 @@ T002 完成报告必须包含：
 5. 是否批准 push 该任务分支、创建/更新到 `dev` 的 Draft PR，并触发 GitHub Actions。
 6. 是否同意 Ready、merge、`dev -> main`、tag/release、branch protection、required-check 配置和仓库设置继续保持不授权。
 
-上述批准已记录，执行前远端基线重新核验通过，任务分支已从该基线创建；T002 当前为 `active`。
+上述批准已记录，执行前远端基线重新核验通过，任务分支从该基线创建；完成结果记录于 `EV-T002-001`。T002 当前为 `done`，但 Draft PR 的 Ready、merge 和任何仓库设置仍由项目所有者控制。
+
+## 22. 执行结果
+
+- **Implementation revision**：`f60a38c4e69b8bead2aa8975c6fdb6886bec220a`
+- **Base revision**：`e6f7b933bd4cbce57032a7a1b0da24912f45c3e9`
+- **Draft PR**：[#2](https://github.com/Fyrefly-4/MyTracer/pull/2)，base `dev`
+- **Hosted verification**：`Verification` / `Windows required gate`，run `31241614350`，head `f60a38c4e69b8bead2aa8975c6fdb6886bec220a`，test merge `c6968d4f7d53ff5ff1a32d8f32909707eb05075b`，success
+- **Automated result**：本地 `npm.cmd run verify` exit code 0；13 unit、3 integration、1 Electron E2E 均通过；hosted Windows 同范围通过
+- **Independent review**：修复宿主环境变量透传和临时根对象伪造问题后，最终完整 diff 无未处理 P0～P3 finding
+- **Evidence**：`EV-T002-001`
+- **Manual status**：本任务无产品体验 AC，记为 `not-required`；项目所有者仍负责 PR 评审、Ready 与 merge 决定
+- **Boundary**：未实现 SQLite、migration、业务能力、生产 ClockPort/LocalDate、safeStorage 或真实 AI；未声明 AC-01～AC-07 或 G2 通过；未配置 branch protection/required check
