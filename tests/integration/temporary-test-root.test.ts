@@ -46,14 +46,19 @@ describe('temporary test data roots', () => {
   })
 
   it('refuses cleanup for a forged root object', async () => {
-    const root = await createTemporaryTestRoot()
-    const forged = { ...root, root: tmpdir() }
+    const first = await createTemporaryTestRoot()
+    const second = await createTemporaryTestRoot()
+    const forgedSystemRoot = { ...first, root: tmpdir() }
+    const forgedOwnedRoot = { ...first, root: second.root }
 
     try {
-      await expect(removeTemporaryTestRoot(forged)).rejects.toThrow(/unowned/)
-      await expect(access(root.root)).resolves.toBeUndefined()
+      await expect(removeTemporaryTestRoot(forgedSystemRoot)).rejects.toThrow(/unowned/)
+      await expect(removeTemporaryTestRoot(forgedOwnedRoot)).rejects.toThrow(/unowned/)
+      await expect(access(first.root)).resolves.toBeUndefined()
+      await expect(access(second.root)).resolves.toBeUndefined()
     } finally {
-      await removeTemporaryTestRoot(root)
+      await removeTemporaryTestRoot(first)
+      await removeTemporaryTestRoot(second)
     }
   })
 })

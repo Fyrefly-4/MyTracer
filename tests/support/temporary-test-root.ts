@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path'
 
 const ROOT_PREFIX = 'mytracer-tests-'
-const ownedRoots = new Set<string>()
+const ownedRoots = new WeakMap<TemporaryTestRoot, string>()
 
 export interface TemporaryTestRoot {
   readonly root: string
@@ -47,15 +47,15 @@ export async function createTemporaryTestRoot(): Promise<TemporaryTestRoot> {
     throw error
   }
 
-  ownedRoots.add(root)
-
-  return Object.freeze({
+  const testRoot = Object.freeze({
     root,
     electronUserData,
     database,
     exports: exportsDirectory,
     artifacts
   })
+  ownedRoots.set(testRoot, root)
+  return testRoot
 }
 
 export async function assertExistingPathWithinRoot(
@@ -65,7 +65,10 @@ export async function assertExistingPathWithinRoot(
   const canonicalRoot = await realpath(root.root)
   const canonicalCandidate = await realpath(candidate)
 
-  if (!ownedRoots.has(canonicalRoot) || !isStrictDescendant(canonicalRoot, canonicalCandidate)) {
+  if (
+    ownedRoots.get(root) !== canonicalRoot ||
+    !isStrictDescendant(canonicalRoot, canonicalCandidate)
+  ) {
     throw new Error(`Path is outside the current temporary test root: ${resolve(candidate)}`)
   }
 
@@ -80,11 +83,11 @@ export async function removeTemporaryTestRoot(root: TemporaryTestRoot): Promise<
     dirname(canonicalRoot) !== temporaryDirectory ||
     !basename(canonicalRoot).startsWith(ROOT_PREFIX) ||
     !isStrictDescendant(temporaryDirectory, canonicalRoot) ||
-    !ownedRoots.has(canonicalRoot)
+    ownedRoots.get(root) !== canonicalRoot
   ) {
     throw new Error(`Refusing to remove an unowned test path: ${canonicalRoot}`)
   }
 
   await rm(canonicalRoot, { recursive: true, force: false, maxRetries: 5, retryDelay: 100 })
-  ownedRoots.delete(canonicalRoot)
+  ownedRoots.delete(root)
 }
