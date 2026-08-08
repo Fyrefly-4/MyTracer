@@ -1,6 +1,6 @@
 # T001：Electron 应用空壳与进程边界任务合同
 
-> 合同状态：`review`
+> 合同状态：`done`
 > 创建日期：2026-08-08
 > 决策批准依据：项目所有者在 2026-08-08 批准依赖方案，并随后明确授权启动 T001、下载批准依赖和二进制、Windows x64 unsigned NSIS 打包、任务分支/提交/push/Draft PR 及状态和证据更新
 > 本合同是 T001 的活动执行边界；未列入的依赖、功能和外部操作仍不授权
@@ -10,7 +10,7 @@
 - **Task ID**：T001
 - **Title**：Initialize the Electron application shell and process boundaries
 - **Slice / Plan item**：S0 / E0-01
-- **Status**：`review`
+- **Status**：`done`
 - **Base branch**：`dev`
 - **Expected branch**：`task/T001-electron-shell`
 - **已核验基线快照**：`dev`、`main`、`origin/dev`、`origin/main` 均为 `da27afd5c9cfa00be3bfc5e961b34e5696d496f8`
@@ -303,6 +303,6 @@ T001 完成报告必须包含：
 - **实现状态**：合同内代码、Windows x64 unpacked/unsigned NSIS 打包、安装/启动/卸载验证和独立评审已完成。
 - **验收证据**：`EV-T001-001`，详见 `ACCEPTANCE_EVIDENCE_V0.1.md`。
 - **独立评审**：代码与配置 P0～P3 no findings；评审指出的 README/证据文档一致性缺口已由 `EV-T001-001` 收口。
-- **人工验收**：`pending`；项目所有者仍需亲自确认窗口视觉质量、Today/Progress/Review 交互与 Windows 安装体验。
-- **GitHub 状态**：已按授权 push `task/T001-electron-shell` 并创建到 `dev` 的 Draft PR #1（`https://github.com/Fyrefly-4/MyTracer/pull/1`）；保持 Draft，不标记 Ready、不合并、不创建 tag/release。
+- **人工验收**：`pass`；项目所有者于 2026-08-08 明确确认通过。
+- **GitHub 状态**：已按授权 push `task/T001-electron-shell`、创建到 `dev` 的 PR #1（`https://github.com/Fyrefly-4/MyTracer/pull/1`），并在项目所有者明确授权后标记 Ready；不合并、不创建 tag/release。
 - **范围结论**：未发现冻结需求冲突、范围变更或未批准顶层依赖；T002 测试工具链、T003 SQLite 和所有业务/AI 能力均未提前实现。

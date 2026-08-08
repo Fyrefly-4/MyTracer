@@ -1,7 +1,7 @@
 # MyTracer v0.1 任务索引
 
 > 文档状态：v0.1 实施任务基线  
-> 当前阶段：G1 已通过；T001 实现与本地验证完成，等待项目所有者人工验收和 Draft PR 后续处理
+> 当前阶段：G1 已通过；T001 已完成并进入 Ready for review，T002～T004 仍保持各自门禁
 > 状态来源：本文件是任务执行状态的唯一账本，架构实施计划只定义范围和顺序
 
 ## 1. 使用规则
@@ -42,7 +42,7 @@ T001 的精确依赖、npm 工具链、Windows x64 unsigned NSIS 目标、隔离
 
 | Task | Slice | 范围 | 主要需求/决定 | 前置 | 状态 | 证据 |
 |---|---|---|---|---|---|---|
-| T001 | E0-01 | Electron 骨架与 Main/Preload/Renderer 边界 | D-001/003/015～017；ED-001/002/004/019 | 依赖批准 | `review` | `EV-T001-001` |
+| T001 | E0-01 | Electron 骨架与 Main/Preload/Renderer 边界 | D-001/003/015～017；ED-001/002/004/019 | 依赖批准 | `done` | `EV-T001-001` |
 | T002 | E0-02 | 验证工具链、FakeClock/FakeAiProvider、临时数据根 | Test Strategy §3/9；GW-008 | T001、测试工具批准 | `pending` | — |
 | T003 | E0-03 | SQLite、初始 schema、migration、Repository 契约 | FR-D01；D-103/106/111；ED-003/018 | T001～T002 | `pending` | — |
 | T004 | E0-04 | LocalDate、诊断、配置、safeStorage 空边界、Windows 打包冒烟 | ED-010/017/019 | T001～T003 | `pending` | — |
@@ -87,6 +87,6 @@ T001 的精确依赖、npm 工具链、Windows x64 unsigned NSIS 目标、隔离
 
 ## 7. 当前结论
 
-- T001 处于 `review`，实现、本地 Windows x64 打包和独立评审已完成；项目所有者人工验收仍为 `pending`。
+- T001 为 `done`，实现、本地 Windows x64 打包、独立评审和项目所有者人工验收均已完成；PR #1 已标记 Ready。
 - 仓库治理文档完成不等于 G2 工程就绪。
-- 下一项行动是处理 T001 Draft PR 并由项目所有者执行人工验收；T002～T004 仍保持各自门禁。
+- 下一项行动由项目所有者决定是否另行授权合并 PR #1；T002～T004 仍保持各自门禁。

@@ -66,7 +66,7 @@ Evidence ID 不复用。失败记录保留，并由后续记录明确引用修�
 
 | Evidence | Task | Revision | Scope | Result | Manual | Notes |
 |---|---|---|---|---|---|---|
-| `EV-T001-001` | T001 | `090e848d066f6f56d772181621ff211313667aa6` | Electron 空壳、进程边界、Windows x64 打包 | pass | pending | Agent 运行时验证通过；项目所有者视觉与交互验收待执行 |
+| `EV-T001-001` | T001 | `090e848d066f6f56d772181621ff211313667aa6` | Electron 空壳、进程边界、Windows x64 打包 | pass | pass | Agent 运行时验证通过；项目所有者于 2026-08-08 确认人工验收通过 |
 
 ### EV-T001-001
 
@@ -96,7 +96,7 @@ Evidence ID 不复用。失败记录保留，并由后续记录明确引用修�
   - `D:\MyDocuments\MyCodes\VS Code\Frontend\Agent_WorkSpace\MyTracer\release\win-unpacked\MyTracer.exe`，225441792 bytes，SHA-256 `B2AD426EFC29E1F564A8D79EAB4A52809A72E38300A0FD94CC8075997F192197`，PE x64 `0x8664`，Authenticode `NotSigned`。
   - `D:\MyDocuments\MyCodes\VS Code\Frontend\Agent_WorkSpace\MyTracer\release\MyTracer-0.1.0-x64-setup.exe`，100279230 bytes，SHA-256 `8CCE583BC834A4FA193EF14A659FD9D29102631F3623A06BA0BC2ACEE0D38080`，NSIS 启动器 PE `0x014C`、x64 payload，Authenticode `NotSigned`。
   - Draft PR #1：`https://github.com/Fyrefly-4/MyTracer/pull/1`，base `dev`，head `task/T001-electron-shell`；创建时无 CI checks。
-- **Manual acceptance**：pending；项目所有者仍需亲自检查开发/安装态窗口的视觉质量、三入口交互和 Windows 安装体验，Agent 的 CDP 与进程验证不替代该签署
+- **Manual acceptance**：pass；项目所有者于 2026-08-08 明确确认人工验收通过
 - **Known limitations**：T002 尚未建立 lint、format、自动 typecheck、单元/集成/E2E 或 CI；生产 Renderer 按已批准 ED-019 使用本地 `file://`，后续可评估自定义协议加固；受限导航允许页面进入 `about:blank` 自空白但不加载外部内容或扩大权限；未声明 AC-01～AC-07 或 G2 通过
 - **Supersedes / superseded by**：无
 - **Recorded at**：2026-08-08
@@ -155,6 +155,6 @@ Agent 只提供步骤和观察位置，不得替项目所有者签署人工验�
 ## 9. 当前结论
 
 - G1 架构基线已批准。
-- T001 工程实现、Windows x64 unpacked/unsigned NSIS 产物和运行时验证已记录为 `EV-T001-001`；项目所有者人工验收仍为 `pending`。
+- T001 工程实现、Windows x64 unpacked/unsigned NSIS 产物、运行时验证和项目所有者人工验收已记录为 `EV-T001-001`。
 - T001 未建立 CI，未执行 AC-01～AC-07，也不使 G2 自动通过。
 - T002～T004 继续遵守各自独立前置、依赖和任务授权门禁。
