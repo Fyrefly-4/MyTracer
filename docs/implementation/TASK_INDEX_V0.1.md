@@ -1,7 +1,7 @@
 # MyTracer v0.1 任务索引
 
 > 文档状态：v0.1 实施任务基线  
-> 当前阶段：G1 已通过；所有工程任务等待依赖和工具链批准  
+> 当前阶段：G1 已通过；T001～T004 已完成并有 hosted Windows 证据，G2 保持独立门禁
 > 状态来源：本文件是任务执行状态的唯一账本，架构实施计划只定义范围和顺序
 
 ## 1. 使用规则
@@ -28,14 +28,13 @@
 
 ## 3. 当前门禁
 
-启动 T001 前仍需批准：
+T001 的精确依赖、npm 工具链、Windows x64 unsigned NSIS 目标、隔离数据路径、任务分支/提交以及 push/Draft PR 权限已由项目所有者批准，并记录在任务合同中。
 
-1. Electron、React、TypeScript、Vite 和 `better-sqlite3` 的确切版本；
-2. 包管理器、脚手架和 Windows 打包工具；
-3. lint、format、单元、集成和 E2E 测试框架；
-4. 首批运行时/开发依赖及其增加权限；
-5. 工程目录和真实/测试数据路径；
-6. 创建任务分支、提交及是否发布 Draft PR 的任务级授权。
+后续门禁仍保持独立：
+
+1. T002 的 lint、format、单元、集成和 E2E 测试框架及精确版本已由项目所有者批准，仅限 T002 合同范围；
+2. `better-sqlite3` 精确版本、SQLite 数据路径和 migration 只在 T003 批准；
+3. T001 不得提前引入上述依赖或实现。
 
 首个 AI Provider、模型和 SDK 只阻塞 T062，不阻塞 S0～S5 的非 AI 能力。
 
@@ -43,10 +42,10 @@
 
 | Task | Slice | 范围 | 主要需求/决定 | 前置 | 状态 | 证据 |
 |---|---|---|---|---|---|---|
-| T001 | E0-01 | Electron 骨架与 Main/Preload/Renderer 边界 | D-001/003/015～017；ED-001/002/004/019 | 依赖批准 | `blocked` | — |
-| T002 | E0-02 | 验证工具链、FakeClock/FakeAiProvider、临时数据根 | Test Strategy §3/9；GW-008 | T001、测试工具批准 | `pending` | — |
-| T003 | E0-03 | SQLite、初始 schema、migration、Repository 契约 | FR-D01；D-103/106/111；ED-003/018 | T001～T002 | `pending` | — |
-| T004 | E0-04 | LocalDate、诊断、配置、safeStorage 空边界、Windows 打包冒烟 | ED-010/017/019 | T001～T003 | `pending` | — |
+| T001 | E0-01 | Electron 骨架与 Main/Preload/Renderer 边界 | D-001/003/015～017；ED-001/002/004/019 | 依赖批准 | `done` | `EV-T001-001` |
+| T002 | E0-02 | 验证工具链、FakeClock/FakeAiProvider、临时数据根 | Test Strategy §3/9；GW-008 | T001、测试工具批准 | `done` | `EV-T002-001` |
+| T003 | E0-03 | SQLite、初始 schema、migration、Repository 契约 | FR-D01；D-103/106/111；ED-003/018 | T001～T002 | `done` | `EV-T003-001` |
+| T004 | E0-04 | LocalDate、诊断、配置、safeStorage 空边界、Windows 打包冒烟 | ED-010/017/019 | T001～T003 | `done` | `EV-T004-001` |
 | T011 | E1-01 | Goal 生命周期和当前下一步 | FR-G01～G06；D-002/101；ED-005；AC-01 | G2 | `pending` | — |
 | T012 | E1-02 | Action、Today focus、取消/完成/重新安排 | FR-A01～A06；FR-T01/04/05/08；ED-006/007；AC-01 | T011 | `pending` | — |
 | T013 | E1-03 | 快速/深入 ActionRecord | FR-A05；FR-L01～L09；FR-C01；D-006/103/104 | T012 | `pending` | — |
@@ -88,6 +87,8 @@
 
 ## 7. 当前结论
 
-- 当前没有 `ready` 或 `active` 工程任务。
+- T001 为 `done`，实现、本地 Windows x64 打包、独立评审和项目所有者人工验收均已完成；PR #1 已合并到 `dev`。
 - 仓库治理文档完成不等于 G2 工程就绪。
-- 下一项行动是提交具体依赖/版本/工具链方案供项目所有者批准，然后把 T001 转为 `ready`。
+- T002 已按独立合同完成本地验证、独立复核和 hosted Windows CI，证据为 `EV-T002-001`；该证据不单独证明后续 T003、T004 或 G2。
+- T003 已完成 SQLite 基础、隔离 Repository 契约测试、交互式本机与 hosted Windows `verify`、以及 Windows x64 standard package/native-addon 冒烟，证据为 `EV-T003-001`；它不声明 FR-D01 业务功能、任何 AC、T004 或 G2 完成。
+- T004 已完成 LocalDate/Clock、诊断、空配置/safeStorage 边界、隔离 Windows x64 unpacked/NSIS 运行冒烟和 hosted Windows `verify`，证据为 `EV-T004-001`；它不声明业务 FR、任何 AC 或 G2 完成。

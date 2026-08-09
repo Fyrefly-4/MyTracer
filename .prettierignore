@@ -1,0 +1,16 @@
+node_modules/
+out/
+dist/
+release/
+.tmp/
+user/
+package-lock.json
+**/*.md
+.agents/skills/mytracer-stage-development/agents/openai.yaml
+src/main/index.ts
+src/renderer/src/App.tsx
+src/renderer/src/styles.css
+*.log
+*.tsbuildinfo
+test-results/
+playwright-report/

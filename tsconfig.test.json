@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.node.json",
+  "compilerOptions": {
+    "composite": true,
+    "noEmit": true,
+    "types": ["node", "electron"]
+  },
+  "include": [
+    "vitest.config.ts",
+    "playwright.config.ts",
+    "tests/**/*.ts",
+    "src/application/**/*.ts",
+    "src/contracts/**/*.ts",
+    "src/domain/**/*.ts",
+    "src/infrastructure/**/*.ts",
+    "src/renderer/src/env.d.ts"
+  ]
+}
