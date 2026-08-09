@@ -5,14 +5,16 @@ MyTracer 是一个面向个人本地使用的 Windows 桌面应用，用于帮�
 ## 当前状态
 
 - v0.1 产品需求基线已冻结。
-- 架构阶段门 G1 已通过。
+- 架构阶段门 G1 和工程阶段门 G2 已通过。
 - Electron、React、TypeScript、Vite、SQLite 和 `better-sqlite3` 的架构方向已批准。
 - 仓库级 Agent 规约、任务管理、验收证据和 GitHub 工作流已形成文档基线。
 - T001 已建立可运行的 Electron Main/Preload/Renderer 空壳、Today/Progress/Review 占位入口和安全 IPC 边界。
 - T001 已固定安装、开发、构建和 Windows x64 unsigned NSIS 打包命令；真实结果记录在验收证据中。
 - T002 已建立精确锁定的 format、lint、typecheck、unit、integration、Electron E2E 和 Windows CI 验证入口，以及测试专用 FakeClock、FakeAiProvider 和临时数据根。
 - T003 已建立 SQLite schema、migration、Repository 契约和 Windows x64 原生模块验证基础。
-- T004 已建立 LocalDate/Clock、诊断、配置与 safeStorage 空边界，并完成隔离的 Windows x64 unpacked/NSIS 运行冒烟；业务能力和首个真实 AI Provider 仍由后续独立任务分别批准和建立。
+- T004 已建立 LocalDate/Clock、诊断、配置与 safeStorage 空边界，并完成隔离的 Windows x64 unpacked/NSIS 运行冒烟。
+- T011 已完成 Goal 创建、修改、pause/resume/end、当前下一步、列表/详情和真实关闭重开验证；本地与 hosted Windows gate、人工体验及项目所有者 review 均通过。
+- T012 是下一候选任务，仍为 `pending`；通用 Action 生命周期和 Today focus 尚未启动。
 
 不要把架构完成理解为产品已经实现。
 
@@ -128,7 +130,7 @@ task/Txxx-short-name
 
 ## 下一步
 
-1. 由项目所有者评审 T004 交付，并按独立门禁判断 G2 是否通过。
-2. G2 获准后进入 Goal—Action—Record—Progress 最小闭环。
+1. 为 T012 编写并审批独立任务合同，继续保持通用 Action 生命周期与 Today 边界不越过已批准 S1 设计。
+2. 项目所有者明确发出 T012 启动指令后，再开始 Action—Today 纵向实现。
 
-在这些条件完成前，不得声称 MyTracer Demo 已经可运行或通过验收。
+T011 完成只覆盖 Goal 子路径和 AC-01 步骤 1～2贡献；在 T012～T014 完成前，不得声称 S1、完整 AC-01 或 MyTracer Demo 已通过验收。

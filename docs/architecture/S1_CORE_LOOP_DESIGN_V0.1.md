@@ -2,6 +2,8 @@
 
 > 文档状态：已获项目所有者批准；批准不构成 T011～T014 实现授权。
 >
+> 后续交付状态：截至 2026-08-09，T011 已按独立合同完成并由项目所有者 review 确认；T012 仍为 `pending`，等待独立合同批准与启动。任务实时状态以 `TASK_INDEX_V0.1.md` 为准。
+>
 > 审批结果：S1-Q01 = A；S1-Q02～S1-Q10 = 各自原推荐项。
 >
 > 适用范围：S1 / E1-01～E1-04 的任务合同、实现、测试与验收设计输入
@@ -40,13 +42,13 @@
 
 ## 1. 基线核对结论
 
-### 1.1 当前事实
+### 1.1 设计审批时的基线事实
 
-- 本文读取基线时，`TASK_INDEX_V0.1.md` 记录 T001～T004 `done`、T011～T014 `pending`，G2 为独立门禁；项目所有者现已通过 S1-Q01-A 明确确认 G2 通过。本文不修改任务账本，任何状态同步须另行授权，T011 仍未启动。
-- 当前 SQLite `schemaVersion = 1` 已包含 S1 所需的 `goals`、`actions`、`today_selections`、`action_records`、`understandings` 和 `confusions` 表。
-- 当前 `RepositoryPort`、`UnitOfWorkPort`、`ClockPort`、安全 IPC sender/origin 校验和隔离测试根已经存在，但尚无 S1 业务命令、查询或 UI。
+- 本文设计审批读取基线时，`TASK_INDEX_V0.1.md` 记录 T001～T004 `done`、T011～T014 `pending`，G2 为独立门禁；项目所有者当时通过 S1-Q01-A 明确确认 G2 通过。该段保留审批时事实，不代表页首所列后续交付状态。
+- 设计审批时 SQLite `schemaVersion = 1` 已包含 S1 所需的 `goals`、`actions`、`today_selections`、`action_records`、`understandings` 和 `confusions` 表。
+- 设计审批时 `RepositoryPort`、`UnitOfWorkPort`、`ClockPort`、安全 IPC sender/origin 校验和隔离测试根已经存在，但尚无 S1 业务命令、查询或 UI；T011 后续交付不改写这条历史基线。
 - 已批准 S1-Q06-A：S1 不需要新增或升级依赖，也不需要新 migration；不得修改已执行的 `001_initial.sql`。
-- 部分较早架构/工作流正文仍保留“等待工程初始化”之类状态性描述；后续实施必须以任务索引和实时只读核验为准，不在本文顺手修订其他文档。
+- 设计审批时识别到部分较早架构/工作流正文仍保留“等待工程初始化”之类状态性描述；后续实施状态始终以任务索引和实时只读核验为准。
 
 ### 1.2 冲突结论
 
@@ -742,6 +744,6 @@ FR-A05 已批准保持双重落点：T012 证明 `partial` 不是 Action 状态�
 - [x] 接受 S1-Q06-A：S1 不新增依赖或 migration，不实施 S2～S7；
 - [x] 理解本次批准同时通过 G2、允许准备 T011，但不构成任何 Txxx 实现、Git/GitHub、合并或发布授权。
 
-本次审批后，下一步可以依据本文准备 T011 的简洁任务合同/Prompt；T012～T014 仍按任务索引串行准备和启动。本文本身不能把任何任务从 `pending` 改为 `ready` 或 `active`。
+设计审批当时的下一步是依据本文准备 T011 的简洁任务合同/Prompt；T012～T014 仍按任务索引串行准备和启动。本文本身不能把任何任务从 `pending` 改为 `ready` 或 `active`。
 
-截至本次审批记录更新，G2 已通过且可准备 T011；T011～T014 尚未获得实现授权。
+以上审批记录保留当时的权限事实；后续独立授权与实际执行状态见本文页首交付状态、T011 合同、验收证据和任务索引。当前 T011 已完成，T012 尚未启动。

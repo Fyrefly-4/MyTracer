@@ -1,17 +1,17 @@
 # T011 Goal 生命周期与当前下一步任务合同
 
-> 合同状态：**已获项目所有者批准；本地实现、自动验证和项目所有者人工验收均已完成**
+> 合同状态：**T011 已完成；本地与 hosted 自动验证、项目所有者人工验收及 review 均已通过，等待 T012 独立合同与启动**
 >
 > 启动基线：`dev@54b6368c0a2b4da0721838541f60c0d2eb55aa1a`
 >
-> 当前权限：允许本合同精确文件范围内的分步提交、推送任务分支并创建到 `dev` 的 Draft PR；不得安装依赖、修改任务索引状态、标记 Ready、合并、tag 或 release
+> 当前权限：允许完成状态文档同步并更新现有 Draft PR；不得安装依赖、启动 T012、标记 Ready、合并、tag 或 release
 
 ## 1. 任务信息
 
 - **Task ID**：T011
 - **Title**：Goal lifecycle and current next action
 - **Slice / Plan item**：S1 / E1-01
-- **Task ledger status**：`pending`
+- **Task ledger status**：`done`
 - **Base branch**：`dev@54b6368c0a2b4da0721838541f60c0d2eb55aa1a`
 - **Task branch**：`task/T011-goal-lifecycle`
 - **前置事实**：G2 已通过；S1 整体设计已批准；S1-Q02 = B、S1-Q05 = A。
@@ -60,7 +60,7 @@ T011 仅贡献 AC-01 步骤 1～2，不声明 AC-01 自动化或人工验收完�
 - [x] 项目所有者另行明确发出 T011 实现启动指令。
 - [x] 启动时已只读复核确切 `dev` revision、工作树、任务状态和适用权限。
 - [x] 本合同精确文件范围内的本地写入已随启动指令授权；项目所有者随后明确授权分步提交、推送任务分支并创建 Draft PR。
-- [x] 任务索引状态仍未获单独授权，保持不变。
+- [x] 项目所有者在 review 后明确授权将当前文档同步为 T011 完成、等待 T012 启动；任务索引已更新为 `done`。
 - [x] 实现未新增/升级依赖或 migration，也未修改 `001_initial.sql`。
 
 ## 5. 允许的实现行为
@@ -126,7 +126,7 @@ T011 仅贡献 AC-01 步骤 1～2，不声明 AC-01 自动化或人工验收完�
 - `docs/implementation/T011_GOAL_LIFECYCLE_TASK.md`（仅按后续批准记录审批/实际结果）
 - `docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md`（仅在真实验证后记录 `EV-T011-001`）
 
-`docs/implementation/TASK_INDEX_V0.1.md` 的任何状态修改不在当前授权内；如启动或收口需要同步，必须由项目所有者单独授权。任何实现所需文件不在上述清单时，先停止并申请范围变更。
+项目所有者于 2026-08-09 review 后另行授权仅为事实收口更新 `TASK_INDEX_V0.1.md`、README、实施计划和 S1 设计的当前状态说明；这不扩大 T011 实现范围，也不构成 T012 启动授权。
 
 ## 7. 明确非范围
 
@@ -221,6 +221,7 @@ npm.cmd run verify
 - [x] 创建本地分步提交。
 - [x] push 该任务分支。
 - [x] 创建到 `dev` 的 Draft PR。
+- [x] review 后同步 T011 完成状态、验收/CI 证据和 T012 等待状态，并更新现有 Draft PR。
 - [ ] 标记 Ready、merge、`dev → main`、tag 或 release。
 - [ ] 安装、增加或升级依赖；不得执行 `npm install`、`npm ci` 或其他安装动作。
 - [ ] 除上述 push/Draft PR 外的外部写入、live AI、真实用户数据写入或破坏性操作。
