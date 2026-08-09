@@ -1,8 +1,8 @@
 # T003：SQLite 持久化、初始 schema、migration 与 Repository 契约任务合同
 
-> 合同状态：`review`
+> 合同状态：`done`
 > 创建日期：2026-08-08
-> 当前任务账本状态：`review`；实现与证据已提交审阅，等待项目所有者决定如何处理第 16 节本机 E2E 限制
+> 当前任务账本状态：`done`；自动验证和 T003 工程证据已完成，产品人工验收仍不适用
 > 审批记录：项目所有者于 2026-08-08 全部确认本合同第 21 节事项，并于 2026-08-09 明确发出“开始 T003”指令
 > 启动记录：重新核验远端 `origin/dev`、PR #2、Windows gate、工作树和 worktree 通过；任务分支 `task/T003-sqlite-migrations` 从 `e64929057724f6458a798479d19de41a710a3028` 创建
 
@@ -11,7 +11,7 @@
 - **Task ID**：T003
 - **Title**：Establish SQLite persistence, initial schema, migrations, and Repository contracts
 - **Slice / Plan item**：S0 / E0-03
-- **Status**：`review`
+- **Status**：`done`
 - **Base branch**：`dev`
 - **Expected branch**：`task/T003-sqlite-migrations`
 - **已核验远端基线**：`e64929057724f6458a798479d19de41a710a3028`
@@ -307,7 +307,7 @@ Schema 不得包含账号、同步、插件、优先级、截止日期、标签�
 - [x] 参数化 SQL 的 SQLite Repository 与显式 Unit of Work。
 - [x] 不依赖 SQLite 的 Repository/UnitOfWork 端口和统一契约套件。
 - [x] T002 临时根下每 case 独立数据库、重开、migration、约束、事务和注入失败测试。
-- [ ] Node 24.18.0、Electron 43.3.0 开发模式和 Windows x64 unpacked/packaged 原生模块加载证据（模块加载已验证；本机完整 packaged 应用启动仍受第 22 节限制）。
+- [x] Node 24.18.0、Electron 43.3.0 开发模式和 Windows x64 unpacked/packaged 原生模块加载证据。
 - [x] 与实际行为一致的 T003 状态/验收证据更新（README 无需变更）。
 - [x] 相对最新授权 `origin/dev` 的完整 diff 自查和独立 review。
 
@@ -490,11 +490,11 @@ T003 完成报告必须包含：
 
 确认结果：第 1～9 项全部批准，其中第 9 项所列禁止操作继续不授权。项目所有者已于 2026-08-09 明确启动 T003；任务转为 `active`，但 Ready、merge、tag/release、强推、远端删除和仓库设置继续不授权。
 
-## 22. 执行结果与审阅阻塞（2026-08-09）
+## 22. 最终执行结果（2026-08-09）
 
-- **实现 revision**：`e52ee24f8f94eb9596468c0fe8bd1a20bdc97e1c`；Draft PR #3：<https://github.com/Fyrefly-4/MyTracer/pull/3>。
-- **依赖与隔离测试**：干净 `npm.cmd ci`、`npm.cmd ls --depth=0` 通过，精确树包含 `better-sqlite3@13.0.1` 和 `@types/better-sqlite3@7.6.13`。`format:check`、`lint`、`typecheck`、13 个 unit tests 和 8 个 integration tests 均通过。integration 包含实际 Electron 43.3.0 `ELECTRON_RUN_AS_NODE=1` 原生模块加载，以及 T002 临时根内的独立文件数据库、migration、事务回滚、约束、WAL、重开和 Repository 契约。
-- **hosted Windows**：`Verification / Windows required gate` 在 PR head `e52ee24` 的 run `31291951212` / job `93190541550` 成功执行完整 `npm.cmd run verify`：<https://github.com/Fyrefly-4/MyTracer/actions/runs/31291951212/job/93190541550>。
-- **Windows x64 产物**：在 Windows 11 10.0.26200 x64 以 Electron 43.3.0、`electron-builder 26.15.3` 成功生成 NSIS 和 `win-unpacked`；`app.asar.unpacked/node_modules/better-sqlite3/prebuilds/win32-x64.node` 实际存在。用该 packaged executable 在隔离 OS 临时数据库上运行的原生冒烟返回 `result="bound file value"`、`mode="wal"`、`foreignKeys=1`、`napi="10"`。`win-unpacked/MyTracer.exe` SHA-256 为 `E43FBB06840D0557FC7E547966C0E4B2A039C04B7836E1AC44E33ACC23AB7A9D`；NSIS 文件为 `release/t003-nsis-probe/MyTracer-0.1.0-x64-setup.exe`（109184801 bytes）。
-- **未达成的本机门槛**：恢复 Electron 二进制后，`npm.cmd run verify` 的 format、lint、typecheck、unit、integration 和 build 均通过，但本机 Playwright Electron E2E 在启动后报 `Target crashed`，故 exit code 为 1。此前带 `DEBUG=pw:browser` 的诊断显示 GPU 进程异常退出（`exit_code=-1073741515`）；添加 `--in-process-gpu` 无效且已完全撤回。没有修改应用代码、测试隔离边界或任务合同来掩盖该问题。
-- **结论**：不把 hosted 成功或 packaged-native 冒烟替代本合同第 15.13 条要求的本机完整 `verify` 成功；T003 保持 `review`，证据记录为 `partial`。需要项目所有者确认是提供可运行 Electron GUI 的本机环境以补齐验证，还是明确批准将现有 hosted Windows 完整验证和 packaged-native 冒烟作为该项替代证据。未声明 FR-D01、任何 AC、T004 或 G2 完成。
+- **实现 revision**：`b7f20901c54bd883f6ebf6cda66e3d9b9b5fa347`；Draft PR #3：<https://github.com/Fyrefly-4/MyTracer/pull/3>。
+- **隔离修复**：Windows 临时根现在提供真实的 `AppData/Roaming`、`AppData/Local` 和 `Temp`，Electron 进程 `cwd` 也固定为该根；E2E 断言该工作目录、`userData` 和所有重定向环境变量。此前的空 `Microsoft`、`NVIDIA Corporation` 和乱码目录已在授权后清理，最终运行未再写入工作区。
+- **本地验证**：项目所有者交互式 PowerShell 在实现 revision 上执行 `npm.cmd run verify`，exit code `0`：format、lint、typecheck、13 个 unit tests、8 个 integration tests、构建和隔离 Electron E2E 全部通过。Codex 桌面非交互式宿主的 GUI 启动仍可能不稳定，但不影响该可复核的本机桌面会话结果。
+- **hosted Windows**：`Verification / Windows required gate` 在同一 PR head 的 run `31297398066` / job `93204634867` 成功执行完整 `npm.cmd run verify`：<https://github.com/Fyrefly-4/MyTracer/actions/runs/31297398066/job/93204634867>。
+- **Windows x64 产物**：标准 `npm.cmd run package` 在 Windows 11 10.0.26200 x64 成功，使用明确的 `electronDist: node_modules/electron/dist`，未重新下载 Electron；生成 NSIS 和 `win-unpacked`。`app.asar.unpacked/node_modules/better-sqlite3/prebuilds/win32-x64.node` 实际存在；用 packaged executable 在隔离 OS 临时数据库上的原生冒烟返回 `result="bound file value"`、`mode="wal"`、`foreignKeys=1`、`napi="10"`。`win-unpacked/MyTracer.exe` SHA-256 为 `E43FBB06840D0557FC7E547966C0E4B2A039C04B7836E1AC44E33ACC23AB7A9D`；NSIS `release/MyTracer-0.1.0-x64-setup.exe` SHA-256 为 `10D7C9CB81D38175CB04076D93262F8924DCF778BB5C55D51D265CA50561460B`。
+- **结论**：本合同第 15 节工程验收条件已满足，T003 为 `done`。它只证明持久化基础、测试隔离和原生模块兼容；不声明 FR-D01 业务功能、任何 AC、T004 或 G2 完成。
