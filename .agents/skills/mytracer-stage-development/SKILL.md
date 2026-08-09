@@ -1,6 +1,6 @@
 ---
 name: mytracer-stage-development
-description: Execute one approved MyTracer Txxx implementation or fix task within an S0-S7 slice, from task-contract and authority checks through scoped development, layered validation, independent review, evidence recording, meaningful commits, and an optional Draft PR to dev. Use when a development agent is asked to build or fix a concrete MyTracer task; do not use it to invent product requirements, batch an entire stage, or treat review-only requests as implementation authorization.
+description: Execute one approved MyTracer Txxx implementation or fix task within an S0-S7 slice, from task-contract and authority checks through scoped development, layered validation, independent review, meaningful commits, hosted CI, owner-approved documentation closeout, final-head CI, and merge handoff. Use when a development agent is asked to build or fix a concrete MyTracer task; do not use it to invent product requirements, batch an entire stage, or treat review-only requests as implementation authorization.
 ---
 
 # MyTracer Stage Development
@@ -37,6 +37,7 @@ Before editing, extract and restate the execution contract:
 - Exact targeted, regression, and manual validation steps.
 - Dependency, network, data, Git, GitHub, and external-write authorization.
 - Source baseline, expected branch, and evidence requirements.
+- Candidate closure documents and whether their later edit, commit, and push require additional authorization.
 
 Continue only when the task is `ready` or explicitly activated and its prerequisites are evidenced. If the contract is missing or materially incomplete, remain read-only and propose the smallest completion instead of inferring permission.
 
@@ -104,13 +105,13 @@ Before committing or reporting completion:
 
 Do not edit user-owned unrelated changes. If overlap prevents safe isolation, stop and report the exact conflict.
 
-## 7. Record evidence and task state
+## 7. Prepare evidence and task records
 
-Update `docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md` only with real results and only when the task authorizes that file. Bind each claim to its Evidence ID, task and requirements, source revision, environment, procedure, result, artifacts, manual status, and limitations.
+Record provisional evidence during implementation only from real results and only when the task authorizes the target file. Bind each claim to its Evidence ID, task and requirements, source revision, environment, procedure, result, artifacts, manual status, and limitations.
 
-Update `docs/implementation/TASK_INDEX_V0.1.md` only as the single task-status ledger and only when authorized. Do not duplicate execution state into README, PRD, or architecture documents. Do not mark `done` while required validation, evidence, independent review, or required work remains. Keep non-blocking limitations explicit.
+Keep `docs/implementation/TASK_INDEX_V0.1.md` as the single repository task-status ledger. Use `active` or `review` while implementation, independent review, task-required candidate CI, documentation authorization, or documentation closeout remains. Do not mark `done` before its definition is supported by evidence. Keep non-blocking limitations explicit.
 
-Update documentation only for actual behavior, exact established commands, or required traceability. Never document a planned command or target GitHub configuration as already working.
+Include documentation required to explain or operate the implemented behavior in the implementation commits when the task requires it. Defer end-of-task status reconciliation to the post-CI closeout gate. Never document a planned command or target GitHub configuration as already working.
 
 ## 8. Create meaningful commits when authorized
 
@@ -146,9 +147,80 @@ Use this PR structure:
 - Risks and gaps
 - Dependency changes
 
-Confirm that CI checks apply to the latest relevant revision and report whether they validate the PR head or a merge revision. Recommend Ready only after all repository conditions pass. Never mark Ready, merge to `dev`, create or merge `dev -> main`, tag, release, change branch protection, or modify secrets without the exact additional owner authorization required by the workflow.
+After the implementation commits, local verification, final diff review, and independent review are complete, push the implementation candidate and wait for required hosted CI on that exact PR head or test-merge revision. Treat the first green hosted CI as an implementation-complete candidate, not final task completion. Continue into the documentation closeout gate instead of issuing the final report.
 
-## 10. Stop conditions
+Never mark Ready, merge to `dev`, create or merge `dev -> main`, tag, release, change branch protection, or modify secrets without the exact additional owner authorization required by the workflow.
+
+## 10. Close documentation after implementation CI
+
+### 10.1 Confirm the candidate
+
+Before proposing documentation changes, verify that:
+
+- Required hosted checks passed for the exact implementation candidate revision.
+- Targeted and affected-scope local validation, final diff review, and independent review have no unresolved required issue.
+- The implementation stays within the task contract and has no unreported dependency, migration, platform, manual, or scope gap.
+
+Do not call the task complete, advance the next task, mark the PR Ready, or end the run at this point.
+
+### 10.2 Build a documentation impact matrix
+
+Inspect and classify related documents without editing them yet:
+
+- **Always assess:** the active task contract, `docs/implementation/TASK_INDEX_V0.1.md`, `docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md`, and the Draft PR body.
+- **Update when affected:** README for durable user-visible capability, stable command, or milestone facts; the implementation plan and relevant stage design for an approved gate or next-entry change; requirements traceability for changed implementation or test locations; architecture documents for an approved design realization; `AGENTS.md`, task templates, or CI only for changed standing workflow or commands.
+- **Update as derived explanation only:** files under `user/` when user-visible behavior changed. Never use them to decide implementation or acceptance.
+- **Do not update without separate product authority:** PRD, decisions, or requirements-change policy when no approved semantic change occurred.
+
+For each candidate file, state the exact durable fact to add, change, or remove. Prefer the smallest factual correction. Do not copy live Draft, Ready, check, or merge status into multiple repository documents. Keep task state in the task index and live PR integration state on GitHub.
+
+### 10.3 Ask the project owner
+
+Always pause after the first green hosted CI and ask the project owner to approve the exact documentation closeout scope, even when the task already authorized general publication. Use a concise Chinese request in this form:
+
+```text
+PR <number> 的实现 revision <sha> 已通过 required CI，当前可视为实现完成候选。
+建议进行文档收口：
+- 必改：<files and exact facts>
+- 条件更新：<files and reasons>
+- 明确不改：<files and reasons>
+是否授权我修改上述文档、更新 Draft PR 正文、创建独立的 `docs: close Txxx delivery records` commit，并推送当前任务分支？推送后会等待新 PR head 的 required CI；merge 仍由你决定。
+```
+
+If the owner declines or narrows the scope, preserve that decision, keep the remaining state accurate, and do not silently perform the omitted edits.
+
+### 10.4 Apply the approved closeout
+
+After approval:
+
+1. Modify only the approved documents and PR body fields.
+2. Record durable completion facts, evidence, limitations, manual status, and the next authorized entry point without starting the next task.
+3. Keep live PR state out of durable repository summaries; refer to the PR and evidence identifiers without promising an unperformed merge.
+4. Run documentation- or skill-specific structural checks, `npm.cmd run format:check`, and `git diff --check`, plus any stricter task command. Run the aggregate `npm.cmd run verify` only when the closeout changes executable code, configuration, stable command contracts, CI behavior, or the active task explicitly requires it; do not run unrelated application or Electron E2E for prose-only changes.
+5. Inspect the documentation diff for duplicated state, stale current-status language, unsupported completion claims, and accidental semantic changes.
+6. Create a separate reviewable commit, normally `docs: close Txxx delivery records`, and push it to the existing task branch under the approved publication grant.
+
+In the documentation closeout commit, set the task ledger to `done` only when the implementation candidate already satisfies the repository definition and the documentation-updated tree passes the required local validation. Treat hosted CI and merge for the documentation commit as PR integration gates, not as a second repository task status. Keep a pending or failed integration state in the PR body, and return the task ledger to an accurate non-done state if a later failure invalidates completion evidence.
+
+Bind in-repository task evidence to the exact implementation revision it proves. Use the PR body for the latest live CI and merge state; do not create an endless series of repository commits solely to record each subsequent CI run.
+
+### 10.5 Require final-head CI
+
+Treat the documentation push as a new PR revision. Wait for all required checks on that exact latest head or test-merge revision; the earlier green implementation CI is insufficient for merge readiness. If a check fails, fix only the authorized scope, revalidate, push, and wait again.
+
+After the final-head CI passes, update the PR body with the latest revision, CI result, evidence IDs, and remaining gaps. Recommend or mark Ready only as authorized.
+
+## 11. Wait for merge handoff
+
+For a published task PR, remain in monitoring mode after reporting the PR merge-ready until the project owner merges it, requests changes, declines, or explicitly releases the agent from waiting. Do not merge on the owner's behalf without exact authorization.
+
+- Monitor the PR until the owner merges it, requests changes, declines, or releases the agent from waiting.
+- If review or CI introduces a code change, re-enter affected validation and repeat documentation impact assessment when facts changed.
+- If only the PR body changes, do not manufacture a repository commit.
+- After merge, verify the PR state, target branch, squash or merge revision, and required checks before giving the final completion report.
+- Do not automatically start the next task after merge.
+
+## 12. Stop conditions
 
 Stop the affected action and report evidence when any of these occurs:
 
@@ -162,7 +234,7 @@ Stop the affected action and report evidence when any of these occurs:
 
 Continue other safe, independent in-scope work when the blocker affects only one part of the task.
 
-## 11. Report the handoff
+## 13. Report the handoff
 
 Report to the project owner in Chinese. Include:
 
@@ -175,3 +247,5 @@ Report to the project owner in Chinese. Include:
 - Whether any requirement conflict or scope change was found.
 
 Describe partial outcomes honestly. Do not call a task complete merely because implementation exists, local checks passed, or a Draft PR was opened.
+
+Do not issue the final completion report while an approved documentation closeout, required CI on the latest PR revision, or published-PR merge monitoring remains. If the owner pauses, declines, or withholds authority, report the exact partial state and pending decision instead.
