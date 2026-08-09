@@ -21,6 +21,15 @@ describe('temporary test data roots', () => {
       expect(await assertExistingPathWithinRoot(first, first.database)).toBe(
         await realpath(first.database)
       )
+      expect(await assertExistingPathWithinRoot(first, first.roamingAppData)).toBe(
+        await realpath(first.roamingAppData)
+      )
+      expect(await assertExistingPathWithinRoot(first, first.localAppData)).toBe(
+        await realpath(first.localAppData)
+      )
+      expect(await assertExistingPathWithinRoot(first, first.temporary)).toBe(
+        await realpath(first.temporary)
+      )
       await expect(assertExistingPathWithinRoot(first, second.root)).rejects.toThrow(/outside/)
 
       await removeTemporaryTestRoot(first)

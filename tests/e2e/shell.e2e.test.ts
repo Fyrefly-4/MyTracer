@@ -14,10 +14,10 @@ function minimalElectronEnvironment(
   const environment: Record<string, string> = {
     HOME: root.root,
     USERPROFILE: root.root,
-    APPDATA: root.artifacts,
-    LOCALAPPDATA: root.artifacts,
-    TEMP: root.artifacts,
-    TMP: root.artifacts,
+    APPDATA: root.roamingAppData,
+    LOCALAPPDATA: root.localAppData,
+    TEMP: root.temporary,
+    TMP: root.temporary,
     ELECTRON_RENDERER_URL: ''
   }
 
@@ -38,6 +38,7 @@ test('runs the Electron shell with an isolated userData root', async () => {
 
   try {
     application = await electron.launch({
+      cwd: testRoot.root,
       args: [
         join(process.cwd(), 'out/main/index.js'),
         `--user-data-dir=${testRoot.electronUserData}`
@@ -50,6 +51,8 @@ test('runs the Electron shell with an isolated userData root', async () => {
       assertExistingPathWithinRoot(testRoot, actualUserData),
       'Electron must use this test case temporary root'
     ).resolves.toBeDefined()
+    const actualWorkingDirectory = await application.evaluate(() => process.cwd())
+    expect(actualWorkingDirectory).toBe(testRoot.root)
     databasePath = join(actualUserData, 'data', 'mytracer.sqlite3')
 
     const inheritedEnvironment = await application.evaluate(() => ({
@@ -66,10 +69,10 @@ test('runs the Electron shell with an isolated userData root', async () => {
     expect(inheritedEnvironment).toEqual({
       home: testRoot.root,
       userProfile: testRoot.root,
-      appData: testRoot.artifacts,
-      localAppData: testRoot.artifacts,
-      temp: testRoot.artifacts,
-      tmp: testRoot.artifacts,
+      appData: testRoot.roamingAppData,
+      localAppData: testRoot.localAppData,
+      temp: testRoot.temporary,
+      tmp: testRoot.temporary,
       sensitiveNames: []
     })
 

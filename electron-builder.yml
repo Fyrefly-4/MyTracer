@@ -4,6 +4,7 @@ asar: true
 asarUnpack:
   - node_modules/better-sqlite3/**
 npmRebuild: false
+electronDist: node_modules/electron/dist
 directories:
   output: release
 files:
