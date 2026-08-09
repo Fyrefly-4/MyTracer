@@ -70,6 +70,7 @@ Evidence ID 不复用。失败记录保留，并由后续记录明确引用修�
 | `EV-T002-001` | T002 | `f60a38c4e69b8bead2aa8975c6fdb6886bec220a` | 验证工具链、测试替身、临时根、Electron E2E、Windows CI | pass | not-required | 最新实现 revision 的本地与 hosted Windows 聚合验证通过；不声明 G2 或产品 AC |
 | `EV-T003-001` | T003 | `b7f20901c54bd883f6ebf6cda66e3d9b9b5fa347` | SQLite schema/migration、Repository 契约、Windows x64 native addon | pass | not-required | 交互式本机与 hosted Windows `verify`、标准 package 和 packaged-native 冒烟均通过；不声明业务 FR/AC 或 G2 |
 | `EV-T004-001` | T004 | `0e9bf1f15614454f5618d5c910fe498dfa3de7ba` | LocalDate/Clock、诊断、空配置/safeStorage、Windows package smoke | pass | pass | 本地 Windows `verify`、package、unpacked/NSIS 运行冒烟和 hosted Windows `verify` 通过；所有者窗口观察已通过；任务自身不单独声明业务 FR/AC 或 G2 |
+| `EV-T011-001` | T011 | `c4e9f6dee3cbab97f6902f2c90f97f96423b43e2` | Goal 生命周期、当前下一步、关联查询、SQLite/IPC/UI 和真实重开 | pass | pass | 本地 Windows `verify`、PR head hosted Windows gate、人工体验和项目所有者 review 通过；T011 `done`，仅贡献 AC-01 步骤 1～2 |
 
 ### EV-T001-001
 
@@ -213,6 +214,38 @@ Evidence ID 不复用。失败记录保留，并由后续记录明确引用修�
 - **Manual acceptance**：pass；项目所有者于 2026-08-09 在 G2 收口时明确确认 unpacked/NSIS 窗口观察通过；本任务仍不声明产品体验 AC
 - **Known limitations**：开发产物未签名；package/NSIS 冒烟只有本地 Windows 证据，hosted gate 只运行 `verify`。OS 临时目录存在最终成功验证前形成、无法重新证明 ownership token 的旧 `mytracer-tests-*` 根，按 containment/ownership 不变量未越权删除；最终成功验证没有新增残留。所有业务 FR、AC-01～AC-07 仍 pending；G2 的独立通过证据见 `EV-G2-001`
 - **Supersedes / superseded by**：无；后续证据文档收口提交不修改本记录绑定的实现/测试 revision
+- **Recorded at**：2026-08-09
+
+### EV-T011-001
+
+- **Status**：pass
+- **Task / Gate**：T011 / S1 E1-01；不声明 G3/S1、完整 AC-01 或任何后续切片通过
+- **Requirements**：FR-G01～FR-G06；AC-01 步骤 1～2贡献；D-002、D-101；ED-003～ED-006、ED-015、ED-018、ED-019；S1-Q02-B、S1-Q05-A
+- **Source branch**：`task/T011-goal-lifecycle`
+- **Source revision**：`c4e9f6dee3cbab97f6902f2c90f97f96423b43e2`；启动基线 `54b6368c0a2b4da0721838541f60c0d2eb55aa1a`
+- **CI head/merge revision**：PR #7 head `15c6aac83d1ec1033c30c998e4ebe4fd155616e1`；Windows required gate run `31315945537` / job `93251084626` 为 `success`；尚未 merge
+- **Environment**：Microsoft Windows NT 10.0.26200.0；Node.js 24.18.0；npm 11.16.0；Electron 43.3.0；`better-sqlite3@13.0.1`；所有自动化数据库和 Electron `userData` 均位于每 case/进程唯一 OS 临时根；AI 未配置，无 live Provider 或真实用户数据
+- **Command or manual procedure**：
+  1. 执行 `npm.cmd run test:unit`：9 个测试文件、42 项测试通过，覆盖 Goal 创建/修改、合法和非法状态转换、ended 终态、同 Goal pending 当前下一步、active 限制、Application 原子编排和失败回滚。
+  2. 执行 `npm.cmd run test:integration`：6 个测试文件、17 项测试通过；其中 T011 SQLite/IPC 覆盖真实 v1 schema、循环引用三步写入、故障零变化、跨 Goal/非 pending/缺失引用拒绝、历史及当日 TodaySelection 守恒、只读查询、UUID/DTO 校验和真实 sender/origin 拒绝。
+  3. 在可启动 Windows 桌面进程的非受限执行环境运行 `npm.cmd run test:e2e`：Goal 生命周期 E2E 与既有 shell E2E 通过；package smoke 按既有条件跳过。Goal E2E 从 UI 创建 Goal 与内联 pending Action，修改、清空/恢复当前下一步、pause/resume/end，完全关闭 Electron 与 SQLite 后使用同一隔离 `userData` 重开，并只读检查数据库关系。
+  4. 在实现 revision `c4e9f6dee3cbab97f6902f2c90f97f96423b43e2` 最终执行 `npm.cmd run verify`，exit code 0：format check、lint、typecheck、42 项 unit、17 项 integration、Main/Preload/Renderer build、2 项 Electron E2E 全部通过；1 项 Windows package smoke 按设计 skip。
+  5. 执行 `git diff --check`、精确允许文件扫描、依赖/lockfile/schema/migration diff 检查，并对完整任务 diff 按 AGENTS.md 与合同进行第二遍只读审查；未发现越界文件、依赖或 schema 变化、真实数据路径、延期能力、AI 权限扩大或未处理重大问题。
+  6. 项目所有者按 T011 人工体验清单检查轻量创建、下一步清晰度、中性文案、pause/end 保留语义和 ended 终态，并于 2026-08-09 报告 `T011 人工验收通过`。
+  7. PR #7 的 Windows required gate 在 head `15c6aac83d1ec1033c30c998e4ebe4fd155616e1` 完成并返回 `success`；项目所有者随后 review 并确认 T011 完成。
+- **Result**：
+  - Renderer → 冻结 Preload Goal API → 固定 Main IPC → Application/Domain → SQLite 的创建、修改、pause、resume、end、当前下一步、ListGoals/GetGoalDetail 纵向路径可用；错误仅返回稳定中性 code/message。
+  - 创建 Goal 可不带下一步；带下一步时在一个事务中按 Goal 空引用 → 同 Goal pending Action → Goal 引用写入，注入 Action 写入失败后两表均为空。
+  - 当前下一步可空，非空仅接受同 Goal pending Action；T011 的设置/清空/替换只允许 active Goal。pause/end 保留当前引用、关联 Action/Routine/Record 和当日 TodaySelection；paused 可 resume，ended 为终态。
+  - GetGoalDetail 可读取当前下一步、关联 Action、已有 ActionRecord 摘要和只读当日选择标记；重复查询不写数据库。完全关闭连接/应用后重开，Goal 状态、Action ID/状态、引用和历史摘要一致。
+  - `package.json`、lockfile、schemaVersion、migration 集合和 `001_initial.sql` 均未修改；无新增/升级依赖、网络访问、live AI、真实 `userData` 或外部写入。
+- **Artifacts**：
+  - 实现与测试位于 `task/T011-goal-lifecycle`，实现验证绑定 revision `c4e9f6dee3cbab97f6902f2c90f97f96423b43e2`；T011 合同为 `docs/implementation/T011_GOAL_LIFECYCLE_TASK.md`。
+  - Draft PR #7：<https://github.com/Fyrefly-4/MyTracer/pull/7>；hosted Windows run：<https://github.com/Fyrefly-4/MyTracer/actions/runs/31315945537>。
+  - Playwright screenshot/trace/video 按既有配置不持久化；临时测试数据库、结果和 `userData` 均位于 OS 临时目录并由测试清理。
+- **Manual acceptance**：pass；项目所有者于 2026-08-09 报告轻量创建、文案、pause/end 保留与 ended 终态体验检查通过
+- **Known limitations**：PR #7 仍为 Draft 且未 merge；未执行 package/NSIS 冒烟（不在 T011 合同范围，聚合 E2E 中按设计 skip）；受限沙箱内 Electron GPU 进程无法可靠启动，最终 E2E/`verify` 已在获准的非受限 Windows 桌面执行环境通过；T011 只贡献 AC-01 步骤 1～2，完整 AC-01 须在 T014 后同一 revision 执行；T012 尚未获得合同批准或实现启动授权
+- **Supersedes / superseded by**：无
 - **Recorded at**：2026-08-09
 
 ### EV-G2-001

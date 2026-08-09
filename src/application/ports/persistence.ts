@@ -102,6 +102,18 @@ export interface ReviewResultPersistenceRecord {
   readonly updatedAt: string
 }
 
+export interface GoalActionRecordSummaryPersistenceRecord {
+  readonly id: string
+  readonly actionId: string
+  readonly actionTitle: string
+  readonly occurredOn: string
+  readonly durationMinutes: number
+  readonly outcome: ActionRecordPersistenceRecord['outcome']
+  readonly nextStep: string | null
+  readonly note: string | null
+  readonly createdAt: string
+}
+
 export interface CorePersistenceSnapshot {
   readonly goals: readonly GoalPersistenceRecord[]
   readonly actions: readonly ActionPersistenceRecord[]
@@ -126,6 +138,14 @@ export interface RepositoryPort {
   saveUnderstanding(record: UnderstandingPersistenceRecord): void
   saveConfusion(record: ConfusionPersistenceRecord): void
   saveReviewResult(record: ReviewResultPersistenceRecord): void
+  findGoalById(id: string): GoalPersistenceRecord | null
+  findActionById(id: string): ActionPersistenceRecord | null
+  listGoals(status?: GoalStatus): readonly GoalPersistenceRecord[]
+  listActionsByGoalId(goalId: string): readonly ActionPersistenceRecord[]
+  listActionRecordSummariesByGoalId(
+    goalId: string
+  ): readonly GoalActionRecordSummaryPersistenceRecord[]
+  listTodaySelectionActionIdsByGoalIdOn(goalId: string, selectedFor: string): readonly string[]
   readSnapshot(): CorePersistenceSnapshot
 }
 

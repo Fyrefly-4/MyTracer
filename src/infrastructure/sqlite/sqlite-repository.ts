@@ -4,7 +4,9 @@ import type {
   ActionRecordPersistenceRecord,
   ConfusionPersistenceRecord,
   CorePersistenceSnapshot,
+  GoalActionRecordSummaryPersistenceRecord,
   GoalPersistenceRecord,
+  GoalStatus,
   RepositoryPort,
   ReviewResultPersistenceRecord,
   RoutinePersistenceRecord,
@@ -137,26 +139,78 @@ export class SqliteRepository implements RepositoryPort {
       .run(record)
   }
 
+  findGoalById(id: string): GoalPersistenceRecord | null {
+    const row = this.database.prepare('SELECT * FROM goals WHERE id = ?').get(id) as Row | undefined
+    return row ? this.goalFromRow(row) : null
+  }
+
+  findActionById(id: string): ActionPersistenceRecord | null {
+    const row = this.database.prepare('SELECT * FROM actions WHERE id = ?').get(id) as
+      Row | undefined
+    return row ? this.actionFromRow(row) : null
+  }
+
+  listGoals(status?: GoalStatus): readonly GoalPersistenceRecord[] {
+    const rows = status
+      ? (this.database
+          .prepare('SELECT * FROM goals WHERE status = ? ORDER BY created_at ASC, id ASC')
+          .all(status) as readonly Row[])
+      : this.rows('SELECT * FROM goals ORDER BY created_at ASC, id ASC')
+    return rows.map((row) => this.goalFromRow(row))
+  }
+
+  listActionsByGoalId(goalId: string): readonly ActionPersistenceRecord[] {
+    return (
+      this.database
+        .prepare('SELECT * FROM actions WHERE goal_id = ? ORDER BY created_at ASC, id ASC')
+        .all(goalId) as readonly Row[]
+    ).map((row) => this.actionFromRow(row))
+  }
+
+  listActionRecordSummariesByGoalId(
+    goalId: string
+  ): readonly GoalActionRecordSummaryPersistenceRecord[] {
+    const rows = this.database
+      .prepare(
+        `SELECT records.*, actions.title AS action_title
+         FROM action_records AS records
+         INNER JOIN actions ON actions.id = records.action_id
+         WHERE actions.goal_id = ?
+         ORDER BY records.occurred_on DESC, records.created_at DESC, records.id ASC`
+      )
+      .all(goalId) as readonly Row[]
+
+    return rows.map((row) => ({
+      id: asString(row, 'id'),
+      actionId: asString(row, 'action_id'),
+      actionTitle: asString(row, 'action_title'),
+      occurredOn: asString(row, 'occurred_on'),
+      durationMinutes: Number(row.duration_minutes),
+      outcome: asString(row, 'outcome') as ActionRecordPersistenceRecord['outcome'],
+      nextStep: asNullableString(row, 'next_step'),
+      note: asNullableString(row, 'note'),
+      createdAt: asString(row, 'created_at')
+    }))
+  }
+
+  listTodaySelectionActionIdsByGoalIdOn(goalId: string, selectedFor: string): readonly string[] {
+    return (
+      this.database
+        .prepare(
+          `SELECT selections.action_id
+           FROM today_selections AS selections
+           INNER JOIN actions ON actions.id = selections.action_id
+           WHERE actions.goal_id = ? AND selections.selected_for = ?
+           ORDER BY selections.action_id ASC`
+        )
+        .all(goalId, selectedFor) as readonly Row[]
+    ).map((row) => asString(row, 'action_id'))
+  }
+
   readSnapshot(): CorePersistenceSnapshot {
     return {
-      goals: this.rows('SELECT * FROM goals ORDER BY id').map((row) => ({
-        id: asString(row, 'id'),
-        title: asString(row, 'title'),
-        description: asNullableString(row, 'description'),
-        status: asString(row, 'status') as GoalPersistenceRecord['status'],
-        currentNextActionId: asNullableString(row, 'current_next_action_id'),
-        createdAt: asString(row, 'created_at'),
-        updatedAt: asString(row, 'updated_at')
-      })),
-      actions: this.rows('SELECT * FROM actions ORDER BY id').map((row) => ({
-        id: asString(row, 'id'),
-        goalId: asNullableString(row, 'goal_id'),
-        title: asString(row, 'title'),
-        description: asNullableString(row, 'description'),
-        status: asString(row, 'status') as ActionPersistenceRecord['status'],
-        createdAt: asString(row, 'created_at'),
-        updatedAt: asString(row, 'updated_at')
-      })),
+      goals: this.rows('SELECT * FROM goals ORDER BY id').map((row) => this.goalFromRow(row)),
+      actions: this.rows('SELECT * FROM actions ORDER BY id').map((row) => this.actionFromRow(row)),
       routines: this.rows('SELECT * FROM routines ORDER BY id').map((row) => ({
         id: asString(row, 'id'),
         goalId: asNullableString(row, 'goal_id'),
@@ -244,5 +298,29 @@ export class SqliteRepository implements RepositoryPort {
 
   private rows(sql: string): readonly Row[] {
     return this.database.prepare(sql).all() as readonly Row[]
+  }
+
+  private goalFromRow(row: Row): GoalPersistenceRecord {
+    return {
+      id: asString(row, 'id'),
+      title: asString(row, 'title'),
+      description: asNullableString(row, 'description'),
+      status: asString(row, 'status') as GoalPersistenceRecord['status'],
+      currentNextActionId: asNullableString(row, 'current_next_action_id'),
+      createdAt: asString(row, 'created_at'),
+      updatedAt: asString(row, 'updated_at')
+    }
+  }
+
+  private actionFromRow(row: Row): ActionPersistenceRecord {
+    return {
+      id: asString(row, 'id'),
+      goalId: asNullableString(row, 'goal_id'),
+      title: asString(row, 'title'),
+      description: asNullableString(row, 'description'),
+      status: asString(row, 'status') as ActionPersistenceRecord['status'],
+      createdAt: asString(row, 'created_at'),
+      updatedAt: asString(row, 'updated_at')
+    }
   }
 }

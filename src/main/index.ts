@@ -1,6 +1,8 @@
+import { randomUUID } from 'node:crypto'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { app, BrowserWindow, ipcMain, safeStorage, type IpcMainInvokeEvent } from 'electron'
+import { app, BrowserWindow, ipcMain, safeStorage } from 'electron'
+import { GoalService } from '../application/goals'
 import { queryShellStatus } from '../application/query-shell-status'
 import type { AiConfigurationPort } from '../application/ports/configuration'
 import type { DiagnosticsPort } from '../application/ports/diagnostics'
@@ -14,13 +16,15 @@ import {
 } from '../infrastructure/diagnostics/safe-diagnostics'
 import { resolveProductionDatabasePath } from '../infrastructure/sqlite/database-path'
 import { SqliteConnection } from '../infrastructure/sqlite/sqlite-connection'
+import { registerGoalIpc } from './goals-ipc'
+import { assertTrustedSender, type RendererLocation } from './ipc-security'
 
 let mainWindow: BrowserWindow | null = null
 let sqliteConnection: SqliteConnection | null = null
 let aiConfiguration: AiConfigurationPort | null = null
 let diagnostics: DiagnosticsPort | null = null
 
-function getRendererLocation(): { readonly developmentUrl?: string; readonly productionUrl: string } {
+function getRendererLocation(): RendererLocation {
   const rendererFile = join(__dirname, '../renderer/index.html')
 
   return {
@@ -29,51 +33,13 @@ function getRendererLocation(): { readonly developmentUrl?: string; readonly pro
   }
 }
 
-function isTrustedRendererUrl(candidate: string): boolean {
-  const { developmentUrl, productionUrl } = getRendererLocation()
-
-  if (candidate === productionUrl) {
-    return true
-  }
-
-  if (!developmentUrl) {
-    return false
-  }
-
-  try {
-    const candidateUrl = new URL(candidate)
-    const trustedDevelopmentUrl = new URL(developmentUrl)
-
-    return (
-      candidateUrl.origin === trustedDevelopmentUrl.origin &&
-      candidateUrl.pathname === trustedDevelopmentUrl.pathname
-    )
-  } catch {
-    return false
-  }
-}
-
-function assertTrustedSender(event: IpcMainInvokeEvent, args: readonly unknown[]): void {
-  const senderFrameUrl = event.senderFrame?.url
-
-  if (
-    !mainWindow ||
-    event.sender.id !== mainWindow.webContents.id ||
-    typeof senderFrameUrl !== 'string' ||
-    !isTrustedRendererUrl(senderFrameUrl)
-  ) {
-    throw new Error('Rejected IPC request from an untrusted renderer.')
-  }
-
-  if (args.length !== 0) {
-    throw new TypeError('shell:query-status does not accept input.')
-  }
-}
-
 function registerShellQuery(): void {
   ipcMain.removeHandler(SHELL_STATUS_CHANNEL)
   ipcMain.handle(SHELL_STATUS_CHANNEL, (event, ...args: unknown[]) => {
-    assertTrustedSender(event, args)
+    assertTrustedSender(event, mainWindow, getRendererLocation())
+    if (args.length !== 0) {
+      throw new TypeError('shell:query-status does not accept input.')
+    }
     return queryShellStatus(app.getVersion(), aiConfiguration?.readState())
   })
 }
@@ -169,6 +135,17 @@ app.whenReady().then(async () => {
     correlationId: 'startup.complete'
   })
   registerShellQuery()
+  const goalService = new GoalService({
+    repository: sqliteConnection.repository,
+    unitOfWork: sqliteConnection,
+    clock,
+    generateId: randomUUID
+  })
+  registerGoalIpc({
+    ipc: ipcMain,
+    service: goalService,
+    assertSender: (event) => assertTrustedSender(event, mainWindow, getRendererLocation())
+  })
   await createMainWindow()
 })
 

@@ -23,6 +23,36 @@ button {
   font: inherit;
 }
 
+input,
+textarea,
+select {
+  width: 100%;
+  border: 1px solid rgba(44, 74, 65, 0.2);
+  border-radius: 10px;
+  color: #24332f;
+  background: rgba(255, 255, 255, 0.82);
+  font: inherit;
+}
+
+input,
+select {
+  min-height: 40px;
+  padding: 0 11px;
+}
+
+textarea {
+  padding: 10px 11px;
+  resize: vertical;
+}
+
+input:focus,
+textarea:focus,
+select:focus,
+button:focus-visible {
+  outline: 2px solid rgba(49, 93, 80, 0.42);
+  outline-offset: 2px;
+}
+
 .app-shell {
   min-height: 100vh;
 }
@@ -195,6 +225,237 @@ button {
   padding: 68px 64px 38px;
 }
 
+.goal-workspace {
+  margin-top: 38px;
+}
+
+.goal-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.9fr) minmax(330px, 1.1fr);
+  gap: 22px;
+  align-items: start;
+}
+
+.goal-column {
+  display: grid;
+  gap: 22px;
+}
+
+.goal-card {
+  padding: 24px;
+  border: 1px solid rgba(44, 74, 65, 0.12);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.66);
+  box-shadow: 0 14px 42px rgba(44, 68, 60, 0.06);
+}
+
+.goal-card h2,
+.goal-card h3,
+.goal-card p {
+  margin: 0;
+}
+
+.goal-card h2 {
+  margin-top: 7px;
+  color: #2c473f;
+  font-size: 18px;
+}
+
+.goal-card label {
+  display: grid;
+  gap: 7px;
+  color: #566761;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.goal-create,
+.detail-form,
+.current-action-control {
+  display: grid;
+  gap: 15px;
+}
+
+.card-heading {
+  margin-bottom: 4px;
+}
+
+.inline-heading,
+.detail-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.compact-field {
+  min-width: 112px;
+}
+
+.primary-button,
+.secondary-button,
+.lifecycle-actions button {
+  min-height: 40px;
+  padding: 0 15px;
+  border: 0;
+  border-radius: 11px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.primary-button {
+  color: white;
+  background: #315d50;
+}
+
+.secondary-button,
+.lifecycle-actions button {
+  color: #315d50;
+  background: #e3ece5;
+}
+
+button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.goal-list-card {
+  padding: 20px;
+}
+
+.goal-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.goal-list-item {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  color: #40554e;
+  background: rgba(239, 244, 239, 0.72);
+  cursor: pointer;
+  text-align: left;
+}
+
+.goal-list-item.selected {
+  border-color: rgba(49, 93, 80, 0.25);
+  background: #dfeae1;
+}
+
+.goal-list-item small,
+.related-row small,
+.next-action-panel small {
+  color: #748079;
+}
+
+.status-badge {
+  padding: 7px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.status-active {
+  color: #315d50;
+  background: #dfeae1;
+}
+
+.status-paused {
+  color: #765f31;
+  background: #f0e8d3;
+}
+
+.status-ended {
+  color: #6d6862;
+  background: #e7e3de;
+}
+
+.next-action-panel {
+  display: grid;
+  gap: 5px;
+  margin: 20px 0;
+  padding: 17px;
+  border-radius: 14px;
+  background: #edf3ed;
+}
+
+.next-action-panel span {
+  color: #71807a;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.next-action-panel strong {
+  color: #2b4b42;
+  font-size: 14px;
+}
+
+.detail-form,
+.current-action-control,
+.lifecycle-actions,
+.related-section {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(36, 51, 47, 0.1);
+}
+
+.lifecycle-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lifecycle-actions .end-button {
+  color: #8a443d;
+  background: #f3e3df;
+}
+
+.related-section h3 {
+  margin-bottom: 10px;
+  color: #40554e;
+  font-size: 13px;
+}
+
+.related-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 9px 0;
+  border-bottom: 1px solid rgba(36, 51, 47, 0.07);
+  font-size: 12px;
+}
+
+.empty-copy,
+.terminal-copy,
+.detail-empty p {
+  color: #748079;
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.detail-empty {
+  display: grid;
+  justify-items: start;
+  gap: 13px;
+}
+
+.form-error {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  color: #82453d;
+  background: #f2dfda;
+  font-size: 12px;
+}
+
 .hero {
   max-width: 690px;
 }
@@ -321,6 +582,10 @@ h1 {
   }
 
   .status-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .goal-grid {
     grid-template-columns: 1fr;
   }
 }
