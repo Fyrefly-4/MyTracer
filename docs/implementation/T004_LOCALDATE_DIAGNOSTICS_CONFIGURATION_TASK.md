@@ -293,11 +293,11 @@ git status --short --branch
 
 ### 实际完成记录（2026-08-09）
 
-- **实现 revision**：`0e9bf1f15614454f5618d5c910fe498dfa3de7ba`，基线 `2ea8c6cb8584e4bf4d517938efacf68813f33604`；分支 `task/T004-localdate-diagnostics`；Draft PR #4 目标为 `dev`。
+- **实现 revision**：`0e9bf1f15614454f5618d5c910fe498dfa3de7ba`，基线 `2ea8c6cb8584e4bf4d517938efacf68813f33604`；分支 `task/T004-localdate-diagnostics`；PR #4 目标为 `dev`，由 Agent 按授权创建为 Draft，当前 GitHub 状态为 Ready。
 - **本地验证**：Windows NT 10.0.26200.0 x64、Node.js 24.18.0、npm 11.16.0、Electron 43.3.0。最终 `npm.cmd run verify` exit code 0（35 unit、9 integration、1 Electron E2E pass，package smoke 按设计 skip）；最终 `npm.cmd run package` exit code 0；最终 `npm.cmd run test:package-smoke` exit code 0（1 pass，实际启动 unpacked 和临时 NSIS 安装态）。
 - **Windows 产物**：`release/win-unpacked/MyTracer.exe`，225442304 bytes，SHA-256 `F4D71E5FDBCDDDDF8288121C29B7D1DCF7262D452DBD85BC6DE7501436927F37`，Authenticode `NotSigned`；`release/MyTracer-0.1.0-x64-setup.exe`，109186128 bytes，SHA-256 `F3FCE25E8D1F369BB76C356648A470289D1E5416C332E9822D86E33C86073CA4`，Authenticode `NotSigned`。
-- **Hosted CI**：GitHub Actions `Verification / Windows required gate` run `31301330217`、job `93214485837` 在实现 head `0e9bf1f15614454f5618d5c910fe498dfa3de7ba` 上 success。Hosted gate 运行 `verify`，不运行本地 Windows package smoke。
+- **Hosted CI**：GitHub Actions `Verification / Windows required gate` run `31301330217`、job `93214485837` 在实现 head `0e9bf1f15614454f5618d5c910fe498dfa3de7ba` 上 success；首次证据收口 head `59da81339fea3fa22e4a658673cbf2d0d3106ae9` 的 run `31301594315`、job `93215142476` 也 success。Hosted gate 运行 `verify`，不运行本地 Windows package smoke；后续文档勘误不改变实现证据。
 - **隔离与能力边界**：最终 E2E/package smoke 使用不同的 T002 所有临时 `userData` 和数据库、最小环境 allowlist，结束后无新增测试根或 MyTracer 进程；Renderer 仍仅公开 `shell.getStatus`。空配置只检查 safeStorage 可用性，不读取、加密、解密或持久化凭据；没有配置文件、Provider、网络、live AI、真实 key、真实 `userData` 或真实数据库访问。
 - **Review**：相对 `origin/dev` 的完整 diff、依赖增量、Renderer/Preload 能力、诊断字段、safeStorage 调用、SQLite 禁止范围及 Windows 清理路径已独立只读复核；无未处理 P0/P1/P2，未新增/升级依赖，未修改 SQLite schema/migration/Repository。
 - **已知限制**：开发产物未签名；package smoke 仅有本地 Windows 证据；项目所有者未执行可选人工窗口观察。OS 临时目录存在最终成功验证之前形成、无法重新证明 ownership token 的旧 `mytracer-tests-*` 根，按 containment/ownership 不变量未越权删除；最终成功运行未新增残留。
-- **未声明完成**：任何业务 FR、AC-01～AC-07 与 G2 均保持 `pending`；PR 保持 Draft，未 Ready、merge、tag 或 release。
+- **未声明完成**：任何业务 FR、AC-01～AC-07 与 G2 均保持 `pending`；Agent 未执行 Ready、merge、tag 或 release，本次文档修正也不改变 PR 状态。

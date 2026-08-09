@@ -1,7 +1,7 @@
 # MyTracer v0.1 任务索引
 
 > 文档状态：v0.1 实施任务基线  
-> 当前阶段：G1 已通过；T001～T003 已完成并有 hosted Windows 证据，T004 保持独立门禁
+> 当前阶段：G1 已通过；T001～T004 已完成并有 hosted Windows 证据，G2 保持独立门禁
 > 状态来源：本文件是任务执行状态的唯一账本，架构实施计划只定义范围和顺序
 
 ## 1. 使用规则
@@ -89,5 +89,6 @@ T001 的精确依赖、npm 工具链、Windows x64 unsigned NSIS 目标、隔离
 
 - T001 为 `done`，实现、本地 Windows x64 打包、独立评审和项目所有者人工验收均已完成；PR #1 已合并到 `dev`。
 - 仓库治理文档完成不等于 G2 工程就绪。
-- T002 已按独立合同完成本地验证、独立复核和 hosted Windows CI，证据为 `EV-T002-001`；T003～T004 仍保持各自门禁，G2 未自动通过。
+- T002 已按独立合同完成本地验证、独立复核和 hosted Windows CI，证据为 `EV-T002-001`；该证据不单独证明后续 T003、T004 或 G2。
 - T003 已完成 SQLite 基础、隔离 Repository 契约测试、交互式本机与 hosted Windows `verify`、以及 Windows x64 standard package/native-addon 冒烟，证据为 `EV-T003-001`；它不声明 FR-D01 业务功能、任何 AC、T004 或 G2 完成。
+- T004 已完成 LocalDate/Clock、诊断、空配置/safeStorage 边界、隔离 Windows x64 unpacked/NSIS 运行冒烟和 hosted Windows `verify`，证据为 `EV-T004-001`；它不声明业务 FR、任何 AC 或 G2 完成。

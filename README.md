@@ -12,7 +12,7 @@ MyTracer 是一个面向个人本地使用的 Windows 桌面应用，用于帮�
 - T001 已固定安装、开发、构建和 Windows x64 unsigned NSIS 打包命令；真实结果记录在验收证据中。
 - T002 已建立精确锁定的 format、lint、typecheck、unit、integration、Electron E2E 和 Windows CI 验证入口，以及测试专用 FakeClock、FakeAiProvider 和临时数据根。
 - T003 已建立 SQLite schema、migration、Repository 契约和 Windows x64 原生模块验证基础。
-- T004 日期、诊断、配置与 safeStorage 空边界，以及业务能力和首个真实 AI Provider，仍由后续独立任务分别批准和建立。
+- T004 已建立 LocalDate/Clock、诊断、配置与 safeStorage 空边界，并完成隔离的 Windows x64 unpacked/NSIS 运行冒烟；业务能力和首个真实 AI Provider 仍由后续独立任务分别批准和建立。
 
 不要把架构完成理解为产品已经实现。
 
@@ -128,7 +128,7 @@ task/Txxx-short-name
 
 ## 下一步
 
-1. 在 T004 收敛日期、诊断、配置、safeStorage 空边界和 Windows 打包冒烟。
-2. 通过 G2 后进入 Goal—Action—Record—Progress 最小闭环。
+1. 由项目所有者评审 T004 交付，并按独立门禁判断 G2 是否通过。
+2. G2 获准后进入 Goal—Action—Record—Progress 最小闭环。
 
 在这些条件完成前，不得声称 MyTracer Demo 已经可运行或通过验收。
