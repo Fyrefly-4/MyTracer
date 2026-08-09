@@ -1,3 +1,4 @@
+import Database from 'better-sqlite3'
 import { join } from 'node:path'
 import { expect, test } from '@playwright/test'
 import { _electron as electron } from 'playwright'
@@ -33,6 +34,7 @@ function minimalElectronEnvironment(
 test('runs the Electron shell with an isolated userData root', async () => {
   const testRoot = await createTemporaryTestRoot()
   let application: Awaited<ReturnType<typeof electron.launch>> | undefined
+  let databasePath: string | undefined
 
   try {
     application = await electron.launch({
@@ -48,6 +50,7 @@ test('runs the Electron shell with an isolated userData root', async () => {
       assertExistingPathWithinRoot(testRoot, actualUserData),
       'Electron must use this test case temporary root'
     ).resolves.toBeDefined()
+    databasePath = join(actualUserData, 'data', 'mytracer.sqlite3')
 
     const inheritedEnvironment = await application.evaluate(() => ({
       home: process.env.HOME,
@@ -87,6 +90,18 @@ test('runs the Electron shell with an isolated userData root', async () => {
   } finally {
     try {
       await application?.close()
+      if (databasePath) {
+        const database = new Database(databasePath, { readonly: true })
+        try {
+          expect(
+            database.prepare("SELECT value FROM metadata WHERE key = 'schemaVersion'").get()
+          ).toEqual({
+            value: '1'
+          })
+        } finally {
+          database.close()
+        }
+      }
     } finally {
       await removeTemporaryTestRoot(testRoot)
     }

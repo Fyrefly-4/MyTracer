@@ -3,8 +3,11 @@ import { pathToFileURL } from 'node:url'
 import { app, BrowserWindow, ipcMain, type IpcMainInvokeEvent } from 'electron'
 import { queryShellStatus } from '../application/query-shell-status'
 import { SHELL_STATUS_CHANNEL } from '../contracts/shell'
+import { resolveProductionDatabasePath } from '../infrastructure/sqlite/database-path'
+import { SqliteConnection } from '../infrastructure/sqlite/sqlite-connection'
 
 let mainWindow: BrowserWindow | null = null
+let sqliteConnection: SqliteConnection | null = null
 
 function getRendererLocation(): { readonly developmentUrl?: string; readonly productionUrl: string } {
   const rendererFile = join(__dirname, '../renderer/index.html')
@@ -119,6 +122,7 @@ async function createMainWindow(): Promise<void> {
 }
 
 app.whenReady().then(async () => {
+  sqliteConnection = SqliteConnection.open(resolveProductionDatabasePath(app.getPath('userData')))
   registerShellQuery()
   await createMainWindow()
 })
@@ -131,4 +135,9 @@ app.on('activate', () => {
 
 app.on('window-all-closed', () => {
   app.quit()
+})
+
+app.on('before-quit', () => {
+  sqliteConnection?.close()
+  sqliteConnection = null
 })
