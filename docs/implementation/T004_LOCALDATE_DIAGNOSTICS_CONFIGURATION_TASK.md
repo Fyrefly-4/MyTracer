@@ -1,8 +1,8 @@
 # T004：LocalDate、诊断、配置、safeStorage 空边界与 Windows 打包冒烟任务合同
 
-> 合同状态：`active`  
-> 创建日期：2026-08-09  
-> 当前任务账本状态：`active`；实现启动授权后已同步任务索引，验收证据仅在真实结果存在后更新  
+> 合同状态：`complete`
+> 创建日期：2026-08-09
+> 当前任务账本状态：`done`；实现、验证、Windows 产物、review 和验收证据均已有真实结果
 > 审批记录：项目所有者于 2026-08-09 批准第 11 节建议授权、零新增/零升级依赖和外部操作边界，并明确要求开始 T004
 
 ## 1. 任务信息
@@ -10,7 +10,7 @@
 - **Task ID**：T004
 - **Title**：Establish LocalDate, diagnostics, configuration, an empty safeStorage boundary, and Windows package smoke
 - **Slice / Plan item**：S0 / E0-04
-- **Status**：`active`
+- **Status**：`complete`
 - **Base branch**：`dev`
 - **Expected branch**：`task/T004-localdate-diagnostics`
 - **合同准备分支**：项目所有者已于 2026-08-09 授权从最新 `origin/dev` 创建上述本地分支，仅用于修正 T003 文档漂移和创建本合同；该授权不等于开始实现。
@@ -128,17 +128,17 @@ T004 只证明工程边界和 Windows G2 前置能力，不完成任何业务 FR
 
 ## 8. 交付物
 
-- [ ] 严格 LocalDate 值、ClockPort、生产 SystemClock 和与同一端口一致的 FakeClock。
-- [ ] 周一至周日纯 LocalDate 计算，以及跨月、跨年、闰年、DST 邻近日期测试。
-- [ ] 跨午夜日期决策基础，证明不经用户选择不移动原发生日。
-- [ ] 结构化 DiagnosticsPort、安全诊断适配器、封闭事件/字段和零敏感正文测试。
-- [ ] Main-only 配置端口、空配置源和 safeStorage 空边界；缺失/不可用均降级为 `not-configured`。
-- [ ] 配置、诊断、Clock、SQLite 和现有 shell 组合根共同启动/退出的集成与 Electron E2E 回归。
-- [ ] T002 临时根下每 case/进程独立数据库、独立 `userData`、最小环境 allowlist 和精确清理证明。
-- [ ] Windows x64 `win-unpacked` 和 unsigned NSIS 临时安装态运行冒烟及产物标识。
-- [ ] 保持 `verify` 不含 package/安装/迁移/live AI 的脚本和执行证据。
-- [ ] 相对最新授权 `origin/dev` 的完整 diff 自查与独立只读 review。
-- [ ] 只在真实结果存在后更新本合同、任务索引 T004 行和 `EV-T004-001`。
+- [x] 严格 LocalDate 值、ClockPort、生产 SystemClock 和与同一端口一致的 FakeClock。
+- [x] 周一至周日纯 LocalDate 计算，以及跨月、跨年、闰年、DST 邻近日期测试。
+- [x] 跨午夜日期决策基础，证明不经用户选择不移动原发生日。
+- [x] 结构化 DiagnosticsPort、安全诊断适配器、封闭事件/字段和零敏感正文测试。
+- [x] Main-only 配置端口、空配置源和 safeStorage 空边界；缺失/不可用均降级为 `not-configured`。
+- [x] 配置、诊断、Clock、SQLite 和现有 shell 组合根共同启动/退出的集成与 Electron E2E 回归。
+- [x] T002 临时根下每 case/进程独立数据库、独立 `userData`、最小环境 allowlist 和精确清理证明。
+- [x] Windows x64 `win-unpacked` 和 unsigned NSIS 临时安装态运行冒烟及产物标识。
+- [x] 保持 `verify` 不含 package/安装/迁移/live AI 的脚本和执行证据。
+- [x] 相对最新授权 `origin/dev` 的完整 diff 自查与独立只读 review。
+- [x] 只在真实结果存在后更新本合同、任务索引 T004 行和 `EV-T004-001`。
 
 ## 9. 验收标准
 
@@ -290,3 +290,14 @@ git status --short --branch
 - 是否发现需求冲突、范围变化、未批准依赖、真实数据/密钥风险或隔离失败。
 
 不得仅凭代码、测试名称、文件存在、Node-only 结果、旧产物或中间 CI 声称 T004、Windows package smoke 或 G2 完成。
+
+### 实际完成记录（2026-08-09）
+
+- **实现 revision**：`0e9bf1f15614454f5618d5c910fe498dfa3de7ba`，基线 `2ea8c6cb8584e4bf4d517938efacf68813f33604`；分支 `task/T004-localdate-diagnostics`；Draft PR #4 目标为 `dev`。
+- **本地验证**：Windows NT 10.0.26200.0 x64、Node.js 24.18.0、npm 11.16.0、Electron 43.3.0。最终 `npm.cmd run verify` exit code 0（35 unit、9 integration、1 Electron E2E pass，package smoke 按设计 skip）；最终 `npm.cmd run package` exit code 0；最终 `npm.cmd run test:package-smoke` exit code 0（1 pass，实际启动 unpacked 和临时 NSIS 安装态）。
+- **Windows 产物**：`release/win-unpacked/MyTracer.exe`，225442304 bytes，SHA-256 `F4D71E5FDBCDDDDF8288121C29B7D1DCF7262D452DBD85BC6DE7501436927F37`，Authenticode `NotSigned`；`release/MyTracer-0.1.0-x64-setup.exe`，109186128 bytes，SHA-256 `F3FCE25E8D1F369BB76C356648A470289D1E5416C332E9822D86E33C86073CA4`，Authenticode `NotSigned`。
+- **Hosted CI**：GitHub Actions `Verification / Windows required gate` run `31301330217`、job `93214485837` 在实现 head `0e9bf1f15614454f5618d5c910fe498dfa3de7ba` 上 success。Hosted gate 运行 `verify`，不运行本地 Windows package smoke。
+- **隔离与能力边界**：最终 E2E/package smoke 使用不同的 T002 所有临时 `userData` 和数据库、最小环境 allowlist，结束后无新增测试根或 MyTracer 进程；Renderer 仍仅公开 `shell.getStatus`。空配置只检查 safeStorage 可用性，不读取、加密、解密或持久化凭据；没有配置文件、Provider、网络、live AI、真实 key、真实 `userData` 或真实数据库访问。
+- **Review**：相对 `origin/dev` 的完整 diff、依赖增量、Renderer/Preload 能力、诊断字段、safeStorage 调用、SQLite 禁止范围及 Windows 清理路径已独立只读复核；无未处理 P0/P1/P2，未新增/升级依赖，未修改 SQLite schema/migration/Repository。
+- **已知限制**：开发产物未签名；package smoke 仅有本地 Windows 证据；项目所有者未执行可选人工窗口观察。OS 临时目录存在最终成功验证之前形成、无法重新证明 ownership token 的旧 `mytracer-tests-*` 根，按 containment/ownership 不变量未越权删除；最终成功运行未新增残留。
+- **未声明完成**：任何业务 FR、AC-01～AC-07 与 G2 均保持 `pending`；PR 保持 Draft，未 Ready、merge、tag 或 release。
