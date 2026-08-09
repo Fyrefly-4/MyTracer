@@ -11,6 +11,9 @@ export interface TemporaryTestRoot {
   readonly database: string
   readonly exports: string
   readonly artifacts: string
+  readonly roamingAppData: string
+  readonly localAppData: string
+  readonly temporary: string
 }
 
 function isStrictDescendant(parent: string, candidate: string): boolean {
@@ -35,6 +38,10 @@ export async function createTemporaryTestRoot(): Promise<TemporaryTestRoot> {
   const database = join(root, 'database')
   const exportsDirectory = join(root, 'exports')
   const artifacts = join(root, 'artifacts')
+  const appData = join(root, 'AppData')
+  const roamingAppData = join(appData, 'Roaming')
+  const localAppData = join(appData, 'Local')
+  const temporary = join(localAppData, 'Temp')
 
   try {
     await Promise.all(
@@ -42,6 +49,10 @@ export async function createTemporaryTestRoot(): Promise<TemporaryTestRoot> {
         mkdir(path, { recursive: false })
       )
     )
+    await mkdir(appData, { recursive: false })
+    await mkdir(roamingAppData, { recursive: false })
+    await mkdir(localAppData, { recursive: false })
+    await mkdir(temporary, { recursive: false })
   } catch (error) {
     await rm(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 })
     throw error
@@ -52,7 +63,10 @@ export async function createTemporaryTestRoot(): Promise<TemporaryTestRoot> {
     electronUserData,
     database,
     exports: exportsDirectory,
-    artifacts
+    artifacts,
+    roamingAppData,
+    localAppData,
+    temporary
   })
   ownedRoots.set(testRoot, root)
   return testRoot

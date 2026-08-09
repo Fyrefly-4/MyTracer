@@ -11,6 +11,7 @@
     "tests/**/*.ts",
     "src/application/**/*.ts",
     "src/contracts/**/*.ts",
+    "src/infrastructure/**/*.ts",
     "src/renderer/src/env.d.ts"
   ]
 }

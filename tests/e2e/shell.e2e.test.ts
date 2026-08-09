@@ -1,3 +1,4 @@
+import Database from 'better-sqlite3'
 import { join } from 'node:path'
 import { expect, test } from '@playwright/test'
 import { _electron as electron } from 'playwright'
@@ -13,10 +14,10 @@ function minimalElectronEnvironment(
   const environment: Record<string, string> = {
     HOME: root.root,
     USERPROFILE: root.root,
-    APPDATA: root.artifacts,
-    LOCALAPPDATA: root.artifacts,
-    TEMP: root.artifacts,
-    TMP: root.artifacts,
+    APPDATA: root.roamingAppData,
+    LOCALAPPDATA: root.localAppData,
+    TEMP: root.temporary,
+    TMP: root.temporary,
     ELECTRON_RENDERER_URL: ''
   }
 
@@ -33,9 +34,11 @@ function minimalElectronEnvironment(
 test('runs the Electron shell with an isolated userData root', async () => {
   const testRoot = await createTemporaryTestRoot()
   let application: Awaited<ReturnType<typeof electron.launch>> | undefined
+  let databasePath: string | undefined
 
   try {
     application = await electron.launch({
+      cwd: testRoot.root,
       args: [
         join(process.cwd(), 'out/main/index.js'),
         `--user-data-dir=${testRoot.electronUserData}`
@@ -48,6 +51,9 @@ test('runs the Electron shell with an isolated userData root', async () => {
       assertExistingPathWithinRoot(testRoot, actualUserData),
       'Electron must use this test case temporary root'
     ).resolves.toBeDefined()
+    const actualWorkingDirectory = await application.evaluate(() => process.cwd())
+    expect(actualWorkingDirectory).toBe(testRoot.root)
+    databasePath = join(actualUserData, 'data', 'mytracer.sqlite3')
 
     const inheritedEnvironment = await application.evaluate(() => ({
       home: process.env.HOME,
@@ -63,10 +69,10 @@ test('runs the Electron shell with an isolated userData root', async () => {
     expect(inheritedEnvironment).toEqual({
       home: testRoot.root,
       userProfile: testRoot.root,
-      appData: testRoot.artifacts,
-      localAppData: testRoot.artifacts,
-      temp: testRoot.artifacts,
-      tmp: testRoot.artifacts,
+      appData: testRoot.roamingAppData,
+      localAppData: testRoot.localAppData,
+      temp: testRoot.temporary,
+      tmp: testRoot.temporary,
       sensitiveNames: []
     })
 
@@ -87,6 +93,18 @@ test('runs the Electron shell with an isolated userData root', async () => {
   } finally {
     try {
       await application?.close()
+      if (databasePath) {
+        const database = new Database(databasePath, { readonly: true })
+        try {
+          expect(
+            database.prepare("SELECT value FROM metadata WHERE key = 'schemaVersion'").get()
+          ).toEqual({
+            value: '1'
+          })
+        } finally {
+          database.close()
+        }
+      }
     } finally {
       await removeTemporaryTestRoot(testRoot)
     }
