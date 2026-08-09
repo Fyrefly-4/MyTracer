@@ -1,6 +1,6 @@
 # MyTracer v0.1 验收证据
 
-> 文档状态：证据账本已建立；已记录 T001～T002 工程实现证据
+> 文档状态：证据账本已建立；已记录 T001～T004 工程实现证据
 > 作用：记录可复核的命令、版本、环境、产物和人工观察  
 > 禁止：用任务状态、测试名称、关键词存在或 Agent 自述替代实际结果
 
@@ -69,6 +69,7 @@ Evidence ID 不复用。失败记录保留，并由后续记录明确引用修�
 | `EV-T001-001` | T001 | `090e848d066f6f56d772181621ff211313667aa6` | Electron 空壳、进程边界、Windows x64 打包 | pass | pass | Agent 运行时验证通过；项目所有者于 2026-08-08 确认人工验收通过 |
 | `EV-T002-001` | T002 | `f60a38c4e69b8bead2aa8975c6fdb6886bec220a` | 验证工具链、测试替身、临时根、Electron E2E、Windows CI | pass | not-required | 最新实现 revision 的本地与 hosted Windows 聚合验证通过；不声明 G2 或产品 AC |
 | `EV-T003-001` | T003 | `b7f20901c54bd883f6ebf6cda66e3d9b9b5fa347` | SQLite schema/migration、Repository 契约、Windows x64 native addon | pass | not-required | 交互式本机与 hosted Windows `verify`、标准 package 和 packaged-native 冒烟均通过；不声明业务 FR/AC 或 G2 |
+| `EV-T004-001` | T004 | `0e9bf1f15614454f5618d5c910fe498dfa3de7ba` | LocalDate/Clock、诊断、空配置/safeStorage、Windows package smoke | pass | pending | 本地 Windows `verify`、package、unpacked/NSIS 运行冒烟和 hosted Windows `verify` 通过；不声明业务 FR/AC 或 G2 |
 
 ### EV-T001-001
 
@@ -175,6 +176,44 @@ Evidence ID 不复用。失败记录保留，并由后续记录明确引用修�
 - **Supersedes / superseded by**：本记录以最终实现 revision `b7f2090` 和成功验证结果取代先前同 Evidence ID 的 partial 记录。
 - **Recorded at**：2026-08-09
 
+### EV-T004-001
+
+- **Status**：pass
+- **Task / Gate**：T004 / S0 E0-04；不声明 G2、任何业务 FR 或 AC-01～AC-07 通过
+- **Requirements**：FR-AI09、FR-D05（仅未配置/不可用降级前置，不声明 FR 完成），FR-D01（仅 T003 SQLite 回归）；D-009、D-015～D-017、D-106、D-109；ED-001、ED-003、ED-004、ED-010、ED-017～ED-019；GW-001～GW-004、GW-008～GW-010
+- **Source branch**：`task/T004-localdate-diagnostics`
+- **Source revision**：实现与测试 head `0e9bf1f15614454f5618d5c910fe498dfa3de7ba`；基线 `2ea8c6cb8584e4bf4d517938efacf68813f33604`（T003 PR #3 merge commit）
+- **CI head/merge revision**：实现与测试 head `0e9bf1f15614454f5618d5c910fe498dfa3de7ba` 的 GitHub Actions run `31301330217`、job `93214485837` success；后续仅收口合同/索引/证据的 head `59da81339fea3fa22e4a658673cbf2d0d3106ae9` 由 run `31301594315`、job `93215142476` 再次验证 success。后续文档勘误不改变本证据绑定的实现与测试 revision
+- **Environment**：
+  - 本地：Microsoft Windows NT 10.0.26200.0，AMD64；Node.js 24.18.0；npm 11.16.0；Electron 43.3.0；electron-builder 26.15.3；`better-sqlite3@13.0.1` Win32 x64 N-API 预构建。
+  - CI：GitHub-hosted Windows x64；workflow `Verification`，稳定 job `Windows required gate`。Hosted CI 运行完整 `verify`，不运行 package/NSIS 冒烟。
+  - 数据和凭据：unit/integration/E2E/package smoke 使用 T002 的唯一 OS 临时根、独立数据库与独立 `userData`；日期测试使用 FakeClock/受控 SystemClock 输入。没有真实 Electron `userData`、真实数据库、真实配置、真实 key、Provider、SDK 或 live AI 请求。
+- **Command or manual procedure**：
+  1. 启动前实时核验 PR #3 已 merge、`origin/dev=2ea8c6c` 且包含 T003，最终 hosted Windows gate run `31297738034` / job `93205463074` success；核验工作树、worktree 和任务无重叠后，从该基线创建任务分支。
+  2. 执行 LocalDate/Clock/diagnostics/configuration 针对性 unit tests、`tests/integration/main-foundations.test.ts` 和 Electron E2E；在发现测试 TypeScript 配置缺少已批准 Domain include 后，按项目所有者补充授权仅将 `src/domain/**/*.ts` 纳入 `tsconfig.test.json`。
+  3. 最终执行 `npm.cmd run verify`，exit code 0：format check、lint、typecheck、35 个 unit tests、9 个 integration tests、build 和 Electron shell E2E pass；package smoke 在聚合 E2E 中按设计 skip，证明 `verify` 未调用 package/安装。
+  4. 最终执行 `npm.cmd run package`，exit code 0，生成 Windows x64 `win-unpacked` 和 unsigned NSIS；执行 `npm.cmd run test:package-smoke`，exit code 0，实际启动 unpacked 和静默安装到临时根的 NSIS 应用，分别注入独立 `userData`，打开 schema v1 数据库、读取 shell `not-configured`，再关闭、静默卸载和精确清理。
+  5. 运行产物哈希/Authenticode、临时根和进程检查；最终 package smoke 后无新增 `mytracer-tests-*` 根、无 MyTracer 进程。相对 `origin/dev` 复核完整 diff、依赖/锁文件增量、Renderer/Preload 公开面、safeStorage/配置/诊断调用和 SQLite 禁止范围。
+  6. push 实现检查点并创建到 `dev` 的 Draft PR #4；GitHub-hosted `Windows required gate` 在上述实现 head 上完成完整 `verify` 并 success。
+- **Result**：
+  - `LocalDate` 严格验证规范 Gregorian `YYYY-MM-DD`，纯日期计算周一至周日范围；SystemClock 从同一瞬时值的本地年/月/日生成今天，不用 UTC 截断。跨午夜默认返回 `requires-confirmation`，只有显式 `keep-original`/`use-today` 才解析最终日期。
+  - DiagnosticsPort 只有封闭 code/severity/correlation/category/Clock timestamp；非法关联 ID 被无阻塞丢弃，clock/writer 失败不阻塞调用方。测试和 diff 检查未发现绝对路径、key/token/password/secret、环境变量正文、数据库/SQL、用户正文或 AI 正文进入诊断事件。
+  - Main-only 空配置始终返回 `not-configured`；safeStorage 空适配器只调用 `isEncryptionAvailable()`，不可用或抛错均降级，不调用 encrypt/decrypt，不读写配置、凭据、SQLite 或网络。Renderer 仍只得到 `window.myTracer.shell.getStatus`，Node/require/process/safeStorage 均不可见。
+  - unpacked 与 NSIS 安装态均实际加载打包的 SQLite native addon、初始化隔离 schema v1、返回零 AI 配置并退出；临时安装使用其卸载器，最终成功运行未留下新测试根或进程。
+  - 无新增/升级依赖，`package-lock.json` 无变化；未修改 SQLite schema/migration/Repository，未实现业务 CRUD、统计、导出、AI Provider 或 ORM。
+- **Artifacts**：
+  - PR #4：<https://github.com/Fyrefly-4/MyTracer/pull/4>，base `dev`；Agent 最初按授权创建为 Draft，当前 GitHub 状态为 Ready，本次文档修正不执行状态切换。
+  - 实现与测试 head 成功 CI：<https://github.com/Fyrefly-4/MyTracer/actions/runs/31301330217/job/93214485837>。
+  - 首次证据收口 head 成功 CI：<https://github.com/Fyrefly-4/MyTracer/actions/runs/31301594315/job/93215142476>。
+  - `release/win-unpacked/MyTracer.exe`，225442304 bytes，SHA-256 `F4D71E5FDBCDDDDF8288121C29B7D1DCF7262D452DBD85BC6DE7501436927F37`，Authenticode `NotSigned`。
+  - `release/MyTracer-0.1.0-x64-setup.exe`，109186128 bytes，SHA-256 `F3FCE25E8D1F369BB76C356648A470289D1E5416C332E9822D86E33C86073CA4`，Authenticode `NotSigned`。
+  - `release/win-unpacked/resources/app.asar`，8618160 bytes，SHA-256 `0613D40A24B7059A00BB4C732C4B04C5235790D6DADB69D29D48940132AF63C8`。
+  - packaged `better-sqlite3/prebuilds/win32-x64.node`，1988096 bytes，SHA-256 `267C4B26C677C44E2D388A4CF438BA28BF2D2457A800D51DC983CA0696C5C789`。
+- **Manual acceptance**：pending；项目所有者尚未执行可选的 unpacked/NSIS 窗口观察，本任务不要求产品体验 AC，Agent 未代签
+- **Known limitations**：开发产物未签名；package/NSIS 冒烟只有本地 Windows 证据，hosted gate 只运行 `verify`。OS 临时目录存在最终成功验证前形成、无法重新证明 ownership token 的旧 `mytracer-tests-*` 根，按 containment/ownership 不变量未越权删除；最终成功验证没有新增残留。所有业务 FR、AC-01～AC-07 和 G2 均仍 pending
+- **Supersedes / superseded by**：无；后续证据文档收口提交不修改本记录绑定的实现/测试 revision
+- **Recorded at**：2026-08-09
+
 ## 5. 阶段门证据索引
 
 | Gate | Required scope | Evidence | Status | Owner acceptance |
@@ -232,4 +271,5 @@ Agent 只提供步骤和观察位置，不得替项目所有者签署人工验�
 - T001 工程实现、Windows x64 unpacked/unsigned NSIS 产物、运行时验证和项目所有者人工验收已记录为 `EV-T001-001`。
 - T001 未建立 CI，未执行 AC-01～AC-07，也不使 G2 自动通过。
 - T002 验证工具链、测试替身、临时根、Electron E2E 和 hosted Windows CI 已记录为 `EV-T002-001`；它不执行 AC-01～AC-07，也不使 G2 自动通过。
-- T003～T004 继续遵守各自独立前置、依赖和任务授权门禁。
+- T003 SQLite 基础、隔离验证和 Windows x64 原生模块证据已记录为 `EV-T003-001`；它不声明业务 FR、任何 AC、T004 或 G2 完成。
+- T004 LocalDate/Clock、诊断、空配置/safeStorage 边界和本地 Windows 打包冒烟已记录为 `EV-T004-001`；它不声明业务 FR、任何 AC 或 G2 完成。

@@ -2,34 +2,12 @@ import Database from 'better-sqlite3'
 import { join } from 'node:path'
 import { expect, test } from '@playwright/test'
 import { _electron as electron } from 'playwright'
+import { minimalElectronEnvironment } from '../support/electron-environment'
 import {
   assertExistingPathWithinRoot,
   createTemporaryTestRoot,
   removeTemporaryTestRoot
 } from '../support/temporary-test-root'
-
-function minimalElectronEnvironment(
-  root: Awaited<ReturnType<typeof createTemporaryTestRoot>>
-): Record<string, string> {
-  const environment: Record<string, string> = {
-    HOME: root.root,
-    USERPROFILE: root.root,
-    APPDATA: root.roamingAppData,
-    LOCALAPPDATA: root.localAppData,
-    TEMP: root.temporary,
-    TMP: root.temporary,
-    ELECTRON_RENDERER_URL: ''
-  }
-
-  for (const name of ['PATH', 'SystemRoot', 'WINDIR', 'ComSpec', 'PATHEXT']) {
-    const value = process.env[name]
-    if (value) {
-      environment[name] = value
-    }
-  }
-
-  return environment
-}
 
 test('runs the Electron shell with an isolated userData root', async () => {
   const testRoot = await createTemporaryTestRoot()
@@ -81,8 +59,12 @@ test('runs the Electron shell with an isolated userData root', async () => {
 
     const status = await page.evaluate(() => window.myTracer.shell.getStatus())
     expect(status.ai).toEqual({ configured: false, availability: 'not-configured' })
+    expect(await page.evaluate(() => Object.keys(window.myTracer))).toEqual(['shell'])
+    expect(await page.evaluate(() => Object.keys(window.myTracer.shell))).toEqual(['getStatus'])
     expect(await page.evaluate(() => typeof Reflect.get(window, 'node'))).toBe('undefined')
     expect(await page.evaluate(() => typeof Reflect.get(window, 'require'))).toBe('undefined')
+    expect(await page.evaluate(() => typeof Reflect.get(window, 'process'))).toBe('undefined')
+    expect(await page.evaluate(() => typeof Reflect.get(window, 'safeStorage'))).toBe('undefined')
 
     await page.getByRole('button', { name: 'Progress' }).click()
     await expect(page.getByRole('heading', { name: '进展会来自已经记录的事实' })).toBeVisible()

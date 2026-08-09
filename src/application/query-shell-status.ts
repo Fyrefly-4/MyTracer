@@ -1,13 +1,23 @@
 import type { ShellStatus } from '../contracts/shell'
+import type { AiConfigurationState } from './ports/configuration'
 
-export function queryShellStatus(appVersion: string): ShellStatus {
+const emptyConfiguration: AiConfigurationState = Object.freeze({
+  configured: false,
+  availability: 'not-configured',
+  credentialProtection: 'unavailable'
+})
+
+export function queryShellStatus(
+  appVersion: string,
+  configuration: AiConfigurationState = emptyConfiguration
+): ShellStatus {
   return {
     appName: 'MyTracer',
     appVersion,
     platform: 'windows',
     ai: {
-      configured: false,
-      availability: 'not-configured'
+      configured: configuration.configured,
+      availability: configuration.availability
     }
   }
 }
