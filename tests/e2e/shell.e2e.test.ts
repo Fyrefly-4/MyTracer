@@ -59,8 +59,18 @@ test('runs the Electron shell with an isolated userData root', async () => {
 
     const status = await page.evaluate(() => window.myTracer.shell.getStatus())
     expect(status.ai).toEqual({ configured: false, availability: 'not-configured' })
-    expect(await page.evaluate(() => Object.keys(window.myTracer))).toEqual(['shell'])
+    expect(await page.evaluate(() => Object.keys(window.myTracer))).toEqual(['shell', 'goals'])
     expect(await page.evaluate(() => Object.keys(window.myTracer.shell))).toEqual(['getStatus'])
+    expect(await page.evaluate(() => Object.keys(window.myTracer.goals))).toEqual([
+      'create',
+      'updateDetails',
+      'pause',
+      'resume',
+      'end',
+      'setCurrentNextAction',
+      'list',
+      'getDetail'
+    ])
     expect(await page.evaluate(() => typeof Reflect.get(window, 'node'))).toBe('undefined')
     expect(await page.evaluate(() => typeof Reflect.get(window, 'require'))).toBe('undefined')
     expect(await page.evaluate(() => typeof Reflect.get(window, 'process'))).toBe('undefined')
