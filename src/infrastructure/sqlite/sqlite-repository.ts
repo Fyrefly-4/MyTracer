@@ -1,13 +1,13 @@
 import type Database from 'better-sqlite3'
 import type {
   ActionPersistenceRecord,
+  ActionRepositoryPort,
   ActionRecordPersistenceRecord,
   ConfusionPersistenceRecord,
   CorePersistenceSnapshot,
   GoalActionRecordSummaryPersistenceRecord,
   GoalPersistenceRecord,
   GoalStatus,
-  RepositoryPort,
   ReviewResultPersistenceRecord,
   RoutinePersistenceRecord,
   RoutineRecordPersistenceRecord,
@@ -22,7 +22,7 @@ const asString = (row: Row, name: string): string => String(row[name])
 const asNullableString = (row: Row, name: string): string | null =>
   row[name] === null ? null : asString(row, name)
 
-export class SqliteRepository implements RepositoryPort {
+export class SqliteRepository implements ActionRepositoryPort {
   constructor(private readonly database: Database.Database) {}
 
   saveGoal(record: GoalPersistenceRecord): void {
@@ -150,6 +150,16 @@ export class SqliteRepository implements RepositoryPort {
     return row ? this.actionFromRow(row) : null
   }
 
+  findTodaySelection(
+    actionId: string,
+    selectedFor: string
+  ): TodaySelectionPersistenceRecord | null {
+    const row = this.database
+      .prepare('SELECT * FROM today_selections WHERE action_id = ? AND selected_for = ?')
+      .get(actionId, selectedFor) as Row | undefined
+    return row ? this.todaySelectionFromRow(row) : null
+  }
+
   listGoals(status?: GoalStatus): readonly GoalPersistenceRecord[] {
     const rows = status
       ? (this.database
@@ -159,12 +169,28 @@ export class SqliteRepository implements RepositoryPort {
     return rows.map((row) => this.goalFromRow(row))
   }
 
+  listActions(): readonly ActionPersistenceRecord[] {
+    return this.rows('SELECT * FROM actions ORDER BY created_at ASC, id ASC').map((row) =>
+      this.actionFromRow(row)
+    )
+  }
+
   listActionsByGoalId(goalId: string): readonly ActionPersistenceRecord[] {
     return (
       this.database
         .prepare('SELECT * FROM actions WHERE goal_id = ? ORDER BY created_at ASC, id ASC')
         .all(goalId) as readonly Row[]
     ).map((row) => this.actionFromRow(row))
+  }
+
+  listTodaySelectionsOn(selectedFor: string): readonly TodaySelectionPersistenceRecord[] {
+    return (
+      this.database
+        .prepare(
+          'SELECT * FROM today_selections WHERE selected_for = ? ORDER BY created_at ASC, action_id ASC'
+        )
+        .all(selectedFor) as readonly Row[]
+    ).map((row) => this.todaySelectionFromRow(row))
   }
 
   listActionRecordSummariesByGoalId(
@@ -205,6 +231,12 @@ export class SqliteRepository implements RepositoryPort {
         )
         .all(goalId, selectedFor) as readonly Row[]
     ).map((row) => asString(row, 'action_id'))
+  }
+
+  deleteTodaySelection(actionId: string, selectedFor: string): void {
+    this.database
+      .prepare('DELETE FROM today_selections WHERE action_id = ? AND selected_for = ?')
+      .run(actionId, selectedFor)
   }
 
   readSnapshot(): CorePersistenceSnapshot {
@@ -321,6 +353,16 @@ export class SqliteRepository implements RepositoryPort {
       status: asString(row, 'status') as ActionPersistenceRecord['status'],
       createdAt: asString(row, 'created_at'),
       updatedAt: asString(row, 'updated_at')
+    }
+  }
+
+  private todaySelectionFromRow(row: Row): TodaySelectionPersistenceRecord {
+    return {
+      actionId: asString(row, 'action_id'),
+      selectedFor: asString(row, 'selected_for'),
+      kind: asString(row, 'kind') as TodaySelectionPersistenceRecord['kind'],
+      selectedBy: asString(row, 'selected_by') as 'user',
+      createdAt: asString(row, 'created_at')
     }
   }
 }

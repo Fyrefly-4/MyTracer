@@ -11,6 +11,16 @@ import {
   type UpdateGoalDetailsInputDto
 } from '../contracts/goals'
 import { SHELL_STATUS_CHANNEL, type MyTracerApi, type ShellStatus } from '../contracts/shell'
+import {
+  ACTION_CHANNELS,
+  type ActionDetailDto,
+  type ActionIdInputDto,
+  type ActionResult,
+  type CreateActionInputDto,
+  type TransitionActionInputDto,
+  type UpdateActionDetailsInputDto
+} from '../contracts/actions'
+import { TODAY_CHANNELS, type GetTodayInputDto, type TodayViewDto } from '../contracts/today'
 
 const api: MyTracerApi = Object.freeze({
   shell: Object.freeze({
@@ -35,6 +45,28 @@ const api: MyTracerApi = Object.freeze({
       ipcRenderer.invoke(GOAL_CHANNELS.list, input),
     getDetail: (input: GoalIdInputDto): Promise<GoalResult<GoalDetailDto>> =>
       ipcRenderer.invoke(GOAL_CHANNELS.getDetail, input)
+  }),
+  actions: Object.freeze({
+    create: (input: CreateActionInputDto): Promise<ActionResult<ActionDetailDto>> =>
+      ipcRenderer.invoke(ACTION_CHANNELS.create, input),
+    updateDetails: (input: UpdateActionDetailsInputDto): Promise<ActionResult<ActionDetailDto>> =>
+      ipcRenderer.invoke(ACTION_CHANNELS.updateDetails, input),
+    complete: (input: TransitionActionInputDto): Promise<ActionResult<ActionDetailDto>> =>
+      ipcRenderer.invoke(ACTION_CHANNELS.complete, input),
+    cancel: (input: TransitionActionInputDto): Promise<ActionResult<ActionDetailDto>> =>
+      ipcRenderer.invoke(ACTION_CHANNELS.cancel, input),
+    reschedule: (input: TransitionActionInputDto): Promise<ActionResult<ActionDetailDto>> =>
+      ipcRenderer.invoke(ACTION_CHANNELS.reschedule, input),
+    getDetail: (input: ActionIdInputDto): Promise<ActionResult<ActionDetailDto>> =>
+      ipcRenderer.invoke(ACTION_CHANNELS.getDetail, input)
+  }),
+  today: Object.freeze({
+    selectAction: (input: ActionIdInputDto): Promise<ActionResult<ActionDetailDto>> =>
+      ipcRenderer.invoke(TODAY_CHANNELS.selectAction, input),
+    removeAction: (input: ActionIdInputDto): Promise<ActionResult<TodayViewDto>> =>
+      ipcRenderer.invoke(TODAY_CHANNELS.removeAction, input),
+    get: (input: GetTodayInputDto): Promise<ActionResult<TodayViewDto>> =>
+      ipcRenderer.invoke(TODAY_CHANNELS.get, input)
   })
 })
 

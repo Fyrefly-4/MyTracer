@@ -3,6 +3,8 @@ import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { app, BrowserWindow, ipcMain, safeStorage } from 'electron'
 import { GoalService } from '../application/goals'
+import { ActionService } from '../application/actions'
+import { TodayService } from '../application/today'
 import { queryShellStatus } from '../application/query-shell-status'
 import type { AiConfigurationPort } from '../application/ports/configuration'
 import type { DiagnosticsPort } from '../application/ports/diagnostics'
@@ -17,6 +19,8 @@ import {
 import { resolveProductionDatabasePath } from '../infrastructure/sqlite/database-path'
 import { SqliteConnection } from '../infrastructure/sqlite/sqlite-connection'
 import { registerGoalIpc } from './goals-ipc'
+import { registerActionIpc } from './actions-ipc'
+import { registerTodayIpc } from './today-ipc'
 import { assertTrustedSender, type RendererLocation } from './ipc-security'
 
 let mainWindow: BrowserWindow | null = null
@@ -141,9 +145,30 @@ app.whenReady().then(async () => {
     clock,
     generateId: randomUUID
   })
+  const actionService = new ActionService({
+    repository: sqliteConnection.repository,
+    unitOfWork: sqliteConnection,
+    clock,
+    generateId: randomUUID
+  })
+  const todayService = new TodayService({
+    repository: sqliteConnection.repository,
+    unitOfWork: sqliteConnection,
+    clock
+  })
   registerGoalIpc({
     ipc: ipcMain,
     service: goalService,
+    assertSender: (event) => assertTrustedSender(event, mainWindow, getRendererLocation())
+  })
+  registerActionIpc({
+    ipc: ipcMain,
+    service: actionService,
+    assertSender: (event) => assertTrustedSender(event, mainWindow, getRendererLocation())
+  })
+  registerTodayIpc({
+    ipc: ipcMain,
+    service: todayService,
     assertSender: (event) => assertTrustedSender(event, mainWindow, getRendererLocation())
   })
   await createMainWindow()
