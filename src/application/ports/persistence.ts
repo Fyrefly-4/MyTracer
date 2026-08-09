@@ -149,6 +149,26 @@ export interface RepositoryPort {
   readSnapshot(): CorePersistenceSnapshot
 }
 
+export interface ActionRepositoryPort extends RepositoryPort {
+  findTodaySelection(actionId: string, selectedFor: string): TodaySelectionPersistenceRecord | null
+  listActions(): readonly ActionPersistenceRecord[]
+  listTodaySelectionsOn(selectedFor: string): readonly TodaySelectionPersistenceRecord[]
+  deleteTodaySelection(actionId: string, selectedFor: string): void
+}
+
+export function asActionRepository(repository: RepositoryPort): ActionRepositoryPort {
+  const candidate = repository as Partial<ActionRepositoryPort>
+  if (
+    typeof candidate.findTodaySelection !== 'function' ||
+    typeof candidate.listActions !== 'function' ||
+    typeof candidate.listTodaySelectionsOn !== 'function' ||
+    typeof candidate.deleteTodaySelection !== 'function'
+  ) {
+    throw new TypeError('Repository does not provide the Action/Today contract.')
+  }
+  return repository as ActionRepositoryPort
+}
+
 export interface UnitOfWorkPort {
   transaction<T>(work: (repository: RepositoryPort) => T): T
 }
