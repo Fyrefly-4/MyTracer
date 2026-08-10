@@ -1,19 +1,19 @@
 # T012 Action、Today Focus 与重新安排任务合同
 
-> 合同状态：**已获项目所有者批准并启动本地实现；不含 Git/GitHub、依赖安装或外部写入授权**
+> 合同状态：**已完成；实现证据绑定 `56b3446a1b952a9bdb6fe29ab4a89502171ba321`，Draft PR #9 尚未 Ready 或 merge**
 >
-> 合同编写基线：`dev@7cb5bebd8c2d0e66056d2b34189d084e78261b41`；实现启动前必须重新只读确认确切基线
+> 实现基线：`dev@7cb5bebd8c2d0e66056d2b34189d084e78261b41`；任务分支：`task/T012-action-today`
 >
-> 当前权限：允许第 6 节本地实现范围与非破坏性验证；依赖安装、Git/GitHub 和外部写入均未授权
+> 当前权限：已执行获批的分支、提交、push、Draft PR 与文档收口；Ready、merge、tag、release、依赖安装和其他外部写入仍未授权
 
 ## 1. 任务信息
 
 - **Task ID**：T012
 - **Title**：Action lifecycle, Today focus, and rescheduling
 - **Slice / Plan item**：S1 / E1-02
-- **Task ledger status**：`active`
-- **Base branch**：`dev`；确切 revision 待实现启动时确认
-- **Expected branch**：`task/T012-action-today`（尚未授权创建）
+- **Task ledger status**：`done`
+- **Base branch**：`dev@7cb5bebd8c2d0e66056d2b34189d084e78261b41`
+- **Task branch**：`task/T012-action-today`
 - **前置事实**：G2 已通过；S1 设计已批准；T011 已完成；S1-Q03 = B、S1-Q05 = A、S1-Q06 = A、S1-Q07 = A。
 
 ## 2. 目标结果
@@ -65,8 +65,8 @@ T012 只贡献 AC-01 步骤 3。T012 只验证 FR-A05 中“Action 状态与 `pa
 - [x] 项目所有者另行明确发出 T012 实现启动指令。
 - [x] 启动时已只读复核 `dev@7cb5bebd8c2d0e66056d2b34189d084e78261b41`、工作树、任务账本和适用权限。
 - [x] 项目所有者已批准本合同第 6 节的本地实现文件范围。
-- [ ] Git 分支/worktree、commit、push 和 Draft PR 权限逐项明确；未授权项保持禁止。
-- [ ] 不安装依赖；不新增 migration；不修改 `001_initial.sql`。
+- [x] Git 分支、commit、push、Draft PR 和文档收口权限已由项目所有者逐项明确；未授权项保持禁止。
+- [x] 未安装依赖；未新增 migration；未修改 `001_initial.sql`。
 
 ## 5. 允许的实现行为
 
@@ -192,7 +192,7 @@ T012 只贡献 AC-01 步骤 3。T012 只验证 FR-A05 中“Action 状态与 `pa
 9. 未新增/升级依赖，`package.json`、lockfile、schemaVersion 和 migration 集合不变；`001_initial.sql` 未修改。
 10. 最终 diff 仅含获批范围；针对性验证和 `verify` 在最终 revision 通过，真实结果才可记录为 `EV-T012-001`。
 11. T012 证据只声明 FR-A01～A04/A06、FR-T01/T04/T05/T08 的任务覆盖、FR-A05 的 Action 状态解耦贡献及 AC-01 步骤 3 贡献；不得声明 T012 单独完成 FR-A05、完整 FR-D01 或完整 AC-01。
-12. **MANUAL**：项目所有者确认 Action/Today 路径清楚、Today 选择确由用户决定且无硬上限；终态、reschedule、paused/ended 不可操作原因中性且不制造逾期压力。未实际执行时必须记为 `pending`。
+12. **MANUAL**：项目所有者于 2026-08-10 完成 Action/Today 路径、Today 显式选择与无硬上限、终态、reschedule、paused/ended 不可操作原因及输入焦点回归复验，并报告全部通过。
 
 ## 10. 验证计划
 
@@ -247,19 +247,28 @@ npm.cmd run verify
 
 `verify` 包含 build 和 Electron E2E，但不证明 hosted CI、package/NSIS 或人工验收。证据必须绑定最终 source revision、Windows/Node/Electron 环境、隔离数据根、实际命令结果和已知缺口。
 
+### 10.6 实际结果
+
+- 实现验证绑定 `task/T012-action-today@56b3446a1b952a9bdb6fe29ab4a89502171ba321`，启动基线为 `dev@7cb5bebd8c2d0e66056d2b34189d084e78261b41`。
+- 本地 Windows `npm.cmd run verify` 通过：54 项 unit、24 项 integration、3 项 Electron E2E 通过；1 项 package smoke 按既有条件跳过。
+- Draft PR #9 的实现 head hosted Windows required gate run `31359250988` / job `93364691450` 返回 `success`。
+- 项目所有者于 2026-08-10 完成人工复验并报告全部通过，包括 T012 Action/Today 行为与 T011/T012 `window.confirm` 输入焦点回归。
+- 最终实现未新增或升级依赖，未新增 migration，未修改 schemaVersion 或 `001_initial.sql`；真实结果记录为 `EV-T012-001`。
+- T012 只贡献 AC-01 步骤 3，并只完成 FR-A05 的 Action 状态解耦部分；用户实际保存 `partial` ActionRecord 仍属于 T013。
+
 ## 11. Git、GitHub、依赖与外部操作权限
 
-当前全部保持未授权：
+实际授权与执行状态：
 
-- [ ] 创建本地 worktree 或 `task/T012-action-today` 分支。
-- [ ] 创建本地 commit。
-- [ ] push 任务分支。
-- [ ] 创建或更新到 `dev` 的 Draft PR。
+- [x] 创建 `task/T012-action-today` 分支。
+- [x] 创建独立实现与文档收口 commit。
+- [x] push 当前任务分支。
+- [x] 创建并更新到 `dev` 的 Draft PR #9。
 - [ ] 标记 Ready、merge 到 `dev`、创建或合并 `dev → main`、tag 或 release。
 - [ ] 执行 `npm install`、`npm ci` 或其他安装动作；新增或升级依赖。
-- [ ] 外部写入、live AI、真实用户数据写入、迁移或破坏性操作。
+- [ ] approved GitHub flow 之外的外部写入、live AI、真实用户数据写入、迁移或破坏性操作。
 
-即使项目所有者批准本合同，上述权限仍不会自动获得；实现启动、本地 Git、发布 Draft PR、Ready、merge、tag 和 release 必须按确切操作分别授权。
+项目所有者明确要求文档收口提交推送后无需等待新的 CI；因此 `EV-T012-001` 绑定已通过 hosted gate 的实现 revision，文档收口 revision 单独记录。该指令不授权 Ready、merge、tag 或 release。
 
 ## 12. 风险与停止条件
 
