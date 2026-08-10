@@ -14,7 +14,7 @@ MyTracer 是一个面向个人本地使用的 Windows 桌面应用，用于帮�
 - T003 已建立 SQLite schema、migration、Repository 契约和 Windows x64 原生模块验证基础。
 - T004 已建立 LocalDate/Clock、诊断、配置与 safeStorage 空边界，并完成隔离的 Windows x64 unpacked/NSIS 运行冒烟。
 - T011 已完成 Goal 创建、修改、pause/resume/end、当前下一步、列表/详情和真实关闭重开验证；本地与 hosted Windows gate、人工体验及项目所有者 review 均通过。
-- T012 是下一候选任务，仍为 `pending`；通用 Action 生命周期和 Today focus 尚未启动。
+- T012 已完成 Action 生命周期、Today focus、当前下一步原子处理与重新安排纵向路径；本地 `verify`、PR #9 实现 head 的 hosted Windows gate 和项目所有者人工复验均通过。
 
 不要把架构完成理解为产品已经实现。
 
@@ -130,7 +130,7 @@ task/Txxx-short-name
 
 ## 下一步
 
-1. 为 T012 编写并审批独立任务合同，继续保持通用 Action 生命周期与 Today 边界不越过已批准 S1 设计。
-2. 项目所有者明确发出 T012 启动指令后，再开始 Action—Today 纵向实现。
+1. 为 T013 编写并审批独立任务合同，保持 ActionRecord、`partial` 保存和跨午夜语义不越过已批准 S1 设计。
+2. 项目所有者明确发出 T013 启动指令后，再开始快速/深入 ActionRecord 纵向实现。
 
-T011 完成只覆盖 Goal 子路径和 AC-01 步骤 1～2贡献；在 T012～T014 完成前，不得声称 S1、完整 AC-01 或 MyTracer Demo 已通过验收。
+T011～T012 只覆盖 Goal、Action/Today 子路径和 AC-01 步骤 1～3贡献；T012 对 FR-A05 仅证明 Action 状态与 `partial` 解耦。T013/T014 完成前，不得声称 FR-A05、S1、完整 AC-01 或 MyTracer Demo 已通过验收。

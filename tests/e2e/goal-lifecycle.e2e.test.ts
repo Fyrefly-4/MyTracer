@@ -1,6 +1,6 @@
 import Database from 'better-sqlite3'
 import { join } from 'node:path'
-import { expect, test, type ElectronApplication } from '@playwright/test'
+import { expect, test, type ElectronApplication, type Locator } from '@playwright/test'
 import { _electron as electron } from 'playwright'
 import { minimalElectronEnvironment } from '../support/electron-environment'
 import {
@@ -15,6 +15,15 @@ async function launchApplication(root: TemporaryTestRoot): Promise<ElectronAppli
     args: [join(process.cwd(), 'out/main/index.js'), `--user-data-dir=${root.electronUserData}`],
     env: minimalElectronEnvironment(root)
   })
+}
+
+async function expectGoalDescriptionKeyboardInput(detail: Locator, suffix: string): Promise<void> {
+  const input = detail.getByLabel('说明（可选）')
+  const originalValue = await input.inputValue()
+  await input.click()
+  await input.pressSequentially(suffix)
+  await expect(input).toHaveValue(`${originalValue}${suffix}`)
+  await input.fill(originalValue)
 }
 
 test('runs the Goal lifecycle and preserves it across a complete Electron and SQLite reopen', async () => {
@@ -68,10 +77,19 @@ test('runs the Goal lifecycle and preserves it across a complete Electron and SQ
 
     await detail.getByRole('button', { name: '恢复目标' }).click()
     await expect(detail.getByText('活跃', { exact: true }).first()).toBeVisible()
-    page.once('dialog', (dialog) => dialog.accept())
-    await detail.getByRole('button', { name: '结束目标' }).click()
+    const endButton = detail.getByRole('button', { name: '结束目标' })
+    await endButton.click()
+    let confirmation = detail.getByRole('alertdialog')
+    await confirmation.getByRole('button', { name: '返回' }).click()
+    await expect(endButton).toBeFocused()
+    await expectGoalDescriptionKeyboardInput(detail, '（返回后仍可输入）')
+
+    await endButton.click()
+    confirmation = detail.getByRole('alertdialog')
+    await confirmation.getByRole('button', { name: '确认结束' }).click()
     await expect(detail.getByText('该目标已结束。已有下一步、行动与记录仍然保留。')).toBeVisible()
     await expect(detail.getByRole('button', { name: '恢复目标' })).toHaveCount(0)
+    await expectGoalDescriptionKeyboardInput(detail, '（结束后仍可输入）')
 
     const beforeReopen = await page.evaluate(async () => {
       const listed = await window.myTracer.goals.list({ status: 'ended' })
