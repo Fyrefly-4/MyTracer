@@ -13,6 +13,14 @@ import type {
   CurrentNextResolutionDto
 } from '../../contracts/actions'
 import type { TodayViewDto } from '../../contracts/today'
+import type {
+  ActionRecordDetailDto,
+  ActionRecordOutcomeDto,
+  ActionRecordSummaryDto,
+  BeginActionRecordingDto,
+  RecordErrorCode,
+  RecordingDateChoiceDto
+} from '../../contracts/records'
 
 type Section = 'goals' | 'today' | 'progress' | 'review'
 
@@ -80,6 +88,21 @@ const actionErrorText: Record<ActionErrorCode, string> = {
   'invalid-transition': '当前状态不能执行这个行动操作。',
   'invariant-violation': '当前行动、目标或下一步关系不允许这个操作。',
   'persistence-failed': '本地行动数据暂时无法保存或读取。'
+}
+
+const recordErrorText: Record<RecordErrorCode, string> = {
+  validation: '请检查记录内容；时长需为非负整数分钟。',
+  'not-found': '行动或记录已不存在，请刷新后重试。',
+  'invalid-transition': '该行动当前不能新增记录。',
+  'invariant-violation': '记录后的行动或下一步选择当前不可用。',
+  'invalid-recording-context': '这次记录表单已失效，请重新开始记录。',
+  'persistence-failed': '本地记录暂时无法保存或读取。'
+}
+
+const recordOutcomeText: Record<ActionRecordOutcomeDto, string> = {
+  completed: '本次达到预期',
+  partial: '本次完成一部分',
+  stopped: '本次在这里停下'
 }
 
 const unavailableReasonText: Record<NonNullable<ActionDetailDto['unavailableReason']>, string> = {
@@ -464,6 +487,404 @@ const transitionLabels: Record<TransitionKind, string> = {
   reschedule: '重新安排'
 }
 
+type PostRecordActionChoice = 'keep-pending' | TransitionKind
+type RecordedNextMode = 'clear' | 'use-existing' | 'recorded-next'
+
+function ActionRecordingPanel(props: {
+  readonly action: ActionDetailDto
+  readonly replacementCandidates: readonly ActionDetailDto[]
+  readonly onSaved: (action: ActionDetailDto) => Promise<void>
+}): ReactNode {
+  const [context, setContext] = useState<BeginActionRecordingDto | null>(null)
+  const contextRef = useRef<BeginActionRecordingDto | null>(null)
+  const [records, setRecords] = useState<readonly ActionRecordSummaryDto[]>([])
+  const [recordDetail, setRecordDetail] = useState<ActionRecordDetailDto | null>(null)
+  const [durationMinutes, setDurationMinutes] = useState('0')
+  const [outcome, setOutcome] = useState<ActionRecordOutcomeDto>('partial')
+  const [deepExpanded, setDeepExpanded] = useState(false)
+  const [understanding, setUnderstanding] = useState('')
+  const [confusion, setConfusion] = useState('')
+  const [nextStep, setNextStep] = useState('')
+  const [note, setNote] = useState('')
+  const [postAction, setPostAction] = useState<PostRecordActionChoice>('keep-pending')
+  const [nextMode, setNextMode] = useState<RecordedNextMode>('clear')
+  const [replacementActionId, setReplacementActionId] = useState('')
+  const [applyRecordedNextStep, setApplyRecordedNextStep] = useState(false)
+  const [dateConfirmation, setDateConfirmation] = useState<{
+    readonly capturedOn: string
+    readonly currentLocalDate: string
+  } | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const loadRecords = async (): Promise<void> => {
+    const result = await window.myTracer.records.listForAction({ actionId: props.action.id })
+    if (result.ok) {
+      setRecords(result.value)
+      setError(null)
+    } else {
+      setError(recordErrorText[result.error.code])
+    }
+  }
+
+  useEffect(() => {
+    let active = true
+    void window.myTracer.records
+      .listForAction({ actionId: props.action.id })
+      .then((result) => {
+        if (!active) return
+        if (result.ok) {
+          setRecords(result.value)
+          setError(null)
+        } else {
+          setError(recordErrorText[result.error.code])
+        }
+      })
+    return () => {
+      active = false
+      const activeContext = contextRef.current
+      contextRef.current = null
+      if (activeContext) {
+        void window.myTracer.records.cancel({
+          recordingContextId: activeContext.recordingContextId
+        })
+      }
+    }
+  }, [props.action.id])
+
+  const resetForm = (): void => {
+    contextRef.current = null
+    setContext(null)
+    setDurationMinutes('0')
+    setOutcome('partial')
+    setDeepExpanded(false)
+    setUnderstanding('')
+    setConfusion('')
+    setNextStep('')
+    setNote('')
+    setPostAction('keep-pending')
+    setNextMode('clear')
+    setReplacementActionId('')
+    setApplyRecordedNextStep(false)
+    setDateConfirmation(null)
+  }
+
+  const begin = async (): Promise<void> => {
+    setBusy(true)
+    const result = await window.myTracer.records.begin({ actionId: props.action.id })
+    setBusy(false)
+    if (!result.ok) {
+      setError(recordErrorText[result.error.code])
+      return
+    }
+    contextRef.current = result.value
+    setContext(result.value)
+    setError(null)
+  }
+
+  const cancel = async (): Promise<void> => {
+    if (!context) return
+    setBusy(true)
+    const result = await window.myTracer.records.cancel({
+      recordingContextId: context.recordingContextId
+    })
+    setBusy(false)
+    if (!result.ok) {
+      setError(recordErrorText[result.error.code])
+      return
+    }
+    resetForm()
+    setError(null)
+  }
+
+  const showRecordDetail = async (recordId: string): Promise<void> => {
+    const result = await window.myTracer.records.getDetail({ recordId })
+    if (result.ok) {
+      setRecordDetail(result.value)
+      setError(null)
+    } else {
+      setError(recordErrorText[result.error.code])
+    }
+  }
+
+  const save = async (dateChoice?: RecordingDateChoiceDto): Promise<void> => {
+    if (!context) return
+    const minutes = Number(durationMinutes)
+    if (!Number.isInteger(minutes) || minutes < 0) {
+      setError('时长必须是非负整数分钟；0 表示不足一分钟但确有行动。')
+      return
+    }
+    const changingCurrentAction = postAction !== 'keep-pending' && props.action.isCurrentNextAction
+    if (
+      changingCurrentAction &&
+      nextMode === 'use-existing' &&
+      !replacementActionId
+    ) {
+      setError('请选择一个同目标的待行动作为新的当前下一步。')
+      return
+    }
+    const needsRecordedNext =
+      (changingCurrentAction && nextMode === 'recorded-next') ||
+      (!changingCurrentAction && applyRecordedNextStep)
+    if (needsRecordedNext && !nextStep.trim()) {
+      setError('请先填写记录中的下一步，再明确应用到目标。')
+      return
+    }
+
+    const currentNextResolution = changingCurrentAction
+      ? nextMode === 'use-existing'
+        ? ({ kind: 'use-existing', actionId: replacementActionId } as const)
+        : nextMode === 'recorded-next'
+          ? ({ kind: 'create-from-recorded-next-step' } as const)
+          : ({ kind: 'clear' } as const)
+      : undefined
+    setBusy(true)
+    const result = await window.myTracer.records.record({
+      actionId: props.action.id,
+      recordingContextId: context.recordingContextId,
+      dateChoice,
+      durationMinutes: minutes,
+      outcome,
+      understanding: deepExpanded && understanding.trim() ? understanding : null,
+      confusion: deepExpanded && confusion.trim() ? confusion : null,
+      nextStep: deepExpanded && nextStep.trim() ? nextStep : null,
+      note: deepExpanded && note.trim() ? note : null,
+      postRecord: {
+        action: postAction,
+        currentNextResolution,
+        applyRecordedNextStep: !changingCurrentAction && applyRecordedNextStep
+      }
+    })
+    setBusy(false)
+    if (!result.ok) {
+      setError(recordErrorText[result.error.code])
+      return
+    }
+    if (result.value.kind === 'date-confirmation-required') {
+      setDateConfirmation(result.value)
+      setError(null)
+      return
+    }
+    const saved = result.value
+    resetForm()
+    setRecordDetail(saved.record)
+    await loadRecords()
+    await props.onSaved(saved.action)
+  }
+
+  const canApplyNextStep = props.action.goal?.status === 'active'
+  const changingCurrentAction = postAction !== 'keep-pending' && props.action.isCurrentNextAction
+
+  return (
+    <section className="recording-panel" aria-label={`${props.action.title} 行动记录`}>
+      <div className="recording-heading">
+        <div>
+          <p className="eyebrow">真实行动记录</p>
+          <h3>先完成快速记录，再按需展开</h3>
+        </div>
+        {!context && props.action.canStart ? (
+          <button type="button" disabled={busy} onClick={() => void begin()}>
+            开始记录
+          </button>
+        ) : null}
+      </div>
+      {error ? (
+        <p className="form-error" role="alert">
+          {error}
+        </p>
+      ) : null}
+
+      {context ? (
+        <form
+          className="recording-form"
+          onSubmit={(event) => {
+            event.preventDefault()
+            void save()
+          }}
+        >
+          <p className="captured-date">发生日已由应用捕获：{context.capturedOn}</p>
+          <div className="quick-record-grid">
+            <label>
+              投入分钟
+              <input
+                required
+                min="0"
+                step="1"
+                type="number"
+                value={durationMinutes}
+                onChange={(event) => setDurationMinutes(event.target.value)}
+              />
+              <small>0 表示不足 1 分钟但确有行动</small>
+            </label>
+            <label>
+              本次结果
+              <select
+                value={outcome}
+                onChange={(event) => setOutcome(event.target.value as ActionRecordOutcomeDto)}
+              >
+                <option value="completed">本次达到预期</option>
+                <option value="partial">本次完成一部分</option>
+                <option value="stopped">本次在这里停下</option>
+              </select>
+            </label>
+          </div>
+          <button
+            className="quiet-button deep-toggle"
+            type="button"
+            onClick={() => setDeepExpanded((value) => !value)}
+          >
+            {deepExpanded ? '收起深入记录' : '添加理解、困惑、下一步或备注'}
+          </button>
+          {deepExpanded ? (
+            <div className="deep-record-fields">
+              <label>
+                我理解了（可选）
+                <textarea
+                  rows={2}
+                  value={understanding}
+                  onChange={(event) => setUnderstanding(event.target.value)}
+                />
+              </label>
+              <label>
+                我仍困惑（可选）
+                <textarea
+                  rows={2}
+                  value={confusion}
+                  onChange={(event) => setConfusion(event.target.value)}
+                />
+              </label>
+              <label>
+                记录中的下一步（可选）
+                <input value={nextStep} onChange={(event) => setNextStep(event.target.value)} />
+              </label>
+              <label>
+                备注（可选）
+                <textarea rows={2} value={note} onChange={(event) => setNote(event.target.value)} />
+              </label>
+            </div>
+          ) : null}
+
+          <div className="post-record-panel">
+            <label>
+              保存记录后
+              <select
+                value={postAction}
+                onChange={(event) =>
+                  setPostAction(event.target.value as PostRecordActionChoice)
+                }
+              >
+                <option value="keep-pending">保持行动为待行动（默认）</option>
+                <option value="complete">另行确认行动已完成</option>
+                <option value="cancel">另行确认取消行动</option>
+                <option value="reschedule">另行确认重新安排</option>
+              </select>
+            </label>
+            <p>本次结果不会自动改变行动状态；这里是独立选择。</p>
+            {changingCurrentAction ? (
+              <label>
+                当前下一步处理
+                <select
+                  value={nextMode}
+                  onChange={(event) => setNextMode(event.target.value as RecordedNextMode)}
+                >
+                  <option value="clear">清空目标当前下一步</option>
+                  <option value="use-existing">改用已有待行动</option>
+                  <option value="recorded-next">用记录中的下一步创建新行动</option>
+                </select>
+              </label>
+            ) : null}
+            {changingCurrentAction && nextMode === 'use-existing' ? (
+              <label>
+                已有待行动
+                <select
+                  value={replacementActionId}
+                  onChange={(event) => setReplacementActionId(event.target.value)}
+                >
+                  <option value="">请选择</option>
+                  {props.replacementCandidates.map((candidate) => (
+                    <option key={candidate.id} value={candidate.id}>
+                      {candidate.title}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+            {canApplyNextStep && !changingCurrentAction ? (
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={applyRecordedNextStep}
+                  onChange={(event) => setApplyRecordedNextStep(event.target.checked)}
+                />
+                明确将记录中的下一步创建为目标当前下一步
+              </label>
+            ) : null}
+          </div>
+
+          {dateConfirmation ? (
+            <div className="date-confirmation" role="alertdialog" aria-label="确认记录发生日">
+              <p>
+                保存时已经跨日。请选择保留开始日 {dateConfirmation.capturedOn}，或使用当前日{' '}
+                {dateConfirmation.currentLocalDate}。
+              </p>
+              <div>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void save('keep-captured-on')}
+                >
+                  保留开始日
+                </button>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void save('use-current-on')}
+                >
+                  使用当前日
+                </button>
+              </div>
+            </div>
+          ) : null}
+          <div className="recording-actions">
+            <button className="primary-button" type="submit" disabled={busy || Boolean(dateConfirmation)}>
+              保存记录
+            </button>
+            <button type="button" disabled={busy} onClick={() => void cancel()}>
+              取消记录
+            </button>
+          </div>
+        </form>
+      ) : !props.action.canStart ? (
+        <p className="empty-copy">该行动当前不可开始，因此不能新增记录。</p>
+      ) : null}
+
+      <div className="record-list" aria-label="行动记录列表">
+        <h3>已有记录</h3>
+        {records.length ? (
+          records.map((record) => (
+            <button type="button" key={record.id} onClick={() => void showRecordDetail(record.id)}>
+              <span>{record.occurredOn} · {recordOutcomeText[record.outcome]}</span>
+              <small>{record.durationMinutes === 0 ? '少于 1 分钟' : `${record.durationMinutes} 分钟`}</small>
+            </button>
+          ))
+        ) : (
+          <p className="empty-copy">还没有记录；没有记录不代表没有行动。</p>
+        )}
+      </div>
+      {recordDetail ? (
+        <div className="record-detail" aria-label="记录详情">
+          <p>{recordDetail.occurredOn} · {recordOutcomeText[recordDetail.outcome]}</p>
+          <strong>{recordDetail.durationMinutes === 0 ? '少于 1 分钟' : `${recordDetail.durationMinutes} 分钟`}</strong>
+          {recordDetail.understandings.map((item) => <span key={item.id}>理解：{item.text}</span>)}
+          {recordDetail.confusions.map((item) => <span key={item.id}>开放困惑：{item.text}</span>)}
+          {recordDetail.nextStep ? <span>记录中的下一步：{recordDetail.nextStep}</span> : null}
+          {recordDetail.note ? <span>备注：{recordDetail.note}</span> : null}
+        </div>
+      ) : null}
+    </section>
+  )
+}
+
 function TodayWorkspace(): ReactNode {
   const [today, setToday] = useState<TodayViewDto | null>(null)
   const [activeGoals, setActiveGoals] = useState<readonly GoalSummaryDto[]>([])
@@ -757,6 +1178,13 @@ function TodayWorkspace(): ReactNode {
                     ? '已由你选入今天，可以从这里继续。'
                     : '当前可行动；是否选入今天由你决定。'}
               </p>
+
+              <ActionRecordingPanel
+                key={detail.id}
+                action={detail}
+                replacementCandidates={replacementCandidates}
+                onSaved={async (action) => refresh(action.id)}
+              />
 
               <form className="detail-form" onSubmit={(event) => void submitUpdate(event)}>
                 <label>
