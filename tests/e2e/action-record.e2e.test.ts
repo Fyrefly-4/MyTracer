@@ -173,7 +173,8 @@ test('requires an explicit midnight choice and invalidates cancelled/reloaded co
   try {
     application = await launchApplication(root)
     const page = await application.firstWindow()
-    await setMainProcessDate(application, '2026-08-12T15:59:00.000Z')
+    const localMidnight = new Date(2026, 7, 13, 0, 0, 0, 0).getTime()
+    await setMainProcessDate(application, new Date(localMidnight - 60_000).toISOString())
     const midnightContext = await page.evaluate(async () => {
       const action = await window.myTracer.actions.create({ title: '跨午夜保存' })
       if (!action.ok) throw new Error('Midnight Action setup failed.')
@@ -182,7 +183,7 @@ test('requires an explicit midnight choice and invalidates cancelled/reloaded co
       return context.value
     })
     expect(midnightContext.capturedOn).toBe('2026-08-12')
-    await setMainProcessDate(application, '2026-08-12T16:01:00.000Z')
+    await setMainProcessDate(application, new Date(localMidnight + 60_000).toISOString())
     const confirmation = await page.evaluate(
       ({ actionId, recordingContextId }) =>
         window.myTracer.records.record({

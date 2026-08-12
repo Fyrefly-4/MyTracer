@@ -189,7 +189,7 @@ describe('ActionRecord SQLite integration', () => {
     connection.close()
   })
 
-  it('rolls back parent, children, Action, Goal, and Today when any later write fails', async () => {
+  it('rolls back parent, children, Action, Goal, and Today at every write failure', async () => {
     const { connection } = await openDatabase()
     const clock = new FakeClock({ instant, localDate: '2026-08-12', timeZone: 'Asia/Shanghai' })
     const initial = servicesFor(connection, clock, ['goal-1', 'action-1'])
@@ -197,45 +197,54 @@ describe('ActionRecord SQLite integration', () => {
     initial.today.selectActionForToday('action-1')
     const before = connection.repository.readSnapshot()
 
-    const failingUnitOfWork: UnitOfWorkPort = {
-      transaction: <T>(work: (repository: RepositoryPort) => T): T =>
-        connection.transaction((repository) => {
-          const failingRepository = new Proxy(repository, {
-            get(target, property, receiver) {
-              if (property === 'saveGoal') {
-                return () => {
-                  throw new Error('injected post-record Goal failure')
+    for (const failingMethod of [
+      'saveActionRecord',
+      'saveUnderstanding',
+      'saveConfusion',
+      'saveAction',
+      'saveGoal',
+      'deleteTodaySelection'
+    ] as const) {
+      const failingUnitOfWork: UnitOfWorkPort = {
+        transaction: <T>(work: (repository: RepositoryPort) => T): T =>
+          connection.transaction((repository) => {
+            const failingRepository = new Proxy(repository, {
+              get(target, property, receiver) {
+                if (property === failingMethod) {
+                  return () => {
+                    throw new Error(`injected ${failingMethod} failure`)
+                  }
                 }
+                const value = Reflect.get(target, property, receiver) as unknown
+                return typeof value === 'function' ? value.bind(target) : value
               }
-              const value = Reflect.get(target, property, receiver) as unknown
-              return typeof value === 'function' ? value.bind(target) : value
-            }
+            })
+            return work(failingRepository)
           })
-          return work(failingRepository)
+      }
+      const failing = servicesFor(
+        connection,
+        clock,
+        ['record-1', 'understanding-1', 'confusion-1', 'action-2'],
+        failingUnitOfWork
+      )
+      expect(() =>
+        failing.records.recordAction({
+          actionId: 'action-1',
+          capturedOn: '2026-08-12',
+          durationMinutes: 10,
+          outcome: 'partial',
+          understanding: 'A fact',
+          confusion: 'A question',
+          nextStep: 'Replacement',
+          postRecord: {
+            action: 'reschedule',
+            currentNextResolution: { kind: 'create-from-recorded-next-step' }
+          }
         })
+      ).toThrow(`injected ${failingMethod} failure`)
+      expect(connection.repository.readSnapshot(), failingMethod).toEqual(before)
     }
-    const failing = servicesFor(
-      connection,
-      clock,
-      ['record-1', 'understanding-1', 'confusion-1', 'action-2'],
-      failingUnitOfWork
-    )
-    expect(() =>
-      failing.records.recordAction({
-        actionId: 'action-1',
-        capturedOn: '2026-08-12',
-        durationMinutes: 10,
-        outcome: 'partial',
-        understanding: 'A fact',
-        confusion: 'A question',
-        nextStep: 'Replacement',
-        postRecord: {
-          action: 'complete',
-          currentNextResolution: { kind: 'create-from-recorded-next-step' }
-        }
-      })
-    ).toThrow(/injected post-record Goal failure/)
-    expect(connection.repository.readSnapshot()).toEqual(before)
     connection.close()
   })
 })
