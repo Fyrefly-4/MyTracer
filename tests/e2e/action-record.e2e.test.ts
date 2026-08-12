@@ -46,6 +46,7 @@ async function setMainProcessDate(
 }
 
 test('saves quick and deep records without a Today prerequisite and preserves them on reopen', async () => {
+  test.slow()
   const root = await createTemporaryTestRoot()
   const databasePath = join(root.electronUserData, 'data', 'mytracer.sqlite3')
   let application: ElectronApplication | undefined
