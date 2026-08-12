@@ -1,17 +1,17 @@
 # T013 快速/深入 ActionRecord 任务合同
 
-> 合同状态：**项目所有者已批准并已明确启动 T013 实现；任务账本仍待文档收口授权后同步**
+> 合同状态：**项目所有者已批准；实现、自动验证、独立复核与人工验收均已完成**
 >
-> 当前事实：G2 与 S1 设计已通过，T011、T012 已完成；T013 在任务账本中仍为 `pending`。
+> 交付事实：实现与证据绑定 revision `b10d5d40c4c1dc1f7a20801d5d904b1d37953270`；Draft PR #10 的实现-head Windows required gate 已通过；项目所有者于 2026-08-12 报告人工验收通过。
 >
-> 当前权限：允许第 7 节范围内的本地实现与验证、创建任务分支和分步提交、push 并创建/更新到 `dev` 的 Draft PR；依赖安装、任务状态/验收证据更新、文档收口、Ready、merge、tag、release 与其他外部写入仍未授权。
+> 当前权限：文档收口、Draft PR 正文更新、独立收口提交与 push 已获授权；Ready、merge、tag、release、依赖安装与其他外部写入仍未授权。
 
 ## 1. 任务信息
 
 - **Task ID**：T013
 - **Title**：Quick and deep ActionRecord
 - **Slice / Plan item**：S1 / E1-03
-- **Task ledger status**：`pending`（实现已由项目所有者显式激活；账本同步仍需文档收口授权）
+- **Task ledger status**：`done`（由 `EV-T013-001` 支持；不代表 PR Ready、merge、S1 或完整 AC-01 通过）
 - **Base / branch**：`dev@b994962618954cf02f9e07590d68213d0378bccb` / `task/T013-action-record`
 - **前置事实**：G2 已通过；S1 设计已批准；T011、T012 已完成；S1-Q03=B、S1-Q04=B、S1-Q07=A、S1-Q08=B、S1-Q10=A。
 
@@ -250,10 +250,10 @@ npm.cmd run verify
 - [x] 创建或更新到 `dev` 的 Draft PR。
 - [ ] 标记 Ready、merge 到 `dev`、创建或合并 `dev → main`、tag 或 release。
 - [ ] 执行 `npm install`、`npm ci` 或其他依赖安装；新增或升级依赖。
-- [ ] 修改任务状态、验收证据或其他收口文档。
+- [x] 修改项目所有者批准的任务状态、验收证据与收口文档；创建独立收口提交并 push。
 - [ ] 网络访问、live AI、真实用户数据写入、migration、破坏性操作或其他外部写入。
 
-以上已勾选的 Git/GitHub 操作已由项目所有者明确授权；其余未勾选操作继续禁止。依赖安装、任务状态/证据收口和其他外部写入仍需针对确切范围另行授权。
+以上已勾选的 Git/GitHub 与文档收口操作已由项目所有者明确授权；其余未勾选操作继续禁止。依赖安装和其他外部写入仍需针对确切范围另行授权。
 
 ## 13. 风险与停止条件
 
@@ -277,3 +277,12 @@ npm.cmd run verify
 ## 14. 完成报告要求
 
 完成报告必须简短列出：实际变更文件；FR-A05/A08、FR-L01～L06/L08、FR-C01、D-006/103/104/105/106、ED-012/015/016/017 与 AC-01 步骤 4～5 的覆盖边界；实际命令、环境、revision 与证据；人工验收状态；依赖/schema/migration 不变证明；残余风险和未验证项；是否发现需求冲突或范围变化。必须明确 FR-L07、FR-L09、FR-C04 与完整 AC-01 仍由后续任务完成。
+
+## 15. 实际交付证据
+
+- **实现 revision**：`b10d5d40c4c1dc1f7a20801d5d904b1d37953270`；分支 `task/T013-action-record`；Draft PR #10 指向 `dev`。
+- **自动验证**：本地 `npm.cmd run verify` 通过，包含 66 项 unit、33 项 integration、build 与 5 项 Electron E2E；1 项 package smoke 按既有 opt-in 条件跳过。独立复核无未解决重大问题。
+- **Hosted CI**：实现 head 的 Windows required gate run `31613036396` / job `94168900557` 为 `success`；失败 run `31609393753`、`31612362422` 的 E2E 问题已修复并由成功 run 取代。
+- **人工验收**：项目所有者于 2026-08-12 按第 10.13 条清单报告通过。
+- **边界**：`EV-T013-001` 只声明本合同范围与 AC-01 步骤 4～5；T012+T013 合并完成 FR-A05。FR-L07、FR-L09、FR-C04、完整 AC-01、S1/G3、Ready 与 merge 均未由 T013 声明。
+- **不变证明**：无依赖、lockfile、schemaVersion、migration 或 `001_initial.sql` 变化；未发现需求冲突或范围变化。
