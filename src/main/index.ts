@@ -6,6 +6,7 @@ import { GoalService } from '../application/goals'
 import { ActionService } from '../application/actions'
 import { TodayService } from '../application/today'
 import { ActionRecordService } from '../application/action-records'
+import { ProgressService } from '../application/progress'
 import { queryShellStatus } from '../application/query-shell-status'
 import type { AiConfigurationPort } from '../application/ports/configuration'
 import type { DiagnosticsPort } from '../application/ports/diagnostics'
@@ -23,6 +24,7 @@ import { registerGoalIpc } from './goals-ipc'
 import { registerActionIpc } from './actions-ipc'
 import { registerTodayIpc } from './today-ipc'
 import { registerRecordIpc } from './records-ipc'
+import { registerProgressIpc } from './progress-ipc'
 import { ActionRecordingContextStore } from './action-recording-contexts'
 import { assertTrustedSender, type RendererLocation } from './ipc-security'
 
@@ -174,6 +176,7 @@ app.whenReady().then(async () => {
     clock,
     generateId: randomUUID
   })
+  const progressService = new ProgressService({ repository: sqliteConnection.repository })
   registerGoalIpc({
     ipc: ipcMain,
     service: goalService,
@@ -193,6 +196,11 @@ app.whenReady().then(async () => {
     ipc: ipcMain,
     service: actionRecordService,
     contexts: actionRecordingContexts,
+    assertSender: (event) => assertTrustedSender(event, mainWindow, getRendererLocation())
+  })
+  registerProgressIpc({
+    ipc: ipcMain,
+    service: progressService,
     assertSender: (event) => assertTrustedSender(event, mainWindow, getRendererLocation())
   })
   await createMainWindow()

@@ -64,7 +64,8 @@ test('runs the Electron shell with an isolated userData root', async () => {
       'goals',
       'actions',
       'today',
-      'records'
+      'records',
+      'progress'
     ])
     expect(await page.evaluate(() => Object.keys(window.myTracer.shell))).toEqual(['getStatus'])
     expect(await page.evaluate(() => Object.keys(window.myTracer.goals))).toEqual([
@@ -97,6 +98,7 @@ test('runs the Electron shell with an isolated userData root', async () => {
       'listForAction',
       'getDetail'
     ])
+    expect(await page.evaluate(() => Object.keys(window.myTracer.progress))).toEqual(['get'])
     expect(await page.evaluate(() => typeof Reflect.get(window, 'node'))).toBe('undefined')
     expect(await page.evaluate(() => typeof Reflect.get(window, 'require'))).toBe('undefined')
     expect(await page.evaluate(() => typeof Reflect.get(window, 'process'))).toBe('undefined')

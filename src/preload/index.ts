@@ -34,6 +34,12 @@ import {
   type RecordActionValueDto,
   type RecordResult
 } from '../contracts/records'
+import {
+  PROGRESS_CHANNELS,
+  type GetProgressInputDto,
+  type ProgressResult,
+  type ProgressViewDto
+} from '../contracts/progress'
 
 const api: MyTracerApi = Object.freeze({
   shell: Object.freeze({
@@ -96,6 +102,10 @@ const api: MyTracerApi = Object.freeze({
       ipcRenderer.invoke(RECORD_CHANNELS.listForAction, input),
     getDetail: (input: ActionRecordIdInputDto): Promise<RecordResult<ActionRecordDetailDto>> =>
       ipcRenderer.invoke(RECORD_CHANNELS.getDetail, input)
+  }),
+  progress: Object.freeze({
+    get: (input: GetProgressInputDto): Promise<ProgressResult<ProgressViewDto>> =>
+      ipcRenderer.invoke(PROGRESS_CHANNELS.get, input)
   })
 })
 

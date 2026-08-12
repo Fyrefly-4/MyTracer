@@ -1,0 +1,54 @@
+export const PROGRESS_CHANNELS = Object.freeze({
+  get: 'progress:get'
+} as const)
+
+export interface GetProgressInputDto {
+  readonly goalId?: string | null
+  readonly from?: string | null
+  readonly through?: string | null
+}
+
+export interface ProgressFilterDto {
+  readonly goalId: string | null
+  readonly from: string | null
+  readonly through: string | null
+}
+
+export interface ProgressChildFactDto {
+  readonly id: string
+  readonly text: string
+  readonly createdAt: string
+}
+
+export interface ProgressRecordFactDto {
+  readonly recordId: string
+  readonly actionId: string
+  readonly goalId: string | null
+  readonly actionTitle: string
+  readonly occurredOn: string
+  readonly durationMinutes: number
+  readonly outcome: 'completed' | 'partial' | 'stopped'
+  readonly createdAt: string
+  readonly understandings: readonly ProgressChildFactDto[]
+  readonly openConfusions: readonly ProgressChildFactDto[]
+}
+
+export interface ProgressViewDto {
+  readonly filter: ProgressFilterDto
+  readonly totalDurationMinutes: number
+  readonly realActionCount: number
+  readonly records: readonly ProgressRecordFactDto[]
+}
+
+export type ProgressErrorCode = 'validation' | 'not-found' | 'persistence-failed'
+
+export type ProgressResult<T> =
+  | { readonly ok: true; readonly value: T }
+  | {
+      readonly ok: false
+      readonly error: { readonly code: ProgressErrorCode; readonly message: string }
+    }
+
+export interface ProgressApi {
+  readonly get: (input: GetProgressInputDto) => Promise<ProgressResult<ProgressViewDto>>
+}
