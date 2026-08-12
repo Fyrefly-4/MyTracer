@@ -39,7 +39,63 @@ async function verifyPackagedApplication(
       platform: 'windows',
       ai: { configured: false, availability: 'not-configured' }
     })
-    expect(await page.evaluate(() => Object.keys(window.myTracer))).toEqual(['shell'])
+    expect(await page.evaluate(() => Object.keys(window.myTracer))).toEqual([
+      'shell',
+      'goals',
+      'actions',
+      'today',
+      'records',
+      'progress'
+    ])
+    expect(await page.evaluate(() => Object.keys(window.myTracer.shell))).toEqual(['getStatus'])
+    expect(await page.evaluate(() => Object.keys(window.myTracer.goals))).toEqual([
+      'create',
+      'updateDetails',
+      'pause',
+      'resume',
+      'end',
+      'setCurrentNextAction',
+      'list',
+      'getDetail'
+    ])
+    expect(await page.evaluate(() => Object.keys(window.myTracer.actions))).toEqual([
+      'create',
+      'updateDetails',
+      'complete',
+      'cancel',
+      'reschedule',
+      'getDetail'
+    ])
+    expect(await page.evaluate(() => Object.keys(window.myTracer.today))).toEqual([
+      'selectAction',
+      'removeAction',
+      'get'
+    ])
+    expect(await page.evaluate(() => Object.keys(window.myTracer.records))).toEqual([
+      'begin',
+      'cancel',
+      'record',
+      'listForAction',
+      'getDetail'
+    ])
+    expect(await page.evaluate(() => Object.keys(window.myTracer.progress))).toEqual(['get'])
+    expect(
+      await page.evaluate(() =>
+        [
+          window.myTracer,
+          window.myTracer.shell,
+          window.myTracer.goals,
+          window.myTracer.actions,
+          window.myTracer.today,
+          window.myTracer.records,
+          window.myTracer.progress
+        ].every((value) => Object.isFrozen(value))
+      )
+    ).toBe(true)
+    expect(await page.evaluate(() => typeof Reflect.get(window, 'node'))).toBe('undefined')
+    expect(await page.evaluate(() => typeof Reflect.get(window, 'require'))).toBe('undefined')
+    expect(await page.evaluate(() => typeof Reflect.get(window, 'process'))).toBe('undefined')
+    expect(await page.evaluate(() => typeof Reflect.get(window, 'safeStorage'))).toBe('undefined')
   } finally {
     await application.close()
   }
@@ -60,6 +116,7 @@ async function verifyPackagedApplication(
 }
 
 test('starts Windows x64 unpacked and isolated NSIS-installed applications', async () => {
+  test.setTimeout(300_000)
   test.skip(process.platform !== 'win32', 'T004 package smoke is Windows-only.')
 
   const root = await createTemporaryTestRoot()
