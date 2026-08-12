@@ -2,6 +2,7 @@ import type { GoalApi } from './goals'
 import type { ActionApi } from './actions'
 import type { TodayApi } from './today'
 import type { RecordApi } from './records'
+import type { ProgressApi } from './progress'
 
 export const SHELL_STATUS_CHANNEL = 'shell:query-status' as const
 
@@ -23,4 +24,5 @@ export interface MyTracerApi {
   readonly actions: ActionApi
   readonly today: TodayApi
   readonly records: RecordApi
+  readonly progress: ProgressApi
 }

@@ -21,6 +21,10 @@ import type {
   RecordErrorCode,
   RecordingDateChoiceDto
 } from '../../contracts/records'
+import type {
+  ProgressErrorCode,
+  ProgressViewDto
+} from '../../contracts/progress'
 
 type Section = 'goals' | 'today' | 'progress' | 'review'
 
@@ -50,7 +54,7 @@ const sections: ReadonlyArray<{
     label: 'Progress',
     eyebrow: '只看事实',
     title: '进展会来自已经记录的事实',
-    description: '后续切片会展示投入时间、行动次数和你亲自确认的理解；当前不会推断得分、连续性或失败。'
+    description: '查看已经记录的投入、行动次数、确认理解和开放困惑；不会推断得分、掌握度或失败。'
   },
   {
     id: 'review',
@@ -103,6 +107,12 @@ const recordOutcomeText: Record<ActionRecordOutcomeDto, string> = {
   completed: '本次达到预期',
   partial: '本次完成一部分',
   stopped: '本次在这里停下'
+}
+
+const progressErrorText: Record<ProgressErrorCode, string> = {
+  validation: '请检查目标或日期筛选；开始日期不能晚于结束日期。',
+  'not-found': '所选目标已不存在，请重新选择。',
+  'persistence-failed': '本地进展事实暂时无法读取。'
 }
 
 const unavailableReasonText: Record<NonNullable<ActionDetailDto['unavailableReason']>, string> = {
@@ -1278,6 +1288,138 @@ function TodayWorkspace(): ReactNode {
   )
 }
 
+function ProgressWorkspace(): ReactNode {
+  const [goals, setGoals] = useState<readonly GoalSummaryDto[]>([])
+  const [goalId, setGoalId] = useState('')
+  const [from, setFrom] = useState('')
+  const [through, setThrough] = useState('')
+  const [progress, setProgress] = useState<ProgressViewDto | null>(null)
+  const [busy, setBusy] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const load = async (filter = { goalId, from, through }): Promise<void> => {
+    setBusy(true)
+    const result = await window.myTracer.progress.get({
+      goalId: filter.goalId || null,
+      from: filter.from || null,
+      through: filter.through || null
+    })
+    setBusy(false)
+    if (result.ok) {
+      setProgress(result.value)
+      setError(null)
+    } else {
+      setError(progressErrorText[result.error.code])
+    }
+  }
+
+  useEffect(() => {
+    let active = true
+    void Promise.all([window.myTracer.goals.list({ status: null }), window.myTracer.progress.get({})])
+      .then(([goalResult, progressResult]) => {
+        if (!active) return
+        setBusy(false)
+        if (goalResult.ok) setGoals(goalResult.value)
+        if (progressResult.ok) {
+          setProgress(progressResult.value)
+          setError(null)
+        } else {
+          setError(progressErrorText[progressResult.error.code])
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setBusy(false)
+          setError(progressErrorText['persistence-failed'])
+        }
+      })
+    return () => {
+      active = false
+    }
+  }, [])
+
+  return (
+    <section className="progress-workspace" aria-label="进展事实">
+      <form
+        className="progress-filters"
+        onSubmit={(event) => {
+          event.preventDefault()
+          void load()
+        }}
+      >
+        <label>
+          目标（可选）
+          <select value={goalId} onChange={(event) => setGoalId(event.target.value)}>
+            <option value="">全部目标与无目标行动</option>
+            {goals.map((goal) => (
+              <option key={goal.id} value={goal.id}>{goal.name}</option>
+            ))}
+          </select>
+        </label>
+        <label>
+          开始日期（包含）
+          <input type="date" value={from} onChange={(event) => setFrom(event.target.value)} />
+        </label>
+        <label>
+          结束日期（包含）
+          <input type="date" value={through} onChange={(event) => setThrough(event.target.value)} />
+        </label>
+        <button className="primary-button" type="submit" disabled={busy}>查看事实</button>
+      </form>
+
+      {error ? <p className="form-error" role="alert">{error}</p> : null}
+      {busy && !progress ? <p className="empty-copy" role="status">正在读取本地事实…</p> : null}
+      {progress ? (
+        <>
+          <div className="progress-summary" aria-label="进展汇总">
+            <article>
+              <span>累计行动分钟</span>
+              <strong>{progress.totalDurationMinutes}</strong>
+            </article>
+            <article>
+              <span>记录到的行动次数</span>
+              <strong>{progress.realActionCount}</strong>
+            </article>
+          </div>
+
+          {progress.records.length ? (
+            <ol className="progress-records">
+              {progress.records.map((record) => (
+                <li key={record.recordId}>
+                  <div className="progress-record-heading">
+                    <div>
+                      <h2>{record.actionTitle}</h2>
+                      <p>{record.occurredOn} · {recordOutcomeText[record.outcome]}</p>
+                    </div>
+                    <strong>{record.durationMinutes === 0 ? '少于 1 分钟' : `${record.durationMinutes} 分钟`}</strong>
+                  </div>
+                  {record.understandings.length ? (
+                    <div className="progress-fact-group">
+                      <h3>确认理解</h3>
+                      {record.understandings.map((item) => <p key={item.id}>{item.text}</p>)}
+                    </div>
+                  ) : null}
+                  {record.openConfusions.length ? (
+                    <div className="progress-fact-group">
+                      <h3>开放困惑</h3>
+                      {record.openConfusions.map((item) => <p key={item.id}>{item.text}</p>)}
+                    </div>
+                  ) : null}
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <div className="progress-empty">
+              <h2>这个范围内还没有已记录事实</h2>
+              <p>空白不表示失败、未坚持或未掌握；它只表示当前筛选没有 ActionRecord。</p>
+            </div>
+          )}
+        </>
+      ) : null}
+    </section>
+  )
+}
+
 class ShellErrorBoundary extends Component<{ readonly children: ReactNode }, { readonly failed: boolean }> {
   public state = { failed: false }
 
@@ -1373,6 +1515,8 @@ function Shell(): ReactNode {
             <GoalWorkspace />
           ) : activeSection === 'today' ? (
             <TodayWorkspace />
+          ) : activeSection === 'progress' ? (
+            <ProgressWorkspace />
           ) : (
             <section className="placeholder-card" aria-label={`${selected.label} 占位内容`}>
               <div className="placeholder-icon" aria-hidden="true">◎</div>
