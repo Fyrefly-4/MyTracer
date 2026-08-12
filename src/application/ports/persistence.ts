@@ -156,6 +156,15 @@ export interface ActionRepositoryPort extends RepositoryPort {
   deleteTodaySelection(actionId: string, selectedFor: string): void
 }
 
+export interface ActionRecordRepositoryPort extends ActionRepositoryPort {
+  findActionRecordById(id: string): ActionRecordPersistenceRecord | null
+  listActionRecordsByActionId(actionId: string): readonly ActionRecordPersistenceRecord[]
+  listUnderstandingsByActionRecordId(
+    actionRecordId: string
+  ): readonly UnderstandingPersistenceRecord[]
+  listConfusionsByActionRecordId(actionRecordId: string): readonly ConfusionPersistenceRecord[]
+}
+
 export function asActionRepository(repository: RepositoryPort): ActionRepositoryPort {
   const candidate = repository as Partial<ActionRepositoryPort>
   if (
@@ -167,6 +176,19 @@ export function asActionRepository(repository: RepositoryPort): ActionRepository
     throw new TypeError('Repository does not provide the Action/Today contract.')
   }
   return repository as ActionRepositoryPort
+}
+
+export function asActionRecordRepository(repository: RepositoryPort): ActionRecordRepositoryPort {
+  const candidate = repository as Partial<ActionRecordRepositoryPort>
+  if (
+    typeof candidate.findActionRecordById !== 'function' ||
+    typeof candidate.listActionRecordsByActionId !== 'function' ||
+    typeof candidate.listUnderstandingsByActionRecordId !== 'function' ||
+    typeof candidate.listConfusionsByActionRecordId !== 'function'
+  ) {
+    throw new TypeError('Repository does not provide the ActionRecord contract.')
+  }
+  return repository as ActionRecordRepositoryPort
 }
 
 export interface UnitOfWorkPort {

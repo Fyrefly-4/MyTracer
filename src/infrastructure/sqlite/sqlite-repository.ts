@@ -1,7 +1,7 @@
 import type Database from 'better-sqlite3'
 import type {
   ActionPersistenceRecord,
-  ActionRepositoryPort,
+  ActionRecordRepositoryPort,
   ActionRecordPersistenceRecord,
   ConfusionPersistenceRecord,
   CorePersistenceSnapshot,
@@ -22,7 +22,7 @@ const asString = (row: Row, name: string): string => String(row[name])
 const asNullableString = (row: Row, name: string): string | null =>
   row[name] === null ? null : asString(row, name)
 
-export class SqliteRepository implements ActionRepositoryPort {
+export class SqliteRepository implements ActionRecordRepositoryPort {
   constructor(private readonly database: Database.Database) {}
 
   saveGoal(record: GoalPersistenceRecord): void {
@@ -150,6 +150,12 @@ export class SqliteRepository implements ActionRepositoryPort {
     return row ? this.actionFromRow(row) : null
   }
 
+  findActionRecordById(id: string): ActionRecordPersistenceRecord | null {
+    const row = this.database.prepare('SELECT * FROM action_records WHERE id = ?').get(id) as
+      Row | undefined
+    return row ? this.actionRecordFromRow(row) : null
+  }
+
   findTodaySelection(
     actionId: string,
     selectedFor: string
@@ -181,6 +187,58 @@ export class SqliteRepository implements ActionRepositoryPort {
         .prepare('SELECT * FROM actions WHERE goal_id = ? ORDER BY created_at ASC, id ASC')
         .all(goalId) as readonly Row[]
     ).map((row) => this.actionFromRow(row))
+  }
+
+  listActionRecordsByActionId(actionId: string): readonly ActionRecordPersistenceRecord[] {
+    return (
+      this.database
+        .prepare(
+          `SELECT * FROM action_records WHERE action_id = ?
+           ORDER BY occurred_on DESC, created_at DESC, id ASC`
+        )
+        .all(actionId) as readonly Row[]
+    ).map((row) => this.actionRecordFromRow(row))
+  }
+
+  listUnderstandingsByActionRecordId(
+    actionRecordId: string
+  ): readonly UnderstandingPersistenceRecord[] {
+    return (
+      this.database
+        .prepare(
+          `SELECT * FROM understandings WHERE action_record_id = ?
+           ORDER BY created_at ASC, id ASC`
+        )
+        .all(actionRecordId) as readonly Row[]
+    ).map((row) => ({
+      id: asString(row, 'id'),
+      actionRecordId: asString(row, 'action_record_id'),
+      text: asString(row, 'text'),
+      source: asString(row, 'source') as UnderstandingPersistenceRecord['source'],
+      revokedAt: asNullableString(row, 'revoked_at'),
+      createdAt: asString(row, 'created_at'),
+      updatedAt: asString(row, 'updated_at')
+    }))
+  }
+
+  listConfusionsByActionRecordId(actionRecordId: string): readonly ConfusionPersistenceRecord[] {
+    return (
+      this.database
+        .prepare(
+          `SELECT * FROM confusions WHERE action_record_id = ?
+           ORDER BY created_at ASC, id ASC`
+        )
+        .all(actionRecordId) as readonly Row[]
+    ).map((row) => ({
+      id: asString(row, 'id'),
+      actionRecordId: asString(row, 'action_record_id'),
+      text: asString(row, 'text'),
+      status: asString(row, 'status') as ConfusionPersistenceRecord['status'],
+      resolvedAt: asNullableString(row, 'resolved_at'),
+      resolution: asNullableString(row, 'resolution'),
+      createdAt: asString(row, 'created_at'),
+      updatedAt: asString(row, 'updated_at')
+    }))
   }
 
   listTodaySelectionsOn(selectedFor: string): readonly TodaySelectionPersistenceRecord[] {
@@ -363,6 +421,20 @@ export class SqliteRepository implements ActionRepositoryPort {
       kind: asString(row, 'kind') as TodaySelectionPersistenceRecord['kind'],
       selectedBy: asString(row, 'selected_by') as 'user',
       createdAt: asString(row, 'created_at')
+    }
+  }
+
+  private actionRecordFromRow(row: Row): ActionRecordPersistenceRecord {
+    return {
+      id: asString(row, 'id'),
+      actionId: asString(row, 'action_id'),
+      occurredOn: asString(row, 'occurred_on'),
+      durationMinutes: Number(row.duration_minutes),
+      outcome: asString(row, 'outcome') as ActionRecordPersistenceRecord['outcome'],
+      nextStep: asNullableString(row, 'next_step'),
+      note: asNullableString(row, 'note'),
+      createdAt: asString(row, 'created_at'),
+      updatedAt: asString(row, 'updated_at')
     }
   }
 }
