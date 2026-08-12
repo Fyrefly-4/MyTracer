@@ -114,6 +114,29 @@ export interface GoalActionRecordSummaryPersistenceRecord {
   readonly createdAt: string
 }
 
+export interface ProgressQueryFilterPersistence {
+  readonly goalId: string | null
+  readonly from: string | null
+  readonly through: string | null
+}
+
+export interface ProgressQueryRowPersistenceRecord {
+  readonly recordId: string
+  readonly actionId: string
+  readonly goalId: string | null
+  readonly actionTitle: string
+  readonly occurredOn: string
+  readonly durationMinutes: number
+  readonly outcome: ActionRecordPersistenceRecord['outcome']
+  readonly recordCreatedAt: string
+  readonly understandingId: string | null
+  readonly understandingText: string | null
+  readonly understandingCreatedAt: string | null
+  readonly confusionId: string | null
+  readonly confusionText: string | null
+  readonly confusionCreatedAt: string | null
+}
+
 export interface CorePersistenceSnapshot {
   readonly goals: readonly GoalPersistenceRecord[]
   readonly actions: readonly ActionPersistenceRecord[]
@@ -165,6 +188,12 @@ export interface ActionRecordRepositoryPort extends ActionRepositoryPort {
   listConfusionsByActionRecordId(actionRecordId: string): readonly ConfusionPersistenceRecord[]
 }
 
+export interface ProgressRepositoryPort extends RepositoryPort {
+  queryProgressRows(
+    filter: ProgressQueryFilterPersistence
+  ): readonly ProgressQueryRowPersistenceRecord[]
+}
+
 export function asActionRepository(repository: RepositoryPort): ActionRepositoryPort {
   const candidate = repository as Partial<ActionRepositoryPort>
   if (
@@ -189,6 +218,14 @@ export function asActionRecordRepository(repository: RepositoryPort): ActionReco
     throw new TypeError('Repository does not provide the ActionRecord contract.')
   }
   return repository as ActionRecordRepositoryPort
+}
+
+export function asProgressRepository(repository: RepositoryPort): ProgressRepositoryPort {
+  const candidate = repository as Partial<ProgressRepositoryPort>
+  if (typeof candidate.queryProgressRows !== 'function') {
+    throw new TypeError('Repository does not provide the Progress query contract.')
+  }
+  return repository as ProgressRepositoryPort
 }
 
 export interface UnitOfWorkPort {

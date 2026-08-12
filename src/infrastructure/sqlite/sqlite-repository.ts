@@ -8,6 +8,8 @@ import type {
   GoalActionRecordSummaryPersistenceRecord,
   GoalPersistenceRecord,
   GoalStatus,
+  ProgressQueryFilterPersistence,
+  ProgressQueryRowPersistenceRecord,
   ReviewResultPersistenceRecord,
   RoutinePersistenceRecord,
   RoutineRecordPersistenceRecord,
@@ -289,6 +291,55 @@ export class SqliteRepository implements ActionRecordRepositoryPort {
         )
         .all(goalId, selectedFor) as readonly Row[]
     ).map((row) => asString(row, 'action_id'))
+  }
+
+  queryProgressRows(
+    filter: ProgressQueryFilterPersistence
+  ): readonly ProgressQueryRowPersistenceRecord[] {
+    const rows = this.database
+      .prepare(
+        `SELECT records.id AS record_id, records.action_id, actions.goal_id,
+           actions.title AS action_title, records.occurred_on, records.duration_minutes,
+           records.outcome, records.created_at AS record_created_at,
+           understandings.id AS understanding_id, understandings.text AS understanding_text,
+           understandings.created_at AS understanding_created_at,
+           confusions.id AS confusion_id, confusions.text AS confusion_text,
+           confusions.created_at AS confusion_created_at
+         FROM action_records AS records
+         INNER JOIN actions ON actions.id = records.action_id
+         LEFT JOIN understandings ON understandings.action_record_id = records.id
+           AND understandings.revoked_at IS NULL
+         LEFT JOIN confusions ON confusions.action_record_id = records.id
+           AND confusions.status = 'open'
+         WHERE (@goalId IS NULL OR actions.goal_id = @goalId)
+           AND (@fromDate IS NULL OR records.occurred_on >= @fromDate)
+           AND (@throughDate IS NULL OR records.occurred_on <= @throughDate)
+         ORDER BY records.occurred_on DESC, records.created_at DESC, records.id ASC,
+           understandings.created_at ASC, understandings.id ASC,
+           confusions.created_at ASC, confusions.id ASC`
+      )
+      .all({
+        goalId: filter.goalId,
+        fromDate: filter.from,
+        throughDate: filter.through
+      }) as readonly Row[]
+
+    return rows.map((row) => ({
+      recordId: asString(row, 'record_id'),
+      actionId: asString(row, 'action_id'),
+      goalId: asNullableString(row, 'goal_id'),
+      actionTitle: asString(row, 'action_title'),
+      occurredOn: asString(row, 'occurred_on'),
+      durationMinutes: Number(row.duration_minutes),
+      outcome: asString(row, 'outcome') as ActionRecordPersistenceRecord['outcome'],
+      recordCreatedAt: asString(row, 'record_created_at'),
+      understandingId: asNullableString(row, 'understanding_id'),
+      understandingText: asNullableString(row, 'understanding_text'),
+      understandingCreatedAt: asNullableString(row, 'understanding_created_at'),
+      confusionId: asNullableString(row, 'confusion_id'),
+      confusionText: asNullableString(row, 'confusion_text'),
+      confusionCreatedAt: asNullableString(row, 'confusion_created_at')
+    }))
   }
 
   deleteTodaySelection(actionId: string, selectedFor: string): void {
