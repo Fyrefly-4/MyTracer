@@ -1,16 +1,16 @@
 # T014 基础 Progress 投影与 S1 闭环任务合同
 
-> 合同状态：**等待项目所有者批准；不构成实现授权**
+> 合同状态：**已批准并完成实现候选；当前处于 `review`，等待独立 review 与文档收口 head CI**
 >
-> 权限边界：本文件只定义候选实现合同。T014 仍为 `pending`；代码实现、任务状态或验收证据修改、依赖安装、Git/GitHub 操作及其他外部写入均未授权。
+> 权限边界：项目所有者已批准合同、实现、本地分步提交、任务分支推送、到 `dev` 的 Draft PR，以及 2026-08-13 的精确文档收口和再次推送。Ready、merge、`dev -> main`、tag、release、依赖安装及其他外部写入仍未授权。
 
 ## 1. 任务信息
 
 - **Task ID**：T014
 - **Title**：基础 Progress 投影与 S1 闭环
 - **Slice / Plan item**：S1 / E1-04
-- **Task ledger status**：`pending`
-- **Base / branch**：实现启动时由项目所有者确认；当前不创建分支或 worktree
+- **Task ledger status**：`review`
+- **Base / branch**：基线 `b3c61b403888b81e4f155fabcbefea689acd1d3a`；分支 `task/T014-progress-core-loop`
 - **实时前置事实（2026-08-13）**：G2 已通过；S1 设计已批准；`TASK_INDEX_V0.1.md` 已将 T011～T013 标为 `done`，其中 T013 由 `EV-T013-001` 支持。因此 T014 的 T013 依赖按实时任务账本已满足；若启动时账本或证据不再成立，T014 立即阻塞。T014 合同和实现仍须分别获得批准。
 
 ## 2. 目标结果
@@ -55,11 +55,12 @@ T014 只完成 FR-P02 的 ActionRecord 分支，以及 FR-D01 的 Goal/Action/Ac
 
 实现开始前仍必须全部满足：
 
-- [ ] 项目所有者批准本合同。
-- [ ] 项目所有者另行明确发出 T014 实现启动指令；合同批准本身不构成该指令。
-- [ ] 启动时重新只读核对 `TASK_INDEX_V0.1.md` 仍记录 T013 `done` 且证据存在；若为 `pending`、`blocked` 或无证据，T014 不得启动。
-- [ ] 项目所有者批准第 7 节精确实现文件范围和实际基线 revision。
-- [ ] Git/分支/commit、GitHub、依赖安装、任务账本/验收证据收口和其他外部写入权限另行明确；当前全部未授权。
+- [x] 项目所有者批准本合同。
+- [x] 项目所有者另行明确发出 T014 实现启动指令。
+- [x] 启动时重新只读核对 `TASK_INDEX_V0.1.md` 仍记录 T013 `done` 且证据存在。
+- [x] 项目所有者批准第 7 节精确实现文件范围和基线 revision。
+- [x] 项目所有者授权本地分支/commit、任务分支 push、到 `dev` 的 Draft PR，以及实现 CI 后的精确文档收口和再次 push。
+- [ ] 依赖安装、Ready、merge、`dev -> main`、tag、release 及其他未列外部写入仍须另行授权。
 
 ## 5. Query、过滤与投影契约
 
@@ -179,6 +180,8 @@ openConfusions       = children of filtered records where status = open
 11. 证据只声明 T014 对 FR-P02 的 ActionRecord 分支、FR-D01 的 S1 重开子集及 AC-01 自动化闭环；不声明完整 FR-P02、FR-D01、AC-07 或 G3/S1 自动通过。
 12. **MANUAL**：项目所有者在同一最终 revision 实际连续执行 AC-01，确认 Progress 易读、中性且记录负担合理；未执行时必须记录 `pending`。
 
+当前交付事实：实现 revision `52cd33672b6b2632b09beb7cb8e66f48901f2bd0` 的本地 `verify` 与 PR #11 Windows required gate 已通过；项目所有者于 2026-08-13 报告完整人工 AC-01 全量通过。独立 review 尚无有效结果，因此 T014 仍为 `review`，不得标为 `done`。
+
 ## 11. 验证计划
 
 ### 11.1 单元
@@ -227,16 +230,16 @@ npm.cmd run verify
 
 ## 12. Git、GitHub、依赖与外部操作权限
 
-- [ ] 创建本地 worktree 或任务分支。
-- [ ] 创建本地提交。
-- [ ] push 任务分支。
-- [ ] 创建或更新到 `dev` 的 Draft PR。
+- [x] 创建本地任务分支。
+- [x] 创建本地提交。
+- [x] push 任务分支。
+- [x] 创建或更新到 `dev` 的 Draft PR。
 - [ ] 标记 Ready、merge 到 `dev`、创建或合并 `dev → main`、tag 或 release。
 - [ ] 执行 `npm install`、`npm ci` 或其他依赖安装；新增或升级依赖。
-- [ ] 修改 `TASK_INDEX_V0.1.md`、`ACCEPTANCE_EVIDENCE_V0.1.md` 或其他收口文档。
-- [ ] 网络访问、live AI、真实用户数据写入、migration、破坏性操作或其他外部写入。
+- [x] 已获授权按 2026-08-13 项目所有者批准的范围修改 `TASK_INDEX_V0.1.md`、`ACCEPTANCE_EVIDENCE_V0.1.md`、S1 交付状态、实施计划、README 和 Draft PR 正文，创建独立文档提交并再次 push。
+- [ ] live AI、真实用户数据写入、migration、破坏性操作或其他未列外部写入。
 
-以上权限当前全部未授权。实现本身也尚未授权；任何授权必须针对确切范围另行取得。即使 T011～T014 的实现和证据齐全，也只形成 G3/S1 验收候选，不自动通过阶段门、推进 `main`、创建 tag 或发布版本。
+以上勾选项只记录已经明确授予的权限；实际 commit、push 和 PR 状态以 Git/PR 记录为准，不扩张到未勾选项。即使 T011～T014 的实现和证据齐全，也只形成 G3/S1 验收候选，不自动通过阶段门、推进 `main`、创建 tag 或发布版本。
 
 ## 13. 风险与停止条件
 

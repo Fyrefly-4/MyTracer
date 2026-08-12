@@ -1,7 +1,7 @@
 # MyTracer v0.1 任务索引
 
 > 文档状态：v0.1 实施任务基线  
-> 当前阶段：G1、G2 已通过；T001～T004 已完成并归档；T011～T013 已完成；T014 为下一候选任务，仍为 `pending`
+> 当前阶段：G1、G2 已通过；T001～T004 已完成并归档；T011～T013 已完成；T014 为 `review`，等待独立 review 与文档收口 head CI
 > 状态来源：本文件是任务执行状态的唯一账本，架构实施计划只定义范围和顺序
 
 ## 1. 使用规则
@@ -33,6 +33,7 @@
 - T011 已由 `EV-T011-001` 证明本地自动验证、项目所有者人工验收和 PR head hosted Windows gate 通过；项目所有者于 2026-08-09 review 后确认任务完成。
 - T012 已由 `EV-T012-001` 证明本地自动验证、项目所有者人工复验和 PR #9 实现 head hosted Windows gate 通过；只贡献 AC-01 步骤 3，并只完成 FR-A05 的 Action 状态解耦部分。
 - T013 已由 `EV-T013-001` 证明本地自动验证、独立复核、项目所有者人工验收和 PR #10 实现 head hosted Windows gate 通过；贡献 AC-01 步骤 4～5，并与 T012 合并完成 FR-A05。
+- T014 的实现 revision、本地验证、PR #11 实现 head hosted Windows gate 和项目所有者完整人工 AC-01 已由 `EV-T014-001` / `EV-AC01-001` 记录；独立 review 尚缺，因此保持 `review`。
 - 首个 AI Provider、模型和 SDK 只阻塞 T062，不阻塞 S0～S5 的非 AI 能力。
 
 ## 4. 任务总表
@@ -46,7 +47,7 @@
 | T011 | E1-01 | Goal 生命周期和当前下一步 | FR-G01～G06；D-002/101；ED-005；AC-01 | G2（已通过） | `done` | `EV-T011-001` |
 | T012 | E1-02 | Action、Today focus、取消/完成/重新安排 | FR-A01～A06；FR-T01/04/05/08；ED-006/007；AC-01 | T011（已完成） | `done` | `EV-T012-001` |
 | T013 | E1-03 | 快速/深入 ActionRecord | FR-A05；FR-A08（T013 部分）；FR-L01～L06/L08；FR-C01；D-006/103～106 | T012 | `done` | `EV-T013-001` |
-| T014 | E1-04 | 基础 Progress 投影 | FR-P01～P04/P07/P08；FR-C03；D-007 | T013 | `pending` | — |
+| T014 | E1-04 | 基础 Progress 投影 | FR-P01～P04/P07/P08；FR-C03；D-007 | T013 | `review` | `EV-T014-001` |
 | T021 | E2-01 | Routine 生命周期和星期节奏 | FR-R01～R03；FR-T02；ED-006/009 | S1 | `pending` | — |
 | T022 | E2-02 | Routine 五态、unknown 和非计划日事实 | FR-R04～R09；D-008～010/107；AC-03 | T021 | `pending` | — |
 | T023 | E2-03 | 通用非强制意向 | FR-A07；FR-T03/T08；D-011；AC-04 | T021 | `pending` | — |
@@ -90,4 +91,4 @@
 - T011 为 `done`，由 `EV-T011-001`、PR #7 的 Windows required gate 和项目所有者 review 支持；任务 PR 仍保持 Draft，未据此授权 Ready 或 merge。
 - T012 为 `done`，由 `EV-T012-001`、PR #9 实现 head 的 Windows required gate 和项目所有者人工复验支持；任务 PR 仍保持 Draft，未据此授权 Ready 或 merge。
 - T013 为 `done`，由 `EV-T013-001`、PR #10 实现 head 的 Windows required gate 和项目所有者人工验收支持；只贡献 AC-01 步骤 4～5，不声明 FR-L07、FR-L09、FR-C04 或完整 AC-01。
-- T014 为下一候选任务，仍为 `pending`；须另行准备/批准合同并发出实现启动授权。
+- T014 为 `review`：实现 head `52cd33672b6b2632b09beb7cb8e66f48901f2bd0` 的本地 `verify`、PR #11 Windows required gate 及项目所有者完整人工 AC-01 已通过；独立 review 和文档收口最新 head CI 尚待完成。完整 FR-P02、FR-D01 与 AC-07 未完成，G3/S1 仍待项目所有者另行验收决定。
