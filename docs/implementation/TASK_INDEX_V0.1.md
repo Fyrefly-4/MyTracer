@@ -1,7 +1,7 @@
 # MyTracer v0.1 任务索引
 
 > 文档状态：v0.1 实施任务基线  
-> 当前阶段：G1、G2 已通过；T001～T004 已完成并归档；T011～T013 已完成；T014 为 `review`，等待独立 review 与文档收口 head CI
+> 当前阶段：G1、G2 已通过；T001～T004 已完成并归档；T011～T014 已完成；G3/S1 因 Windows package smoke 漂移而未通过，等待 T801 独立修复和新 `dev` revision 全量重验
 > 状态来源：本文件是任务执行状态的唯一账本，架构实施计划只定义范围和顺序
 
 ## 1. 使用规则
@@ -33,7 +33,9 @@
 - T011 已由 `EV-T011-001` 证明本地自动验证、项目所有者人工验收和 PR head hosted Windows gate 通过；项目所有者于 2026-08-09 review 后确认任务完成。
 - T012 已由 `EV-T012-001` 证明本地自动验证、项目所有者人工复验和 PR #9 实现 head hosted Windows gate 通过；只贡献 AC-01 步骤 3，并只完成 FR-A05 的 Action 状态解耦部分。
 - T013 已由 `EV-T013-001` 证明本地自动验证、独立复核、项目所有者人工验收和 PR #10 实现 head hosted Windows gate 通过；贡献 AC-01 步骤 4～5，并与 T012 合并完成 FR-A05。
-- T014 的实现 revision、本地验证、PR #11 实现 head hosted Windows gate 和项目所有者完整人工 AC-01 已由 `EV-T014-001` / `EV-AC01-001` 记录；独立 review 尚缺，因此保持 `review`。
+- T014 的实现、独立 review、本地/hosted 自动验证、PR #11 合并和项目所有者完整人工 AC-01 已由 `EV-T014-001` / `EV-AC01-001` 记录，因此为 `done`。
+- G3/S1 聚合验收 `EV-G3-S1-001` 保留一次失败：`dev@623007dd4269df02771f6a526db269de1fe95a03` 的 `verify`、AC-01 和 Windows package 构建通过，但 package smoke 仍断言 S0 的旧 Preload API 面，未完成 NSIS 安装态验证。
+- T801 是该缺陷的独立修复候选；未经合同批准和明确启动，不得修改测试或创建修复 PR。修复合入后必须固定新的最终 `dev` revision，重新执行完整 S1 验收。
 - 首个 AI Provider、模型和 SDK 只阻塞 T062，不阻塞 S0～S5 的非 AI 能力。
 
 ## 4. 任务总表
@@ -47,7 +49,7 @@
 | T011 | E1-01 | Goal 生命周期和当前下一步 | FR-G01～G06；D-002/101；ED-005；AC-01 | G2（已通过） | `done` | `EV-T011-001` |
 | T012 | E1-02 | Action、Today focus、取消/完成/重新安排 | FR-A01～A06；FR-T01/04/05/08；ED-006/007；AC-01 | T011（已完成） | `done` | `EV-T012-001` |
 | T013 | E1-03 | 快速/深入 ActionRecord | FR-A05；FR-A08（T013 部分）；FR-L01～L06/L08；FR-C01；D-006/103～106 | T012 | `done` | `EV-T013-001` |
-| T014 | E1-04 | 基础 Progress 投影 | FR-P01～P04/P07/P08；FR-C03；D-007 | T013 | `review` | `EV-T014-001` |
+| T014 | E1-04 | 基础 Progress 投影 | FR-P01～P04/P07/P08；FR-C03；D-007 | T013 | `done` | `EV-T014-001` |
 | T021 | E2-01 | Routine 生命周期和星期节奏 | FR-R01～R03；FR-T02；ED-006/009 | S1 | `pending` | — |
 | T022 | E2-02 | Routine 五态、unknown 和非计划日事实 | FR-R04～R09；D-008～010/107；AC-03 | T021 | `pending` | — |
 | T023 | E2-03 | 通用非强制意向 | FR-A07；FR-T03/T08；D-011；AC-04 | T021 | `pending` | — |
@@ -63,6 +65,7 @@
 | T063 | E6-03 | AI 建议接受/修改/拒绝和确认命令 | FR-AI05/06；FR-C02/C03；D-014/109；AC-02 | T062 | `pending` | — |
 | T071 | S7 | 11 条 SHOULD 的既定处理结论 | Traceability §4；Implementation §10.1 | S1～S6 | `pending` | — |
 | T072 | S7 | 全量回归、AC-01～AC-07、Windows Demo 收敛 | 全部 MUST/AC；Test Strategy §7～10 | T071 | `pending` | — |
+| T801 | S1 fix | 更新 Windows package smoke 的 S1 窄 API 契约并重新验证 unpacked/NSIS | G3/S1；GW-008/010；不改变 FR/AC/D/ED | `EV-G3-S1-001` | `pending` | — |
 
 ## 5. 阶段门与主线合并
 
@@ -88,7 +91,7 @@
 - T001～T004 均为 `done`，分别由 `EV-T001-001`～`EV-T004-001` 支持；四个任务 PR #1～#4 均已合并到 `dev`。
 - G2 工程就绪由 `EV-G2-001` 支持；PR #5 已将同一最终 `dev` revision 合入 `main`，项目所有者验收为 `pass`。
 - T001～T004 与 G2 只建立工程基础，不声明任何业务 FR 或 AC-01～AC-07 完成。
-- T011 为 `done`，由 `EV-T011-001`、PR #7 的 Windows required gate 和项目所有者 review 支持；任务 PR 仍保持 Draft，未据此授权 Ready 或 merge。
-- T012 为 `done`，由 `EV-T012-001`、PR #9 实现 head 的 Windows required gate 和项目所有者人工复验支持；任务 PR 仍保持 Draft，未据此授权 Ready 或 merge。
-- T013 为 `done`，由 `EV-T013-001`、PR #10 实现 head 的 Windows required gate 和项目所有者人工验收支持；只贡献 AC-01 步骤 4～5，不声明 FR-L07、FR-L09、FR-C04 或完整 AC-01。
-- T014 为 `review`：实现 head `52cd33672b6b2632b09beb7cb8e66f48901f2bd0` 的本地 `verify`、PR #11 Windows required gate 及项目所有者完整人工 AC-01 已通过；独立 review 和文档收口最新 head CI 尚待完成。完整 FR-P02、FR-D01 与 AC-07 未完成，G3/S1 仍待项目所有者另行验收决定。
+- T011～T014 均已通过各自任务证据并合入 `dev`；最终 squash merge revisions 依次为 `48a6f6439fbbb6ba2309e005ebb12e02b151a457`、`b994962618954cf02f9e07590d68213d0378bccb`、`b3c61b403888b81e4f155fabcbefea689acd1d3a`、`623007dd4269df02771f6a526db269de1fe95a03`。
+- T014 的独立 review 除 `tests/e2e/windows-package-smoke.e2e.test.ts` 的里程碑级 API 断言漂移外未发现任务实现问题；该漂移不重开 T014 产品范围，但阻塞 G3/S1 Windows package 门禁。
+- `dev@623007dd4269df02771f6a526db269de1fe95a03` 的 `verify`、AC-01 自动化/人工验收和 package 构建通过；独立 package smoke 在 unpacked 阶段失败，因此 G3/S1 不通过，未创建 `dev → main` PR。
+- 下一步是批准并启动 T801，修复合入后在新的最终 `dev` revision 上重新执行完整验收；在此之前不归档 T011～T014，不启动 T021，不推进 `main`、tag 或 release。

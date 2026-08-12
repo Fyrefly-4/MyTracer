@@ -1,10 +1,10 @@
 # T012 Action、Today Focus 与重新安排任务合同
 
-> 合同状态：**已完成；实现证据绑定 `56b3446a1b952a9bdb6fe29ab4a89502171ba321`，Draft PR #9 尚未 Ready 或 merge**
+> 合同状态：**已完成并通过任务验收；实现证据绑定 `56b3446a1b952a9bdb6fe29ab4a89502171ba321`，PR #9 已合入 `dev`**
 >
 > 实现基线：`dev@7cb5bebd8c2d0e66056d2b34189d084e78261b41`；任务分支：`task/T012-action-today`
 >
-> 当前权限：已执行获批的分支、提交、push、Draft PR 与文档收口；Ready、merge、tag、release、依赖安装和其他外部写入仍未授权
+> 历史权限记录：任务执行时仅获批分支、提交、push、Draft PR 与文档收口；后续 PR #9 合并事实不扩大本合同的原始授权
 
 ## 1. 任务信息
 

@@ -1,15 +1,15 @@
 # T014 基础 Progress 投影与 S1 闭环任务合同
 
-> 合同状态：**已批准并完成实现候选；当前处于 `review`，等待独立 review 与文档收口 head CI**
+> 合同状态：**已完成；实现、自动验证、独立 review、人工验收和 PR #11 合并均已完成**
 >
-> 权限边界：项目所有者已批准合同、实现、本地分步提交、任务分支推送、到 `dev` 的 Draft PR，以及 2026-08-13 的精确文档收口和再次推送。Ready、merge、`dev -> main`、tag、release、依赖安装及其他外部写入仍未授权。
+> 历史权限记录：任务执行时获批合同、实现、本地分步提交、任务分支推送、到 `dev` 的 Draft PR，以及 2026-08-13 的精确文档收口和再次推送；后续 PR #11 合并事实不授权 `dev -> main`、tag 或 release。
 
 ## 1. 任务信息
 
 - **Task ID**：T014
 - **Title**：基础 Progress 投影与 S1 闭环
 - **Slice / Plan item**：S1 / E1-04
-- **Task ledger status**：`review`
+- **Task ledger status**：`done`
 - **Base / branch**：基线 `b3c61b403888b81e4f155fabcbefea689acd1d3a`；分支 `task/T014-progress-core-loop`
 - **实时前置事实（2026-08-13）**：G2 已通过；S1 设计已批准；`TASK_INDEX_V0.1.md` 已将 T011～T013 标为 `done`，其中 T013 由 `EV-T013-001` 支持。因此 T014 的 T013 依赖按实时任务账本已满足；若启动时账本或证据不再成立，T014 立即阻塞。T014 合同和实现仍须分别获得批准。
 
@@ -180,7 +180,7 @@ openConfusions       = children of filtered records where status = open
 11. 证据只声明 T014 对 FR-P02 的 ActionRecord 分支、FR-D01 的 S1 重开子集及 AC-01 自动化闭环；不声明完整 FR-P02、FR-D01、AC-07 或 G3/S1 自动通过。
 12. **MANUAL**：项目所有者在同一最终 revision 实际连续执行 AC-01，确认 Progress 易读、中性且记录负担合理；未执行时必须记录 `pending`。
 
-当前交付事实：实现 revision `52cd33672b6b2632b09beb7cb8e66f48901f2bd0` 的本地 `verify` 与 PR #11 Windows required gate 已通过；项目所有者于 2026-08-13 报告完整人工 AC-01 全量通过。独立 review 尚无有效结果，因此 T014 仍为 `review`，不得标为 `done`。
+当前交付事实：实现 revision `52cd33672b6b2632b09beb7cb8e66f48901f2bd0` 的本地 `verify`、PR #11 最终 Windows required gate、项目所有者完整人工 AC-01 和独立 review 均已通过；PR #11 已合入 `dev` 为 `623007dd4269df02771f6a526db269de1fe95a03`，T014 为 `done`。独立 review 发现的 package smoke 旧 API 断言属于 G3/S1 聚合门禁并记录为 `EV-G3-S1-001` / T801，不改变 T014 的产品范围完成结论。
 
 ## 11. 验证计划
 

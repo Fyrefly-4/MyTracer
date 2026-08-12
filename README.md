@@ -16,7 +16,8 @@ MyTracer 是一个面向个人本地使用的 Windows 桌面应用，用于帮�
 - T011 已完成 Goal 创建、修改、pause/resume/end、当前下一步、列表/详情和真实关闭重开验证；本地与 hosted Windows gate、人工体验及项目所有者 review 均通过。
 - T012 已完成 Action 生命周期、Today focus、当前下一步原子处理与重新安排纵向路径；本地 `verify`、PR #9 实现 head 的 hosted Windows gate 和项目所有者人工复验均通过。
 - T013 已完成快速/深入 ActionRecord、Main 内存 recording context、跨午夜确认、显式 post-record 处理与真实重开纵向路径；本地 `verify`、PR #10 实现 head 的 hosted Windows gate 和项目所有者人工验收均通过。
-- T014 已形成事实型 Progress 实现候选：支持 Goal/包含端点日期筛选、ActionRecord 分钟与次数、确认理解、开放困惑及真实关闭重开；本地 `verify`、PR #11 实现 head hosted Windows gate 和项目所有者完整人工 AC-01 已通过，当前仍待独立 review 与文档收口 head CI。
+- T014 已完成事实型 Progress：支持 Goal/包含端点日期筛选、ActionRecord 分钟与次数、确认理解、开放困惑及真实关闭重开；本地/hosted `verify`、独立 review、PR #11 合并和项目所有者完整人工 AC-01 均已完成。
+- G3/S1 首轮聚合验收固定于 `dev@623007dd4269df02771f6a526db269de1fe95a03`：`verify`、AC-01 与 Windows package 构建通过，但 package smoke 仍使用 S0 的旧 Preload API 断言，未完成 NSIS 安装态验证。因此里程碑尚未通过，等待 T801 独立修复和新 `dev` revision 全量重验。
 
 不要把架构完成理解为产品已经实现。
 
@@ -132,7 +133,8 @@ task/Txxx-short-name
 
 ## 下一步
 
-1. 完成 T014 独立 review，并确认文档收口最新 PR head 的 required CI。
-2. 由项目所有者决定 T014 完成状态及 G3/S1 验收候选的后续处理；不得自动启动 T021、推进 `main`、创建 tag 或发布版本。
+1. 批准并启动 T801，仅修复 Windows package smoke 的 S1 API 白名单漂移。
+2. 修复合入后在新的最终 `dev` revision 重新执行完整 S1 验收；通过后才归档 T011～T014 并创建 `dev → main` Draft 里程碑 PR。
+3. 在 G3/S1 通过和项目所有者针对确切 PR 批准前，不得启动 T021、推进 `main`、创建 tag 或发布版本。
 
 T011～T014 已覆盖 Goal、Action/Today、ActionRecord、事实型 Progress 与完整 AC-01；完整 FR-P02 的 RoutineRecord 分支仍属于 T022，T014 也不声明完整 FR-D01 或 AC-07。AC-01 通过不等于 G3/S1、MyTracer Demo、merge 或发布自动通过。
