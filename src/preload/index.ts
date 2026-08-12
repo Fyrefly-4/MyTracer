@@ -21,6 +21,19 @@ import {
   type UpdateActionDetailsInputDto
 } from '../contracts/actions'
 import { TODAY_CHANNELS, type GetTodayInputDto, type TodayViewDto } from '../contracts/today'
+import {
+  RECORD_CHANNELS,
+  type ActionRecordDetailDto,
+  type ActionRecordIdInputDto,
+  type ActionRecordSummaryDto,
+  type BeginActionRecordingDto,
+  type BeginActionRecordingInputDto,
+  type CancelActionRecordingInputDto,
+  type ListActionRecordsInputDto,
+  type RecordActionInputDto,
+  type RecordActionValueDto,
+  type RecordResult
+} from '../contracts/records'
 
 const api: MyTracerApi = Object.freeze({
   shell: Object.freeze({
@@ -67,6 +80,22 @@ const api: MyTracerApi = Object.freeze({
       ipcRenderer.invoke(TODAY_CHANNELS.removeAction, input),
     get: (input: GetTodayInputDto): Promise<ActionResult<TodayViewDto>> =>
       ipcRenderer.invoke(TODAY_CHANNELS.get, input)
+  }),
+  records: Object.freeze({
+    begin: (input: BeginActionRecordingInputDto): Promise<RecordResult<BeginActionRecordingDto>> =>
+      ipcRenderer.invoke(RECORD_CHANNELS.begin, input),
+    cancel: (
+      input: CancelActionRecordingInputDto
+    ): Promise<RecordResult<{ readonly cancelled: true }>> =>
+      ipcRenderer.invoke(RECORD_CHANNELS.cancel, input),
+    record: (input: RecordActionInputDto): Promise<RecordResult<RecordActionValueDto>> =>
+      ipcRenderer.invoke(RECORD_CHANNELS.record, input),
+    listForAction: (
+      input: ListActionRecordsInputDto
+    ): Promise<RecordResult<readonly ActionRecordSummaryDto[]>> =>
+      ipcRenderer.invoke(RECORD_CHANNELS.listForAction, input),
+    getDetail: (input: ActionRecordIdInputDto): Promise<RecordResult<ActionRecordDetailDto>> =>
+      ipcRenderer.invoke(RECORD_CHANNELS.getDetail, input)
   })
 })
 

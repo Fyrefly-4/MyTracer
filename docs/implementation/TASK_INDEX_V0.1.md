@@ -1,7 +1,7 @@
 # MyTracer v0.1 任务索引
 
 > 文档状态：v0.1 实施任务基线  
-> 当前阶段：G1、G2 已通过；T001～T004 已完成并归档；T011、T012 已完成；T013 为下一候选任务，仍为 `pending`
+> 当前阶段：G1、G2 已通过；T001～T004 已完成并归档；T011～T013 已完成；T014 为下一候选任务，仍为 `pending`
 > 状态来源：本文件是任务执行状态的唯一账本，架构实施计划只定义范围和顺序
 
 ## 1. 使用规则
@@ -32,6 +32,7 @@
 - G2 已由项目所有者于 2026-08-09 确认通过，证据为 `EV-G2-001`；里程碑 PR #5 已将 T001～T004 从 `dev` 合入 `main`。
 - T011 已由 `EV-T011-001` 证明本地自动验证、项目所有者人工验收和 PR head hosted Windows gate 通过；项目所有者于 2026-08-09 review 后确认任务完成。
 - T012 已由 `EV-T012-001` 证明本地自动验证、项目所有者人工复验和 PR #9 实现 head hosted Windows gate 通过；只贡献 AC-01 步骤 3，并只完成 FR-A05 的 Action 状态解耦部分。
+- T013 已由 `EV-T013-001` 证明本地自动验证、独立复核、项目所有者人工验收和 PR #10 实现 head hosted Windows gate 通过；贡献 AC-01 步骤 4～5，并与 T012 合并完成 FR-A05。
 - 首个 AI Provider、模型和 SDK 只阻塞 T062，不阻塞 S0～S5 的非 AI 能力。
 
 ## 4. 任务总表
@@ -44,7 +45,7 @@
 | T004 | E0-04 | LocalDate、诊断、配置、safeStorage 空边界、Windows 打包冒烟 | ED-010/017/019 | T001～T003 | `done` | `EV-T004-001` |
 | T011 | E1-01 | Goal 生命周期和当前下一步 | FR-G01～G06；D-002/101；ED-005；AC-01 | G2（已通过） | `done` | `EV-T011-001` |
 | T012 | E1-02 | Action、Today focus、取消/完成/重新安排 | FR-A01～A06；FR-T01/04/05/08；ED-006/007；AC-01 | T011（已完成） | `done` | `EV-T012-001` |
-| T013 | E1-03 | 快速/深入 ActionRecord | FR-A05；FR-L01～L09；FR-C01；D-006/103/104 | T012 | `pending` | — |
+| T013 | E1-03 | 快速/深入 ActionRecord | FR-A05；FR-A08（T013 部分）；FR-L01～L06/L08；FR-C01；D-006/103～106 | T012 | `done` | `EV-T013-001` |
 | T014 | E1-04 | 基础 Progress 投影 | FR-P01～P04/P07/P08；FR-C03；D-007 | T013 | `pending` | — |
 | T021 | E2-01 | Routine 生命周期和星期节奏 | FR-R01～R03；FR-T02；ED-006/009 | S1 | `pending` | — |
 | T022 | E2-02 | Routine 五态、unknown 和非计划日事实 | FR-R04～R09；D-008～010/107；AC-03 | T021 | `pending` | — |
@@ -88,4 +89,5 @@
 - T001～T004 与 G2 只建立工程基础，不声明任何业务 FR 或 AC-01～AC-07 完成。
 - T011 为 `done`，由 `EV-T011-001`、PR #7 的 Windows required gate 和项目所有者 review 支持；任务 PR 仍保持 Draft，未据此授权 Ready 或 merge。
 - T012 为 `done`，由 `EV-T012-001`、PR #9 实现 head 的 Windows required gate 和项目所有者人工复验支持；任务 PR 仍保持 Draft，未据此授权 Ready 或 merge。
-- T013 为下一候选任务，仍为 `pending`；尚无独立合同批准或实现启动授权。
+- T013 为 `done`，由 `EV-T013-001`、PR #10 实现 head 的 Windows required gate 和项目所有者人工验收支持；只贡献 AC-01 步骤 4～5，不声明 FR-L07、FR-L09、FR-C04 或完整 AC-01。
+- T014 为下一候选任务，仍为 `pending`；须另行准备/批准合同并发出实现启动授权。

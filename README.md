@@ -15,6 +15,7 @@ MyTracer 是一个面向个人本地使用的 Windows 桌面应用，用于帮�
 - T004 已建立 LocalDate/Clock、诊断、配置与 safeStorage 空边界，并完成隔离的 Windows x64 unpacked/NSIS 运行冒烟。
 - T011 已完成 Goal 创建、修改、pause/resume/end、当前下一步、列表/详情和真实关闭重开验证；本地与 hosted Windows gate、人工体验及项目所有者 review 均通过。
 - T012 已完成 Action 生命周期、Today focus、当前下一步原子处理与重新安排纵向路径；本地 `verify`、PR #9 实现 head 的 hosted Windows gate 和项目所有者人工复验均通过。
+- T013 已完成快速/深入 ActionRecord、Main 内存 recording context、跨午夜确认、显式 post-record 处理与真实重开纵向路径；本地 `verify`、PR #10 实现 head 的 hosted Windows gate 和项目所有者人工验收均通过。
 
 不要把架构完成理解为产品已经实现。
 
@@ -130,7 +131,7 @@ task/Txxx-short-name
 
 ## 下一步
 
-1. 为 T013 编写并审批独立任务合同，保持 ActionRecord、`partial` 保存和跨午夜语义不越过已批准 S1 设计。
-2. 项目所有者明确发出 T013 启动指令后，再开始快速/深入 ActionRecord 纵向实现。
+1. 为 T014 编写并审批独立任务合同，保持基础 Progress 只展示 ActionRecord 事实，不推断质量、掌握度或失败。
+2. 项目所有者明确发出 T014 启动指令后，再开始基础 Progress 纵向实现和完整 AC-01 收敛。
 
-T011～T012 只覆盖 Goal、Action/Today 子路径和 AC-01 步骤 1～3贡献；T012 对 FR-A05 仅证明 Action 状态与 `partial` 解耦。T013/T014 完成前，不得声称 FR-A05、S1、完整 AC-01 或 MyTracer Demo 已通过验收。
+T011～T013 已覆盖 Goal、Action/Today、ActionRecord 子路径和 AC-01 步骤 1～5；T012 的 Action 状态解耦证据与 T013 的实际 `partial` ActionRecord 证据共同完成 FR-A05。T014 完成前，不得声称 S1、完整 AC-01 或 MyTracer Demo 已通过验收。
