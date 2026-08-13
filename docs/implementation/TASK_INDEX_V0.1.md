@@ -1,7 +1,7 @@
 # MyTracer v0.1 任务索引
 
 > 文档状态：v0.1 实施任务基线  
-> 当前阶段：G1、G2 已通过；T001～T004 已归档；T011～T014/T801 已完成，S1 自动化验收与归档候选等待当前分支 PR 合入 `dev`；本次不创建 `dev → main` PR
+> 当前阶段：G1、G2 已通过；T001～T004 已归档；T011～T014/T801 已完成并由 PR #13 统一归档到 `dev`，G3/S1 自动化与人工 AC-01 验收通过；后续里程碑动作仍受独立授权门禁约束
 > 状态来源：本文件是任务执行状态的唯一账本，架构实施计划只定义范围和顺序
 
 ## 1. 使用规则
@@ -30,7 +30,7 @@
 
 - T001～T004 的历史范围、批准、PR、验证和限制已统一归档于 [`archive/S0_T001_T004_ARCHIVE.md`](archive/S0_T001_T004_ARCHIVE.md)，详细结果见 `EV-T001-001`～`EV-T004-001`。
 - G2 已由项目所有者于 2026-08-09 确认通过，证据为 `EV-G2-001`；里程碑 PR #5 已将 T001～T004 从 `dev` 合入 `main`。
-- T011～T014 与门禁修复 T801 的最终范围、批准、PR、验证和限制已形成统一归档候选 [`archive/S1_T011_T014_ARCHIVE.md`](archive/S1_T011_T014_ARCHIVE.md)；待当前验收/归档 PR 合入 `dev` 后成为主线归档，详细结果见 `EV-T011-001`～`EV-T014-001`、`EV-T801-001` 与 `EV-AC01-001`。
+- T011～T014 与门禁修复 T801 的最终范围、批准、PR、验证和限制已由 PR #13 收敛为统一归档 [`archive/S1_T011_T014_ARCHIVE.md`](archive/S1_T011_T014_ARCHIVE.md) 并合入 `dev`；详细结果见 `EV-T011-001`～`EV-T014-001`、`EV-T801-001` 与 `EV-AC01-001`。
 - G3/S1 聚合验收 `EV-G3-S1-001` 保留一次失败：`dev@623007dd4269df02771f6a526db269de1fe95a03` 的 `verify`、AC-01 和 Windows package 构建通过，但 package smoke 仍断言 S0 的旧 Preload API 面，未完成 NSIS 安装态验证。
 - T801 已由 PR #12 修复并合入；最终 `dev@74ebe346a86cf431d87e02e8a1220b713b33901c` 的 hosted `verify`、本地完整 `verify`/AC-01、package 与 unpacked/NSIS smoke 通过，`EV-G3-S1-002` 显式取代首轮失败结论。
 - 首个 AI Provider、模型和 SDK 只阻塞 T062，不阻塞 S0～S5 的非 AI 能力。
@@ -91,5 +91,5 @@
 - T011～T014 均已通过各自任务证据并合入 `dev`；最终 squash merge revisions 依次为 `48a6f6439fbbb6ba2309e005ebb12e02b151a457`、`b994962618954cf02f9e07590d68213d0378bccb`、`b3c61b403888b81e4f155fabcbefea689acd1d3a`、`623007dd4269df02771f6a526db269de1fe95a03`。
 - 首轮 `dev@623007dd4269df02771f6a526db269de1fe95a03` 的 package smoke 失败永久保留为 `EV-G3-S1-001`；T801 PR #12 的修复、独立 review、head CI、squash merge `74ebe346a86cf431d87e02e8a1220b713b33901c` 与最终 dev push CI 均已完成。
 - `dev@74ebe346a86cf431d87e02e8a1220b713b33901c` 的本地完整 `verify`、AC-01、package、unpacked/NSIS smoke 与 hosted Windows gate 通过；G3/S1 自动化验收由 `EV-G3-S1-002` 支持。
-- T011～T014/T801 已按 S0 模式形成单一 [`S1_T011_T014_ARCHIVE.md`](archive/S1_T011_T014_ARCHIVE.md) 候选；当前 PR 合入 `dev` 后，原合同仅从 Git 历史恢复。
-- 下一步是创建当前验收/归档分支到 `dev` 的 Draft PR，并等待 exact head CI 与项目所有者 merge 决定；本次不创建 `dev → main` PR，也不授权 `main`、tag 或 release。
+- T011～T014/T801 已按 S0 模式形成单一 [`S1_T011_T014_ARCHIVE.md`](archive/S1_T011_T014_ARCHIVE.md) 并由 PR #13 合入 `dev`；原合同仅从 Git 历史恢复。
+- S1 的后续里程碑推进只通过 `dev → main` PR；PR 创建不授权合入 `main`，tag 和 release 仍须在合入后另行批准。
