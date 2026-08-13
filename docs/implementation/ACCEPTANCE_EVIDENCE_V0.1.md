@@ -1,6 +1,6 @@
 # MyTracer v0.1 验收证据
 
-> 文档状态：证据账本已建立；已记录 T001～T004、T011～T014、AC-01 与 G2 工程就绪证据
+> 文档状态：证据账本已建立；已记录 T001～T004、T011～T014/T801、AC-01、G2 及 G3/S1 首轮失败与最终通过证据
 > 作用：记录可复核的命令、版本、环境、产物和人工观察  
 > 禁止：用任务状态、测试名称、关键词存在或 Agent 自述替代实际结果
 
@@ -73,7 +73,10 @@ Evidence ID 不复用。失败记录保留，并由后续记录明确引用修�
 | `EV-T011-001` | T011 | `c4e9f6dee3cbab97f6902f2c90f97f96423b43e2` | Goal 生命周期、当前下一步、关联查询、SQLite/IPC/UI 和真实重开 | pass | pass | 本地 Windows `verify`、PR head hosted Windows gate、人工体验和项目所有者 review 通过；T011 `done`，仅贡献 AC-01 步骤 1～2 |
 | `EV-T012-001` | T012 | `56b3446a1b952a9bdb6fe29ab4a89502171ba321` | Action 生命周期、Today focus、当前下一步处理、重新安排、SQLite/IPC/UI 和真实重开 | pass | pass | 本地 Windows `verify`、PR #9 实现 head hosted Windows gate 和项目所有者人工复验通过；仅贡献 AC-01 步骤 3，FR-A05 仅为 Action 状态解耦部分 |
 | `EV-T013-001` | T013 | `b10d5d40c4c1dc1f7a20801d5d904b1d37953270` | 快速/深入 ActionRecord、recording context、跨午夜、原子 post-record、SQLite/IPC/UI 和真实重开 | pass | pass | 本地 Windows `verify`、独立复核、PR #10 实现 head hosted Windows gate 和项目所有者人工验收通过；贡献 AC-01 步骤 4～5，并与 T012 合并完成 FR-A05 |
-| `EV-T014-001` | T014 | `52cd33672b6b2632b09beb7cb8e66f48901f2bd0` | 事实型 Progress、SQLite 一致性快照、窄 IPC/UI、筛选与真实重开 | partial | pass | 本地 Windows `verify`、PR #11 实现 head hosted Windows gate 和项目所有者完整人工 AC-01 通过；独立 review 尚缺，T014 保持 `review` |
+| `EV-T014-001` | T014 | `52cd33672b6b2632b09beb7cb8e66f48901f2bd0` | 事实型 Progress、SQLite 一致性快照、窄 IPC/UI、筛选与真实重开 | pass | pass | 本地 Windows `verify`、PR #11 hosted Windows gate、独立 review 和项目所有者完整人工 AC-01 通过；merge revision `623007dd4269df02771f6a526db269de1fe95a03` |
+| `EV-T801-001` | T801 | `dd9bd4498b0339703f8cf992a564a7d7b80442b5` | S1 package smoke 精确 API、安全边界与 unpacked/NSIS 路径 | pass | not-required | 本地 `verify`/package/package smoke、独立 review、PR #12 head CI 与最终 dev push CI 通过；merge `74ebe346a86cf431d87e02e8a1220b713b33901c` |
+| `EV-G3-S1-001` | G3/S1 | `623007dd4269df02771f6a526db269de1fe95a03` | T011～T014 同 revision 核心闭环、Windows package 与发布门禁 | fail | pending | `verify`、AC-01 和 package 构建通过；package smoke 因旧 Preload API 断言在 unpacked 阶段失败，NSIS 安装态未验证 |
+| `EV-G3-S1-002` | G3/S1 | `74ebe346a86cf431d87e02e8a1220b713b33901c` | T011～T014/T801 同 revision 核心闭环、Windows package 与发布门禁 | pass | pass | hosted/local `verify`、AC-01、package、unpacked/NSIS smoke 与独立 review 通过；确切里程碑 PR 的所有者 merge 批准仍单独待定 |
 
 ### EV-T001-001
 
@@ -226,7 +229,7 @@ Evidence ID 不复用。失败记录保留，并由后续记录明确引用修�
 - **Requirements**：FR-G01～FR-G06；AC-01 步骤 1～2贡献；D-002、D-101；ED-003～ED-006、ED-015、ED-018、ED-019；S1-Q02-B、S1-Q05-A
 - **Source branch**：`task/T011-goal-lifecycle`
 - **Source revision**：`c4e9f6dee3cbab97f6902f2c90f97f96423b43e2`；启动基线 `54b6368c0a2b4da0721838541f60c0d2eb55aa1a`
-- **CI head/merge revision**：PR #7 head `15c6aac83d1ec1033c30c998e4ebe4fd155616e1`；Windows required gate run `31315945537` / job `93251084626` 为 `success`；尚未 merge
+- **CI head/merge revision**：PR #7 最终 head `9ab087c01ae6a9828614df2c8244aefdcf997592`；Windows required gate run `31316637261` / job `93252845246` 为 `success`；squash merge revision `48a6f6439fbbb6ba2309e005ebb12e02b151a457`
 - **Environment**：Microsoft Windows NT 10.0.26200.0；Node.js 24.18.0；npm 11.16.0；Electron 43.3.0；`better-sqlite3@13.0.1`；所有自动化数据库和 Electron `userData` 均位于每 case/进程唯一 OS 临时根；AI 未配置，无 live Provider 或真实用户数据
 - **Command or manual procedure**：
   1. 执行 `npm.cmd run test:unit`：9 个测试文件、42 项测试通过，覆盖 Goal 创建/修改、合法和非法状态转换、ended 终态、同 Goal pending 当前下一步、active 限制、Application 原子编排和失败回滚。
@@ -243,11 +246,11 @@ Evidence ID 不复用。失败记录保留，并由后续记录明确引用修�
   - GetGoalDetail 可读取当前下一步、关联 Action、已有 ActionRecord 摘要和只读当日选择标记；重复查询不写数据库。完全关闭连接/应用后重开，Goal 状态、Action ID/状态、引用和历史摘要一致。
   - `package.json`、lockfile、schemaVersion、migration 集合和 `001_initial.sql` 均未修改；无新增/升级依赖、网络访问、live AI、真实 `userData` 或外部写入。
 - **Artifacts**：
-  - 实现与测试位于 `task/T011-goal-lifecycle`，实现验证绑定 revision `c4e9f6dee3cbab97f6902f2c90f97f96423b43e2`；T011 合同为 `docs/implementation/T011_GOAL_LIFECYCLE_TASK.md`。
-  - Draft PR #7：<https://github.com/Fyrefly-4/MyTracer/pull/7>；hosted Windows run：<https://github.com/Fyrefly-4/MyTracer/actions/runs/31315945537>。
+  - 实现与测试位于 `task/T011-goal-lifecycle`，实现验证绑定 revision `c4e9f6dee3cbab97f6902f2c90f97f96423b43e2`；合同已归档至 `docs/implementation/archive/S1_T011_T014_ARCHIVE.md`。
+  - PR #7：<https://github.com/Fyrefly-4/MyTracer/pull/7>；最终 hosted Windows run：<https://github.com/Fyrefly-4/MyTracer/actions/runs/31316637261>。
   - Playwright screenshot/trace/video 按既有配置不持久化；临时测试数据库、结果和 `userData` 均位于 OS 临时目录并由测试清理。
 - **Manual acceptance**：pass；项目所有者于 2026-08-09 报告轻量创建、文案、pause/end 保留与 ended 终态体验检查通过
-- **Known limitations**：PR #7 仍为 Draft 且未 merge；未执行 package/NSIS 冒烟（不在 T011 合同范围，聚合 E2E 中按设计 skip）；受限沙箱内 Electron GPU 进程无法可靠启动，最终 E2E/`verify` 已在获准的非受限 Windows 桌面执行环境通过；T011 只贡献 AC-01 步骤 1～2，完整 AC-01 须在 T014 后同一 revision 执行；T012 尚未获得合同批准或实现启动授权
+- **Known limitations**：未执行 package/NSIS 冒烟（不在 T011 合同范围，聚合 E2E 中按设计 skip）；受限沙箱内 Electron GPU 进程无法可靠启动，最终 E2E/`verify` 已在获准的非受限 Windows 桌面执行环境通过；T011 只贡献 AC-01 步骤 1～2，完整 AC-01 由后续聚合证据完成
 - **Supersedes / superseded by**：无
 - **Recorded at**：2026-08-09
 
@@ -258,7 +261,7 @@ Evidence ID 不复用。失败记录保留，并由后续记录明确引用修�
 - **Requirements**：FR-A01～FR-A04、FR-A06；FR-A05 的 Action 状态与 `partial` 解耦部分；FR-T01、FR-T04、FR-T05、FR-T08；AC-01 步骤 3 贡献；D-004、D-005、D-016、D-106；ED-003～ED-007、ED-015、ED-018、ED-019；S1-Q03-B、S1-Q05-A、S1-Q06-A、S1-Q07-A
 - **Source branch**：`task/T012-action-today`
 - **Source revision**：`56b3446a1b952a9bdb6fe29ab4a89502171ba321`；启动基线 `7cb5bebd8c2d0e66056d2b34189d084e78261b41`
-- **CI head/merge revision**：Draft PR #9 实现 head `56b3446a1b952a9bdb6fe29ab4a89502171ba321`；Windows required gate run `31359250988` / job `93364691450` 为 `success`；尚未 merge
+- **CI head/merge revision**：PR #9 最终 head `5215f8d714cf6a8717c059188f12423c518d1dad`；Windows required gate run `31359967069` / job `93366775482` 为 `success`；squash merge revision `b994962618954cf02f9e07590d68213d0378bccb`
 - **Environment**：Microsoft Windows NT 10.0.26200.0；Node.js 24.18.0；npm 11.16.0；Electron 43.3.0；`better-sqlite3@13.0.1`；所有自动化数据库和 Electron `userData` 均位于每 case/进程唯一 OS 临时根；AI 未配置，无 live Provider 或真实用户数据
 - **Command or manual procedure**：
   1. 执行 `npm.cmd run test:unit`：54 项测试通过，覆盖 Action 状态机、创建/修改、当前下一步 resolution、Today 显式选择、`partial` 与 Action 状态解耦及失败零变化。
@@ -276,11 +279,11 @@ Evidence ID 不复用。失败记录保留，并由后续记录明确引用修�
   - paused/ended Goal 的既有 TodaySelection 保留 Goal 状态与不可操作原因，不允许新增 focus 或开始行动；关闭重开与跨 LocalDate 结果保持一致。
   - `package.json`、lockfile、schemaVersion、migration 集合和 `001_initial.sql` 均未修改；无新增/升级依赖、live AI、真实 `userData` 或任务 GitHub flow 之外的外部写入。
 - **Artifacts**：
-  - 实现与测试位于 `task/T012-action-today`，实现验证绑定 revision `56b3446a1b952a9bdb6fe29ab4a89502171ba321`；任务合同为 `docs/implementation/T012_ACTION_TODAY_TASK.md`。
-  - Draft PR #9：<https://github.com/Fyrefly-4/MyTracer/pull/9>；hosted Windows run：<https://github.com/Fyrefly-4/MyTracer/actions/runs/31359250988>。
+  - 实现与测试位于 `task/T012-action-today`，实现验证绑定 revision `56b3446a1b952a9bdb6fe29ab4a89502171ba321`；合同已归档至 `docs/implementation/archive/S1_T011_T014_ARCHIVE.md`。
+  - PR #9：<https://github.com/Fyrefly-4/MyTracer/pull/9>；最终 hosted Windows run：<https://github.com/Fyrefly-4/MyTracer/actions/runs/31359967069>。
   - Playwright screenshot/trace/video 按既有配置不持久化；临时测试数据库、结果和 `userData` 均位于 OS 临时目录并由测试清理。
 - **Manual acceptance**：pass；项目所有者于 2026-08-10 报告 T012 人工验收与 T011/T012 输入焦点回归复验全部通过
-- **Known limitations**：PR #9 仍为 Draft 且未 merge；package/NSIS smoke 不在 T012 合同范围并按设计跳过；文档收口 head 的新 CI 按项目所有者明确指令不等待，本证据绑定已通过 hosted gate 的实现 revision；T012 只贡献 AC-01 步骤 3，FR-A05 仍需 T013 的实际 `partial` ActionRecord 证据，完整 AC-01 仍需 T013/T014
+- **Known limitations**：package/NSIS smoke 不在 T012 合同范围并按设计跳过；本证据的实现行为仍绑定已通过 hosted gate 的实现 revision；T012 只贡献 AC-01 步骤 3，FR-A05 和完整 AC-01 的后续证据分别由 T013 与 T014/聚合记录补齐
 - **Supersedes / superseded by**：无；文档收口提交不修改本记录绑定的实现/测试 revision
 - **Recorded at**：2026-08-10
 
@@ -291,7 +294,7 @@ Evidence ID 不复用。失败记录保留，并由后续记录明确引用修�
 - **Requirements**：FR-A05；FR-A08 的 T013 显式入口部分；FR-L01～FR-L06、FR-L08；FR-C01；AC-01 步骤 4～5 贡献；D-006、D-103～D-106；ED-012、ED-015～ED-017；S1-Q03-B、S1-Q04-B、S1-Q07-A、S1-Q08-B、S1-Q10-A
 - **Source branch**：`task/T013-action-record`
 - **Source revision**：`b10d5d40c4c1dc1f7a20801d5d904b1d37953270`；启动基线 `b994962618954cf02f9e07590d68213d0378bccb`
-- **CI head/merge revision**：Draft PR #10 实现 head `b10d5d40c4c1dc1f7a20801d5d904b1d37953270`；Windows required gate run `31613036396` / job `94168900557` 为 `success`；尚未 merge。失败 run `31609393753` 与 `31612362422` 分别暴露 hosted E2E 总时限和 Renderer 测试状态同步问题，均由后续提交修复并被最终成功 run 取代
+- **CI head/merge revision**：PR #10 最终 head `107e1840af3320b937db9096f5f2340d2ad15c8d`；Windows required gate run `31615259882` / job `94176359170` 为 `success`；squash merge revision `b3c61b403888b81e4f155fabcbefea689acd1d3a`。失败 run `31609393753` 与 `31612362422` 分别暴露 hosted E2E 总时限和 Renderer 测试状态同步问题，均由后续提交修复并被最终成功 run 取代
 - **Environment**：本地 Microsoft Windows 11 x64、Node.js 24.18.0、npm 11.16.0、Electron 43.3.0、`better-sqlite3@13.0.1`；CI 为 GitHub-hosted Windows x64；所有自动化数据库和 Electron `userData` 均位于每 case 唯一 OS 临时根；AI 未配置，无 live Provider 或真实用户数据
 - **Command or manual procedure**：
   1. 执行 `npm.cmd run test:unit`：66 项测试通过，覆盖 ActionRecord outcome、非负整数分钟与 0 分钟、manual Understanding、open Confusion、状态门、默认 keep-pending、显式 post-record、跨午夜和只读 Query。
@@ -309,29 +312,30 @@ Evidence ID 不复用。失败记录保留，并由后续记录明确引用修�
   - ActionRecord、manual Understanding、open Confusion 与显式 post-record 变化原子保存；列表/详情只读且真实关闭重开后保持一致。
   - `package.json`、lockfile、schemaVersion、migration 集合和 `001_initial.sql` 均未修改；无新增/升级依赖、live AI、真实 `userData` 或任务 GitHub flow 之外的外部写入。
 - **Artifacts**：
-  - 实现与测试位于 `task/T013-action-record`，实现验证绑定 revision `b10d5d40c4c1dc1f7a20801d5d904b1d37953270`；任务合同为 `docs/implementation/T013_ACTION_RECORD_TASK.md`。
-  - Draft PR #10：<https://github.com/Fyrefly-4/MyTracer/pull/10>；成功 hosted Windows run：<https://github.com/Fyrefly-4/MyTracer/actions/runs/31613036396>。
+  - 实现与测试位于 `task/T013-action-record`，实现验证绑定 revision `b10d5d40c4c1dc1f7a20801d5d904b1d37953270`；合同已归档至 `docs/implementation/archive/S1_T011_T014_ARCHIVE.md`。
+  - PR #10：<https://github.com/Fyrefly-4/MyTracer/pull/10>；最终 hosted Windows run：<https://github.com/Fyrefly-4/MyTracer/actions/runs/31615259882>。
   - Playwright screenshot/trace/video 按既有配置不持久化；临时测试数据库、结果和 `userData` 均位于 OS 临时目录并由测试清理。
 - **Manual acceptance**：pass；项目所有者于 2026-08-12 报告 T013 人工测试通过
-- **Known limitations**：PR #10 仍为 Draft 且未 merge；package/NSIS smoke 不在 T013 合同范围并按设计跳过；T013 不实现 FR-L07、FR-L09 或 FR-C04，只贡献 AC-01 步骤 4～5，完整 AC-01 仍需 T014 步骤 6 后执行
+- **Known limitations**：package/NSIS smoke 不在 T013 合同范围并按设计跳过；T013 不实现 FR-L07、FR-L09 或 FR-C04，只贡献 AC-01 步骤 4～5，完整 AC-01 由 T014/聚合证据完成
 - **Supersedes / superseded by**：成功 run `31613036396` 取代失败 run `31609393753` 与 `31612362422`；后续文档收口提交不修改本记录绑定的实现/测试 revision
 - **Recorded at**：2026-08-12
 
 ### EV-T014-001
 
-- **Status**：partial；实现、自动验证、hosted CI 与人工验收均通过，独立 review 尚无有效结果
-- **Task / Gate**：T014 / S1 E1-04；不声明 T014 `done`、G3/S1、完整 FR-P02、完整 FR-D01、AC-07 或任何后续切片通过
+- **Status**：pass；实现、自动验证、hosted CI、独立 review 与人工验收均通过
+- **Task / Gate**：T014 / S1 E1-04；不声明 G3/S1、完整 FR-P02、完整 FR-D01、AC-07 或任何后续切片通过
 - **Requirements**：FR-L09；FR-C03 非 AI 部分；FR-P01～FR-P04、FR-P07、FR-P08；FR-D01 的 Goal/Action/ActionRecord 重开子集；AC-01；D-007、D-104、D-106；ED-012、ED-016；S1-Q06-A、S1-Q08-B、S1-Q09-A
 - **Source branch**：`task/T014-progress-core-loop`
 - **Source revision**：实现与测试 head `52cd33672b6b2632b09beb7cb8e66f48901f2bd0`；启动基线 `b3c61b403888b81e4f155fabcbefea689acd1d3a`
-- **CI head/merge revision**：Draft PR #11 实现 head `52cd33672b6b2632b09beb7cb8e66f48901f2bd0`；Windows required gate run `31620034625` / job `94192256033` 为 `success`；尚未 merge。文档收口 head 的 required CI 将作为 PR 集成门记录在 PR 正文，不改变本条实现绑定 revision
+- **CI head/merge revision**：PR #11 最终 head `0d612850716448687fecca49a1cf695570a6c970`；Windows required gate run `31622444922` / job `94200377855` 为 `success`；squash merge revision `623007dd4269df02771f6a526db269de1fe95a03`
 - **Environment**：本地 Windows 11 x64、Node.js 24.18.0、npm 11.16.0、Electron 43.3.0、`better-sqlite3@13.0.1`；CI 为 GitHub-hosted Windows x64；所有自动化数据库和 Electron `userData` 均位于每 case 唯一 OS 临时根；AI 未配置，无 live Provider 或真实用户数据
 - **Command or manual procedure**：
   1. 执行 T014 针对性 unit、SQLite integration、IPC integration 与 Progress Electron E2E；覆盖可选 Goal/LocalDate 筛选、包含端点、公式、0 分钟、三种 outcome、同日多记录、稳定排序、重复只读、并发快照、关闭重开与中性空状态。
   2. 在实现 revision `52cd33672b6b2632b09beb7cb8e66f48901f2bd0` 执行 `npm.cmd run verify`，exit code 0：format check、lint、typecheck、69 项 unit、39 项 integration、Main/Preload/Renderer build 和 6 项 Electron E2E 全部通过；Windows package smoke 1 项按既有 opt-in 条件跳过。
   3. 执行 `git diff --check dev...HEAD`、完整任务 diff、允许文件及依赖/lockfile/schema/migration 扫描；未发现新依赖、migration、`001_initial.sql` 修改、延期能力、真实数据路径、评分/掌握度或其他越界语义。
-  4. Draft PR #11 的 Windows required gate 在实现 head `52cd33672b6b2632b09beb7cb8e66f48901f2bd0` 完成并返回 `success`。
+  4. PR #11 的最终 Windows required gate 在 head `0d612850716448687fecca49a1cf695570a6c970` 完成并返回 `success`，随后合入 `dev` 为 `623007dd4269df02771f6a526db269de1fe95a03`。
   5. 项目所有者于 2026-08-13 使用隔离 `userData`，按 Goal → Action → Today → 25 分钟 partial ActionRecord → Understanding/Confusion/下一步 → Progress → 完全关闭重开，以及 Goal/日期组合筛选、无匹配中性状态与可选 0 分钟/同日多记录强化路径进行人工验收，并报告“人工验收全量通过”。
+  6. 在合并后的 `dev@623007dd4269df02771f6a526db269de1fe95a03` 执行独立只读 review；除里程碑 package smoke 的旧 API 断言外，未发现 T014 或其他 S1 实现问题。
 - **Result**：
   - `GetProgress` 形成 Renderer → Preload → Main/Application → SQLite 的固定只读纵向路径；输入只含可选 `goalId`、`from` 与 `through`，LocalDate 端点包含且允许全局全时、单 Goal、单周期或组合查询。
   - `totalDurationMinutes` 为筛选后每条 ActionRecord `durationMinutes` 之和；`realActionCount` 为筛选后 ActionRecord 数量。completed、partial、stopped、0 分钟及同一 Action 同日多条均逐条保留和计次。
@@ -340,12 +344,12 @@ Evidence ID 不复用。失败记录保留，并由后续记录明确引用修�
   - Renderer 只呈现事实与中性空状态，不产生评分、掌握度、学习质量、失败率、排名、连续天数压力、人格评价或自动建议，也不用 Action/Goal/Routine 完成数代替真实行动次数。
   - `package.json`、lockfile、schemaVersion、migration 集合和 `001_initial.sql` 未修改；没有新增、升级或安装依赖。
 - **Artifacts**：
-  - 实现与测试位于 `task/T014-progress-core-loop`，实现验证绑定 revision `52cd33672b6b2632b09beb7cb8e66f48901f2bd0`；任务合同为 `docs/implementation/T014_PROGRESS_CORE_LOOP_TASK.md`。
-  - Draft PR #11：<https://github.com/Fyrefly-4/MyTracer/pull/11>；成功 hosted Windows run：<https://github.com/Fyrefly-4/MyTracer/actions/runs/31620034625>。
+  - 实现与测试位于 `task/T014-progress-core-loop`，实现验证绑定 revision `52cd33672b6b2632b09beb7cb8e66f48901f2bd0`；合同已归档至 `docs/implementation/archive/S1_T011_T014_ARCHIVE.md`。
+  - PR #11：<https://github.com/Fyrefly-4/MyTracer/pull/11>；最终 hosted Windows run：<https://github.com/Fyrefly-4/MyTracer/actions/runs/31622444922>。
   - Playwright screenshot/trace/video 按既有配置不持久化；临时测试数据库、结果和 `userData` 均位于 OS 临时目录并由自动化清理。项目所有者人工验收使用独立临时 `userData`。
 - **Manual acceptance**：pass；项目所有者于 2026-08-13 报告 T014 完整人工 AC-01 全量通过
-- **Known limitations**：独立 review 尚无有效结果，因此 T014 保持 `review` 且本证据为 `partial`；PR #11 仍为 Draft 且未 merge；文档收口最新 head CI 尚待执行；package/NSIS smoke 不在 T014 合同范围并按设计跳过。T014 只完成 FR-P02 的 ActionRecord 分支和 FR-D01 的 S1 重开子集，RoutineRecord 统一计次属于 T022，完整 FR-D01/AC-07 与 G3/S1 仍未通过
-- **Supersedes / superseded by**：无；文档收口提交不修改本记录绑定的实现/测试 revision。独立 review 完成后须补充可定位结果，方可把本证据和任务状态收口为 `pass` / `done`
+- **Known limitations**：package/NSIS smoke 不在 T014 任务范围；其首轮 S1 聚合失败另记 `EV-G3-S1-001`，并由后续 `EV-G3-S1-002` 成功结论取代，不重开 T014 产品交付。T014 只完成 FR-P02 的 ActionRecord 分支和 FR-D01 的 S1 重开子集；RoutineRecord 统一计次属于 T022，完整 FR-D01/AC-07 未完成
+- **Supersedes / superseded by**：本次状态更新取代此前“独立 review 尚缺、PR #11 未合并”的部分状态；不取代实现 revision 的原始测试结果
 - **Recorded at**：2026-08-13
 
 ### EV-AC01-001
@@ -355,16 +359,98 @@ Evidence ID 不复用。失败记录保留，并由后续记录明确引用修�
 - **Requirements**：AC-01；`EV-T011-001`、`EV-T012-001`、`EV-T013-001`、`EV-T014-001`
 - **Source branch**：`task/T014-progress-core-loop`
 - **Source revision**：完整自动化与人工闭环绑定 T014 实现 revision `52cd33672b6b2632b09beb7cb8e66f48901f2bd0`
-- **CI head/merge revision**：PR #11 实现 head `52cd33672b6b2632b09beb7cb8e66f48901f2bd0`；Windows required gate run `31620034625` / job `94192256033` 为 `success`；尚未 merge
+- **CI head/merge revision**：PR #11 最终 head `0d612850716448687fecca49a1cf695570a6c970`；Windows required gate run `31622444922` / job `94200377855` 为 `success`；squash merge revision `623007dd4269df02771f6a526db269de1fe95a03`
 - **Environment**：本地 Windows 11 x64 与 GitHub-hosted Windows x64；SQLite v1 schema；自动化和人工验收均使用隔离数据根/`userData`；AI 未配置
 - **Command or manual procedure**：
   1. `npm.cmd run verify` 中的 Electron E2E 在同一 revision 连续完成 Goal 与当前下一步、选入 Today、保存 25 分钟 partial ActionRecord 与 manual Understanding/open Confusion/下一步、进入 Progress 验证 25 分钟与 1 次真实行动、完全关闭 Electron/SQLite 后以同一隔离 `userData` 重开并复核事实。
   2. 项目所有者于 2026-08-13 按同一完整路径及 Goal/日期筛选、中性空状态、易读性和记录负担人工清单执行，并明确报告“人工验收全量通过”。
 - **Result**：AC-01 自动化与项目所有者人工验收均通过；Goal → Action → Today → ActionRecord → Progress 的 S1 产品闭环在该实现 revision 上成立，关闭重开后事实一致。
-- **Artifacts**：`EV-T011-001`～`EV-T014-001`；PR #11 <https://github.com/Fyrefly-4/MyTracer/pull/11>；hosted run <https://github.com/Fyrefly-4/MyTracer/actions/runs/31620034625>
+- **Artifacts**：`EV-T011-001`～`EV-T014-001`；PR #11 <https://github.com/Fyrefly-4/MyTracer/pull/11>；hosted run <https://github.com/Fyrefly-4/MyTracer/actions/runs/31622444922>
 - **Manual acceptance**：pass；项目所有者于 2026-08-13 明确报告全量通过
-- **Known limitations**：AC-01 通过不自动使 T014 `done`、G3/S1 通过、PR Ready/merge、`main`、tag 或 release 获得授权；T014 独立 review 与文档收口最新 head CI 仍待完成
+- **Known limitations**：AC-01 通过不自动使 G3/S1、`main`、tag 或 release 获得授权；G3/S1 Windows package smoke 失败另记 `EV-G3-S1-001`
 - **Supersedes / superseded by**：取代 AC-01 先前 `pending` 状态；不取代各任务证据
+- **Recorded at**：2026-08-13
+
+### EV-G3-S1-001
+
+- **Status**：fail
+- **Task / Gate**：G3/S1 核心闭环里程碑聚合验收；T011～T014
+- **Requirements**：AC-01；FR-G01～G06、FR-A01～A06、FR-T01/T04/T05/T08、FR-L01～L06/L08/L09、FR-C01/C03 非 AI 部分、FR-P01～P04/P07/P08；D-002/004～007/015/016/101/103～106；相关 ED 与 GW-008/GW-010
+- **Source branch**：`dev`；验收工作位于 `codex/s1-core-loop-milestone`
+- **Source revision**：`623007dd4269df02771f6a526db269de1fe95a03`
+- **CI head/merge revision**：远端 `dev` 同 revision；T014 PR #11 最终 Windows required gate run `31622444922` / job `94200377855` success
+- **Environment**：Windows 11 x64、Node.js 24.18.0、npm 11.16.0、Electron 43.3.0、`better-sqlite3@13.0.1`；自动化使用唯一 OS 临时数据根和隔离 Electron `userData`；AI 未配置
+- **Command or manual procedure**：
+  1. 冷 worktree 执行 `npm.cmd ci`；首次 `npm.cmd run verify` 因 Electron 安装脚本未取得 `electron.exe` 而在 native SQLite smoke 报 ENOENT。网络恢复命令失败后，从同仓库已安装且版本一致的 Electron 43.3.0 复制本地二进制到未跟踪 `node_modules`，从头重跑。
+  2. 第二次 `npm.cmd run verify` exit code 0：format、lint、typecheck、69 unit、39 integration、build 和 6 Electron E2E 通过；package smoke 按 opt-in 设计跳过。AC-01 自动化在同一 revision 完成完整闭环和真实关闭重开。
+  3. `npm.cmd run package` exit code 0，生成 Windows x64 `win-unpacked` 与 unsigned NSIS installer。
+  4. `npm.cmd run test:package-smoke` exit code 1：unpacked 应用成功启动、读取隔离 `userData`、返回 AI `not-configured`，随后在 `tests/e2e/windows-package-smoke.e2e.test.ts:42` 因仍期望 `Object.keys(window.myTracer) === ['shell']` 而失败；当前 S1 窄 API 实际为 `shell/goals/actions/today/records/progress`。测试未继续到 NSIS 安装态验证。
+  5. 独立只读 review 核对 Domain/Application/SQLite/IPC/Preload/Renderer 和测试；确认该 package smoke 漂移为唯一 actionable finding，其他冻结语义和范围一致。
+- **Result**：
+  - `verify`、AC-01、package 构建及项目所有者人工 AC-01 通过，但 Windows package smoke 门禁失败；G3/S1 不通过，不得声称里程碑完成，也未创建 `dev → main` PR。
+  - 独立 review 确认 pause/end 保留当前下一步、Today 选择及 Action/Record 历史；ended 保持终态；当前下一步只接受同 Goal 的 pending Action，且设置/替换受 active Goal 约束。
+  - rescheduled 原地复用 Action ID，只移除当日 Today 选择；`partial` 与 0 分钟记录均计为真实行动，但不自动完成 Action。
+  - Today 由 Main 捕获并验证 LocalDate，不自动搬运历史 Action；Progress 仅按事实投影次数、分钟、Understanding 与开放 Confusion，不生成评分、掌握度或推断失败。
+  - AI 保持 `not-configured` 时，Goal → Action → Today → ActionRecord → Progress 仍可完整使用并在真实关闭重开后保留事实。
+- **Artifacts**：
+  - `release/win-unpacked/MyTracer.exe`：SHA-256 `4BCED5469892ACA2DE672A8AE60A473518FF4D3229823D0637E8F4E09FFCAA55`。
+  - `release/MyTracer-0.1.0-x64-setup.exe`：SHA-256 `A336C33376F514A2A4DA2EE28C6ABC9B8209E64C9F2C0BDB3506482932EB852E`。
+  - 失败定位：`tests/e2e/windows-package-smoke.e2e.test.ts:42`；当前 API 定义：`src/preload/index.ts`。
+- **Manual acceptance**：pending；项目所有者 2026-08-13 的完整人工 AC-01 为 pass，但 G3/S1 因 package smoke 失败尚不能请求最终里程碑签署
+- **Known limitations**：NSIS 安装态未执行；产物未签名且使用默认 Electron 图标；CI workflow 只运行 `verify`，不运行 package smoke；必须由独立 T801 修复并合入后，在新的最终 `dev` revision 上重跑全部验收
+- **Supersedes / superseded by**：首次 G3/S1 聚合验收记录；后续成功证据不得删除或覆盖本失败记录，应显式引用并 supersede
+- **Recorded at**：2026-08-13
+
+### EV-T801-001
+
+- **Status**：pass
+- **Task / Gate**：T801 / S1 Windows package smoke fix；只修复 `EV-G3-S1-001` 暴露的测试契约漂移
+- **Requirements**：G3/S1；GW-008、GW-010；不新增或改变 FR、AC、D、ED
+- **Source branch**：`fix/T801-s1-package-smoke`
+- **Source revision**：`dd9bd4498b0339703f8cf992a564a7d7b80442b5`；基线 `623007dd4269df02771f6a526db269de1fe95a03`
+- **CI head/merge revision**：PR #12 head `dd9bd4498b0339703f8cf992a564a7d7b80442b5` 的 run `31629217448` / job `94223393063` success；squash merge `74ebe346a86cf431d87e02e8a1220b713b33901c`；最终 dev push run `31629559383` / job `94224557272` success
+- **Environment**：Windows 11 x64、Node.js 24.18.0、npm 11.16.0、Electron 43.3.0；package smoke 使用唯一临时根、隔离 `userData` 与隔离 NSIS 安装目录；AI 未配置
+- **Command or manual procedure**：
+  1. 仅修改 `tests/e2e/windows-package-smoke.e2e.test.ts`，把顶层及子 API 白名单对齐当前 `MyTracerApi`，验证所有 API 对象冻结，并断言 Renderer 不暴露 Node/`require`/`process`/safeStorage。
+  2. 为包含两次应用启动及最多 120 秒安装/卸载子进程的 Windows 用例设置 300 秒 case timeout；不改变任何子进程、数据隔离或清理语义。
+  3. 执行 `npm.cmd run verify`：format/lint/typecheck、69 unit、39 integration、build 和 6 Electron E2E 通过；opt-in package smoke 按设计跳过。
+  4. 执行 `npm.cmd run package` 与 `npm.cmd run test:package-smoke`：unpacked 启动/关闭，隔离 NSIS 安装、已安装应用启动/关闭和卸载均通过，1 test / 18.5s。
+  5. 独立只读 review 核对精确 API、安全、临时数据、安装/卸载与失败清理路径，无 finding；验证后无 MyTracer/Electron 进程、测试根或安装目录残留。
+- **Result**：旧 S0 `shell`-only 断言已替换为精确 S1 窄 API 契约；package smoke 没有弱化安全或安装态证明。T801 完成且没有产品范围变化
+- **Artifacts**：
+  - PR #12：<https://github.com/Fyrefly-4/MyTracer/pull/12>；head CI：<https://github.com/Fyrefly-4/MyTracer/actions/runs/31629217448>；最终 dev CI：<https://github.com/Fyrefly-4/MyTracer/actions/runs/31629559383>。
+  - 修复验证产物：`win-unpacked/MyTracer.exe` SHA-256 `4BCED5469892ACA2DE672A8AE60A473518FF4D3229823D0637E8F4E09FFCAA55`；NSIS setup SHA-256 `51BB177C61DD1D14A66371D628C0BFD8908AA44B43F10A1D882D13F87581FBCC`。
+- **Manual acceptance**：not-required；T801 不改变用户行为，里程碑人工签署由 `EV-G3-S1-002` 单独记录
+- **Known limitations**：hosted workflow 不运行 package/NSIS smoke；产物未签名且使用默认 Electron 图标。首次受限环境 packaged Electron GPU 失败与首次 Prettier 失败均由后续同范围成功重跑取代，不删除其运行事实
+- **Supersedes / superseded by**：修复 `EV-G3-S1-001` 的测试缺陷，但不删除或把该失败记录改为 pass
+- **Recorded at**：2026-08-13
+
+### EV-G3-S1-002
+
+- **Status**：pass
+- **Task / Gate**：G3/S1 核心闭环里程碑聚合验收；T011～T014 + T801
+- **Requirements**：AC-01；FR-G01～G06、FR-A01～A06、FR-T01/T04/T05/T08、FR-L01～L06/L08/L09、FR-C01/C03 非 AI 部分、FR-P01～P04/P07/P08；D-002/004～007/015/016/101/103～106；相关 ED 与 GW-008/GW-010
+- **Source branch**：`dev`；最终验收/归档工作位于 `codex/s1-core-loop-milestone-final`
+- **Source revision**：`74ebe346a86cf431d87e02e8a1220b713b33901c`
+- **CI head/merge revision**：T801 PR #12 squash merge同 source revision；最终 dev push run `31629559383` / job `94224557272` success
+- **Environment**：Windows 11 x64、Node.js 24.18.0、npm 11.16.0、Electron 43.3.0、`better-sqlite3@13.0.1`；所有自动化使用唯一临时根和隔离 Electron `userData`；AI 未配置
+- **Command or manual procedure**：
+  1. 首次 `npm.cmd run verify` 的 69 unit 和 39 integration 通过，但 AC-01 E2E 在 Progress 首屏一度读到 0/0 而失败。没有修改代码；精确重跑 `npm.cmd run test:e2e:run -- tests/e2e/progress-core-loop.e2e.test.ts` 通过（1 test / 2.8s）。
+  2. 从头重跑 `npm.cmd run verify` exit code 0：format、lint、typecheck、69 unit、39 integration、build 和 6 Electron E2E 通过；AC-01 完成 25 分钟 partial Record、事实型 Progress 和真实关闭重开。
+  3. 执行 `npm.cmd run package` 与 `npm.cmd run test:package-smoke`：Windows x64 unpacked 与隔离 NSIS 安装态启动、关闭、卸载和清理通过（1 test / 18.6s）。
+  4. 核对 S1 核心语义、T011～T014/T801 完整 diff、需求追踪和独立 review；未发现新的 requirement conflict 或 scope change。
+- **Result**：
+  - pause/end 保留当前下一步、TodaySelection 与全部历史；ended 终态；当前下一步只引用同 Goal pending Action。
+  - rescheduled 复用原 Action ID；partial/0 分钟为真实行动且不自动完成；Today 不自动搬运历史 Action。
+  - Progress 只展示事实，不推导评分或掌握度；AI `not-configured` 时完整闭环仍可使用。
+  - 最终 `dev` 的 AC-01、关闭重开、Windows package 和 unpacked/NSIS 门禁通过；G3/S1 自动化验收通过。
+- **Artifacts**：
+  - Hosted Windows：<https://github.com/Fyrefly-4/MyTracer/actions/runs/31629559383/job/94224557272>。
+  - `release/win-unpacked/MyTracer.exe`：SHA-256 `4BCED5469892ACA2DE672A8AE60A473518FF4D3229823D0637E8F4E09FFCAA55`。
+  - `release/MyTracer-0.1.0-x64-setup.exe`：SHA-256 `DD1AA1519A7546FEF83CF955FB4845E48AB63F4A3646DA7B47374C5C7BD031D3`。
+- **Manual acceptance**：pass；项目所有者于 2026-08-13 已完成完整人工 AC-01。针对即将创建的确切 `dev → main` 里程碑 PR 是否允许合入 `main` 是独立发布授权，仍为 pending
+- **Known limitations**：首次最终-dev AC-01 E2E 有一次不可稳定复现的 0/0 首屏竞态，随后精确重跑和完整 `verify` 均通过；作为残余测试稳定性风险保留。hosted workflow 不运行 package smoke；产物未签名并使用默认 Electron 图标；完整 FR-P02、FR-D01、AC-07 和 S2～S7 仍未交付
+- **Supersedes / superseded by**：显式 supersede `EV-G3-S1-001` 的阶段门结论；不删除或改写首轮失败证据，也不取代各任务证据
 - **Recorded at**：2026-08-13
 
 ### EV-G2-001
@@ -398,7 +484,7 @@ Evidence ID 不复用。失败记录保留，并由后续记录明确引用修�
 |---|---|---|---|---|
 | G1 设计就绪 | 架构、领域、数据、AI、测试、追踪 | `docs/architecture/` 最终基线 | pass | 已确认 |
 | G2 工程就绪 | T001～T004 | `EV-G2-001` | pass | 已确认 |
-| G3 切片完成 | 各切片对应任务 | — | pending | pending |
+| G3/S1 核心闭环 | T011～T014/T801 | `EV-G3-S1-001`（失败保留）；`EV-G3-S1-002`（最终） | pass | 已确认 AC-01；确切里程碑 PR 的 merge 授权另行待定 |
 | G4 Demo 就绪 | AC-01～AC-07、数据安全、已知限制 | — | pending | pending |
 | G5 使用验证 | 7～14 天真实自用 | — | pending | pending |
 
@@ -452,5 +538,8 @@ Agent 只提供步骤和观察位置，不得替项目所有者签署人工验�
 - T003 SQLite 基础、隔离验证和 Windows x64 原生模块证据已记录为 `EV-T003-001`；它不声明业务 FR、任何 AC、T004 或 G2 完成。
 - T004 LocalDate/Clock、诊断、空配置/safeStorage 边界和本地 Windows 打包冒烟已记录为 `EV-T004-001`；它不声明业务 FR、任何 AC 或 G2 完成。
 - G2 已由 `EV-G2-001` 绑定 T001～T004、最终 `dev` source revision、聚合验证、Windows package smoke、PR #5 和项目所有者验收；不声明任何业务 FR 或 AC-01～AC-07 完成。
-- T014 事实型 Progress 实现、本地/hosted 自动验证及项目所有者完整人工验收已记录为 `EV-T014-001`；因独立 review 尚缺，任务保持 `review`，不得标为 `done`。
+- T014 事实型 Progress 实现、本地/hosted 自动验证、独立 review、PR #11 合并及项目所有者完整人工验收已记录为 `EV-T014-001`；任务为 `done`。
 - 完整 Goal → Action → Today → ActionRecord → Progress 自动化与项目所有者人工闭环已记录为 `EV-AC01-001`，AC-01 为 `pass`；这不自动通过 G3/S1、完整 FR-P02、完整 FR-D01 或 AC-07。
+- G3/S1 首轮聚合验收已记录为 `EV-G3-S1-001`：固定 `dev@623007dd4269df02771f6a526db269de1fe95a03` 的 `verify`、AC-01 和 package 构建通过，但 package smoke 因旧 API 断言失败，故当时阶段门为 `fail`；该失败记录由后续 `EV-T801-001` / `EV-G3-S1-002` 显式取代但不删除。
+- T801 已由 `EV-T801-001` 证明单文件修复、本地 `verify`/package/package smoke、独立 review、PR #12 head CI、合并与最终 dev CI 通过；没有生产、依赖、schema 或产品语义变化。
+- G3/S1 最终聚合验收已记录为 `EV-G3-S1-002`：固定 `dev@74ebe346a86cf431d87e02e8a1220b713b33901c` 的 hosted/local `verify`、AC-01、package 和 unpacked/NSIS smoke 通过。首轮失败未删除；里程碑 PR 的 merge、tag 和 release 仍需所有者分别授权。
