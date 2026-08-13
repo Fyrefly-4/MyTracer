@@ -1,11 +1,15 @@
 import type Database from 'better-sqlite3'
 import type {
   ActionPersistenceRecord,
+  ActionRecordRepositoryPort,
   ActionRecordPersistenceRecord,
   ConfusionPersistenceRecord,
   CorePersistenceSnapshot,
+  GoalActionRecordSummaryPersistenceRecord,
   GoalPersistenceRecord,
-  RepositoryPort,
+  GoalStatus,
+  ProgressQueryFilterPersistence,
+  ProgressQueryRowPersistenceRecord,
   ReviewResultPersistenceRecord,
   RoutinePersistenceRecord,
   RoutineRecordPersistenceRecord,
@@ -20,7 +24,7 @@ const asString = (row: Row, name: string): string => String(row[name])
 const asNullableString = (row: Row, name: string): string | null =>
   row[name] === null ? null : asString(row, name)
 
-export class SqliteRepository implements RepositoryPort {
+export class SqliteRepository implements ActionRecordRepositoryPort {
   constructor(private readonly database: Database.Database) {}
 
   saveGoal(record: GoalPersistenceRecord): void {
@@ -137,26 +141,217 @@ export class SqliteRepository implements RepositoryPort {
       .run(record)
   }
 
+  findGoalById(id: string): GoalPersistenceRecord | null {
+    const row = this.database.prepare('SELECT * FROM goals WHERE id = ?').get(id) as Row | undefined
+    return row ? this.goalFromRow(row) : null
+  }
+
+  findActionById(id: string): ActionPersistenceRecord | null {
+    const row = this.database.prepare('SELECT * FROM actions WHERE id = ?').get(id) as
+      Row | undefined
+    return row ? this.actionFromRow(row) : null
+  }
+
+  findActionRecordById(id: string): ActionRecordPersistenceRecord | null {
+    const row = this.database.prepare('SELECT * FROM action_records WHERE id = ?').get(id) as
+      Row | undefined
+    return row ? this.actionRecordFromRow(row) : null
+  }
+
+  findTodaySelection(
+    actionId: string,
+    selectedFor: string
+  ): TodaySelectionPersistenceRecord | null {
+    const row = this.database
+      .prepare('SELECT * FROM today_selections WHERE action_id = ? AND selected_for = ?')
+      .get(actionId, selectedFor) as Row | undefined
+    return row ? this.todaySelectionFromRow(row) : null
+  }
+
+  listGoals(status?: GoalStatus): readonly GoalPersistenceRecord[] {
+    const rows = status
+      ? (this.database
+          .prepare('SELECT * FROM goals WHERE status = ? ORDER BY created_at ASC, id ASC')
+          .all(status) as readonly Row[])
+      : this.rows('SELECT * FROM goals ORDER BY created_at ASC, id ASC')
+    return rows.map((row) => this.goalFromRow(row))
+  }
+
+  listActions(): readonly ActionPersistenceRecord[] {
+    return this.rows('SELECT * FROM actions ORDER BY created_at ASC, id ASC').map((row) =>
+      this.actionFromRow(row)
+    )
+  }
+
+  listActionsByGoalId(goalId: string): readonly ActionPersistenceRecord[] {
+    return (
+      this.database
+        .prepare('SELECT * FROM actions WHERE goal_id = ? ORDER BY created_at ASC, id ASC')
+        .all(goalId) as readonly Row[]
+    ).map((row) => this.actionFromRow(row))
+  }
+
+  listActionRecordsByActionId(actionId: string): readonly ActionRecordPersistenceRecord[] {
+    return (
+      this.database
+        .prepare(
+          `SELECT * FROM action_records WHERE action_id = ?
+           ORDER BY occurred_on DESC, created_at DESC, id ASC`
+        )
+        .all(actionId) as readonly Row[]
+    ).map((row) => this.actionRecordFromRow(row))
+  }
+
+  listUnderstandingsByActionRecordId(
+    actionRecordId: string
+  ): readonly UnderstandingPersistenceRecord[] {
+    return (
+      this.database
+        .prepare(
+          `SELECT * FROM understandings WHERE action_record_id = ?
+           ORDER BY created_at ASC, id ASC`
+        )
+        .all(actionRecordId) as readonly Row[]
+    ).map((row) => ({
+      id: asString(row, 'id'),
+      actionRecordId: asString(row, 'action_record_id'),
+      text: asString(row, 'text'),
+      source: asString(row, 'source') as UnderstandingPersistenceRecord['source'],
+      revokedAt: asNullableString(row, 'revoked_at'),
+      createdAt: asString(row, 'created_at'),
+      updatedAt: asString(row, 'updated_at')
+    }))
+  }
+
+  listConfusionsByActionRecordId(actionRecordId: string): readonly ConfusionPersistenceRecord[] {
+    return (
+      this.database
+        .prepare(
+          `SELECT * FROM confusions WHERE action_record_id = ?
+           ORDER BY created_at ASC, id ASC`
+        )
+        .all(actionRecordId) as readonly Row[]
+    ).map((row) => ({
+      id: asString(row, 'id'),
+      actionRecordId: asString(row, 'action_record_id'),
+      text: asString(row, 'text'),
+      status: asString(row, 'status') as ConfusionPersistenceRecord['status'],
+      resolvedAt: asNullableString(row, 'resolved_at'),
+      resolution: asNullableString(row, 'resolution'),
+      createdAt: asString(row, 'created_at'),
+      updatedAt: asString(row, 'updated_at')
+    }))
+  }
+
+  listTodaySelectionsOn(selectedFor: string): readonly TodaySelectionPersistenceRecord[] {
+    return (
+      this.database
+        .prepare(
+          'SELECT * FROM today_selections WHERE selected_for = ? ORDER BY created_at ASC, action_id ASC'
+        )
+        .all(selectedFor) as readonly Row[]
+    ).map((row) => this.todaySelectionFromRow(row))
+  }
+
+  listActionRecordSummariesByGoalId(
+    goalId: string
+  ): readonly GoalActionRecordSummaryPersistenceRecord[] {
+    const rows = this.database
+      .prepare(
+        `SELECT records.*, actions.title AS action_title
+         FROM action_records AS records
+         INNER JOIN actions ON actions.id = records.action_id
+         WHERE actions.goal_id = ?
+         ORDER BY records.occurred_on DESC, records.created_at DESC, records.id ASC`
+      )
+      .all(goalId) as readonly Row[]
+
+    return rows.map((row) => ({
+      id: asString(row, 'id'),
+      actionId: asString(row, 'action_id'),
+      actionTitle: asString(row, 'action_title'),
+      occurredOn: asString(row, 'occurred_on'),
+      durationMinutes: Number(row.duration_minutes),
+      outcome: asString(row, 'outcome') as ActionRecordPersistenceRecord['outcome'],
+      nextStep: asNullableString(row, 'next_step'),
+      note: asNullableString(row, 'note'),
+      createdAt: asString(row, 'created_at')
+    }))
+  }
+
+  listTodaySelectionActionIdsByGoalIdOn(goalId: string, selectedFor: string): readonly string[] {
+    return (
+      this.database
+        .prepare(
+          `SELECT selections.action_id
+           FROM today_selections AS selections
+           INNER JOIN actions ON actions.id = selections.action_id
+           WHERE actions.goal_id = ? AND selections.selected_for = ?
+           ORDER BY selections.action_id ASC`
+        )
+        .all(goalId, selectedFor) as readonly Row[]
+    ).map((row) => asString(row, 'action_id'))
+  }
+
+  queryProgressRows(
+    filter: ProgressQueryFilterPersistence
+  ): readonly ProgressQueryRowPersistenceRecord[] {
+    const rows = this.database
+      .prepare(
+        `SELECT records.id AS record_id, records.action_id, actions.goal_id,
+           actions.title AS action_title, records.occurred_on, records.duration_minutes,
+           records.outcome, records.created_at AS record_created_at,
+           understandings.id AS understanding_id, understandings.text AS understanding_text,
+           understandings.created_at AS understanding_created_at,
+           confusions.id AS confusion_id, confusions.text AS confusion_text,
+           confusions.created_at AS confusion_created_at
+         FROM action_records AS records
+         INNER JOIN actions ON actions.id = records.action_id
+         LEFT JOIN understandings ON understandings.action_record_id = records.id
+           AND understandings.revoked_at IS NULL
+         LEFT JOIN confusions ON confusions.action_record_id = records.id
+           AND confusions.status = 'open'
+         WHERE (@goalId IS NULL OR actions.goal_id = @goalId)
+           AND (@fromDate IS NULL OR records.occurred_on >= @fromDate)
+           AND (@throughDate IS NULL OR records.occurred_on <= @throughDate)
+         ORDER BY records.occurred_on DESC, records.created_at DESC, records.id ASC,
+           understandings.created_at ASC, understandings.id ASC,
+           confusions.created_at ASC, confusions.id ASC`
+      )
+      .all({
+        goalId: filter.goalId,
+        fromDate: filter.from,
+        throughDate: filter.through
+      }) as readonly Row[]
+
+    return rows.map((row) => ({
+      recordId: asString(row, 'record_id'),
+      actionId: asString(row, 'action_id'),
+      goalId: asNullableString(row, 'goal_id'),
+      actionTitle: asString(row, 'action_title'),
+      occurredOn: asString(row, 'occurred_on'),
+      durationMinutes: Number(row.duration_minutes),
+      outcome: asString(row, 'outcome') as ActionRecordPersistenceRecord['outcome'],
+      recordCreatedAt: asString(row, 'record_created_at'),
+      understandingId: asNullableString(row, 'understanding_id'),
+      understandingText: asNullableString(row, 'understanding_text'),
+      understandingCreatedAt: asNullableString(row, 'understanding_created_at'),
+      confusionId: asNullableString(row, 'confusion_id'),
+      confusionText: asNullableString(row, 'confusion_text'),
+      confusionCreatedAt: asNullableString(row, 'confusion_created_at')
+    }))
+  }
+
+  deleteTodaySelection(actionId: string, selectedFor: string): void {
+    this.database
+      .prepare('DELETE FROM today_selections WHERE action_id = ? AND selected_for = ?')
+      .run(actionId, selectedFor)
+  }
+
   readSnapshot(): CorePersistenceSnapshot {
     return {
-      goals: this.rows('SELECT * FROM goals ORDER BY id').map((row) => ({
-        id: asString(row, 'id'),
-        title: asString(row, 'title'),
-        description: asNullableString(row, 'description'),
-        status: asString(row, 'status') as GoalPersistenceRecord['status'],
-        currentNextActionId: asNullableString(row, 'current_next_action_id'),
-        createdAt: asString(row, 'created_at'),
-        updatedAt: asString(row, 'updated_at')
-      })),
-      actions: this.rows('SELECT * FROM actions ORDER BY id').map((row) => ({
-        id: asString(row, 'id'),
-        goalId: asNullableString(row, 'goal_id'),
-        title: asString(row, 'title'),
-        description: asNullableString(row, 'description'),
-        status: asString(row, 'status') as ActionPersistenceRecord['status'],
-        createdAt: asString(row, 'created_at'),
-        updatedAt: asString(row, 'updated_at')
-      })),
+      goals: this.rows('SELECT * FROM goals ORDER BY id').map((row) => this.goalFromRow(row)),
+      actions: this.rows('SELECT * FROM actions ORDER BY id').map((row) => this.actionFromRow(row)),
       routines: this.rows('SELECT * FROM routines ORDER BY id').map((row) => ({
         id: asString(row, 'id'),
         goalId: asNullableString(row, 'goal_id'),
@@ -244,5 +439,53 @@ export class SqliteRepository implements RepositoryPort {
 
   private rows(sql: string): readonly Row[] {
     return this.database.prepare(sql).all() as readonly Row[]
+  }
+
+  private goalFromRow(row: Row): GoalPersistenceRecord {
+    return {
+      id: asString(row, 'id'),
+      title: asString(row, 'title'),
+      description: asNullableString(row, 'description'),
+      status: asString(row, 'status') as GoalPersistenceRecord['status'],
+      currentNextActionId: asNullableString(row, 'current_next_action_id'),
+      createdAt: asString(row, 'created_at'),
+      updatedAt: asString(row, 'updated_at')
+    }
+  }
+
+  private actionFromRow(row: Row): ActionPersistenceRecord {
+    return {
+      id: asString(row, 'id'),
+      goalId: asNullableString(row, 'goal_id'),
+      title: asString(row, 'title'),
+      description: asNullableString(row, 'description'),
+      status: asString(row, 'status') as ActionPersistenceRecord['status'],
+      createdAt: asString(row, 'created_at'),
+      updatedAt: asString(row, 'updated_at')
+    }
+  }
+
+  private todaySelectionFromRow(row: Row): TodaySelectionPersistenceRecord {
+    return {
+      actionId: asString(row, 'action_id'),
+      selectedFor: asString(row, 'selected_for'),
+      kind: asString(row, 'kind') as TodaySelectionPersistenceRecord['kind'],
+      selectedBy: asString(row, 'selected_by') as 'user',
+      createdAt: asString(row, 'created_at')
+    }
+  }
+
+  private actionRecordFromRow(row: Row): ActionRecordPersistenceRecord {
+    return {
+      id: asString(row, 'id'),
+      actionId: asString(row, 'action_id'),
+      occurredOn: asString(row, 'occurred_on'),
+      durationMinutes: Number(row.duration_minutes),
+      outcome: asString(row, 'outcome') as ActionRecordPersistenceRecord['outcome'],
+      nextStep: asNullableString(row, 'next_step'),
+      note: asNullableString(row, 'note'),
+      createdAt: asString(row, 'created_at'),
+      updatedAt: asString(row, 'updated_at')
+    }
   }
 }

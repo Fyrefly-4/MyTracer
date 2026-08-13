@@ -1,7 +1,7 @@
 # MyTracer v0.1 任务索引
 
 > 文档状态：v0.1 实施任务基线  
-> 当前阶段：G1 已通过；T001～T004 已完成并有 hosted Windows 证据，G2 保持独立门禁
+> 当前阶段：G1、G2 已通过；T001～T004 已归档；T011～T014/T801 已完成并由 PR #13 统一归档到 `dev`，G3/S1 自动化与人工 AC-01 验收通过；后续里程碑动作仍受独立授权门禁约束
 > 状态来源：本文件是任务执行状态的唯一账本，架构实施计划只定义范围和顺序
 
 ## 1. 使用规则
@@ -28,15 +28,12 @@
 
 ## 3. 当前门禁
 
-T001 的精确依赖、npm 工具链、Windows x64 unsigned NSIS 目标、隔离数据路径、任务分支/提交以及 push/Draft PR 权限已由项目所有者批准，并记录在任务合同中。
-
-后续门禁仍保持独立：
-
-1. T002 的 lint、format、单元、集成和 E2E 测试框架及精确版本已由项目所有者批准，仅限 T002 合同范围；
-2. `better-sqlite3` 精确版本、SQLite 数据路径和 migration 只在 T003 批准；
-3. T001 不得提前引入上述依赖或实现。
-
-首个 AI Provider、模型和 SDK 只阻塞 T062，不阻塞 S0～S5 的非 AI 能力。
+- T001～T004 的历史范围、批准、PR、验证和限制已统一归档于 [`archive/S0_T001_T004_ARCHIVE.md`](archive/S0_T001_T004_ARCHIVE.md)，详细结果见 `EV-T001-001`～`EV-T004-001`。
+- G2 已由项目所有者于 2026-08-09 确认通过，证据为 `EV-G2-001`；里程碑 PR #5 已将 T001～T004 从 `dev` 合入 `main`。
+- T011～T014 与门禁修复 T801 的最终范围、批准、PR、验证和限制已由 PR #13 收敛为统一归档 [`archive/S1_T011_T014_ARCHIVE.md`](archive/S1_T011_T014_ARCHIVE.md) 并合入 `dev`；详细结果见 `EV-T011-001`～`EV-T014-001`、`EV-T801-001` 与 `EV-AC01-001`。
+- G3/S1 聚合验收 `EV-G3-S1-001` 保留一次失败：`dev@623007dd4269df02771f6a526db269de1fe95a03` 的 `verify`、AC-01 和 Windows package 构建通过，但 package smoke 仍断言 S0 的旧 Preload API 面，未完成 NSIS 安装态验证。
+- T801 已由 PR #12 修复并合入；最终 `dev@74ebe346a86cf431d87e02e8a1220b713b33901c` 的 hosted `verify`、本地完整 `verify`/AC-01、package 与 unpacked/NSIS smoke 通过，`EV-G3-S1-002` 显式取代首轮失败结论。
+- 首个 AI Provider、模型和 SDK 只阻塞 T062，不阻塞 S0～S5 的非 AI 能力。
 
 ## 4. 任务总表
 
@@ -46,10 +43,10 @@ T001 的精确依赖、npm 工具链、Windows x64 unsigned NSIS 目标、隔离
 | T002 | E0-02 | 验证工具链、FakeClock/FakeAiProvider、临时数据根 | Test Strategy §3/9；GW-008 | T001、测试工具批准 | `done` | `EV-T002-001` |
 | T003 | E0-03 | SQLite、初始 schema、migration、Repository 契约 | FR-D01；D-103/106/111；ED-003/018 | T001～T002 | `done` | `EV-T003-001` |
 | T004 | E0-04 | LocalDate、诊断、配置、safeStorage 空边界、Windows 打包冒烟 | ED-010/017/019 | T001～T003 | `done` | `EV-T004-001` |
-| T011 | E1-01 | Goal 生命周期和当前下一步 | FR-G01～G06；D-002/101；ED-005；AC-01 | G2 | `pending` | — |
-| T012 | E1-02 | Action、Today focus、取消/完成/重新安排 | FR-A01～A06；FR-T01/04/05/08；ED-006/007；AC-01 | T011 | `pending` | — |
-| T013 | E1-03 | 快速/深入 ActionRecord | FR-A05；FR-L01～L09；FR-C01；D-006/103/104 | T012 | `pending` | — |
-| T014 | E1-04 | 基础 Progress 投影 | FR-P01～P04/P07/P08；FR-C03；D-007 | T013 | `pending` | — |
+| T011 | E1-01 | Goal 生命周期和当前下一步 | FR-G01～G06；D-002/101；ED-005；AC-01 | G2（已通过） | `done` | `EV-T011-001` |
+| T012 | E1-02 | Action、Today focus、取消/完成/重新安排 | FR-A01～A06；FR-T01/04/05/08；ED-006/007；AC-01 | T011（已完成） | `done` | `EV-T012-001` |
+| T013 | E1-03 | 快速/深入 ActionRecord | FR-A05；FR-A08（T013 部分）；FR-L01～L06/L08；FR-C01；D-006/103～106 | T012 | `done` | `EV-T013-001` |
+| T014 | E1-04 | 基础 Progress 投影 | FR-P01～P04/P07/P08；FR-C03；D-007 | T013 | `done` | `EV-T014-001` |
 | T021 | E2-01 | Routine 生命周期和星期节奏 | FR-R01～R03；FR-T02；ED-006/009 | S1 | `pending` | — |
 | T022 | E2-02 | Routine 五态、unknown 和非计划日事实 | FR-R04～R09；D-008～010/107；AC-03 | T021 | `pending` | — |
 | T023 | E2-03 | 通用非强制意向 | FR-A07；FR-T03/T08；D-011；AC-04 | T021 | `pending` | — |
@@ -65,12 +62,13 @@ T001 的精确依赖、npm 工具链、Windows x64 unsigned NSIS 目标、隔离
 | T063 | E6-03 | AI 建议接受/修改/拒绝和确认命令 | FR-AI05/06；FR-C02/C03；D-014/109；AC-02 | T062 | `pending` | — |
 | T071 | S7 | 11 条 SHOULD 的既定处理结论 | Traceability §4；Implementation §10.1 | S1～S6 | `pending` | — |
 | T072 | S7 | 全量回归、AC-01～AC-07、Windows Demo 收敛 | 全部 MUST/AC；Test Strategy §7～10 | T071 | `pending` | — |
+| T801 | S1 fix | 更新 Windows package smoke 的 S1 窄 API 契约并重新验证 unpacked/NSIS | G3/S1；GW-008/010；不改变 FR/AC/D/ED | `EV-G3-S1-001` | `done` | `EV-T801-001` |
 
 ## 5. 阶段门与主线合并
 
 | 阶段门 | 任务范围 | 通过后 GitHub 动作 |
 |---|---|---|
-| G2 工程就绪 | T001～T004 | 经批准创建 `dev -> main` 里程碑 PR，可标记 `v0.1.0-alpha.1` |
+| G2 工程就绪 | T001～T004 | 已通过；PR #5 已合并到 `main`，未据此创建 tag/release |
 | G3/S1 核心闭环 | T011～T014 | 经项目所有者验收后进入后续切片；是否推进 `main` 由所有者决定 |
 | G3/S3 数据安全 | T031～T033 | 建议创建里程碑 PR，形成可恢复的数据基线 |
 | G4 Demo 就绪 | T021～T072 | 全量验收后合入 `main`，准备 beta 或 v0.1.0 |
@@ -87,8 +85,11 @@ T001 的精确依赖、npm 工具链、Windows x64 unsigned NSIS 目标、隔离
 
 ## 7. 当前结论
 
-- T001 为 `done`，实现、本地 Windows x64 打包、独立评审和项目所有者人工验收均已完成；PR #1 已合并到 `dev`。
-- 仓库治理文档完成不等于 G2 工程就绪。
-- T002 已按独立合同完成本地验证、独立复核和 hosted Windows CI，证据为 `EV-T002-001`；该证据不单独证明后续 T003、T004 或 G2。
-- T003 已完成 SQLite 基础、隔离 Repository 契约测试、交互式本机与 hosted Windows `verify`、以及 Windows x64 standard package/native-addon 冒烟，证据为 `EV-T003-001`；它不声明 FR-D01 业务功能、任何 AC、T004 或 G2 完成。
-- T004 已完成 LocalDate/Clock、诊断、空配置/safeStorage 边界、隔离 Windows x64 unpacked/NSIS 运行冒烟和 hosted Windows `verify`，证据为 `EV-T004-001`；它不声明业务 FR、任何 AC 或 G2 完成。
+- T001～T004 均为 `done`，分别由 `EV-T001-001`～`EV-T004-001` 支持；四个任务 PR #1～#4 均已合并到 `dev`。
+- G2 工程就绪由 `EV-G2-001` 支持；PR #5 已将同一最终 `dev` revision 合入 `main`，项目所有者验收为 `pass`。
+- T001～T004 与 G2 只建立工程基础，不声明任何业务 FR 或 AC-01～AC-07 完成。
+- T011～T014 均已通过各自任务证据并合入 `dev`；最终 squash merge revisions 依次为 `48a6f6439fbbb6ba2309e005ebb12e02b151a457`、`b994962618954cf02f9e07590d68213d0378bccb`、`b3c61b403888b81e4f155fabcbefea689acd1d3a`、`623007dd4269df02771f6a526db269de1fe95a03`。
+- 首轮 `dev@623007dd4269df02771f6a526db269de1fe95a03` 的 package smoke 失败永久保留为 `EV-G3-S1-001`；T801 PR #12 的修复、独立 review、head CI、squash merge `74ebe346a86cf431d87e02e8a1220b713b33901c` 与最终 dev push CI 均已完成。
+- `dev@74ebe346a86cf431d87e02e8a1220b713b33901c` 的本地完整 `verify`、AC-01、package、unpacked/NSIS smoke 与 hosted Windows gate 通过；G3/S1 自动化验收由 `EV-G3-S1-002` 支持。
+- T011～T014/T801 已按 S0 模式形成单一 [`S1_T011_T014_ARCHIVE.md`](archive/S1_T011_T014_ARCHIVE.md) 并由 PR #13 合入 `dev`；原合同仅从 Git 历史恢复。
+- S1 的后续里程碑推进只通过 `dev → main` PR；PR 创建不授权合入 `main`，tag 和 release 仍须在合入后另行批准。

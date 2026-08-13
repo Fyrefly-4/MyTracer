@@ -1,0 +1,312 @@
+import type { IpcMainInvokeEvent } from 'electron'
+import { describe, expect, it, vi } from 'vitest'
+import {
+  ActionRecordApplicationError,
+  type ActionRecordService
+} from '../../src/application/action-records'
+import { RECORD_CHANNELS } from '../../src/contracts/records'
+
+type Handler = (event: IpcMainInvokeEvent, ...args: unknown[]) => unknown
+interface FakeIpcMain {
+  removeHandler(channel: string): void
+  handle(channel: string, listener: Handler): void
+}
+
+const recordsIpcModulePath = '../../src/main/records-ipc'
+const { registerRecordIpc } = (await import(recordsIpcModulePath)) as {
+  readonly registerRecordIpc: (options: {
+    readonly ipc: FakeIpcMain
+    readonly service: ActionRecordService
+    readonly contexts: {
+      begin(
+        senderId: number,
+        actionId: string,
+        capturedOn: string
+      ): {
+        readonly id: string
+      }
+      require(
+        senderId: number,
+        actionId: string,
+        contextId: string
+      ): {
+        readonly capturedOn: string
+      }
+      cancel(senderId: number, contextId: string): void
+      consume(senderId: number, actionId: string, contextId: string): void
+    }
+    readonly assertSender: (event: IpcMainInvokeEvent) => void
+  }) => void
+}
+const contextsModulePath = '../../src/main/action-recording-contexts'
+const { ActionRecordingContextStore } = (await import(contextsModulePath)) as {
+  readonly ActionRecordingContextStore: new (generateId: () => string) => {
+    begin(senderId: number, actionId: string, capturedOn: string): { readonly id: string }
+    require(
+      senderId: number,
+      actionId: string,
+      contextId: string
+    ): {
+      readonly capturedOn: string
+    }
+    cancel(senderId: number, contextId: string): void
+    consume(senderId: number, actionId: string, contextId: string): void
+    clearSender(senderId: number): void
+  }
+}
+
+const actionId = '11111111-1111-4111-8111-111111111111'
+const otherActionId = '22222222-2222-4222-8222-222222222222'
+const recordId = '33333333-3333-4333-8333-333333333333'
+const contextId = '44444444-4444-4444-8444-444444444444'
+const replacementId = '55555555-5555-4555-8555-555555555555'
+
+function setup() {
+  const handlers = new Map<string, Handler>()
+  const ipc: FakeIpcMain = {
+    removeHandler: vi.fn((channel: string) => handlers.delete(channel)),
+    handle: vi.fn((channel: string, handler: Handler) => handlers.set(channel, handler))
+  }
+  const service = {
+    beginActionRecording: vi.fn(() => ({ actionId, capturedOn: '2026-08-12' })),
+    recordAction: vi.fn<(input: unknown) => unknown>(() => ({
+      kind: 'saved',
+      record: { id: recordId, actionId },
+      action: { id: actionId, status: 'pending' },
+      appliedNextActionId: null
+    })),
+    listActionRecordsForAction: vi.fn(() => [{ id: recordId, actionId }]),
+    getActionRecordDetail: vi.fn(() => ({ id: recordId, actionId }))
+  }
+  const contexts = new ActionRecordingContextStore(() => contextId)
+  const assertSender = vi.fn()
+  registerRecordIpc({
+    ipc,
+    service: service as unknown as ActionRecordService,
+    contexts,
+    assertSender
+  })
+  const event = { sender: { id: 7 } } as unknown as IpcMainInvokeEvent
+  const otherEvent = { sender: { id: 8 } } as unknown as IpcMainInvokeEvent
+  const invoke = (channel: string, ...args: unknown[]) => handlers.get(channel)!(event, ...args)
+  const invokeOther = (channel: string, ...args: unknown[]) =>
+    handlers.get(channel)!(otherEvent, ...args)
+  return { assertSender, contexts, handlers, invoke, invokeOther, service }
+}
+
+describe('ActionRecord IPC boundary', () => {
+  it('registers five fixed channels and forwards valid narrow commands and queries', () => {
+    const { assertSender, handlers, invoke, service } = setup()
+    expect([...handlers.keys()].sort()).toEqual([...Object.values(RECORD_CHANNELS)].sort())
+    expect(invoke(RECORD_CHANNELS.begin, { actionId })).toEqual({
+      ok: true,
+      value: { actionId, capturedOn: '2026-08-12', recordingContextId: contextId }
+    })
+    expect(
+      invoke(RECORD_CHANNELS.record, {
+        actionId,
+        recordingContextId: contextId,
+        durationMinutes: 0,
+        outcome: 'partial',
+        understanding: 'State updates are queued',
+        confusion: 'Why batching?',
+        nextStep: 'Try a functional update',
+        note: 'Short action',
+        postRecord: {
+          action: 'complete',
+          currentNextResolution: { kind: 'use-existing', actionId: replacementId }
+        }
+      })
+    ).toMatchObject({ ok: true, value: { kind: 'saved' } })
+    expect(service.recordAction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actionId,
+        capturedOn: '2026-08-12',
+        durationMinutes: 0,
+        outcome: 'partial'
+      })
+    )
+    expect(invoke(RECORD_CHANNELS.listForAction, { actionId })).toMatchObject({ ok: true })
+    expect(invoke(RECORD_CHANNELS.getDetail, { recordId })).toMatchObject({ ok: true })
+
+    expect(invoke(RECORD_CHANNELS.begin, { actionId })).toMatchObject({ ok: true })
+    expect(invoke(RECORD_CHANNELS.cancel, { recordingContextId: contextId })).toMatchObject({
+      ok: true,
+      value: { cancelled: true }
+    })
+    expect(assertSender).toHaveBeenCalledTimes(6)
+  })
+
+  it('keeps context for midnight confirmation and consumes it only after successful save', () => {
+    const { invoke, service } = setup()
+    invoke(RECORD_CHANNELS.begin, { actionId })
+    service.recordAction
+      .mockReturnValueOnce({
+        kind: 'date-confirmation-required',
+        capturedOn: '2026-08-12',
+        currentLocalDate: '2026-08-13'
+      })
+      .mockReturnValueOnce({
+        kind: 'saved',
+        record: { id: recordId, actionId },
+        action: { id: actionId, status: 'pending' },
+        appliedNextActionId: null
+      })
+    const input = {
+      actionId,
+      recordingContextId: contextId,
+      durationMinutes: 1,
+      outcome: 'stopped'
+    }
+    expect(invoke(RECORD_CHANNELS.record, input)).toMatchObject({
+      ok: true,
+      value: { kind: 'date-confirmation-required' }
+    })
+    expect(
+      invoke(RECORD_CHANNELS.record, { ...input, dateChoice: 'use-current-on' })
+    ).toMatchObject({ ok: true, value: { kind: 'saved' } })
+    expect(invoke(RECORD_CHANNELS.record, input)).toMatchObject({
+      ok: false,
+      error: { code: 'invalid-recording-context' }
+    })
+  })
+
+  it('rejects malformed fields, Renderer dates, and illegal post-record choices', () => {
+    const { invoke, service } = setup()
+    const invalid: Array<[string, ...unknown[]]> = [
+      [RECORD_CHANNELS.begin],
+      [RECORD_CHANNELS.begin, { actionId: 'bad' }],
+      [RECORD_CHANNELS.cancel, { recordingContextId: 'bad' }],
+      [
+        RECORD_CHANNELS.record,
+        { actionId, recordingContextId: contextId, durationMinutes: -1, outcome: 'partial' }
+      ],
+      [
+        RECORD_CHANNELS.record,
+        { actionId, recordingContextId: contextId, durationMinutes: 0.5, outcome: 'partial' }
+      ],
+      [
+        RECORD_CHANNELS.record,
+        { actionId, recordingContextId: contextId, durationMinutes: 1, outcome: 'acted' }
+      ],
+      [
+        RECORD_CHANNELS.record,
+        {
+          actionId,
+          recordingContextId: contextId,
+          durationMinutes: 1,
+          outcome: 'partial',
+          occurredOn: '2026-08-12'
+        }
+      ],
+      [
+        RECORD_CHANNELS.record,
+        {
+          actionId,
+          recordingContextId: contextId,
+          durationMinutes: 1,
+          outcome: 'partial',
+          understanding: ' '
+        }
+      ],
+      [
+        RECORD_CHANNELS.record,
+        {
+          actionId,
+          recordingContextId: contextId,
+          durationMinutes: 1,
+          outcome: 'partial',
+          dateChoice: 'yesterday'
+        }
+      ],
+      [
+        RECORD_CHANNELS.record,
+        {
+          actionId,
+          recordingContextId: contextId,
+          durationMinutes: 1,
+          outcome: 'partial',
+          postRecord: { action: 'auto-complete' }
+        }
+      ],
+      [
+        RECORD_CHANNELS.record,
+        {
+          actionId,
+          recordingContextId: contextId,
+          durationMinutes: 1,
+          outcome: 'partial',
+          postRecord: { applyRecordedNextStep: 'yes' }
+        }
+      ],
+      [RECORD_CHANNELS.listForAction, { actionId, from: '2026-08-12' }],
+      [RECORD_CHANNELS.getDetail, { recordId: 'bad' }]
+    ]
+    for (const [channel, ...args] of invalid) {
+      expect(invoke(channel, ...args)).toMatchObject({
+        ok: false,
+        error: { code: 'validation' }
+      })
+    }
+    expect(service.recordAction).not.toHaveBeenCalled()
+  })
+
+  it('rejects forged, replaced, sender-mismatched, Action-mismatched, and cleared contexts', () => {
+    const { contexts, invoke, invokeOther, service } = setup()
+    invoke(RECORD_CHANNELS.begin, { actionId })
+    const record = (id: string, targetActionId = actionId) =>
+      invoke(RECORD_CHANNELS.record, {
+        actionId: targetActionId,
+        recordingContextId: id,
+        durationMinutes: 1,
+        outcome: 'partial'
+      })
+    expect(record('77777777-7777-4777-8777-777777777777')).toMatchObject({
+      ok: false,
+      error: { code: 'invalid-recording-context' }
+    })
+    expect(record(contextId, otherActionId)).toMatchObject({
+      ok: false,
+      error: { code: 'invalid-recording-context' }
+    })
+    expect(
+      invokeOther(RECORD_CHANNELS.record, {
+        actionId,
+        recordingContextId: contextId,
+        durationMinutes: 1,
+        outcome: 'partial'
+      })
+    ).toMatchObject({ ok: false, error: { code: 'invalid-recording-context' } })
+    contexts.clearSender(7)
+    expect(record(contextId)).toMatchObject({
+      ok: false,
+      error: { code: 'invalid-recording-context' }
+    })
+    expect(service.recordAction).not.toHaveBeenCalled()
+  })
+
+  it('maps private failures to stable errors and never downgrades sender rejection', () => {
+    const { assertSender, invoke, service } = setup()
+    service.beginActionRecording.mockImplementationOnce(() => {
+      throw new ActionRecordApplicationError('invalid-transition', 'private state detail')
+    })
+    expect(invoke(RECORD_CHANNELS.begin, { actionId })).toEqual({
+      ok: false,
+      error: {
+        code: 'invalid-transition',
+        message: 'That Action cannot be recorded in its current state.'
+      }
+    })
+    service.getActionRecordDetail.mockImplementationOnce(() => {
+      throw new Error('SELECT secret FROM C:\\Users\\real-user')
+    })
+    const failed = invoke(RECORD_CHANNELS.getDetail, { recordId })
+    expect(failed).toMatchObject({ ok: false, error: { code: 'persistence-failed' } })
+    expect(JSON.stringify(failed)).not.toMatch(/SELECT|real-user|private state detail/)
+
+    assertSender.mockImplementationOnce(() => {
+      throw new Error('Rejected IPC request from an untrusted renderer.')
+    })
+    expect(() => invoke(RECORD_CHANNELS.listForAction, { actionId })).toThrow(/untrusted renderer/)
+  })
+})

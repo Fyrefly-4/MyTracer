@@ -5,14 +5,19 @@ MyTracer 是一个面向个人本地使用的 Windows 桌面应用，用于帮�
 ## 当前状态
 
 - v0.1 产品需求基线已冻结。
-- 架构阶段门 G1 已通过。
+- 架构阶段门 G1 和工程阶段门 G2 已通过。
 - Electron、React、TypeScript、Vite、SQLite 和 `better-sqlite3` 的架构方向已批准。
 - 仓库级 Agent 规约、任务管理、验收证据和 GitHub 工作流已形成文档基线。
 - T001 已建立可运行的 Electron Main/Preload/Renderer 空壳、Today/Progress/Review 占位入口和安全 IPC 边界。
 - T001 已固定安装、开发、构建和 Windows x64 unsigned NSIS 打包命令；真实结果记录在验收证据中。
 - T002 已建立精确锁定的 format、lint、typecheck、unit、integration、Electron E2E 和 Windows CI 验证入口，以及测试专用 FakeClock、FakeAiProvider 和临时数据根。
 - T003 已建立 SQLite schema、migration、Repository 契约和 Windows x64 原生模块验证基础。
-- T004 已建立 LocalDate/Clock、诊断、配置与 safeStorage 空边界，并完成隔离的 Windows x64 unpacked/NSIS 运行冒烟；业务能力和首个真实 AI Provider 仍由后续独立任务分别批准和建立。
+- T004 已建立 LocalDate/Clock、诊断、配置与 safeStorage 空边界，并完成隔离的 Windows x64 unpacked/NSIS 运行冒烟。
+- T011 已完成 Goal 创建、修改、pause/resume/end、当前下一步、列表/详情和真实关闭重开验证；本地与 hosted Windows gate、人工体验及项目所有者 review 均通过。
+- T012 已完成 Action 生命周期、Today focus、当前下一步原子处理与重新安排纵向路径；本地 `verify`、PR #9 实现 head 的 hosted Windows gate 和项目所有者人工复验均通过。
+- T013 已完成快速/深入 ActionRecord、Main 内存 recording context、跨午夜确认、显式 post-record 处理与真实重开纵向路径；本地 `verify`、PR #10 实现 head 的 hosted Windows gate 和项目所有者人工验收均通过。
+- T014 已完成事实型 Progress：支持 Goal/包含端点日期筛选、ActionRecord 分钟与次数、确认理解、开放困惑及真实关闭重开；本地/hosted `verify`、独立 review、PR #11 合并和项目所有者完整人工 AC-01 均已完成。
+- T011～T014 与门禁修复 T801 已由 PR #13 统一归档并合入 `dev`；最终实现验收 revision `74ebe346a86cf431d87e02e8a1220b713b33901c` 的本地/hosted `verify`、完整 AC-01、Windows package 与 unpacked/NSIS smoke 均通过。首轮 package smoke 失败仍保留在证据账本。
 
 不要把架构完成理解为产品已经实现。
 
@@ -128,7 +133,8 @@ task/Txxx-short-name
 
 ## 下一步
 
-1. 由项目所有者评审 T004 交付，并按独立门禁判断 G2 是否通过。
-2. G2 获准后进入 Goal—Action—Record—Progress 最小闭环。
+1. S1 的后续里程碑推进只通过 `dev → main` PR，不直接 push `main`。
+2. 里程碑 PR 必须在 exact head CI 与项目所有者批准后使用 merge commit 合入。
+3. PR 创建不授权合入 `main`；tag 和 GitHub Release 仍须在合入后另行批准。
 
-在这些条件完成前，不得声称 MyTracer Demo 已经可运行或通过验收。
+T011～T014 已覆盖 Goal、Action/Today、ActionRecord、事实型 Progress 与完整 AC-01；完整 FR-P02 的 RoutineRecord 分支仍属于 T022，T014 也不声明完整 FR-D01 或 AC-07。AC-01 通过不等于 G3/S1、MyTracer Demo、merge 或发布自动通过。
