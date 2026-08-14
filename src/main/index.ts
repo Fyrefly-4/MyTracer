@@ -7,6 +7,7 @@ import { ActionService } from '../application/actions'
 import { TodayService } from '../application/today'
 import { ActionRecordService } from '../application/action-records'
 import { ProgressService } from '../application/progress'
+import { RoutineService } from '../application/routines'
 import { queryShellStatus } from '../application/query-shell-status'
 import type { AiConfigurationPort } from '../application/ports/configuration'
 import type { DiagnosticsPort } from '../application/ports/diagnostics'
@@ -25,6 +26,7 @@ import { registerActionIpc } from './actions-ipc'
 import { registerTodayIpc } from './today-ipc'
 import { registerRecordIpc } from './records-ipc'
 import { registerProgressIpc } from './progress-ipc'
+import { registerRoutineIpc } from './routines-ipc'
 import { ActionRecordingContextStore } from './action-recording-contexts'
 import { assertTrustedSender, type RendererLocation } from './ipc-security'
 
@@ -170,6 +172,12 @@ app.whenReady().then(async () => {
     unitOfWork: sqliteConnection,
     clock
   })
+  const routineService = new RoutineService({
+    repository: sqliteConnection.repository,
+    unitOfWork: sqliteConnection,
+    clock,
+    generateId: randomUUID
+  })
   const actionRecordService = new ActionRecordService({
     repository: sqliteConnection.repository,
     unitOfWork: sqliteConnection,
@@ -190,6 +198,11 @@ app.whenReady().then(async () => {
   registerTodayIpc({
     ipc: ipcMain,
     service: todayService,
+    assertSender: (event) => assertTrustedSender(event, mainWindow, getRendererLocation())
+  })
+  registerRoutineIpc({
+    ipc: ipcMain,
+    service: routineService,
     assertSender: (event) => assertTrustedSender(event, mainWindow, getRendererLocation())
   })
   registerRecordIpc({

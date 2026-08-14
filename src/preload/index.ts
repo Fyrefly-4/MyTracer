@@ -40,6 +40,17 @@ import {
   type ProgressResult,
   type ProgressViewDto
 } from '../contracts/progress'
+import {
+  ROUTINE_CHANNELS,
+  type CreateRoutineInputDto,
+  type ListRoutinesInputDto,
+  type ReplaceRoutineScheduleInputDto,
+  type RoutineDetailDto,
+  type RoutineIdInputDto,
+  type RoutineResult,
+  type RoutineSummaryDto,
+  type UpdateRoutineDetailsInputDto
+} from '../contracts/routines'
 
 const api: MyTracerApi = Object.freeze({
   shell: Object.freeze({
@@ -106,6 +117,28 @@ const api: MyTracerApi = Object.freeze({
   progress: Object.freeze({
     get: (input: GetProgressInputDto): Promise<ProgressResult<ProgressViewDto>> =>
       ipcRenderer.invoke(PROGRESS_CHANNELS.get, input)
+  }),
+  routines: Object.freeze({
+    create: (input: CreateRoutineInputDto): Promise<RoutineResult<RoutineDetailDto>> =>
+      ipcRenderer.invoke(ROUTINE_CHANNELS.create, input),
+    updateDetails: (
+      input: UpdateRoutineDetailsInputDto
+    ): Promise<RoutineResult<RoutineDetailDto>> =>
+      ipcRenderer.invoke(ROUTINE_CHANNELS.updateDetails, input),
+    replaceSchedule: (
+      input: ReplaceRoutineScheduleInputDto
+    ): Promise<RoutineResult<RoutineDetailDto>> =>
+      ipcRenderer.invoke(ROUTINE_CHANNELS.replaceSchedule, input),
+    pause: (input: RoutineIdInputDto): Promise<RoutineResult<RoutineDetailDto>> =>
+      ipcRenderer.invoke(ROUTINE_CHANNELS.pause, input),
+    resume: (input: RoutineIdInputDto): Promise<RoutineResult<RoutineDetailDto>> =>
+      ipcRenderer.invoke(ROUTINE_CHANNELS.resume, input),
+    end: (input: RoutineIdInputDto): Promise<RoutineResult<RoutineDetailDto>> =>
+      ipcRenderer.invoke(ROUTINE_CHANNELS.end, input),
+    list: (input: ListRoutinesInputDto): Promise<RoutineResult<readonly RoutineSummaryDto[]>> =>
+      ipcRenderer.invoke(ROUTINE_CHANNELS.list, input),
+    getDetail: (input: RoutineIdInputDto): Promise<RoutineResult<RoutineDetailDto>> =>
+      ipcRenderer.invoke(ROUTINE_CHANNELS.getDetail, input)
   })
 })
 
