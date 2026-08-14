@@ -68,6 +68,13 @@ test('manages a Routine lifecycle, shows its Today plan, and preserves history o
     await expect(detail.getByText('维持身体状态 · 暂停')).toBeVisible()
     await page.getByRole('button', { name: 'Today' }).click()
     await expect(page.getByText('目标：维持身体状态 · 暂停')).toBeVisible()
+    await page.evaluate(async (goalId) => {
+      const result = await window.myTracer.goals.end({ goalId })
+      if (!result.ok) throw new Error(result.error.message)
+    }, goal.id)
+    await page.getByRole('button', { name: 'Routines' }).click()
+    await page.getByRole('button', { name: 'Today' }).click()
+    await expect(page.getByText('目标：维持身体状态 · 结束')).toBeVisible()
 
     await page.getByRole('button', { name: 'Routines' }).click()
     await page.getByRole('button', { name: /晨间伸展/ }).click()
