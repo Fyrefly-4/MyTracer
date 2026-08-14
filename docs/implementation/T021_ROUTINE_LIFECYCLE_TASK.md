@@ -1,6 +1,6 @@
 # T021 Routine 生命周期、星期节奏与 Today 计划项任务合同
 
-> 合同状态：**已于 2026-08-14 获项目所有者批准并激活；T021 正在按本合同执行**
+> 合同状态：**已完成；项目所有者于 2026-08-14 批准合同与补充文件范围、通过人工验收并批准文档收口；证据为 `EV-T021-001`**
 >
 > 拟启动基线：`dev@a708d7fce40cb43f8da78dd86bbed4f2bcd35084`（2026-08-14 已通过 `git ls-remote origin refs/heads/dev` 核验为最新 `origin/dev`）
 >
@@ -321,3 +321,14 @@ git diff --check
 - 是否发现需求冲突、范围变化、权限变化或 S1 回归。
 
 不得把实现存在、本地测试通过、Draft PR 创建或 AC-03 步骤 1～2贡献称为 T021/AC-03 完整完成；只有合同定义的全部自动门禁、批准的文档收口和最终 head CI 有真实证据时，才能按账本定义更新 T021 状态。
+
+## 15. 实际交付收口
+
+- **启动基线**：`dev@a708d7fce40cb43f8da78dd86bbed4f2bcd35084`；任务分支 `task/T021-routine-lifecycle`；隔离工作树 `.tmp/T021-worktree`。
+- **实现与测试 revision**：`07c626739b454378f8af886c1d233da6f0bd97e6`；分为合同激活、Routine Domain/Application/SQLite、IPC/Renderer/E2E 和 Goal ended 接缝强化四个可审查提交。
+- **Draft PR**：[#17](https://github.com/Fyrefly-4/MyTracer/pull/17)，base `dev`；实现候选 Windows required gate run `31775295481` / job `94689380685` 通过。
+- **本地验证**：定向 Routine/LocalDate/Today unit 32 项通过；定向 Routine SQLite/IPC/Main integration 7 项通过；Routine lifecycle + shell Electron E2E 2 项通过；实现候选 `npm.cmd run verify` 通过 84 项 unit、45 项 integration、7 项 Electron E2E，opt-in package smoke 1 项按设计跳过。
+- **审查**：完整任务 diff、批准文件白名单、schema、`001_initial.sql`、依赖/lockfile 和 S1 Today/ActionRecord/Progress 回归已复核；独立只读复核发现的 Goal/Routine 状态类型别名与 ended 编辑语义问题已在实现候选前修正，最终无未解决 finding。
+- **人工验收**：项目所有者于 2026-08-14 按 T021 人工测试方法执行并明确报告“人工验收：通过”；创建/星期快捷输入、Today 计划表达、Goal 生命周期独立性、Routine 生命周期、关闭重开及中性文案均纳入该清单。
+- **范围与限制**：没有需求冲突、未批准范围扩大、新依赖、migration、schemaVersion、`001_initial.sql` 或真实用户数据变化。T021 完成 FR-R01～R03、FR-T02 与 FR-D01 Routine 重开子集，只贡献 AC-03 步骤 1～2；RoutineRecord 五态、Routine Progress 和完整 AC-03 仍属于 T022。
+- **证据**：完整环境、命令、结果、CI、人工状态和限制记录于 `EV-T021-001`。PR Ready、merge、`dev → main`、tag 和 release 均未授权。
