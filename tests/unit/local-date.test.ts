@@ -3,6 +3,7 @@ import {
   addLocalDateDays,
   createLocalDate,
   decideOccurrenceDate,
+  isoWeekday,
   weekContaining
 } from '../../src/domain/local-date'
 
@@ -34,6 +35,16 @@ describe('LocalDate', () => {
     ['2024-03-10', '2024-03-04', '2024-03-10']
   ])('returns the Monday-to-Sunday week containing %s', (value, monday, sunday) => {
     expect(weekContaining(createLocalDate(value))).toEqual({ monday, sunday })
+  })
+
+  it.each([
+    ['2026-08-10', 1],
+    ['2026-08-14', 5],
+    ['2026-08-16', 7],
+    ['2025-12-31', 3],
+    ['2026-01-01', 4]
+  ])('maps %s to ISO weekday %i', (value, weekday) => {
+    expect(isoWeekday(createLocalDate(value))).toBe(weekday)
   })
 
   it('requires an explicit choice after the captured local date crosses midnight', () => {

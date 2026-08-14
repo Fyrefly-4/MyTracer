@@ -1,6 +1,7 @@
 declare const localDateBrand: unique symbol
 
 export type LocalDate = string & { readonly [localDateBrand]: true }
+export type IsoWeekday = 1 | 2 | 3 | 4 | 5 | 6 | 7
 
 export interface LocalDateParts {
   readonly year: number
@@ -114,7 +115,7 @@ export function addLocalDateDays(value: LocalDate, amount: number): LocalDate {
   return localDateFromParts({ year, month, day })
 }
 
-function mondayBasedWeekday(value: LocalDate): number {
+export function isoWeekday(value: LocalDate): IsoWeekday {
   const { month, day } = localDateParts(value)
   let { year } = localDateParts(value)
   const offsets = [0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4]
@@ -129,11 +130,11 @@ function mondayBasedWeekday(value: LocalDate): number {
       offsets[month - 1] +
       day) %
     7
-  return sundayBased === 0 ? 7 : sundayBased
+  return (sundayBased === 0 ? 7 : sundayBased) as IsoWeekday
 }
 
 export function weekContaining(value: LocalDate): LocalDateWeek {
-  const weekday = mondayBasedWeekday(value)
+  const weekday = isoWeekday(value)
   return Object.freeze({
     monday: addLocalDateDays(value, 1 - weekday),
     sunday: addLocalDateDays(value, 7 - weekday)
