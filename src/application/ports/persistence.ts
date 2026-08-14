@@ -1,5 +1,6 @@
 export type GoalStatus = 'active' | 'paused' | 'ended'
 export type ActionStatus = 'pending' | 'completed' | 'cancelled' | 'rescheduled'
+export type RoutineStatus = 'active' | 'paused' | 'ended'
 export type RoutineRecordOutcome = 'target_met' | 'acted' | 'intentional_rest' | 'not_done'
 
 export interface GoalPersistenceRecord {
@@ -28,7 +29,7 @@ export interface RoutinePersistenceRecord {
   readonly name: string
   readonly minimumAction: string
   readonly description: string | null
-  readonly status: GoalStatus
+  readonly status: RoutineStatus
   readonly createdAt: string
   readonly updatedAt: string
 }
@@ -194,6 +195,16 @@ export interface ProgressRepositoryPort extends RepositoryPort {
   ): readonly ProgressQueryRowPersistenceRecord[]
 }
 
+export interface RoutineRepositoryPort extends RepositoryPort {
+  findRoutineById(id: string): RoutinePersistenceRecord | null
+  listRoutines(status?: RoutineStatus): readonly RoutinePersistenceRecord[]
+  listRoutineScheduleDays(routineId: string): readonly RoutineScheduleDayPersistenceRecord[]
+  replaceRoutineScheduleDays(
+    routineId: string,
+    records: readonly RoutineScheduleDayPersistenceRecord[]
+  ): void
+}
+
 export function asActionRepository(repository: RepositoryPort): ActionRepositoryPort {
   const candidate = repository as Partial<ActionRepositoryPort>
   if (
@@ -226,6 +237,19 @@ export function asProgressRepository(repository: RepositoryPort): ProgressReposi
     throw new TypeError('Repository does not provide the Progress query contract.')
   }
   return repository as ProgressRepositoryPort
+}
+
+export function asRoutineRepository(repository: RepositoryPort): RoutineRepositoryPort {
+  const candidate = repository as Partial<RoutineRepositoryPort>
+  if (
+    typeof candidate.findRoutineById !== 'function' ||
+    typeof candidate.listRoutines !== 'function' ||
+    typeof candidate.listRoutineScheduleDays !== 'function' ||
+    typeof candidate.replaceRoutineScheduleDays !== 'function'
+  ) {
+    throw new TypeError('Repository does not provide the Routine contract.')
+  }
+  return repository as RoutineRepositoryPort
 }
 
 export interface UnitOfWorkPort {

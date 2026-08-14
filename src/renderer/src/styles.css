@@ -295,9 +295,64 @@ button:focus-visible {
 
 .goal-create,
 .detail-form,
-.current-action-control {
+.current-action-control,
+.schedule-editor {
   display: grid;
   gap: 15px;
+}
+
+.weekday-fieldset {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  margin: 0;
+  padding: 13px;
+  border: 1px solid rgba(44, 74, 65, 0.14);
+  border-radius: 13px;
+}
+
+.weekday-fieldset legend {
+  padding: 0 5px;
+  color: #566761;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.weekday-shortcuts,
+.weekday-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.weekday-shortcuts button {
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 9px;
+  color: #315d50;
+  background: #e3ece5;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.weekday-options label {
+  display: flex;
+  grid-template-columns: none;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  border-radius: 9px;
+  background: rgba(239, 244, 239, 0.72);
+  font-size: 11px;
+}
+
+.weekday-options input {
+  width: auto;
+}
+
+.schedule-editor {
+  margin-top: 22px;
 }
 
 .card-heading {
@@ -358,6 +413,47 @@ button:disabled {
   display: grid;
   gap: 8px;
   margin-top: 18px;
+}
+
+.planned-routines {
+  margin-bottom: 22px;
+}
+
+.planned-routine-list {
+  display: grid;
+  gap: 9px;
+  margin-top: 16px;
+}
+
+.planned-routine-list article {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 13px;
+  border-radius: 13px;
+  background: rgba(239, 244, 239, 0.72);
+}
+
+.planned-routine-list article > div {
+  display: grid;
+  gap: 4px;
+}
+
+.planned-routine-list span,
+.planned-routine-list small {
+  color: #68776f;
+  font-size: 12px;
+}
+
+.inline-confirm {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 14px;
+  border-radius: 13px;
+  color: #695945;
+  background: #f3ead9;
 }
 
 .focus-row {

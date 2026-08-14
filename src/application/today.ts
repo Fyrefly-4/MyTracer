@@ -1,10 +1,12 @@
 import type { ClockPort } from './ports/clock'
 import {
   asActionRepository,
+  asRoutineRepository,
   type ActionRepositoryPort,
   type RepositoryPort,
   type UnitOfWorkPort
 } from './ports/persistence'
+import { buildRoutineDetail } from './routines'
 import {
   ActionApplicationError,
   actionFromPersistence,
@@ -17,11 +19,23 @@ import {
   assertActionCanBeSelectedForToday,
   restoreRescheduledActionForToday
 } from '../domain/action'
+import { createLocalDate } from '../domain/local-date'
+import { isRoutinePlannedOn, normalizeRoutineWeekdays } from '../domain/routine'
+
+export interface TodayPlannedRoutineView {
+  readonly id: string
+  readonly name: string
+  readonly minimumAction: string
+  readonly goal: ReturnType<typeof buildRoutineDetail>['goal']
+  readonly plannedForToday: true
+  readonly canRecord: true
+}
 
 export interface TodayView {
   readonly localDate: string
   readonly focuses: readonly ActionDetailView[]
   readonly availableActions: readonly ActionDetailView[]
+  readonly plannedRoutines: readonly TodayPlannedRoutineView[]
 }
 
 export interface TodayServiceDependencies {
@@ -54,10 +68,31 @@ export function buildTodayView(repository: ActionRepositoryPort, localDate: stri
   const availableActions = repository
     .listActions()
     .map((action) => buildActionDetail(repository, action.id, localDate))
+  const routineRepository = asRoutineRepository(repository)
+  const plannedRoutines = routineRepository
+    .listRoutines('active')
+    .map((record) => buildRoutineDetail(routineRepository, record))
+    .filter((routine) =>
+      isRoutinePlannedOn(
+        Object.freeze({ ...routine, weekdays: normalizeRoutineWeekdays(routine.weekdays) }),
+        createLocalDate(localDate)
+      )
+    )
+    .map((routine) =>
+      Object.freeze<TodayPlannedRoutineView>({
+        id: routine.id,
+        name: routine.name,
+        minimumAction: routine.minimumAction,
+        goal: routine.goal,
+        plannedForToday: true,
+        canRecord: true
+      })
+    )
   return Object.freeze({
     localDate,
     focuses: Object.freeze(focuses),
-    availableActions: Object.freeze(availableActions)
+    availableActions: Object.freeze(availableActions),
+    plannedRoutines: Object.freeze(plannedRoutines)
   })
 }
 

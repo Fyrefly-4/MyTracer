@@ -1,6 +1,6 @@
 # MyTracer v0.1 验收证据
 
-> 文档状态：证据账本已建立；已记录 T001～T004、T011～T014/T801、AC-01、G2 及 G3/S1 首轮失败与最终通过证据
+> 文档状态：证据账本已建立；已记录 T001～T004、T011～T014、T021/T801、AC-01、G2 及 G3/S1 首轮失败与最终通过证据
 > 作用：记录可复核的命令、版本、环境、产物和人工观察  
 > 禁止：用任务状态、测试名称、关键词存在或 Agent 自述替代实际结果
 
@@ -74,6 +74,7 @@ Evidence ID 不复用。失败记录保留，并由后续记录明确引用修�
 | `EV-T012-001` | T012 | `56b3446a1b952a9bdb6fe29ab4a89502171ba321` | Action 生命周期、Today focus、当前下一步处理、重新安排、SQLite/IPC/UI 和真实重开 | pass | pass | 本地 Windows `verify`、PR #9 实现 head hosted Windows gate 和项目所有者人工复验通过；仅贡献 AC-01 步骤 3，FR-A05 仅为 Action 状态解耦部分 |
 | `EV-T013-001` | T013 | `b10d5d40c4c1dc1f7a20801d5d904b1d37953270` | 快速/深入 ActionRecord、recording context、跨午夜、原子 post-record、SQLite/IPC/UI 和真实重开 | pass | pass | 本地 Windows `verify`、独立复核、PR #10 实现 head hosted Windows gate 和项目所有者人工验收通过；贡献 AC-01 步骤 4～5，并与 T012 合并完成 FR-A05 |
 | `EV-T014-001` | T014 | `52cd33672b6b2632b09beb7cb8e66f48901f2bd0` | 事实型 Progress、SQLite 一致性快照、窄 IPC/UI、筛选与真实重开 | pass | pass | 本地 Windows `verify`、PR #11 hosted Windows gate、独立 review 和项目所有者完整人工 AC-01 通过；merge revision `623007dd4269df02771f6a526db269de1fe95a03` |
+| `EV-T021-001` | T021 | `07c626739b454378f8af886c1d233da6f0bd97e6` | Routine 生命周期、ISO 星期节奏、Goal 接缝、Today 计划、SQLite/IPC/UI 和真实重开 | pass | pass | 本地完整 `verify`、PR #17 实现 head hosted Windows gate、独立只读复核和项目所有者人工验收通过；仅贡献 AC-03 步骤 1～2 |
 | `EV-T801-001` | T801 | `dd9bd4498b0339703f8cf992a564a7d7b80442b5` | S1 package smoke 精确 API、安全边界与 unpacked/NSIS 路径 | pass | not-required | 本地 `verify`/package/package smoke、独立 review、PR #12 head CI 与最终 dev push CI 通过；merge `74ebe346a86cf431d87e02e8a1220b713b33901c` |
 | `EV-G3-S1-001` | G3/S1 | `623007dd4269df02771f6a526db269de1fe95a03` | T011～T014 同 revision 核心闭环、Windows package 与发布门禁 | fail | pending | `verify`、AC-01 和 package 构建通过；package smoke 因旧 Preload API 断言在 unpacked 阶段失败，NSIS 安装态未验证 |
 | `EV-G3-S1-002` | G3/S1 | `74ebe346a86cf431d87e02e8a1220b713b33901c` | T011～T014/T801 同 revision 核心闭环、Windows package 与发布门禁 | pass | pass | hosted/local `verify`、AC-01、package、unpacked/NSIS smoke 与独立 review 通过；确切里程碑 PR 的所有者 merge 批准仍单独待定 |
@@ -352,6 +353,40 @@ Evidence ID 不复用。失败记录保留，并由后续记录明确引用修�
 - **Supersedes / superseded by**：本次状态更新取代此前“独立 review 尚缺、PR #11 未合并”的部分状态；不取代实现 revision 的原始测试结果
 - **Recorded at**：2026-08-13
 
+### EV-T021-001
+
+- **Status**：pass；实现、自动验证、hosted CI、独立只读复核与项目所有者人工验收均通过
+- **Task / Gate**：T021 / S2 E2-01；不声明 RoutineRecord、Routine Progress、Action intention、完整 AC-03、S2 或 G4 通过
+- **Requirements**：FR-R01～FR-R03、FR-T02；FR-D01 的 Routine/schedule 重开子集；AC-03 步骤 1～2贡献；D-003、D-009、D-016、D-106；ED-003/004/006/008/009/015/017/018/019；S2-Q01-A、Q02-A、Q03-A、Q07-A、Q10-A
+- **Source branch**：`task/T021-routine-lifecycle`
+- **Source revision**：实现与测试 head `07c626739b454378f8af886c1d233da6f0bd97e6`；启动基线 `dev@a708d7fce40cb43f8da78dd86bbed4f2bcd35084`
+- **CI head/merge revision**：Draft PR #17 实现候选 head `07c626739b454378f8af886c1d233da6f0bd97e6`；Windows required gate run `31775295481` / job `94689380685` 为 `success`；PR 尚未 Ready 或合并
+- **Environment**：Microsoft Windows NT 10.0.26200.0 x64；Node.js 24.18.0；npm 11.16.0；Electron 43.3.0；`better-sqlite3@13.0.1`；自动化使用 FakeClock、每 case 唯一 OS 临时数据库根和 Electron `userData`；AI 未配置，无 live Provider、真实 key 或真实用户数据
+- **Command or manual procedure**：
+  1. 执行 `npm.cmd exec -- vitest run --project unit tests/unit/routine-domain.test.ts tests/unit/routine-application.test.ts tests/unit/local-date.test.ts tests/unit/today-application.test.ts`：4 个文件、32 项测试通过，覆盖状态机、ISO weekday、快捷集合、FakeClock Today 匹配、Goal paused/ended 接缝和只读投影。
+  2. 执行 `npm.cmd exec -- vitest run --project integration tests/integration/routine-sqlite.test.ts tests/integration/routine-ipc.test.ts tests/integration/main-foundations.test.ts`：3 个文件、7 项测试通过，覆盖 Routine + schedule 原子创建、整组替换回滚、历史 fixture 守恒、重开、严格 DTO 和 sender/origin 拒绝。
+  3. 执行 `npm.cmd exec -- playwright test tests/e2e/routine-lifecycle.e2e.test.ts tests/e2e/shell.e2e.test.ts`：2 项 Electron E2E 通过；Routine 从 Renderer 经冻结 Preload、Main/Application 到真实 SQLite 完成创建、修改、Today、Goal paused/ended、pause/resume/end 和完全关闭重开，壳层精确 API 与 Renderer 隔离同步回归。
+  4. 在实现 revision `07c626739b454378f8af886c1d233da6f0bd97e6` 执行 `npm.cmd run verify`，exit code 0：format check、lint、typecheck、84 项 unit、45 项 integration、Main/Preload/Renderer build 和 7 项 Electron E2E 全部通过；opt-in Windows package smoke 1 项按设计跳过且不属于 T021 要求。
+  5. 执行相对基线的完整 `git diff --check`、精确允许文件扫描及 `package.json`、lockfile、schemaVersion、migration、`001_initial.sql` diff 检查；复核 S1 Today focus、ActionRecord、Progress、Preload 冻结与 Renderer 隔离回归。
+  6. 对完整候选执行独立于实现过程的第二遍只读复核；发现的 Goal/Routine 持久化状态类型别名和 ended 编辑语义两项问题均在候选 revision 前修正，最终没有未解决 finding。
+  7. Draft PR #17 在同一实现 head 上完成 GitHub-hosted `Verification / Windows required gate`，run `31775295481` / job `94689380685` 返回 `success`。
+  8. 项目所有者于 2026-08-14 按提供的 T021 人工测试方法执行，并明确报告“T021 人工验收：通过”；随后明确批准文档收口。
+- **Result**：
+  - Renderer → 冻结 `window.myTracer.routines` → 固定 Main IPC → Application/Domain → SQLite 的 Routine 创建、内容修改、整组星期替换、pause/resume/end、ListRoutines/GetRoutineDetail 纵向路径可用；`ended` 为生命周期终态，pause/end 保留 ID、goalId、星期和历史。
+  - Routine 可在创建时关联 active/paused/ended Goal 或保持 null；不存在 Goal 被拒绝，T021 没有 reassign。Goal pause/end 不改变 active Routine；当天匹配时 Today 继续显示 Goal 名称/状态与 `canRecord=true`。
+  - 星期集合严格为非空、唯一 ISO 1～7；每天/工作日只展开为 `{1..7}` / `{1..5}`。Routine + 完整 schedule 创建及 schedule 整组替换均在单事务中完成，故障产生零变化。
+  - Today 仅按 Main 单次可信 Clock snapshot 投影 active 且当前星期匹配的 Routine，保留既有 S1 `localDate/focuses/availableActions` 语义；重复 Query 零写入，不写 TodaySelection，不创建 RoutineRecord。
+  - schedule 或 minimumAction 修改不重写既有 RoutineRecord 的 `occurredOn`、outcome 或 `plannedForDate` fixture；完全关闭 SQLite/Electron 后从同一隔离数据根重开，Routine、schedule、状态、Goal 摘要和 Today 结果一致。
+  - `package.json`、lockfile、schemaVersion、migration 集合和 `001_initial.sql` 未修改；没有新增/升级依赖、真实数据操作、live AI 或任务 GitHub flow 之外的外部写入。
+- **Artifacts**：
+  - Draft PR #17：<https://github.com/Fyrefly-4/MyTracer/pull/17>；实现候选 hosted Windows run：<https://github.com/Fyrefly-4/MyTracer/actions/runs/31775295481>。
+  - 实现与测试 revision：`07c626739b454378f8af886c1d233da6f0bd97e6`；任务合同：`docs/implementation/T021_ROUTINE_LIFECYCLE_TASK.md`。
+  - Playwright screenshot/trace/video 按既有配置不持久化；临时数据库、结果和 Electron `userData` 均由自动化隔离和清理。项目所有者人工验收使用独立临时 `userData` 方法。
+- **Manual acceptance**：pass；项目所有者于 2026-08-14 明确报告“T021 人工验收：通过”
+- **Known limitations**：T021 只贡献 AC-03 步骤 1～2，不创建 RoutineRecord，不显示或保存 `target_met/acted/intentional_rest/not_done/unknown`，不实现 Routine Progress 或统一真实行动计数；这些属于 T022。Action intention 属于 T023。Windows package/NSIS smoke 不在 T021 范围并未执行；PR Ready、merge、`dev → main`、tag 和 release 仍需独立授权
+- **Supersedes / superseded by**：无；后续文档收口 commit 不改变本记录绑定的实现/测试 revision
+- **Recorded at**：2026-08-14
+
 ### EV-AC01-001
 
 - **Status**：pass
@@ -496,7 +531,7 @@ G1 的设计结论不是代码、CI、Windows 打包或产品验收证据。
 |---|---|---|---|
 | AC-01 | `EV-T011-001`（步骤 1～2）；`EV-T012-001`（步骤 3）；`EV-T013-001`（步骤 4～5）；`EV-T014-001` / `EV-AC01-001`（步骤 6 与同 revision 完整闭环） | 项目所有者于 2026-08-13 报告完整人工 AC-01 全量通过 | pass |
 | AC-02 | — | — | pending |
-| AC-03 | — | — | pending |
+| AC-03 | `EV-T021-001`（步骤 1～2贡献；RoutineRecord/Progress 路径待 T022） | 项目所有者于 2026-08-14 通过 T021 人工清单；完整五态人工验收待 T022 | pending |
 | AC-04 | — | — | pending |
 | AC-05 | — | — | pending |
 | AC-06 | — | — | pending |
@@ -539,6 +574,7 @@ Agent 只提供步骤和观察位置，不得替项目所有者签署人工验�
 - T004 LocalDate/Clock、诊断、空配置/safeStorage 边界和本地 Windows 打包冒烟已记录为 `EV-T004-001`；它不声明业务 FR、任何 AC 或 G2 完成。
 - G2 已由 `EV-G2-001` 绑定 T001～T004、最终 `dev` source revision、聚合验证、Windows package smoke、PR #5 和项目所有者验收；不声明任何业务 FR 或 AC-01～AC-07 完成。
 - T014 事实型 Progress 实现、本地/hosted 自动验证、独立 review、PR #11 合并及项目所有者完整人工验收已记录为 `EV-T014-001`；任务为 `done`。
+- T021 Routine 生命周期、ISO 星期节奏、Today 计划项、Goal 生命周期独立性、SQLite/IPC/UI/重开、本地与 hosted 自动验证、独立只读复核及项目所有者人工验收已记录为 `EV-T021-001`；任务为 `done`，仅贡献 AC-03 步骤 1～2，完整 AC-03 仍为 `pending`。
 - 完整 Goal → Action → Today → ActionRecord → Progress 自动化与项目所有者人工闭环已记录为 `EV-AC01-001`，AC-01 为 `pass`；这不自动通过 G3/S1、完整 FR-P02、完整 FR-D01 或 AC-07。
 - G3/S1 首轮聚合验收已记录为 `EV-G3-S1-001`：固定 `dev@623007dd4269df02771f6a526db269de1fe95a03` 的 `verify`、AC-01 和 package 构建通过，但 package smoke 因旧 API 断言失败，故当时阶段门为 `fail`；该失败记录由后续 `EV-T801-001` / `EV-G3-S1-002` 显式取代但不删除。
 - T801 已由 `EV-T801-001` 证明单文件修复、本地 `verify`/package/package smoke、独立 review、PR #12 head CI、合并与最终 dev CI 通过；没有生产、依赖、schema 或产品语义变化。

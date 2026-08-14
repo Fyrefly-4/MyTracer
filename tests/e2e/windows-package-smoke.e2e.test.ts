@@ -45,7 +45,8 @@ async function verifyPackagedApplication(
       'actions',
       'today',
       'records',
-      'progress'
+      'progress',
+      'routines'
     ])
     expect(await page.evaluate(() => Object.keys(window.myTracer.shell))).toEqual(['getStatus'])
     expect(await page.evaluate(() => Object.keys(window.myTracer.goals))).toEqual([
@@ -55,6 +56,16 @@ async function verifyPackagedApplication(
       'resume',
       'end',
       'setCurrentNextAction',
+      'list',
+      'getDetail'
+    ])
+    expect(await page.evaluate(() => Object.keys(window.myTracer.routines))).toEqual([
+      'create',
+      'updateDetails',
+      'replaceSchedule',
+      'pause',
+      'resume',
+      'end',
       'list',
       'getDetail'
     ])
@@ -85,6 +96,7 @@ async function verifyPackagedApplication(
           window.myTracer,
           window.myTracer.shell,
           window.myTracer.goals,
+          window.myTracer.routines,
           window.myTracer.actions,
           window.myTracer.today,
           window.myTracer.records,

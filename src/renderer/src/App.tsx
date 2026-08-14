@@ -25,8 +25,14 @@ import type {
   ProgressErrorCode,
   ProgressViewDto
 } from '../../contracts/progress'
+import type {
+  RoutineDetailDto,
+  RoutineErrorCode,
+  RoutineStatusDto,
+  RoutineSummaryDto
+} from '../../contracts/routines'
 
-type Section = 'goals' | 'today' | 'progress' | 'review'
+type Section = 'goals' | 'routines' | 'today' | 'progress' | 'review'
 
 const sections: ReadonlyArray<{
   readonly id: Section
@@ -43,11 +49,18 @@ const sections: ReadonlyArray<{
     description: '创建一个目标和可直接开始的下一步；暂停或结束时，已有上下文与历史仍会保留。'
   },
   {
+    id: 'routines',
+    label: 'Routines',
+    eyebrow: '按星期形成节奏',
+    title: '让重复行动有清晰、可调整的节奏',
+    description: '用星期安排例行事项；暂停、恢复或结束都保留历史，结束后不再恢复。'
+  },
+  {
     id: 'today',
     label: 'Today',
     eyebrow: '轻量开始',
     title: '今天，从一个真实动作开始',
-    description: '这里仅显示你明确选入今天的行动；旧日期不会自动搬运，也不会设置数量硬上限。'
+    description: '这里显示你明确选入的行动，以及今天匹配的活跃 Routine；不会预生成记录或搬运历史。'
   },
   {
     id: 'progress',
@@ -114,6 +127,30 @@ const progressErrorText: Record<ProgressErrorCode, string> = {
   'not-found': '所选目标已不存在，请重新选择。',
   'persistence-failed': '本地进展事实暂时无法读取。'
 }
+
+const routineStatusText: Record<RoutineStatusDto, string> = {
+  active: '活跃',
+  paused: '暂停',
+  ended: '结束'
+}
+
+const routineErrorText: Record<RoutineErrorCode, string> = {
+  validation: '请填写名称、最小行动，并至少选择一个星期日。',
+  'not-found': 'Routine 或关联目标已不存在，请刷新后重试。',
+  'invalid-transition': '当前状态不能执行这个 Routine 操作。',
+  'invariant-violation': '这个 Routine 当前不允许该操作。',
+  'persistence-failed': '本地 Routine 数据暂时无法保存或读取。'
+}
+
+const weekdayOptions = [
+  { value: 1, label: '一' },
+  { value: 2, label: '二' },
+  { value: 3, label: '三' },
+  { value: 4, label: '四' },
+  { value: 5, label: '五' },
+  { value: 6, label: '六' },
+  { value: 7, label: '日' }
+] as const
 
 const unavailableReasonText: Record<NonNullable<ActionDetailDto['unavailableReason']>, string> = {
   'action-completed': '行动已完成，不能再次开始。',
@@ -895,6 +932,307 @@ function ActionRecordingPanel(props: {
   )
 }
 
+function RoutineWeekdayPicker(props: {
+  readonly value: readonly number[]
+  readonly onChange: (weekdays: readonly number[]) => void
+  readonly disabled?: boolean
+  readonly label: string
+}): ReactNode {
+  const toggle = (weekday: number): void => {
+    props.onChange(
+      props.value.includes(weekday)
+        ? props.value.filter((candidate) => candidate !== weekday)
+        : [...props.value, weekday].sort((left, right) => left - right)
+    )
+  }
+
+  return (
+    <fieldset className="weekday-fieldset" disabled={props.disabled}>
+      <legend>{props.label}</legend>
+      <div className="weekday-shortcuts">
+        <button type="button" onClick={() => props.onChange([1, 2, 3, 4, 5, 6, 7])}>每天</button>
+        <button type="button" onClick={() => props.onChange([1, 2, 3, 4, 5])}>工作日</button>
+      </div>
+      <div className="weekday-options">
+        {weekdayOptions.map((weekday) => (
+          <label key={weekday.value}>
+            <input
+              type="checkbox"
+              checked={props.value.includes(weekday.value)}
+              onChange={() => toggle(weekday.value)}
+            />
+            周{weekday.label}
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  )
+}
+
+function RoutineWorkspace(): ReactNode {
+  const [routines, setRoutines] = useState<readonly RoutineSummaryDto[]>([])
+  const [goals, setGoals] = useState<readonly GoalSummaryDto[]>([])
+  const [detail, setDetail] = useState<RoutineDetailDto | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [refreshVersion, setRefreshVersion] = useState(0)
+  const [createName, setCreateName] = useState('')
+  const [createDescription, setCreateDescription] = useState('')
+  const [createMinimumAction, setCreateMinimumAction] = useState('')
+  const [createGoalId, setCreateGoalId] = useState('')
+  const [createWeekdays, setCreateWeekdays] = useState<readonly number[]>([1, 2, 3, 4, 5])
+  const [editName, setEditName] = useState('')
+  const [editDescription, setEditDescription] = useState('')
+  const [editMinimumAction, setEditMinimumAction] = useState('')
+  const [editWeekdays, setEditWeekdays] = useState<readonly number[]>([])
+  const [confirmEnd, setConfirmEnd] = useState(false)
+
+  const showDetail = (routine: RoutineDetailDto): void => {
+    setDetail(routine)
+    setEditName(routine.name)
+    setEditDescription(routine.description ?? '')
+    setEditMinimumAction(routine.minimumAction)
+    setEditWeekdays(routine.weekdays)
+    setConfirmEnd(false)
+  }
+
+  useEffect(() => {
+    let active = true
+    Promise.all([window.myTracer.routines.list({}), window.myTracer.goals.list({ status: null })]).then(
+      ([routineResult, goalResult]) => {
+        if (!active) return
+        if (!routineResult.ok) {
+          setError(routineErrorText[routineResult.error.code])
+          return
+        }
+        if (!goalResult.ok) {
+          setError(goalErrorText[goalResult.error.code])
+          return
+        }
+        setRoutines(routineResult.value)
+        setGoals(goalResult.value)
+        setError(null)
+      }
+    )
+    return () => {
+      active = false
+    }
+  }, [refreshVersion])
+
+  const refresh = async (routineId?: string): Promise<void> => {
+    const listResult = await window.myTracer.routines.list({})
+    if (!listResult.ok) {
+      setError(routineErrorText[listResult.error.code])
+      return
+    }
+    setRoutines(listResult.value)
+    if (routineId) {
+      const detailResult = await window.myTracer.routines.getDetail({ routineId })
+      if (!detailResult.ok) {
+        setError(routineErrorText[detailResult.error.code])
+        return
+      }
+      showDetail(detailResult.value)
+    }
+    setError(null)
+  }
+
+  const submitCreate = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
+    event.preventDefault()
+    setBusy(true)
+    const result = await window.myTracer.routines.create({
+      goalId: createGoalId || null,
+      name: createName,
+      description: createDescription || null,
+      minimumAction: createMinimumAction,
+      weekdays: createWeekdays
+    })
+    setBusy(false)
+    if (!result.ok) {
+      setError(routineErrorText[result.error.code])
+      return
+    }
+    setCreateName('')
+    setCreateDescription('')
+    setCreateMinimumAction('')
+    setCreateGoalId('')
+    setCreateWeekdays([1, 2, 3, 4, 5])
+    showDetail(result.value)
+    await refresh(result.value.id)
+    setRefreshVersion((version) => version + 1)
+  }
+
+  const submitDetails = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
+    event.preventDefault()
+    if (!detail) return
+    setBusy(true)
+    const result = await window.myTracer.routines.updateDetails({
+      routineId: detail.id,
+      name: editName,
+      description: editDescription || null,
+      minimumAction: editMinimumAction
+    })
+    setBusy(false)
+    if (!result.ok) {
+      setError(routineErrorText[result.error.code])
+      return
+    }
+    await refresh(detail.id)
+  }
+
+  const replaceSchedule = async (): Promise<void> => {
+    if (!detail) return
+    setBusy(true)
+    const result = await window.myTracer.routines.replaceSchedule({
+      routineId: detail.id,
+      weekdays: editWeekdays
+    })
+    setBusy(false)
+    if (!result.ok) {
+      setError(routineErrorText[result.error.code])
+      return
+    }
+    await refresh(detail.id)
+  }
+
+  const transition = async (kind: 'pause' | 'resume' | 'end'): Promise<void> => {
+    if (!detail) return
+    setBusy(true)
+    const result = await window.myTracer.routines[kind]({ routineId: detail.id })
+    setBusy(false)
+    setConfirmEnd(false)
+    if (!result.ok) {
+      setError(routineErrorText[result.error.code])
+      return
+    }
+    await refresh(detail.id)
+  }
+
+  const openRoutine = async (routineId: string): Promise<void> => {
+    const result = await window.myTracer.routines.getDetail({ routineId })
+    if (!result.ok) {
+      setError(routineErrorText[result.error.code])
+      return
+    }
+    showDetail(result.value)
+    setError(null)
+  }
+
+  return (
+    <section className="routine-workspace" aria-label="Routine 管理">
+      {error ? <p className="form-error" role="alert">{error}</p> : null}
+      <div className="goal-grid">
+        <div className="goal-column">
+          <form className="goal-card goal-create" onSubmit={(event) => void submitCreate(event)}>
+            <div className="card-heading">
+              <p className="eyebrow">新 Routine</p>
+              <h2>定义一个最小行动和星期节奏</h2>
+            </div>
+            <label>
+              名称
+              <input required value={createName} onChange={(event) => setCreateName(event.target.value)} />
+            </label>
+            <label>
+              最小行动
+              <input required value={createMinimumAction} onChange={(event) => setCreateMinimumAction(event.target.value)} />
+            </label>
+            <label>
+              说明（可选）
+              <textarea rows={2} value={createDescription} onChange={(event) => setCreateDescription(event.target.value)} />
+            </label>
+            <label>
+              关联目标（可选，创建后不可改）
+              <select value={createGoalId} onChange={(event) => setCreateGoalId(event.target.value)}>
+                <option value="">不关联目标</option>
+                {goals.map((goal) => <option key={goal.id} value={goal.id}>{goal.name} · {goalStatusText[goal.status]}</option>)}
+              </select>
+            </label>
+            <RoutineWeekdayPicker label="计划星期" value={createWeekdays} onChange={setCreateWeekdays} disabled={busy} />
+            <button className="primary-button" type="submit" disabled={busy}>创建 Routine</button>
+          </form>
+
+          <div className="goal-card goal-list-card">
+            <div className="card-heading">
+              <p className="eyebrow">Routine 列表</p>
+              <h2>暂停与结束的项目仍保留</h2>
+            </div>
+            <div className="goal-list">
+              {routines.length ? routines.map((routine) => (
+                <button
+                  className={`goal-list-item${detail?.id === routine.id ? ' selected' : ''}`}
+                  type="button"
+                  key={routine.id}
+                  onClick={() => void openRoutine(routine.id)}
+                >
+                  <span>{routine.name}</span>
+                  <small>{routineStatusText[routine.status]} · 周{routine.weekdays.join('、')}</small>
+                </button>
+              )) : <p className="empty-copy">还没有 Routine。</p>}
+            </div>
+          </div>
+        </div>
+
+        <div className="goal-column">
+          {detail ? (
+            <article className="goal-card goal-detail" aria-label={`${detail.name} Routine 详情`}>
+              <div className="detail-title-row">
+                <div>
+                  <p className="eyebrow">{detail.goal ? `${detail.goal.name} · ${goalStatusText[detail.goal.status]}` : '未关联目标'}</p>
+                  <h2>{detail.name}</h2>
+                </div>
+                <span className={`status-badge status-${detail.status}`}>{routineStatusText[detail.status]}</span>
+              </div>
+
+              <form className="detail-form" onSubmit={(event) => void submitDetails(event)}>
+                <label>
+                  名称
+                  <input required value={editName} onChange={(event) => setEditName(event.target.value)} />
+                </label>
+                <label>
+                  最小行动
+                  <input required value={editMinimumAction} onChange={(event) => setEditMinimumAction(event.target.value)} />
+                </label>
+                <label>
+                  说明（可选）
+                  <textarea rows={3} value={editDescription} onChange={(event) => setEditDescription(event.target.value)} />
+                </label>
+                <button className="secondary-button" type="submit" disabled={busy}>保存内容修改</button>
+              </form>
+
+              <div className="schedule-editor">
+                <RoutineWeekdayPicker label="星期节奏" value={editWeekdays} onChange={setEditWeekdays} disabled={busy} />
+                <button className="secondary-button" type="button" disabled={busy} onClick={() => void replaceSchedule()}>整组替换星期</button>
+              </div>
+
+              <div className="lifecycle-actions">
+                {detail.status === 'active' ? <button type="button" disabled={busy} onClick={() => void transition('pause')}>暂停</button> : null}
+                {detail.status === 'paused' ? <button type="button" disabled={busy} onClick={() => void transition('resume')}>恢复</button> : null}
+                {detail.status !== 'ended' ? <button type="button" disabled={busy} onClick={() => setConfirmEnd(true)}>结束 Routine</button> : null}
+              </div>
+              {confirmEnd ? (
+                <div className="inline-confirm" role="alertdialog" aria-label="确认结束 Routine">
+                  <p>结束后不能恢复；已有历史会保留。</p>
+                  <div className="lifecycle-actions">
+                    <button type="button" disabled={busy} onClick={() => void transition('end')}>确认结束</button>
+                    <button type="button" disabled={busy} onClick={() => setConfirmEnd(false)}>取消</button>
+                  </div>
+                </div>
+              ) : null}
+              {detail.status === 'ended' ? <p className="empty-copy">这个 Routine 已结束且不能恢复；当前内容、节奏与历史仍会保留。</p> : null}
+            </article>
+          ) : (
+            <section className="goal-card empty-detail" aria-label="Routine 详情占位">
+              <p className="eyebrow">选择一个 Routine</p>
+              <h2>查看节奏、目标状态与生命周期</h2>
+              <p>星期安排只决定 Today 是否匹配，不会预生成任何记录。</p>
+            </section>
+          )}
+        </div>
+      </div>
+    </section>
+  )
+}
+
 function TodayWorkspace(): ReactNode {
   const [today, setToday] = useState<TodayViewDto | null>(null)
   const [activeGoals, setActiveGoals] = useState<readonly GoalSummaryDto[]>([])
@@ -1102,6 +1440,28 @@ function TodayWorkspace(): ReactNode {
         <span>当前本地日期</span>
         <strong>{today?.localDate ?? '读取中'}</strong>
       </div>
+      <section className="goal-card planned-routines" aria-label="今日 Routine 计划">
+        <div className="card-heading">
+          <p className="eyebrow">今日 Routine</p>
+          <h2>当天匹配的活跃节奏</h2>
+        </div>
+        <div className="planned-routine-list">
+          {today?.plannedRoutines.length ? today.plannedRoutines.map((routine) => (
+            <article key={routine.id}>
+              <div>
+                <strong>{routine.name}</strong>
+                <span>最小行动：{routine.minimumAction}</span>
+                <small>
+                  {routine.goal
+                    ? `目标：${routine.goal.name} · ${goalStatusText[routine.goal.status]}`
+                    : '未关联目标'}
+                </small>
+              </div>
+              <span className="status-badge status-active">计划匹配 · 可记录</span>
+            </article>
+          )) : <p className="empty-copy">今天没有匹配的活跃 Routine。</p>}
+        </div>
+      </section>
       <div className="today-grid">
         <div className="goal-column">
           <form className="goal-card goal-create" onSubmit={(event) => void submitCreate(event)}>
@@ -1513,6 +1873,8 @@ function Shell(): ReactNode {
 
           {activeSection === 'goals' ? (
             <GoalWorkspace />
+          ) : activeSection === 'routines' ? (
+            <RoutineWorkspace />
           ) : activeSection === 'today' ? (
             <TodayWorkspace />
           ) : activeSection === 'progress' ? (
