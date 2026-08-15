@@ -51,6 +51,17 @@ import {
   type RoutineSummaryDto,
   type UpdateRoutineDetailsInputDto
 } from '../contracts/routines'
+import {
+  ROUTINE_RECORD_CHANNELS,
+  type BeginRoutineRecordingDto,
+  type BeginRoutineRecordingInputDto,
+  type CancelRoutineRecordingInputDto,
+  type GetRoutineDayStateInputDto,
+  type RecordRoutineInputDto,
+  type RecordRoutineValueDto,
+  type RoutineDayStateDto,
+  type RoutineRecordResult
+} from '../contracts/routine-records'
 
 const api: MyTracerApi = Object.freeze({
   shell: Object.freeze({
@@ -138,7 +149,21 @@ const api: MyTracerApi = Object.freeze({
     list: (input: ListRoutinesInputDto): Promise<RoutineResult<readonly RoutineSummaryDto[]>> =>
       ipcRenderer.invoke(ROUTINE_CHANNELS.list, input),
     getDetail: (input: RoutineIdInputDto): Promise<RoutineResult<RoutineDetailDto>> =>
-      ipcRenderer.invoke(ROUTINE_CHANNELS.getDetail, input)
+      ipcRenderer.invoke(ROUTINE_CHANNELS.getDetail, input),
+    beginRecording: (
+      input: BeginRoutineRecordingInputDto
+    ): Promise<RoutineRecordResult<BeginRoutineRecordingDto>> =>
+      ipcRenderer.invoke(ROUTINE_RECORD_CHANNELS.begin, input),
+    cancelRecording: (
+      input: CancelRoutineRecordingInputDto
+    ): Promise<RoutineRecordResult<{ readonly cancelled: true }>> =>
+      ipcRenderer.invoke(ROUTINE_RECORD_CHANNELS.cancel, input),
+    record: (input: RecordRoutineInputDto): Promise<RoutineRecordResult<RecordRoutineValueDto>> =>
+      ipcRenderer.invoke(ROUTINE_RECORD_CHANNELS.record, input),
+    getDayState: (
+      input: GetRoutineDayStateInputDto
+    ): Promise<RoutineRecordResult<RoutineDayStateDto>> =>
+      ipcRenderer.invoke(ROUTINE_RECORD_CHANNELS.getDayState, input)
   })
 })
 

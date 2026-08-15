@@ -1,7 +1,7 @@
 import type { ClockPort } from './ports/clock'
 import {
   asActionRepository,
-  asRoutineRepository,
+  asRoutineRecordRepository,
   type ActionRepositoryPort,
   type RepositoryPort,
   type UnitOfWorkPort
@@ -21,6 +21,8 @@ import {
 } from '../domain/action'
 import { createLocalDate } from '../domain/local-date'
 import { isRoutinePlannedOn, normalizeRoutineWeekdays } from '../domain/routine'
+import { routineRecordView, type RoutineRecordView } from './routine-records'
+import type { RoutineRecordState } from '../domain/routine-record'
 
 export interface TodayPlannedRoutineView {
   readonly id: string
@@ -29,6 +31,8 @@ export interface TodayPlannedRoutineView {
   readonly goal: ReturnType<typeof buildRoutineDetail>['goal']
   readonly plannedForToday: true
   readonly canRecord: true
+  readonly recordState: RoutineRecordState
+  readonly record: RoutineRecordView | null
 }
 
 export interface TodayView {
@@ -68,7 +72,7 @@ export function buildTodayView(repository: ActionRepositoryPort, localDate: stri
   const availableActions = repository
     .listActions()
     .map((action) => buildActionDetail(repository, action.id, localDate))
-  const routineRepository = asRoutineRepository(repository)
+  const routineRepository = asRoutineRecordRepository(repository)
   const plannedRoutines = routineRepository
     .listRoutines('active')
     .map((record) => buildRoutineDetail(routineRepository, record))
@@ -78,16 +82,19 @@ export function buildTodayView(repository: ActionRepositoryPort, localDate: stri
         createLocalDate(localDate)
       )
     )
-    .map((routine) =>
-      Object.freeze<TodayPlannedRoutineView>({
+    .map((routine) => {
+      const record = routineRepository.findRoutineRecordByRoutineAndDate(routine.id, localDate)
+      return Object.freeze<TodayPlannedRoutineView>({
         id: routine.id,
         name: routine.name,
         minimumAction: routine.minimumAction,
         goal: routine.goal,
         plannedForToday: true,
-        canRecord: true
+        canRecord: true,
+        recordState: record?.outcome ?? 'unknown',
+        record: record ? routineRecordView(record) : null
       })
-    )
+    })
   return Object.freeze({
     localDate,
     focuses: Object.freeze(focuses),

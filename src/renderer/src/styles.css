@@ -426,13 +426,37 @@ button:disabled {
 }
 
 .planned-routine-list article {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
   gap: 16px;
   padding: 13px;
   border-radius: 13px;
   background: rgba(239, 244, 239, 0.72);
+}
+
+.planned-routine-list .routine-recording-panel {
+  grid-column: 1 / -1;
+}
+
+.routine-recording-panel {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+  padding: 14px;
+  border: 1px solid rgba(44, 74, 65, 0.12);
+  border-radius: 14px;
+  background: rgba(248, 250, 247, 0.82);
+}
+
+.routine-record-state,
+.routine-recording-form {
+  display: grid;
+  gap: 7px;
+}
+
+.routine-record-state small {
+  color: #68776f;
 }
 
 .planned-routine-list article > div {
@@ -983,8 +1007,18 @@ h1 {
 
 .progress-summary {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
+}
+
+.progress-section-title {
+  margin: 4px 0 12px;
+  color: #315d50;
+  font-size: 17px;
+}
+
+.routine-progress-records {
+  margin-bottom: 18px;
 }
 
 .progress-summary article,

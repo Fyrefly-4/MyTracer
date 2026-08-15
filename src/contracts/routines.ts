@@ -86,4 +86,26 @@ export interface RoutineApi {
     input: ListRoutinesInputDto
   ) => Promise<RoutineResult<readonly RoutineSummaryDto[]>>
   readonly getDetail: (input: RoutineIdInputDto) => Promise<RoutineResult<RoutineDetailDto>>
+  readonly beginRecording: (
+    input: BeginRoutineRecordingInputDto
+  ) => Promise<RoutineRecordResult<BeginRoutineRecordingDto>>
+  readonly cancelRecording: (
+    input: CancelRoutineRecordingInputDto
+  ) => Promise<RoutineRecordResult<{ readonly cancelled: true }>>
+  readonly record: (
+    input: RecordRoutineInputDto
+  ) => Promise<RoutineRecordResult<RecordRoutineValueDto>>
+  readonly getDayState: (
+    input: GetRoutineDayStateInputDto
+  ) => Promise<RoutineRecordResult<RoutineDayStateDto>>
 }
+import type {
+  BeginRoutineRecordingDto,
+  BeginRoutineRecordingInputDto,
+  CancelRoutineRecordingInputDto,
+  GetRoutineDayStateInputDto,
+  RecordRoutineInputDto,
+  RecordRoutineValueDto,
+  RoutineDayStateDto,
+  RoutineRecordResult
+} from './routine-records'

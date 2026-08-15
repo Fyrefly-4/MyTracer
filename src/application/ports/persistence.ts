@@ -138,6 +138,24 @@ export interface ProgressQueryRowPersistenceRecord {
   readonly confusionCreatedAt: string | null
 }
 
+export interface RoutineProgressQueryRecordPersistence {
+  readonly recordId: string
+  readonly routineId: string
+  readonly goalId: string | null
+  readonly routineName: string
+  readonly occurredOn: string
+  readonly outcome: RoutineRecordOutcome
+  readonly plannedForDate: boolean
+  readonly durationMinutes: number | null
+  readonly note: string | null
+  readonly recordCreatedAt: string
+}
+
+export interface ProgressQuerySnapshotPersistence {
+  readonly actionRows: readonly ProgressQueryRowPersistenceRecord[]
+  readonly routineRecords: readonly RoutineProgressQueryRecordPersistence[]
+}
+
 export interface CorePersistenceSnapshot {
   readonly goals: readonly GoalPersistenceRecord[]
   readonly actions: readonly ActionPersistenceRecord[]
@@ -190,9 +208,7 @@ export interface ActionRecordRepositoryPort extends ActionRepositoryPort {
 }
 
 export interface ProgressRepositoryPort extends RepositoryPort {
-  queryProgressRows(
-    filter: ProgressQueryFilterPersistence
-  ): readonly ProgressQueryRowPersistenceRecord[]
+  queryProgressSnapshot(filter: ProgressQueryFilterPersistence): ProgressQuerySnapshotPersistence
 }
 
 export interface RoutineRepositoryPort extends RepositoryPort {
@@ -203,6 +219,15 @@ export interface RoutineRepositoryPort extends RepositoryPort {
     routineId: string,
     records: readonly RoutineScheduleDayPersistenceRecord[]
   ): void
+}
+
+export interface RoutineRecordRepositoryPort extends RoutineRepositoryPort {
+  createRoutineRecord(record: RoutineRecordPersistenceRecord): boolean
+  findRoutineRecordByRoutineAndDate(
+    routineId: string,
+    occurredOn: string
+  ): RoutineRecordPersistenceRecord | null
+  listRoutineRecordsByRoutineId(routineId: string): readonly RoutineRecordPersistenceRecord[]
 }
 
 export function asActionRepository(repository: RepositoryPort): ActionRepositoryPort {
@@ -233,10 +258,22 @@ export function asActionRecordRepository(repository: RepositoryPort): ActionReco
 
 export function asProgressRepository(repository: RepositoryPort): ProgressRepositoryPort {
   const candidate = repository as Partial<ProgressRepositoryPort>
-  if (typeof candidate.queryProgressRows !== 'function') {
+  if (typeof candidate.queryProgressSnapshot !== 'function') {
     throw new TypeError('Repository does not provide the Progress query contract.')
   }
   return repository as ProgressRepositoryPort
+}
+
+export function asRoutineRecordRepository(repository: RepositoryPort): RoutineRecordRepositoryPort {
+  const candidate = repository as Partial<RoutineRecordRepositoryPort>
+  if (
+    typeof candidate.createRoutineRecord !== 'function' ||
+    typeof candidate.findRoutineRecordByRoutineAndDate !== 'function' ||
+    typeof candidate.listRoutineRecordsByRoutineId !== 'function'
+  ) {
+    throw new TypeError('Repository does not provide the RoutineRecord contract.')
+  }
+  return repository as RoutineRecordRepositoryPort
 }
 
 export function asRoutineRepository(repository: RepositoryPort): RoutineRepositoryPort {

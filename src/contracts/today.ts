@@ -1,5 +1,6 @@
 import type { ActionDetailDto, ActionIdInputDto, ActionResult } from './actions'
 import type { RoutineGoalSummaryDto } from './routines'
+import type { RoutineRecordDto, RoutineRecordStateDto } from './routine-records'
 
 export const TODAY_CHANNELS = Object.freeze({
   selectAction: 'today:select-action',
@@ -21,6 +22,8 @@ export interface TodayPlannedRoutineDto {
   readonly goal: RoutineGoalSummaryDto | null
   readonly plannedForToday: true
   readonly canRecord: true
+  readonly recordState: RoutineRecordStateDto
+  readonly record: RoutineRecordDto | null
 }
 
 export type GetTodayInputDto = Readonly<Record<string, never>>
