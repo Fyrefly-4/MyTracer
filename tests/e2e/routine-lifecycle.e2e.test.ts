@@ -56,7 +56,7 @@ test('manages a Routine lifecycle, shows its Today plan, and preserves history o
     const planned = page.getByRole('article').filter({ hasText: '晨间伸展' })
     await expect(planned.getByText('最小行动：伸展 2 分钟')).toBeVisible()
     await expect(planned.getByText('目标：维持身体状态 · 活跃')).toBeVisible()
-    await expect(planned.getByText('计划匹配 · 可记录')).toBeVisible()
+    await expect(planned.getByText('尚无记录', { exact: true }).first()).toBeVisible()
 
     await page.evaluate(async (goalId) => {
       const result = await window.myTracer.goals.pause({ goalId })

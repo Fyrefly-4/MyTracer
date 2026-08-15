@@ -31,6 +31,13 @@ import type {
   RoutineStatusDto,
   RoutineSummaryDto
 } from '../../contracts/routines'
+import type {
+  BeginRoutineRecordingDto,
+  RoutineDayStateDto,
+  RoutineRecordErrorCode,
+  RoutineRecordOutcomeDto,
+  RoutineRecordingDateChoiceDto
+} from '../../contracts/routine-records'
 
 type Section = 'goals' | 'routines' | 'today' | 'progress' | 'review'
 
@@ -140,6 +147,24 @@ const routineErrorText: Record<RoutineErrorCode, string> = {
   'invalid-transition': '当前状态不能执行这个 Routine 操作。',
   'invariant-violation': '这个 Routine 当前不允许该操作。',
   'persistence-failed': '本地 Routine 数据暂时无法保存或读取。'
+}
+
+const routineRecordErrorText: Record<RoutineRecordErrorCode, string> = {
+  validation: '请检查记录内容；行动时长需为非负整数分钟。',
+  'not-found': 'Routine 已不存在，请刷新后重试。',
+  'invalid-transition': '只有活跃 Routine 可以新增记录。',
+  'invariant-violation': '当前 Routine 记录关系不可用。',
+  'record-already-exists': '这个 Routine 在所选日期已经有记录；不会覆盖已有事实。',
+  'invalid-recording-context': '这次记录表单已失效，请重新开始记录。',
+  'persistence-failed': '本地 Routine 记录暂时无法保存或读取。'
+}
+
+const routineRecordOutcomeText: Record<RoutineRecordOutcomeDto | 'unknown', string> = {
+  target_met: '达到目标',
+  acted: '有真实行动',
+  intentional_rest: '有意休息',
+  not_done: '明确未做',
+  unknown: '尚无记录'
 }
 
 const weekdayOptions = [
@@ -969,6 +994,192 @@ function RoutineWeekdayPicker(props: {
   )
 }
 
+function RoutineRecordingPanel(props: {
+  readonly routineId: string
+  readonly routineName: string
+  readonly disabled?: boolean
+  readonly initialState?: RoutineDayStateDto | null
+  readonly onSaved?: () => Promise<void>
+}): ReactNode {
+  const [context, setContext] = useState<BeginRoutineRecordingDto | null>(null)
+  const contextRef = useRef<BeginRoutineRecordingDto | null>(null)
+  const [dayState, setDayState] = useState<RoutineDayStateDto | null>(props.initialState ?? null)
+  const [outcome, setOutcome] = useState<RoutineRecordOutcomeDto>('acted')
+  const [durationMinutes, setDurationMinutes] = useState('')
+  const [note, setNote] = useState('')
+  const [dateConfirmation, setDateConfirmation] = useState<{
+    readonly capturedOn: string
+    readonly currentLocalDate: string
+  } | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    return () => {
+      const activeContext = contextRef.current
+      if (activeContext) {
+        void window.myTracer.routines.cancelRecording({
+          recordingContextId: activeContext.recordingContextId
+        })
+      }
+    }
+  }, [props.routineId])
+
+  const begin = async (): Promise<void> => {
+    setBusy(true)
+    const result = await window.myTracer.routines.beginRecording({ routineId: props.routineId })
+    setBusy(false)
+    if (!result.ok) {
+      setError(routineRecordErrorText[result.error.code])
+      return
+    }
+    contextRef.current = result.value
+    setContext(result.value)
+    const stateResult = await window.myTracer.routines.getDayState({
+      routineId: props.routineId,
+      localDate: result.value.capturedOn
+    })
+    if (stateResult.ok) {
+      setDayState(stateResult.value)
+      if (stateResult.value.record) {
+        await window.myTracer.routines.cancelRecording({
+          recordingContextId: result.value.recordingContextId
+        })
+        contextRef.current = null
+        setContext(null)
+      }
+    }
+    setError(null)
+  }
+
+  const cancel = async (): Promise<void> => {
+    if (!context) return
+    setBusy(true)
+    const result = await window.myTracer.routines.cancelRecording({
+      recordingContextId: context.recordingContextId
+    })
+    setBusy(false)
+    if (!result.ok) {
+      setError(routineRecordErrorText[result.error.code])
+      return
+    }
+    contextRef.current = null
+    setContext(null)
+    setDateConfirmation(null)
+    setError(null)
+  }
+
+  const save = async (dateChoice?: RoutineRecordingDateChoiceDto): Promise<void> => {
+    if (!context) return
+    const actionOutcome = outcome === 'target_met' || outcome === 'acted'
+    const parsedDuration = durationMinutes === '' ? null : Number(durationMinutes)
+    if (actionOutcome && parsedDuration !== null && (!Number.isInteger(parsedDuration) || parsedDuration < 0)) {
+      setError('时长必须留空或填写非负整数分钟；0 表示不足一分钟但确有行动。')
+      return
+    }
+    setBusy(true)
+    const result = await window.myTracer.routines.record({
+      routineId: props.routineId,
+      recordingContextId: context.recordingContextId,
+      dateChoice,
+      outcome,
+      durationMinutes: actionOutcome ? parsedDuration : null,
+      note: note.trim() || null
+    })
+    setBusy(false)
+    if (!result.ok) {
+      setError(routineRecordErrorText[result.error.code])
+      return
+    }
+    if (result.value.kind === 'date-confirmation-required') {
+      setDateConfirmation(result.value)
+      setError(null)
+      return
+    }
+    contextRef.current = null
+    setContext(null)
+    setDateConfirmation(null)
+    setDayState({
+      routineId: props.routineId,
+      localDate: result.value.record.occurredOn,
+      plannedByCurrentSchedule: result.value.record.plannedForDate,
+      recordState: result.value.record.outcome,
+      record: result.value.record
+    })
+    setError(null)
+    await props.onSaved?.()
+  }
+
+  const displayedDayState = props.initialState ?? dayState
+  const state = displayedDayState?.recordState ?? 'unknown'
+  return (
+    <section className="routine-recording-panel" aria-label={`${props.routineName} Routine 记录`}>
+      <div className="routine-record-state">
+        <span>当前日期事实</span>
+        <strong>{routineRecordOutcomeText[state]}</strong>
+        {displayedDayState?.record ? (
+          <small>
+            {displayedDayState.record.occurredOn} ·{' '}
+            {displayedDayState.record.plannedForDate ? '计划日快照' : '非计划日事实'}
+            {displayedDayState.record.durationMinutes === null
+              ? ''
+              : ` · ${displayedDayState.record.durationMinutes} 分钟`}
+          </small>
+        ) : (
+          <small>缺少记录保持 unknown，不会自动记为未做。</small>
+        )}
+      </div>
+      {!context && state === 'unknown' ? (
+        <button type="button" disabled={busy || props.disabled} onClick={() => void begin()}>
+          记录 Routine
+        </button>
+      ) : null}
+      {context ? (
+        <form
+          className="routine-recording-form"
+          onSubmit={(event) => {
+            event.preventDefault()
+            void save()
+          }}
+        >
+          <p>发生日期固定为 {context.capturedOn}</p>
+          <label>
+            本次结果
+            <select value={outcome} onChange={(event) => setOutcome(event.target.value as RoutineRecordOutcomeDto)}>
+              <option value="target_met">达到目标</option>
+              <option value="acted">有真实行动</option>
+              <option value="intentional_rest">有意休息</option>
+              <option value="not_done">明确未做</option>
+            </select>
+          </label>
+          {outcome === 'target_met' || outcome === 'acted' ? (
+            <label>
+              行动分钟（可空）
+              <input type="number" min="0" step="1" value={durationMinutes} onChange={(event) => setDurationMinutes(event.target.value)} />
+            </label>
+          ) : null}
+          <label>
+            备注（可选）
+            <textarea rows={2} value={note} onChange={(event) => setNote(event.target.value)} />
+          </label>
+          {dateConfirmation ? (
+            <div className="date-confirmation" role="alertdialog" aria-label="确认 Routine 记录发生日">
+              <p>保存时已经跨日。请选择保留开始日 {dateConfirmation.capturedOn}，或使用当前日 {dateConfirmation.currentLocalDate}。</p>
+              <button type="button" disabled={busy} onClick={() => void save('keep-captured-on')}>保留开始日</button>
+              <button type="button" disabled={busy} onClick={() => void save('use-current-on')}>使用当前日</button>
+            </div>
+          ) : null}
+          <div className="recording-actions">
+            <button className="primary-button" type="submit" disabled={busy || Boolean(dateConfirmation)}>保存 Routine 记录</button>
+            <button type="button" disabled={busy} onClick={() => void cancel()}>取消</button>
+          </div>
+        </form>
+      ) : null}
+      {error ? <p className="form-error" role="alert">{error}</p> : null}
+    </section>
+  )
+}
+
 function RoutineWorkspace(): ReactNode {
   const [routines, setRoutines] = useState<readonly RoutineSummaryDto[]>([])
   const [goals, setGoals] = useState<readonly GoalSummaryDto[]>([])
@@ -1209,6 +1420,12 @@ function RoutineWorkspace(): ReactNode {
                 {detail.status === 'paused' ? <button type="button" disabled={busy} onClick={() => void transition('resume')}>恢复</button> : null}
                 {detail.status !== 'ended' ? <button type="button" disabled={busy} onClick={() => setConfirmEnd(true)}>结束 Routine</button> : null}
               </div>
+              <RoutineRecordingPanel
+                key={detail.id}
+                routineId={detail.id}
+                routineName={detail.name}
+                disabled={detail.status !== 'active'}
+              />
               {confirmEnd ? (
                 <div className="inline-confirm" role="alertdialog" aria-label="确认结束 Routine">
                   <p>结束后不能恢复；已有历史会保留。</p>
@@ -1457,7 +1674,21 @@ function TodayWorkspace(): ReactNode {
                     : '未关联目标'}
                 </small>
               </div>
-              <span className="status-badge status-active">计划匹配 · 可记录</span>
+              <span className="status-badge status-active">
+                {routineRecordOutcomeText[routine.recordState]}
+              </span>
+              <RoutineRecordingPanel
+                routineId={routine.id}
+                routineName={routine.name}
+                initialState={{
+                  routineId: routine.id,
+                  localDate: today.localDate,
+                  plannedByCurrentSchedule: true,
+                  recordState: routine.recordState,
+                  record: routine.record
+                }}
+                onSaved={async () => refresh()}
+              />
             </article>
           )) : <p className="empty-copy">今天没有匹配的活跃 Routine。</p>}
         </div>
@@ -1740,10 +1971,45 @@ function ProgressWorkspace(): ReactNode {
               <span>记录到的行动次数</span>
               <strong>{progress.realActionCount}</strong>
             </article>
+            <article>
+              <span>Routine 达到目标次数</span>
+              <strong>{progress.targetMetCount}</strong>
+            </article>
+            <article>
+              <span>计划日达到目标次数</span>
+              <strong>{progress.plannedTargetMetCount}</strong>
+            </article>
           </div>
 
+          {progress.routineRecords.length ? (
+            <section aria-label="Routine 事实">
+              <h2 className="progress-section-title">Routine 事实</h2>
+              <ol className="progress-records routine-progress-records">
+                {progress.routineRecords.map((record) => (
+                  <li key={record.recordId}>
+                    <div className="progress-record-heading">
+                      <div>
+                        <h2>{record.routineName}</h2>
+                        <p>
+                          {record.occurredOn} · {routineRecordOutcomeText[record.outcome]} ·{' '}
+                          {record.plannedForDate ? '计划日快照' : '非计划日事实'}
+                        </p>
+                      </div>
+                      <strong>
+                        {record.durationMinutes === null ? '时长未记录' : `${record.durationMinutes} 分钟`}
+                      </strong>
+                    </div>
+                    {record.note ? <p>{record.note}</p> : null}
+                  </li>
+                ))}
+              </ol>
+            </section>
+          ) : null}
+
           {progress.records.length ? (
-            <ol className="progress-records">
+            <section aria-label="Action 事实">
+              <h2 className="progress-section-title">Action 事实</h2>
+              <ol className="progress-records">
               {progress.records.map((record) => (
                 <li key={record.recordId}>
                   <div className="progress-record-heading">
@@ -1767,13 +2033,15 @@ function ProgressWorkspace(): ReactNode {
                   ) : null}
                 </li>
               ))}
-            </ol>
-          ) : (
+              </ol>
+            </section>
+          ) : null}
+          {!progress.records.length && !progress.routineRecords.length ? (
             <div className="progress-empty">
               <h2>这个范围内还没有已记录事实</h2>
-              <p>空白不表示失败、未坚持或未掌握；它只表示当前筛选没有 ActionRecord。</p>
+              <p>空白不表示失败、未坚持或未掌握；它只表示当前筛选没有 ActionRecord 或 RoutineRecord。</p>
             </div>
-          )}
+          ) : null}
         </>
       ) : null}
     </section>

@@ -51,7 +51,7 @@ test('completes AC-01 through factual Progress and recalculates after a real reo
     await expect(page.getByText('状态更新会进入队列')).toBeVisible()
     await expect(page.getByText('批处理何时结束')).toBeVisible()
     await expect(page.getByText('运行一个 React 状态更新示例', { exact: true })).toBeVisible()
-    await expect(page.getByLabel('进展汇总').locator('article')).toHaveCount(2)
+    await expect(page.getByLabel('进展汇总').locator('article')).toHaveCount(4)
     await expect(page.getByLabel('进展汇总')).not.toContainText(/评分|掌握度|失败率|排名|自律/)
 
     const beforeReopen = await page.evaluate(() => window.myTracer.progress.get({}))
