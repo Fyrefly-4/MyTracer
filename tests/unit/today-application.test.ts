@@ -87,6 +87,9 @@ function setup(goalStatus: GoalPersistenceRecord['status'] = 'active') {
     listRoutineScheduleDays: (routineId: string) =>
       routineId === 'routine-1' ? [{ routineId, weekday: 7 }] : [],
     replaceRoutineScheduleDays: () => undefined,
+    createRoutineRecord: () => true,
+    findRoutineRecordByRoutineAndDate: () => null,
+    listRoutineRecordsByRoutineId: () => [],
     deleteTodaySelection: (id: string, date: string) => void selections.delete(`${id}:${date}`),
     readSnapshot: (): CorePersistenceSnapshot => ({
       goals: [goal],
@@ -191,7 +194,9 @@ describe('Today application', () => {
           id: 'routine-1',
           goal: expect.objectContaining({ status }),
           plannedForToday: true,
-          canRecord: true
+          canRecord: true,
+          recordState: 'unknown',
+          record: null
         })
       ])
       context.clock.setState({

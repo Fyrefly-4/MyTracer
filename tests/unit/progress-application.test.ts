@@ -4,7 +4,8 @@ import type {
   GoalPersistenceRecord,
   ProgressQueryFilterPersistence,
   ProgressQueryRowPersistenceRecord,
-  ProgressRepositoryPort
+  ProgressRepositoryPort,
+  RoutineProgressQueryRecordPersistence
 } from '../../src/application/ports/persistence'
 
 const goal: GoalPersistenceRecord = {
@@ -39,13 +40,16 @@ function row(
   }
 }
 
-function serviceWith(rows: readonly ProgressQueryRowPersistenceRecord[]) {
+function serviceWith(
+  rows: readonly ProgressQueryRowPersistenceRecord[],
+  routineRecords: readonly RoutineProgressQueryRecordPersistence[] = []
+) {
   let received: ProgressQueryFilterPersistence | undefined
   const repository = {
     findGoalById: (id: string) => (id === goal.id ? goal : null),
-    queryProgressRows: (filter: ProgressQueryFilterPersistence) => {
+    queryProgressSnapshot: (filter: ProgressQueryFilterPersistence) => {
       received = filter
-      return rows
+      return { actionRows: rows, routineRecords }
     }
   } as unknown as ProgressRepositoryPort
   return {
@@ -72,7 +76,14 @@ describe('Progress application projection', () => {
         through: input.through ?? null
       })
       expect(result.filter).toEqual(context.received())
-      expect(result).toMatchObject({ totalDurationMinutes: 0, realActionCount: 0, records: [] })
+      expect(result).toMatchObject({
+        totalDurationMinutes: 0,
+        realActionCount: 0,
+        targetMetCount: 0,
+        plannedTargetMetCount: 0,
+        records: [],
+        routineRecords: []
+      })
     }
   })
 
@@ -145,7 +156,63 @@ describe('Progress application projection', () => {
       'filter',
       'totalDurationMinutes',
       'realActionCount',
-      'records'
+      'targetMetCount',
+      'plannedTargetMetCount',
+      'records',
+      'routineRecords'
+    ])
+  })
+
+  it('keeps Routine facts distinct and counts only real action and planned target facts', () => {
+    const routineRecords: RoutineProgressQueryRecordPersistence[] = [
+      {
+        recordId: 'routine-record-1',
+        routineId: 'routine-1',
+        goalId: goal.id,
+        routineName: 'Move',
+        occurredOn: '2026-08-12',
+        outcome: 'target_met',
+        plannedForDate: true,
+        durationMinutes: 10,
+        note: null,
+        recordCreatedAt: '2026-08-12T10:00:00.000Z'
+      },
+      {
+        recordId: 'routine-record-2',
+        routineId: 'routine-1',
+        goalId: goal.id,
+        routineName: 'Move',
+        occurredOn: '2026-08-11',
+        outcome: 'acted',
+        plannedForDate: false,
+        durationMinutes: null,
+        note: 'Unplanned walk',
+        recordCreatedAt: '2026-08-11T10:00:00.000Z'
+      },
+      {
+        recordId: 'routine-record-3',
+        routineId: 'routine-1',
+        goalId: goal.id,
+        routineName: 'Move',
+        occurredOn: '2026-08-10',
+        outcome: 'not_done',
+        plannedForDate: true,
+        durationMinutes: null,
+        note: null,
+        recordCreatedAt: '2026-08-10T10:00:00.000Z'
+      }
+    ]
+    const result = serviceWith([row()], routineRecords).service.getProgress({})
+
+    expect(result.totalDurationMinutes).toBe(35)
+    expect(result.realActionCount).toBe(3)
+    expect(result.targetMetCount).toBe(1)
+    expect(result.plannedTargetMetCount).toBe(1)
+    expect(result.records).toHaveLength(1)
+    expect(result.routineRecords.map((record) => record.outcome)).toEqual([
+      'target_met',
+      'acted',
+      'not_done'
     ])
   })
 })
