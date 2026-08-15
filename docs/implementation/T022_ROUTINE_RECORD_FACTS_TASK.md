@@ -1,17 +1,17 @@
 # T022 RoutineRecord 五态语义与 Progress 事实投影任务合同
 
-> 合同状态：**已批准并激活；项目所有者于 2026-08-15 批准合同、范围内实施、分步本地提交、任务分支 push、到 `dev` 的 Draft PR 及 required CI 读写权限**
+> 合同状态：**交付完成；项目所有者于 2026-08-15 批准合同与实施权限，并在实现、自动验证、独立复核和 hosted CI 后明确报告“T022 人工验收：通过”及批准文档收口**
 >
 > 拟启动基线：`dev@e3e7346eba492f1de810ffe34b41b1d96831c3af`（2026-08-15 已通过 `git ls-remote origin refs/heads/dev` 核验为最新 `origin/dev`；该 revision 为 T021 PR #17 的 squash merge）
 >
-> 当前权限：允许本合同范围内实现、任务状态同步、分步本地提交、推送 `task/T022-routine-record-facts`、创建/更新到 `dev` 的 Draft PR 并读取/处理 required CI；文档收口仍须在首个绿色实现 CI 后按 skill 另行批准；Ready、merge、`main`、tag 和 release 未授权
+> 当前权限：文档收口、独立 `docs: close T022 delivery records` commit、push 和最终 head required CI 已获批准；Ready、merge、`main`、tag 和 release 未授权
 
 ## 1. 任务信息
 
 - **Task ID**：T022
 - **Title**：RoutineRecord five-state semantics and factual Progress projection
 - **Slice / Plan item**：S2 / E2-02
-- **Task ledger status**：`active`
+- **Task ledger status**：`done`
 - **Base branch / revision**：`dev@e3e7346eba492f1de810ffe34b41b1d96831c3af`
 - **Expected branch**：`task/T022-routine-record-facts`
 - **Task worktree**：`.tmp/T022-worktree`
@@ -30,7 +30,7 @@
 - Progress 保留 S1 `records[]` 及其字段、筛选和排序含义，兼容增加可区分的 `routineRecords[]`、Routine 达标汇总和两类 Record 的统一总时长/真实行动次数；
 - 完全关闭 SQLite/Electron 并从同一隔离测试数据根重开后，Record、缺行 unknown、`plannedForDate` 快照、Today 和 Progress 聚合一致。
 
-T022 完成 AC-03 的自动化完整场景准备与执行；项目所有者实际执行完整五态人工验收前，AC-03 manual 必须保持 `pending`。T022 不实现或声明 AC-04、FR-R08、完整 FR-D01 或 AC-07。
+T022 已完成 AC-03 的自动化完整场景，项目所有者于 2026-08-15 按独立临时 `userData` 人工方法执行后明确报告“T022 人工验收：通过”。T022 不实现或声明 AC-04、FR-R08、完整 FR-D01 或 AC-07。
 
 ## 3. 需求与设计依据
 
@@ -296,7 +296,7 @@ git diff --check
 - [ ] Draft → Ready 仍须项目所有者另行授权。
 - [x] Agent 不得 merge 到 `dev`，不得创建或合并 `dev → main` PR，不得创建 tag/release，不得 force-push 或删除远端分支。
 
-文档收口的具体文件修改、独立 docs commit 与后续 push 仍须在首个绿色实现 CI 后获得精确授权；本次批准不提前授予该权限。
+项目所有者于 2026-08-15 在首个绿色实现 CI 后审阅精确影响矩阵，明确授权修改本合同、`TASK_INDEX_V0.1.md`、`ACCEPTANCE_EVIDENCE_V0.1.md` 和 Draft PR 正文，创建独立 `docs: close T022 delivery records` commit、push，并读取最终 head CI。README、实施计划、S2 设计、需求追踪、PRD、DECISIONS 与 `user/` 无事实性漂移，保持不动。
 
 依赖与外部操作：
 
@@ -357,3 +357,15 @@ git diff --check
 - 是否发现需求冲突、范围变化、权限变化或 S1/T021 回归。
 
 不得把实现存在、本地测试通过、Draft PR 创建或 AC-03 自动化通过称为项目所有者人工验收通过；只有合同定义的全部自动门禁、批准的文档收口、最终 head CI 和真实人工结果有证据时，才能按账本定义更新完成状态。
+
+## 15. 交付收口记录
+
+- **启动基线**：`dev@e3e7346eba492f1de810ffe34b41b1d96831c3af`；分支 `task/T022-routine-record-facts`；worktree `.tmp/T022-worktree`。
+- **实现与测试 revision**：`022b6e25731a07f113692a452de0128367059574`；分步提交为 `6df2d8e`（合同激活）、`da8d40e`（Domain/Application/SQLite/IPC/Preload 与单元/集成）、`1c29a64`（Renderer/Today/Progress/E2E）和 `022b6e2`（hosted Windows 时区无关的跨午夜 E2E 修正）。
+- **Draft PR**：#18，base `dev`，保持 Draft；Ready 与 merge 未授权。
+- **验证**：本地完整 `npm.cmd run verify` 在 `1c29a64` 返回 exit code 0，97 unit、50 integration、9 Electron E2E 通过，1 项 opt-in package smoke 按既有条件跳过；`022b6e2` 的修正另行通过 typecheck、build 和跨午夜定向 E2E。实现 head `022b6e2` 的 hosted `Verification / Windows required gate` run `31876081932` / job `94991895586` 返回 success。
+- **失败历史**：首个 PR head `1c29a64` 的 run `31875926295` / job `94991527923` 仅因新跨午夜 E2E 固定 UTC 时间、未适配 hosted Windows 本地时区而失败；产品代码、unit 与 integration 均已通过。`022b6e2` 改为按运行环境构造当地午夜并由后续绿色 run 取代失败结论，失败记录不删除。
+- **复核**：完整任务 diff、事务边界、固定 IPC/Preload API、Renderer 隔离、create-only/唯一冲突、Query 零写入、Progress 一致快照及 S1/T021 回归完成第二遍只读复核；`001_initial.sql` 与 `dev` blob hash 均为 `a92c98598e46d76b038d1298549b5ab524356884`，没有依赖、schemaVersion 或 migration 变化，最终无未解决 finding。
+- **人工验收**：项目所有者于 2026-08-15 明确报告“T022 人工验收：通过”。
+- **范围结论**：FR-R04～R07/R09、FR-P02 与 AC-03 的 T022 范围已交付；FR-R08/T031、Action intention/T023/AC-04、Review、Recovery、AI、提醒、编辑/删除/补记和 S3～S7 保持未实现。未发现 MUST/批准决定冲突、范围或权限漂移，也未发现 S1/T021 回归。
+- **最终门禁**：本独立文档 commit push 后必须再次等待并读取最新 PR head required CI；只有该 CI 通过后才建议 Ready。Agent 不自行 Ready 或 merge。
