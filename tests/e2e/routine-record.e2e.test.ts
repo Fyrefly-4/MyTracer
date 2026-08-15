@@ -168,7 +168,8 @@ test('requires an explicit Routine date choice across midnight', async () => {
   try {
     application = await launchApplication(root)
     const page = await application.firstWindow()
-    await setMainProcessDate(application, '2026-08-10T15:59:00.000Z')
+    const localMidnight = new Date(2026, 7, 11, 0, 0, 0, 0).getTime()
+    await setMainProcessDate(application, new Date(localMidnight - 60_000).toISOString())
     const context = await page.evaluate(async () => {
       const routine = await window.myTracer.routines.create({
         name: '跨午夜 Routine',
@@ -181,7 +182,7 @@ test('requires an explicit Routine date choice across midnight', async () => {
       return begun.value
     })
     expect(context.capturedOn).toBe('2026-08-10')
-    await setMainProcessDate(application, '2026-08-10T16:01:00.000Z')
+    await setMainProcessDate(application, new Date(localMidnight + 60_000).toISOString())
     expect(
       await page.evaluate(
         (input) =>
