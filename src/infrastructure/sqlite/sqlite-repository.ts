@@ -343,7 +343,7 @@ export class SqliteRepository implements ActionRecordRepositoryPort, RoutineReco
           `SELECT selections.action_id
            FROM today_selections AS selections
            INNER JOIN actions ON actions.id = selections.action_id
-           WHERE actions.goal_id = ? AND selections.selected_for = ?
+           WHERE actions.goal_id = ? AND selections.selected_for = ? AND selections.kind = 'focus'
            ORDER BY selections.action_id ASC`
         )
         .all(goalId, selectedFor) as readonly Row[]
