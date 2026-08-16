@@ -33,7 +33,7 @@ test('completes AC-01 through factual Progress and recalculates after a real reo
     await page.getByRole('button', { name: 'Today' }).click()
     await page.getByRole('button', { name: /运行一个 React 状态更新示例.*待行动/ }).click()
     const detail = page.getByLabel('运行一个 React 状态更新示例 行动详情')
-    await detail.getByRole('button', { name: '选入今天' }).click()
+    await detail.getByRole('button', { name: '选为今日重点' }).click()
     const panel = page.getByLabel('运行一个 React 状态更新示例 行动记录')
     await panel.getByRole('button', { name: '开始记录' }).click()
     await panel.getByLabel('投入分钟').fill('25')

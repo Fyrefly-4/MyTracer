@@ -28,6 +28,7 @@ export interface ActionDetailDto {
   readonly goal: ActionGoalSummaryDto | null
   readonly isCurrentNextAction: boolean
   readonly selectedForToday: boolean
+  readonly todayCommitment: 'focus' | 'intention' | null
   readonly canSelectForToday: boolean
   readonly canStart: boolean
   readonly unavailableReason: ActionUnavailableReasonDto | null
@@ -63,7 +64,12 @@ export interface TransitionActionInputDto extends ActionIdInputDto {
 }
 
 export type ActionErrorCode =
-  'validation' | 'not-found' | 'invalid-transition' | 'invariant-violation' | 'persistence-failed'
+  | 'validation'
+  | 'not-found'
+  | 'invalid-transition'
+  | 'invariant-violation'
+  | 'selection-conflict'
+  | 'persistence-failed'
 
 export type ActionResult<T> =
   | { readonly ok: true; readonly value: T }

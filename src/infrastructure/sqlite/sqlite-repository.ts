@@ -74,15 +74,15 @@ export class SqliteRepository implements ActionRecordRepositoryPort, RoutineReco
       .run(record)
   }
 
-  saveTodaySelection(record: TodaySelectionPersistenceRecord): void {
-    this.database
+  createTodaySelection(record: TodaySelectionPersistenceRecord): boolean {
+    const result = this.database
       .prepare(
         `INSERT INTO today_selections (action_id, selected_for, kind, selected_by, created_at)
          VALUES (@actionId, @selectedFor, @kind, @selectedBy, @createdAt)
-         ON CONFLICT(action_id, selected_for) DO UPDATE SET kind = excluded.kind,
-           selected_by = excluded.selected_by, created_at = excluded.created_at`
+         ON CONFLICT(action_id, selected_for) DO NOTHING`
       )
       .run(record)
+    return result.changes === 1
   }
 
   saveActionRecord(record: ActionRecordPersistenceRecord): void {
@@ -343,7 +343,7 @@ export class SqliteRepository implements ActionRecordRepositoryPort, RoutineReco
           `SELECT selections.action_id
            FROM today_selections AS selections
            INNER JOIN actions ON actions.id = selections.action_id
-           WHERE actions.goal_id = ? AND selections.selected_for = ?
+           WHERE actions.goal_id = ? AND selections.selected_for = ? AND selections.kind = 'focus'
            ORDER BY selections.action_id ASC`
         )
         .all(goalId, selectedFor) as readonly Row[]
@@ -469,6 +469,32 @@ export class SqliteRepository implements ActionRecordRepositoryPort, RoutineReco
     this.database
       .prepare('DELETE FROM today_selections WHERE action_id = ? AND selected_for = ?')
       .run(actionId, selectedFor)
+  }
+
+  deleteTodaySelectionByKind(
+    actionId: string,
+    selectedFor: string,
+    kind: TodaySelectionPersistenceRecord['kind']
+  ): boolean {
+    const result = this.database
+      .prepare('DELETE FROM today_selections WHERE action_id = ? AND selected_for = ? AND kind = ?')
+      .run(actionId, selectedFor, kind)
+    return result.changes === 1
+  }
+
+  updateTodaySelectionCommitment(
+    actionId: string,
+    selectedFor: string,
+    current: TodaySelectionPersistenceRecord['kind'],
+    requested: TodaySelectionPersistenceRecord['kind']
+  ): boolean {
+    const result = this.database
+      .prepare(
+        `UPDATE today_selections SET kind = ?
+         WHERE action_id = ? AND selected_for = ? AND kind = ?`
+      )
+      .run(requested, actionId, selectedFor, current)
+    return result.changes === 1
   }
 
   readSnapshot(): CorePersistenceSnapshot {

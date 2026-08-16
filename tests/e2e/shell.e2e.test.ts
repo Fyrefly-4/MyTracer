@@ -103,7 +103,10 @@ test('runs the Electron shell with an isolated userData root', async () => {
     ])
     expect(await page.evaluate(() => Object.keys(window.myTracer.today))).toEqual([
       'selectAction',
+      'selectActionAsIntention',
       'removeAction',
+      'removeActionIntention',
+      'changeActionCommitment',
       'get'
     ])
     expect(await page.evaluate(() => Object.keys(window.myTracer.records))).toEqual([

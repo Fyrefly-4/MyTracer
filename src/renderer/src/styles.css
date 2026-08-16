@@ -403,6 +403,11 @@ button:disabled {
   padding: 20px;
 }
 
+.intention-card {
+  border-color: #d8d0e4;
+  background: #fbf9fd;
+}
+
 .goal-list {
   display: grid;
   gap: 8px;
@@ -496,6 +501,11 @@ button:disabled {
   background: #dfeae1;
   cursor: pointer;
   text-align: left;
+}
+
+.intention-row > button:first-child {
+  color: #554b64;
+  background: #ece6f2;
 }
 
 .focus-row small {

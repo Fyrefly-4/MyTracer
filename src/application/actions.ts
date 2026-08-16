@@ -15,6 +15,7 @@ import {
   updateActionDetails,
   type Action
 } from '../domain/action'
+import type { TodayCommitment } from '../domain/today-selection'
 
 export type ActionApplicationErrorCode =
   'validation' | 'not-found' | 'invalid-transition' | 'invariant-violation'
@@ -49,6 +50,7 @@ export interface ActionDetailView {
   readonly goal: ActionGoalSummaryView | null
   readonly isCurrentNextAction: boolean
   readonly selectedForToday: boolean
+  readonly todayCommitment: TodayCommitment | null
   readonly canSelectForToday: boolean
   readonly canStart: boolean
   readonly unavailableReason: ActionUnavailableReason | null
@@ -127,6 +129,7 @@ export function buildActionDetail(
     goal: goal ? Object.freeze({ id: goal.id, name: goal.title, status: goal.status }) : null,
     isCurrentNextAction: goal?.currentNextActionId === action.id,
     selectedForToday: currentSelection?.kind === 'focus',
+    todayCommitment: currentSelection?.kind ?? null,
     canSelectForToday:
       activeContext && (action.status === 'pending' || action.status === 'rescheduled'),
     canStart: activeContext && action.status === 'pending',
