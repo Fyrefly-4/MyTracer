@@ -79,7 +79,10 @@ async function verifyPackagedApplication(
     ])
     expect(await page.evaluate(() => Object.keys(window.myTracer.today))).toEqual([
       'selectAction',
+      'selectActionAsIntention',
       'removeAction',
+      'removeActionIntention',
+      'changeActionCommitment',
       'get'
     ])
     expect(await page.evaluate(() => Object.keys(window.myTracer.records))).toEqual([

@@ -111,6 +111,7 @@ const actionErrorText: Record<ActionErrorCode, string> = {
   'not-found': '行动或目标已不存在，请刷新后重试。',
   'invalid-transition': '当前状态不能执行这个行动操作。',
   'invariant-violation': '当前行动、目标或下一步关系不允许这个操作。',
+  'selection-conflict': '这个行动已有另一种今日选择；请使用明确的转换操作。',
   'persistence-failed': '本地行动数据暂时无法保存或读取。'
 }
 
@@ -1568,6 +1569,17 @@ function TodayWorkspace(): ReactNode {
     }
   }
 
+  const selectAsIntention = async (actionId: string): Promise<void> => {
+    setBusy(true)
+    const result = await window.myTracer.today.selectActionAsIntention({ actionId })
+    setBusy(false)
+    if (result.ok) {
+      await refresh(actionId)
+    } else {
+      setError(actionErrorText[result.error.code])
+    }
+  }
+
   const removeFromToday = async (actionId: string): Promise<void> => {
     setBusy(true)
     const result = await window.myTracer.today.removeAction({ actionId })
@@ -1575,6 +1587,35 @@ function TodayWorkspace(): ReactNode {
     if (result.ok) {
       setToday(result.value)
       if (detail?.id === actionId) await refresh(actionId)
+    } else {
+      setError(actionErrorText[result.error.code])
+    }
+  }
+
+  const removeIntention = async (actionId: string): Promise<void> => {
+    setBusy(true)
+    const result = await window.myTracer.today.removeActionIntention({ actionId })
+    setBusy(false)
+    if (result.ok) {
+      setToday(result.value)
+      if (detail?.id === actionId) await refresh(actionId)
+    } else {
+      setError(actionErrorText[result.error.code])
+    }
+  }
+
+  const changeCommitment = async (
+    actionId: string,
+    commitment: 'focus' | 'intention'
+  ): Promise<void> => {
+    setBusy(true)
+    const result = await window.myTracer.today.changeActionCommitment({
+      actionId,
+      commitment
+    })
+    setBusy(false)
+    if (result.ok) {
+      await refresh(actionId)
     } else {
       setError(actionErrorText[result.error.code])
     }
@@ -1659,7 +1700,7 @@ function TodayWorkspace(): ReactNode {
       </div>
       <section className="goal-card planned-routines" aria-label="今日 Routine 计划">
         <div className="card-heading">
-          <p className="eyebrow">今日 Routine</p>
+          <p className="eyebrow">今日例行（Routine）</p>
           <h2>当天匹配的活跃节奏</h2>
         </div>
         <div className="planned-routine-list">
@@ -1742,6 +1783,38 @@ function TodayWorkspace(): ReactNode {
             </div>
           </div>
 
+          <div className="goal-card goal-list-card intention-card">
+            <div className="card-heading">
+              <p className="eyebrow">今日意向</p>
+              <h2>今天可能想做，不构成承诺</h2>
+            </div>
+            <div className="action-list">
+              {today?.intentions.length ? (
+                today.intentions.map((action) => (
+                  <div className="focus-row intention-row" key={action.id}>
+                    <button type="button" onClick={() => showDetail(action)}>
+                      <span>{action.title}</span>
+                      <small>
+                        {actionStatusText[action.status]}
+                        {action.goal ? ` · ${action.goal.name}` : ' · 独立行动'}
+                      </small>
+                    </button>
+                    <button
+                      className="quiet-button"
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void removeIntention(action.id)}
+                    >
+                      移出今日意向
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <p className="empty-copy">今天没有意向；未选择或未发生都不会被评价为失败。</p>
+              )}
+            </div>
+          </div>
+
           <div className="goal-card goal-list-card">
             <div className="card-heading">
               <p className="eyebrow">行动列表</p>
@@ -1752,7 +1825,14 @@ function TodayWorkspace(): ReactNode {
                 today.availableActions.map((action) => (
                   <button className="goal-list-item" type="button" key={action.id} onClick={() => showDetail(action)}>
                     <span>{action.title}</span>
-                    <small>{actionStatusText[action.status]}{action.selectedForToday ? ' · 今日已选择' : ''}</small>
+                    <small>
+                      {actionStatusText[action.status]}
+                      {action.todayCommitment === 'focus'
+                        ? ' · 今日重点'
+                        : action.todayCommitment === 'intention'
+                          ? ' · 今日意向'
+                          : ''}
+                    </small>
                   </button>
                 ))
               ) : (
@@ -1775,9 +1855,11 @@ function TodayWorkspace(): ReactNode {
               <p className="availability-copy">
                 {detail.unavailableReason
                   ? unavailableReasonText[detail.unavailableReason]
-                  : detail.selectedForToday
-                    ? '已由你选入今天，可以从这里继续。'
-                    : '当前可行动；是否选入今天由你决定。'}
+                  : detail.todayCommitment === 'focus'
+                    ? '已由你选为今日重点，可以从这里继续。'
+                    : detail.todayCommitment === 'intention'
+                      ? '这是今天可能想做的意向，不构成承诺；未发生不会产生失败或记录。'
+                      : '当前可行动；可由你选择为今日重点或非强制意向。'}
               </p>
 
               <ActionRecordingPanel
@@ -1837,11 +1919,27 @@ function TodayWorkspace(): ReactNode {
               ) : null}
 
               <div className="action-controls">
-                {detail.canSelectForToday && !detail.selectedForToday ? (
-                  <button type="button" disabled={busy} onClick={() => void selectForToday(detail.id)}>选入今天</button>
+                {detail.canSelectForToday && detail.todayCommitment === null ? (
+                  <>
+                    <button type="button" disabled={busy} onClick={() => void selectForToday(detail.id)}>选为今日重点</button>
+                    <button type="button" disabled={busy} onClick={() => void selectAsIntention(detail.id)}>加入今日意向</button>
+                  </>
                 ) : null}
-                {detail.selectedForToday ? (
-                  <button type="button" disabled={busy} onClick={() => void removeFromToday(detail.id)}>移出今天</button>
+                {detail.todayCommitment === 'focus' ? (
+                  <>
+                    <button type="button" disabled={busy} onClick={() => void removeFromToday(detail.id)}>移出今日重点</button>
+                    {detail.canSelectForToday ? (
+                      <button type="button" disabled={busy} onClick={() => void changeCommitment(detail.id, 'intention')}>转为今日意向</button>
+                    ) : null}
+                  </>
+                ) : null}
+                {detail.todayCommitment === 'intention' ? (
+                  <>
+                    <button type="button" disabled={busy} onClick={() => void removeIntention(detail.id)}>移出今日意向</button>
+                    {detail.canSelectForToday ? (
+                      <button type="button" disabled={busy} onClick={() => void changeCommitment(detail.id, 'focus')}>转为今日重点</button>
+                    ) : null}
+                  </>
                 ) : null}
                 {detail.status === 'pending' ? (
                   <>

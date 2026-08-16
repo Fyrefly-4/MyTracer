@@ -20,7 +20,12 @@ import {
   type TransitionActionInputDto,
   type UpdateActionDetailsInputDto
 } from '../contracts/actions'
-import { TODAY_CHANNELS, type GetTodayInputDto, type TodayViewDto } from '../contracts/today'
+import {
+  TODAY_CHANNELS,
+  type ChangeActionTodayCommitmentInputDto,
+  type GetTodayInputDto,
+  type TodayViewDto
+} from '../contracts/today'
 import {
   RECORD_CHANNELS,
   type ActionRecordDetailDto,
@@ -104,8 +109,16 @@ const api: MyTracerApi = Object.freeze({
   today: Object.freeze({
     selectAction: (input: ActionIdInputDto): Promise<ActionResult<ActionDetailDto>> =>
       ipcRenderer.invoke(TODAY_CHANNELS.selectAction, input),
+    selectActionAsIntention: (input: ActionIdInputDto): Promise<ActionResult<ActionDetailDto>> =>
+      ipcRenderer.invoke(TODAY_CHANNELS.selectActionAsIntention, input),
     removeAction: (input: ActionIdInputDto): Promise<ActionResult<TodayViewDto>> =>
       ipcRenderer.invoke(TODAY_CHANNELS.removeAction, input),
+    removeActionIntention: (input: ActionIdInputDto): Promise<ActionResult<TodayViewDto>> =>
+      ipcRenderer.invoke(TODAY_CHANNELS.removeActionIntention, input),
+    changeActionCommitment: (
+      input: ChangeActionTodayCommitmentInputDto
+    ): Promise<ActionResult<ActionDetailDto>> =>
+      ipcRenderer.invoke(TODAY_CHANNELS.changeActionCommitment, input),
     get: (input: GetTodayInputDto): Promise<ActionResult<TodayViewDto>> =>
       ipcRenderer.invoke(TODAY_CHANNELS.get, input)
   }),

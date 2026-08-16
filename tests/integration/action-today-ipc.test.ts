@@ -1,7 +1,7 @@
 import type { IpcMainInvokeEvent } from 'electron'
 import { describe, expect, it, vi } from 'vitest'
 import { ActionApplicationError, type ActionService } from '../../src/application/actions'
-import type { TodayService } from '../../src/application/today'
+import { TodayApplicationError, type TodayService } from '../../src/application/today'
 import { ACTION_CHANNELS } from '../../src/contracts/actions'
 import { TODAY_CHANNELS } from '../../src/contracts/today'
 
@@ -31,6 +31,7 @@ const { registerTodayIpc } = (await import(todayIpcModulePath)) as {
 const actionId = '11111111-1111-4111-8111-111111111111'
 const goalId = '22222222-2222-4222-8222-222222222222'
 const replacementId = '33333333-3333-4333-8333-333333333333'
+const instant = '2026-08-16T08:00:00.000Z'
 
 function setup() {
   const handlers = new Map<string, Handler>()
@@ -48,7 +49,20 @@ function setup() {
   }
   const todayService = {
     selectActionForToday: vi.fn(() => ({ id: actionId, selectedForToday: true })),
+    selectActionAsIntentionForToday: vi.fn(() => ({
+      id: actionId,
+      selectedForToday: false,
+      todayCommitment: 'intention'
+    })),
     removeActionFromToday: vi.fn(() => ({ localDate: '2026-08-09', focuses: [] })),
+    removeActionIntentionFromToday: vi.fn(() => ({
+      localDate: '2026-08-09',
+      intentions: []
+    })),
+    changeActionTodayCommitment: vi.fn(() => ({
+      id: actionId,
+      todayCommitment: 'intention'
+    })),
     getToday: vi.fn(() => ({ localDate: '2026-08-09', focuses: [] }))
   }
   const assertSender = vi.fn()
@@ -68,7 +82,7 @@ function setup() {
 }
 
 describe('Action and Today IPC boundary', () => {
-  it('registers fixed channels and forwards all nine valid narrow commands and queries', () => {
+  it('registers fixed channels and forwards all twelve valid narrow commands and queries', () => {
     const { actionService, assertSender, handlers, invoke, todayService } = setup()
     expect([...handlers.keys()].sort()).toEqual(
       [...Object.values(ACTION_CHANNELS), ...Object.values(TODAY_CHANNELS)].sort()
@@ -100,7 +114,15 @@ describe('Action and Today IPC boundary', () => {
     ).toMatchObject({ ok: true })
     expect(invoke(ACTION_CHANNELS.getDetail, { actionId })).toMatchObject({ ok: true })
     expect(invoke(TODAY_CHANNELS.selectAction, { actionId })).toMatchObject({ ok: true })
+    expect(invoke(TODAY_CHANNELS.selectActionAsIntention, { actionId })).toMatchObject({
+      ok: true,
+      value: { todayCommitment: 'intention' }
+    })
     expect(invoke(TODAY_CHANNELS.removeAction, { actionId })).toMatchObject({ ok: true })
+    expect(invoke(TODAY_CHANNELS.removeActionIntention, { actionId })).toMatchObject({ ok: true })
+    expect(
+      invoke(TODAY_CHANNELS.changeActionCommitment, { actionId, commitment: 'intention' })
+    ).toMatchObject({ ok: true, value: { todayCommitment: 'intention' } })
     expect(invoke(TODAY_CHANNELS.get, {})).toMatchObject({ ok: true })
 
     expect(actionService.completeAction).toHaveBeenCalledWith({
@@ -108,7 +130,8 @@ describe('Action and Today IPC boundary', () => {
       currentNextResolution: { kind: 'use-existing', actionId: replacementId }
     })
     expect(todayService.getToday).toHaveBeenCalledOnce()
-    expect(assertSender).toHaveBeenCalledTimes(9)
+    expect(todayService.changeActionTodayCommitment).toHaveBeenCalledWith(actionId, 'intention')
+    expect(assertSender).toHaveBeenCalledTimes(12)
   })
 
   it('rejects malformed IDs, blank text, unknown fields, forged dates, and invalid resolutions', () => {
@@ -127,7 +150,14 @@ describe('Action and Today IPC boundary', () => {
       [ACTION_CHANNELS.cancel, { actionId: 'bad' }],
       [ACTION_CHANNELS.getDetail, { actionId, extra: true }],
       [TODAY_CHANNELS.selectAction, { actionId, selectedFor: '2026-08-10' }],
+      [TODAY_CHANNELS.selectActionAsIntention, { actionId, selectedBy: 'user' }],
       [TODAY_CHANNELS.removeAction, { actionId: 'bad' }],
+      [TODAY_CHANNELS.removeActionIntention, { actionId, selectedFor: '2026-08-10' }],
+      [TODAY_CHANNELS.changeActionCommitment, { actionId, commitment: 'maybe' }],
+      [
+        TODAY_CHANNELS.changeActionCommitment,
+        { actionId, commitment: 'focus', createdAt: instant }
+      ],
       [TODAY_CHANNELS.get, { selectedFor: '2026-08-10' }]
     ]
     for (const [channel, ...args] of invalid) {
@@ -138,10 +168,11 @@ describe('Action and Today IPC boundary', () => {
     }
     expect(actionService.createAction).not.toHaveBeenCalled()
     expect(todayService.selectActionForToday).not.toHaveBeenCalled()
+    expect(todayService.selectActionAsIntentionForToday).not.toHaveBeenCalled()
   })
 
   it('maps private failures to stable errors and never downgrades sender rejection', () => {
-    const { actionService, assertSender, invoke } = setup()
+    const { actionService, assertSender, invoke, todayService } = setup()
     actionService.completeAction.mockImplementationOnce(() => {
       throw new ActionApplicationError('invalid-transition', 'private lifecycle detail')
     })
@@ -158,6 +189,13 @@ describe('Action and Today IPC boundary', () => {
     const failed = invoke(ACTION_CHANNELS.getDetail, { actionId })
     expect(failed).toMatchObject({ ok: false, error: { code: 'persistence-failed' } })
     expect(JSON.stringify(failed)).not.toMatch(/SELECT|real-user|private lifecycle detail/)
+
+    todayService.selectActionAsIntentionForToday.mockImplementationOnce(() => {
+      throw new TodayApplicationError('selection-conflict', 'private commitment detail')
+    })
+    const conflict = invoke(TODAY_CHANNELS.selectActionAsIntention, { actionId })
+    expect(conflict).toMatchObject({ ok: false, error: { code: 'selection-conflict' } })
+    expect(JSON.stringify(conflict)).not.toMatch(/private commitment detail/)
 
     assertSender.mockImplementationOnce(() => {
       throw new Error('Rejected IPC request from an untrusted renderer.')
