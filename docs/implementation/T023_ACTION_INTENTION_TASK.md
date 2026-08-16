@@ -1,17 +1,17 @@
 # T023 通用 Action 非强制 Today intention 任务合同
 
-> 合同状态：**已获项目所有者批准并激活；项目所有者于 2026-08-16 批准本合同及第 11 节的实现、本地提交、任务分支推送、到 `dev` 的 Draft PR 和 hosted CI 权限。**
+> 合同状态：**交付完成；项目所有者于 2026-08-16 批准合同与实施权限，并在实现、自动验证、独立复核和 hosted CI 后明确报告“T023 人工验收：通过”及批准文档收口。**
 >
 > 拟启动基线：`dev@68239dafb0d742b09abb2583544a37361157c872`（2026-08-16 已通过 `git ls-remote origin refs/heads/dev` 核验为最新 `origin/dev`；该 revision 为包含已验收 T022 的 squash merge）
 >
-> 当前权限：允许在批准文件范围内实施、创建有意义的本地提交、推送任务分支、创建/更新到 `dev` 的 Draft PR 并读取 hosted CI；Ready、merge、`main`、tag、release 与最终文档收口仍受后续门禁约束。
+> 当前权限：文档收口、独立 `docs: close T023 delivery records` commit、push 和最终 head required CI 已获批准；Ready、merge、`main`、tag 和 release 未授权。
 
 ## 1. 任务信息
 
 - **Task ID**：T023
 - **Title**：Generic non-mandatory Today intention for Action
 - **Slice / Plan item**：S2 / E2-03
-- **Task ledger status**：`active`
+- **Task ledger status**：`done`
 - **Base branch / revision**：`dev@68239dafb0d742b09abb2583544a37361157c872`
 - **Expected branch**：`task/T023-action-intention`
 - **Task worktree**：`.tmp/T023-worktree`
@@ -289,6 +289,7 @@ git diff --check
 - [x] 创建并更新到 `dev` 的 Draft PR，维护 Task/Goal/Requirements/Scope/Exclusions/Changes/Verification/Evidence/Risks/Dependency changes。
 - [x] 在每个实现候选和最终文档 head 等待并读取 required hosted CI；仅按批准范围修复失败后重新推送。
 - [x] 在首个实现候选 green CI 后，按 `mytracer-stage-development` skill 提交精确文档影响矩阵，并再次请求文档收口、独立 `docs: close T023 delivery records` commit 与 push 授权。
+- [x] 项目所有者于 2026-08-16 明确报告“T023 人工验收：通过”，并批准精确文档收口、独立 docs commit、push 和最终 hosted CI。
 - [ ] Draft → Ready 仍须项目所有者另行授权。
 - [x] Agent 不得 merge 到 `dev`，不得创建或合并 `dev → main` PR，不得创建 tag/release，不得 force-push 或删除远端分支。
 
@@ -350,3 +351,15 @@ git diff --check
 - 是否发现需求冲突、范围变化、权限变化或 S1/T021/T022 回归。
 
 不得把合同批准、实现存在、本地测试通过、Draft PR 创建或 AC-04 自动化通过称为项目所有者人工验收通过；只有合同定义的自动门禁、批准的文档收口、最终 head CI 和真实人工结果有证据时，才能按账本定义更新完成状态。
+
+## 15. 交付收口记录
+
+- **启动基线**：`dev@68239dafb0d742b09abb2583544a37361157c872`；分支 `task/T023-action-intention`；worktree `.tmp/T023-worktree`。
+- **实现与测试 revision**：`b747f41d647891d1de0ef77a61840fdbc87cfa0f`；分步提交为 `da4d2a6`（合同激活）、`581b53b`（Today commitment Domain/Application/SQLite 语义与测试）、`2047bdf`（IPC/Preload/Renderer/E2E）和 `b747f41`（独立复核后保持 Goals 遗留 `selectedForToday` 仅表示 focus）。
+- **Draft PR**：#19，base `dev`，保持 Draft；Ready 与 merge 未授权。
+- **验证**：最终实现 head `b747f41` 的本地 `npm.cmd run verify` 返回 exit code 0，102 unit、53 integration、10 Electron E2E 通过，1 项 opt-in Windows package smoke 按既有条件跳过；定向 Action intention E2E 及 S1/T021/T022 回归 9/9 通过。实现 head 的 hosted `Verification / Windows required gate` run `31936005615` / job `95137908479` 返回 success。
+- **环境说明**：首次本地 aggregate 尝试因独立 worktree 内只有 Vite 临时缓存、缺少 `node_modules/electron/dist/electron.exe` 而在 native SQLite smoke 得到 `ENOENT`；确认无产品或测试失败后，将 worktree 依赖路径联接到仓库现有、精确锁定依赖并重跑，同一实现内容完整通过。未安装或升级依赖。
+- **复核**：完整任务 diff、schema、事务边界、insert-only create、显式 commitment update、按 kind 删除、固定 IPC/Preload API、Renderer 隔离、可信 LocalDate、Query 零写入及 S1/T021/T022 回归完成独立只读复核；复核发现并修正 Goals 旧 boolean 会把 intention 误算为 focus 的兼容性边缘，最终无未解决 finding。`001_initial.sql` 与 `dev` blob hash 均为 `a92c98598e46d76b038d1298549b5ab524356884`，没有依赖、schemaVersion 或 migration 变化。
+- **人工验收**：项目所有者于 2026-08-16 按 T023 人工步骤完成测试并明确报告“人工测试结束，确认通过人工验收”。
+- **范围结论**：FR-A07、FR-T03、FR-T08、D-011、S2-Q06-A 与 AC-04 已交付；AC-03 仍由 T021/T022 既有证据支持，T023 不重复声明。兴趣专属模块、自动推荐/AI、自动滚动/记录/完成、提醒、评分、复杂日历、补记/删除及 S3～S7 保持未实现。未发现 MUST/批准决定冲突、范围或权限漂移，也未发现 S1/T021/T022 回归。
+- **最终门禁**：本独立文档 commit push 后再次等待并读取最新 PR head required CI；该 CI 通过后只进行 Draft PR merge handoff。Agent 不自行 Ready 或 merge。

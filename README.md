@@ -18,6 +18,8 @@ MyTracer 是一个面向个人本地使用的 Windows 桌面应用，用于帮�
 - T013 已完成快速/深入 ActionRecord、Main 内存 recording context、跨午夜确认、显式 post-record 处理与真实重开纵向路径；本地 `verify`、PR #10 实现 head 的 hosted Windows gate 和项目所有者人工验收均通过。
 - T014 已完成事实型 Progress：支持 Goal/包含端点日期筛选、ActionRecord 分钟与次数、确认理解、开放困惑及真实关闭重开；本地/hosted `verify`、独立 review、PR #11 合并和项目所有者完整人工 AC-01 均已完成。
 - T011～T014 与门禁修复 T801 已由 PR #13 统一归档并合入 `dev`；最终实现验收 revision `74ebe346a86cf431d87e02e8a1220b713b33901c` 的本地/hosted `verify`、完整 AC-01、Windows package 与 unpacked/NSIS smoke 均通过。首轮 package smoke 失败仍保留在证据账本。
+- T021 已完成 Routine 生命周期、ISO 星期节奏、Goal 接缝和 Today 计划项；T022 已完成 RoutineRecord 四显式结果、缺行 `unknown`、非计划日事实及统一事实型 Progress，项目所有者完整人工 AC-03 已通过。
+- T023 已完成通用 Action 的非强制 Today intention：focus/intention 明确分区、同日互斥并由用户显式转换，未发生时不生成记录、失败或 Progress 事实，也不自动滚动到次日；本地/hosted 自动化、独立复核和项目所有者完整人工 AC-04 已通过。
 
 不要把架构完成理解为产品已经实现。
 
@@ -137,4 +139,4 @@ task/Txxx-short-name
 2. 里程碑 PR 必须在 exact head CI 与项目所有者批准后使用 merge commit 合入。
 3. PR 创建不授权合入 `main`；tag 和 GitHub Release 仍须在合入后另行批准。
 
-T011～T014 已覆盖 Goal、Action/Today、ActionRecord、事实型 Progress 与完整 AC-01；完整 FR-P02 的 RoutineRecord 分支仍属于 T022，T014 也不声明完整 FR-D01 或 AC-07。AC-01 通过不等于 G3/S1、MyTracer Demo、merge 或发布自动通过。
+T011～T014 已覆盖 Goal、Action/Today、ActionRecord、事实型 Progress 与完整 AC-01；T021～T023 已覆盖 S2 的 Routine 生命周期与事实、通用 intention，以及完整 AC-03/AC-04。FR-R08 的修改/补记/删除仍属于 T031，完整 FR-D01、AC-07、G4 Demo、merge 与发布均不能由这些任务的通过自动推定。
