@@ -3,7 +3,11 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { ActionService } from '../../src/application/actions'
 import { GoalService } from '../../src/application/goals'
 import { TodayService } from '../../src/application/today'
-import type { RepositoryPort, UnitOfWorkPort } from '../../src/application/ports/persistence'
+import {
+  asActionRepository,
+  type RepositoryPort,
+  type UnitOfWorkPort
+} from '../../src/application/ports/persistence'
 import { SqliteConnection } from '../../src/infrastructure/sqlite/sqlite-connection'
 import { FakeClock } from '../support/fake-clock'
 import {
@@ -50,6 +54,130 @@ afterEach(async () => {
 })
 
 describe('Action and Today SQLite integration', () => {
+  it('uses insert-only selection writes and explicit commitment updates without replacing facts', async () => {
+    const { connection } = await openDatabase()
+    const clock = new FakeClock({ instant, localDate: '2026-08-09', timeZone: 'Asia/Shanghai' })
+    const services = servicesFor(connection, clock, ['action-1'])
+    const repository = asActionRepository(connection.repository)
+    services.actions.createAction({ title: 'Keep personal time open' })
+
+    expect(
+      repository.createTodaySelection({
+        actionId: 'action-1',
+        selectedFor: '2026-08-09',
+        kind: 'focus',
+        selectedBy: 'user',
+        createdAt: instant
+      })
+    ).toBe(true)
+    expect(
+      repository.createTodaySelection({
+        actionId: 'action-1',
+        selectedFor: '2026-08-09',
+        kind: 'intention',
+        selectedBy: 'user',
+        createdAt: '2026-08-09T09:00:00.000Z'
+      })
+    ).toBe(false)
+    expect(repository.findTodaySelection('action-1', '2026-08-09')).toEqual({
+      actionId: 'action-1',
+      selectedFor: '2026-08-09',
+      kind: 'focus',
+      selectedBy: 'user',
+      createdAt: instant
+    })
+    expect(
+      repository.updateTodaySelectionCommitment('action-1', '2026-08-09', 'focus', 'intention')
+    ).toBe(true)
+    expect(repository.findTodaySelection('action-1', '2026-08-09')).toMatchObject({
+      kind: 'intention',
+      createdAt: instant
+    })
+    expect(
+      repository.updateTodaySelectionCommitment('action-1', '2026-08-09', 'focus', 'intention')
+    ).toBe(false)
+    connection.close()
+  })
+
+  it('persists an intention, requires explicit conversion, and never carries it across LocalDate', async () => {
+    const { path, connection } = await openDatabase()
+    const clock = new FakeClock({ instant, localDate: '2026-08-09', timeZone: 'Asia/Shanghai' })
+    const services = servicesFor(connection, clock, ['action-1'])
+    const repository = asActionRepository(connection.repository)
+    services.actions.createAction({ title: 'Watch an episode if it feels right' })
+
+    expect(services.today.selectActionAsIntentionForToday('action-1')).toMatchObject({
+      status: 'pending',
+      selectedForToday: false,
+      todayCommitment: 'intention'
+    })
+    const intention = repository.findTodaySelection('action-1', '2026-08-09')
+    expect(() => services.today.selectActionForToday('action-1')).toThrowError(
+      expect.objectContaining({ code: 'selection-conflict' })
+    )
+    expect(repository.findTodaySelection('action-1', '2026-08-09')).toEqual(intention)
+    services.today.changeActionTodayCommitment('action-1', 'focus')
+    services.today.changeActionTodayCommitment('action-1', 'intention')
+    expect(repository.findTodaySelection('action-1', '2026-08-09')).toEqual(intention)
+    expect(connection.repository.readSnapshot().actionRecords).toEqual([])
+
+    clock.setState({
+      instant: '2026-08-10T08:00:00.000Z',
+      localDate: '2026-08-10',
+      timeZone: 'Asia/Shanghai'
+    })
+    const beforeQueries = connection.repository.readSnapshot()
+    expect(services.today.getToday()).toMatchObject({ focuses: [], intentions: [] })
+    services.today.getToday()
+    expect(connection.repository.readSnapshot()).toEqual(beforeQueries)
+    connection.close()
+
+    const reopened = SqliteConnection.open(path)
+    try {
+      const reopenedServices = servicesFor(reopened, clock, [])
+      const reopenedRepository = asActionRepository(reopened.repository)
+      expect(reopenedServices.today.getToday()).toMatchObject({ focuses: [], intentions: [] })
+      expect(reopenedRepository.findTodaySelection('action-1', '2026-08-09')).toEqual(intention)
+      expect(reopened.repository.readSnapshot().actionRecords).toEqual([])
+      expect(reopened.repository.findActionById('action-1')).toMatchObject({ status: 'pending' })
+    } finally {
+      reopened.close()
+    }
+  })
+
+  it('rolls back rescheduled restoration when intention creation fails', async () => {
+    const { connection } = await openDatabase()
+    const clock = new FakeClock({ instant, localDate: '2026-08-09', timeZone: 'Asia/Shanghai' })
+    const initial = servicesFor(connection, clock, ['action-1'])
+    initial.actions.createAction({ title: 'Maybe play a game' })
+    initial.actions.rescheduleAction({ actionId: 'action-1' })
+    const before = connection.repository.readSnapshot()
+    const failingUnitOfWork: UnitOfWorkPort = {
+      transaction: <T>(work: (repository: RepositoryPort) => T): T =>
+        connection.transaction((repository) => {
+          const failingRepository = new Proxy(repository, {
+            get(target, property, receiver) {
+              if (property === 'createTodaySelection') {
+                return () => {
+                  throw new Error('injected intention write failure')
+                }
+              }
+              const value = Reflect.get(target, property, receiver) as unknown
+              return typeof value === 'function' ? value.bind(target) : value
+            }
+          })
+          return work(failingRepository)
+        })
+    }
+    const failing = servicesFor(connection, clock, [], failingUnitOfWork)
+
+    expect(() => failing.today.selectActionAsIntentionForToday('action-1')).toThrow(
+      /injected intention write failure/
+    )
+    expect(connection.repository.readSnapshot()).toEqual(before)
+    connection.close()
+  })
+
   it('preserves terminal Today facts, current-next replacement, partial history, and real reopen', async () => {
     const { path, connection } = await openDatabase()
     const clock = new FakeClock({ instant, localDate: '2026-08-09', timeZone: 'Asia/Shanghai' })
@@ -118,7 +246,7 @@ describe('Action and Today SQLite integration', () => {
     const services = servicesFor(connection, clock, ['action-1'])
     const action = services.actions.createAction({ title: 'Standalone action' })
     services.today.selectActionForToday(action.id)
-    connection.repository.saveTodaySelection({
+    connection.repository.createTodaySelection({
       actionId: action.id,
       selectedFor: '2026-08-08',
       kind: 'focus',

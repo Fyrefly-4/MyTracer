@@ -64,7 +64,7 @@ function populate(repository: RepositoryPort): void {
     updatedAt: timestamp
   })
   repository.saveRoutineScheduleDay({ routineId: 'routine-1', weekday: 1 })
-  repository.saveTodaySelection({
+  repository.createTodaySelection({
     actionId: 'action-1',
     selectedFor: '2026-08-09',
     kind: 'focus',

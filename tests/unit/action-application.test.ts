@@ -42,11 +42,12 @@ function memoryContext(seed?: {
     saveGoal: (goal: GoalPersistenceRecord) => goals.set(goal.id, Object.freeze({ ...goal })),
     saveAction: (action: ActionPersistenceRecord) =>
       actions.set(action.id, Object.freeze({ ...action })),
-    saveTodaySelection: (selection: TodaySelectionPersistenceRecord) =>
-      selections.set(
-        `${selection.actionId}:${selection.selectedFor}`,
-        Object.freeze({ ...selection })
-      ),
+    createTodaySelection: (selection: TodaySelectionPersistenceRecord) => {
+      const key = `${selection.actionId}:${selection.selectedFor}`
+      if (selections.has(key)) return false
+      selections.set(key, Object.freeze({ ...selection }))
+      return true
+    },
     findGoalById: (id: string) => goals.get(id) ?? null,
     findActionById: (id: string) => actions.get(id) ?? null,
     findTodaySelection: (actionId: string, date: string) =>
@@ -56,6 +57,27 @@ function memoryContext(seed?: {
       [...selections.values()].filter((selection) => selection.selectedFor === date),
     deleteTodaySelection: (actionId: string, date: string) =>
       void selections.delete(`${actionId}:${date}`),
+    deleteTodaySelectionByKind: (
+      actionId: string,
+      date: string,
+      kind: TodaySelectionPersistenceRecord['kind']
+    ) => {
+      const key = `${actionId}:${date}`
+      if (selections.get(key)?.kind !== kind) return false
+      return selections.delete(key)
+    },
+    updateTodaySelectionCommitment: (
+      actionId: string,
+      date: string,
+      current: TodaySelectionPersistenceRecord['kind'],
+      requested: TodaySelectionPersistenceRecord['kind']
+    ) => {
+      const key = `${actionId}:${date}`
+      const selection = selections.get(key)
+      if (!selection || selection.kind !== current) return false
+      selections.set(key, Object.freeze({ ...selection, kind: requested }))
+      return true
+    },
     readSnapshot: (): CorePersistenceSnapshot => ({
       goals: [...goals.values()],
       actions: [...actions.values()],

@@ -73,8 +73,12 @@ function setup(goalStatus: GoalPersistenceRecord['status'] = 'active') {
   ]
   const repository = {
     saveAction: (action: ActionPersistenceRecord) => actions.set(action.id, { ...action }),
-    saveTodaySelection: (selection: TodaySelectionPersistenceRecord) =>
-      selections.set(`${selection.actionId}:${selection.selectedFor}`, { ...selection }),
+    createTodaySelection: (selection: TodaySelectionPersistenceRecord) => {
+      const key = `${selection.actionId}:${selection.selectedFor}`
+      if (selections.has(key)) return false
+      selections.set(key, { ...selection })
+      return true
+    },
     findGoalById: (id: string) => (id === goal.id ? goal : null),
     findActionById: (id: string) => actions.get(id) ?? null,
     findTodaySelection: (id: string, date: string) => selections.get(`${id}:${date}`) ?? null,
@@ -91,6 +95,27 @@ function setup(goalStatus: GoalPersistenceRecord['status'] = 'active') {
     findRoutineRecordByRoutineAndDate: () => null,
     listRoutineRecordsByRoutineId: () => [],
     deleteTodaySelection: (id: string, date: string) => void selections.delete(`${id}:${date}`),
+    deleteTodaySelectionByKind: (
+      id: string,
+      date: string,
+      kind: TodaySelectionPersistenceRecord['kind']
+    ) => {
+      const key = `${id}:${date}`
+      if (selections.get(key)?.kind !== kind) return false
+      return selections.delete(key)
+    },
+    updateTodaySelectionCommitment: (
+      id: string,
+      date: string,
+      current: TodaySelectionPersistenceRecord['kind'],
+      requested: TodaySelectionPersistenceRecord['kind']
+    ) => {
+      const key = `${id}:${date}`
+      const selection = selections.get(key)
+      if (!selection || selection.kind !== current) return false
+      selections.set(key, { ...selection, kind: requested })
+      return true
+    },
     readSnapshot: (): CorePersistenceSnapshot => ({
       goals: [goal],
       actions: [...actions.values()],
@@ -150,6 +175,62 @@ describe('Today application', () => {
     expect(service.getToday().focuses).toHaveLength(12)
   })
 
+  it('selects and removes a standalone intention without changing Action state', () => {
+    const { actions, repository, service } = setup()
+    const selected = service.selectActionAsIntentionForToday('standalone')
+    expect(selected).toMatchObject({
+      id: 'standalone',
+      status: 'pending',
+      selectedForToday: false,
+      todayCommitment: 'intention'
+    })
+    expect(actions.get('standalone')?.status).toBe('pending')
+    expect(service.getToday()).toMatchObject({
+      focuses: [],
+      intentions: [
+        expect.objectContaining({
+          id: 'standalone',
+          commitment: 'intention',
+          selectedForToday: false
+        })
+      ]
+    })
+    service.selectActionAsIntentionForToday('standalone')
+    expect(repository.readSnapshot().todaySelections).toHaveLength(1)
+    service.removeActionIntentionFromToday('standalone')
+    expect(repository.findTodaySelection('standalone', '2026-08-09')).toBeNull()
+    expect(actions.get('standalone')?.status).toBe('pending')
+  })
+
+  it('rejects silent commitment replacement and changes only through an explicit command', () => {
+    const { repository, service } = setup()
+    service.selectActionForToday('action-1')
+    const original = repository.findTodaySelection('action-1', '2026-08-09')
+    expect(() => service.selectActionAsIntentionForToday('action-1')).toThrowError(
+      expect.objectContaining({ code: 'selection-conflict' })
+    )
+    expect(repository.findTodaySelection('action-1', '2026-08-09')).toEqual(original)
+    expect(() => service.removeActionIntentionFromToday('action-1')).toThrowError(
+      expect.objectContaining({ code: 'selection-conflict' })
+    )
+    expect(service.changeActionTodayCommitment('action-1', 'intention')).toMatchObject({
+      selectedForToday: false,
+      todayCommitment: 'intention'
+    })
+    expect(repository.findTodaySelection('action-1', '2026-08-09')).toEqual({
+      ...original,
+      kind: 'intention'
+    })
+    expect(service.getToday().intentions[0]).toMatchObject({
+      id: 'action-1',
+      commitment: 'intention'
+    })
+    expect(service.changeActionTodayCommitment('action-1', 'focus')).toMatchObject({
+      selectedForToday: true,
+      todayCommitment: 'focus'
+    })
+  })
+
   it('removes only the current LocalDate and never carries a focus to the next day', () => {
     const { clock, repository, service } = setup()
     service.selectActionForToday('action-1')
@@ -159,6 +240,7 @@ describe('Today application', () => {
       timeZone: 'Asia/Shanghai'
     })
     expect(service.getToday()).toMatchObject({ localDate: '2026-08-10', focuses: [] })
+    expect(service.getToday().intentions).toEqual([])
     expect(repository.findTodaySelection('action-1', '2026-08-09')).not.toBeNull()
     service.removeActionFromToday('action-1')
     expect(repository.findTodaySelection('action-1', '2026-08-09')).not.toBeNull()
@@ -167,7 +249,7 @@ describe('Today application', () => {
   it('keeps paused/ended Goal selections visible but rejects new focus selection', () => {
     for (const status of ['paused', 'ended'] as const) {
       const context = setup(status)
-      context.repository.saveTodaySelection({
+      context.repository.createTodaySelection({
         actionId: 'action-1',
         selectedFor: '2026-08-09',
         kind: 'focus',

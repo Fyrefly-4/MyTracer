@@ -174,7 +174,7 @@ export interface RepositoryPort {
   saveAction(record: ActionPersistenceRecord): void
   saveRoutine(record: RoutinePersistenceRecord): void
   saveRoutineScheduleDay(record: RoutineScheduleDayPersistenceRecord): void
-  saveTodaySelection(record: TodaySelectionPersistenceRecord): void
+  createTodaySelection(record: TodaySelectionPersistenceRecord): boolean
   saveActionRecord(record: ActionRecordPersistenceRecord): void
   saveRoutineRecord(record: RoutineRecordPersistenceRecord): void
   saveUnderstanding(record: UnderstandingPersistenceRecord): void
@@ -196,6 +196,17 @@ export interface ActionRepositoryPort extends RepositoryPort {
   listActions(): readonly ActionPersistenceRecord[]
   listTodaySelectionsOn(selectedFor: string): readonly TodaySelectionPersistenceRecord[]
   deleteTodaySelection(actionId: string, selectedFor: string): void
+  deleteTodaySelectionByKind(
+    actionId: string,
+    selectedFor: string,
+    kind: TodaySelectionPersistenceRecord['kind']
+  ): boolean
+  updateTodaySelectionCommitment(
+    actionId: string,
+    selectedFor: string,
+    current: TodaySelectionPersistenceRecord['kind'],
+    requested: TodaySelectionPersistenceRecord['kind']
+  ): boolean
 }
 
 export interface ActionRecordRepositoryPort extends ActionRepositoryPort {
@@ -233,10 +244,13 @@ export interface RoutineRecordRepositoryPort extends RoutineRepositoryPort {
 export function asActionRepository(repository: RepositoryPort): ActionRepositoryPort {
   const candidate = repository as Partial<ActionRepositoryPort>
   if (
+    typeof candidate.createTodaySelection !== 'function' ||
     typeof candidate.findTodaySelection !== 'function' ||
     typeof candidate.listActions !== 'function' ||
     typeof candidate.listTodaySelectionsOn !== 'function' ||
-    typeof candidate.deleteTodaySelection !== 'function'
+    typeof candidate.deleteTodaySelection !== 'function' ||
+    typeof candidate.deleteTodaySelectionByKind !== 'function' ||
+    typeof candidate.updateTodaySelectionCommitment !== 'function'
   ) {
     throw new TypeError('Repository does not provide the Action/Today contract.')
   }

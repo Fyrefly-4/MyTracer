@@ -81,7 +81,9 @@ class MemoryRoutinePersistence implements RoutineRepositoryPort, UnitOfWorkPort 
 
   saveGoal(): void {}
   saveAction(): void {}
-  saveTodaySelection(): void {}
+  createTodaySelection(): boolean {
+    return true
+  }
   saveActionRecord(): void {}
   saveRoutineRecord(): void {}
   saveUnderstanding(): void {}

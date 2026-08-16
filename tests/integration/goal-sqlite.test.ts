@@ -57,7 +57,7 @@ describe('Goal SQLite integration', () => {
       updatedAt: instant
     })
     connection.repository.saveRoutineScheduleDay({ routineId: 'routine-1', weekday: 1 })
-    connection.repository.saveTodaySelection({
+    connection.repository.createTodaySelection({
       actionId: 'action-1',
       selectedFor: '2026-08-09',
       kind: 'focus',

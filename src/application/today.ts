@@ -23,6 +23,29 @@ import { createLocalDate } from '../domain/local-date'
 import { isRoutinePlannedOn, normalizeRoutineWeekdays } from '../domain/routine'
 import { routineRecordView, type RoutineRecordView } from './routine-records'
 import type { RoutineRecordState } from '../domain/routine-record'
+import {
+  assertTodayCommitmentChange,
+  assertTodaySelectionCanBeRemoved,
+  decideTodaySelectionCreate,
+  TodaySelectionDomainError,
+  type TodayCommitment
+} from '../domain/today-selection'
+
+export type TodayApplicationErrorCode = ActionApplicationError['code'] | 'selection-conflict'
+
+export class TodayApplicationError extends Error {
+  public constructor(
+    readonly code: TodayApplicationErrorCode,
+    message: string
+  ) {
+    super(message)
+    this.name = 'TodayApplicationError'
+  }
+}
+
+export interface TodayActionView extends ActionDetailView {
+  readonly commitment: TodayCommitment
+}
 
 export interface TodayPlannedRoutineView {
   readonly id: string
@@ -37,7 +60,8 @@ export interface TodayPlannedRoutineView {
 
 export interface TodayView {
   readonly localDate: string
-  readonly focuses: readonly ActionDetailView[]
+  readonly focuses: readonly TodayActionView[]
+  readonly intentions: readonly TodayActionView[]
   readonly availableActions: readonly ActionDetailView[]
   readonly plannedRoutines: readonly TodayPlannedRoutineView[]
 }
@@ -50,7 +74,10 @@ export interface TodayServiceDependencies {
 
 function mapDomainError(error: unknown): never {
   if (error instanceof ActionDomainError) {
-    throw new ActionApplicationError(error.code, error.message)
+    throw new TodayApplicationError(error.code, error.message)
+  }
+  if (error instanceof TodaySelectionDomainError) {
+    throw new TodayApplicationError(error.code, error.message)
   }
   throw error
 }
@@ -65,10 +92,16 @@ function linkedGoal(repository: RepositoryPort, goalId: string | null) {
 }
 
 export function buildTodayView(repository: ActionRepositoryPort, localDate: string): TodayView {
-  const focuses = repository
-    .listTodaySelectionsOn(localDate)
-    .filter((selection) => selection.kind === 'focus')
-    .map((selection) => buildActionDetail(repository, selection.actionId, localDate))
+  const selections = repository.listTodaySelectionsOn(localDate)
+  const toTodayAction = (selection: (typeof selections)[number]): TodayActionView =>
+    Object.freeze({
+      ...buildActionDetail(repository, selection.actionId, localDate),
+      commitment: selection.kind
+    })
+  const focuses = selections.filter((selection) => selection.kind === 'focus').map(toTodayAction)
+  const intentions = selections
+    .filter((selection) => selection.kind === 'intention')
+    .map(toTodayAction)
   const availableActions = repository
     .listActions()
     .map((action) => buildActionDetail(repository, action.id, localDate))
@@ -98,6 +131,7 @@ export function buildTodayView(repository: ActionRepositoryPort, localDate: stri
   return Object.freeze({
     localDate,
     focuses: Object.freeze(focuses),
+    intentions: Object.freeze(intentions),
     availableActions: Object.freeze(availableActions),
     plannedRoutines: Object.freeze(plannedRoutines)
   })
@@ -107,6 +141,14 @@ export class TodayService {
   public constructor(private readonly dependencies: TodayServiceDependencies) {}
 
   public selectActionForToday(actionId: string): ActionDetailView {
+    return this.selectAction(actionId, 'focus')
+  }
+
+  public selectActionAsIntentionForToday(actionId: string): ActionDetailView {
+    return this.selectAction(actionId, 'intention')
+  }
+
+  private selectAction(actionId: string, commitment: TodayCommitment): ActionDetailView {
     const snapshot = this.dependencies.clock.snapshot()
     try {
       return this.dependencies.unitOfWork.transaction((baseRepository) => {
@@ -115,12 +157,7 @@ export class TodayService {
         const goal = linkedGoal(repository, current.goalId)
         assertActionCanBeSelectedForToday(actionFromPersistence(current), goal)
         const existing = repository.findTodaySelection(actionId, String(snapshot.localDate))
-        if (existing && existing.kind !== 'focus') {
-          throw new ActionApplicationError(
-            'invariant-violation',
-            'This Action already has another Today commitment.'
-          )
-        }
+        const decision = decideTodaySelectionCreate(existing?.kind ?? null, commitment)
         const restored = restoreRescheduledActionForToday(
           actionFromPersistence(current),
           snapshot.instant
@@ -128,14 +165,18 @@ export class TodayService {
         if (restored !== current && current.status === 'rescheduled') {
           repository.saveAction(restored)
         }
-        if (!existing) {
-          repository.saveTodaySelection({
+        if (decision === 'create') {
+          const created = repository.createTodaySelection({
             actionId,
             selectedFor: String(snapshot.localDate),
-            kind: 'focus',
+            kind: commitment,
             selectedBy: 'user',
             createdAt: snapshot.instant
           })
+          if (!created) {
+            const concurrent = repository.findTodaySelection(actionId, String(snapshot.localDate))
+            decideTodaySelectionCreate(concurrent?.kind ?? null, commitment)
+          }
         }
         return buildActionDetail(repository, actionId, String(snapshot.localDate))
       })
@@ -145,22 +186,72 @@ export class TodayService {
   }
 
   public removeActionFromToday(actionId: string): TodayView {
+    return this.removeAction(actionId, 'focus')
+  }
+
+  public removeActionIntentionFromToday(actionId: string): TodayView {
+    return this.removeAction(actionId, 'intention')
+  }
+
+  private removeAction(actionId: string, commitment: TodayCommitment): TodayView {
     const snapshot = this.dependencies.clock.snapshot()
-    return this.dependencies.unitOfWork.transaction((baseRepository) => {
-      const repository = asActionRepository(baseRepository)
-      loadAction(repository, actionId)
-      const existing = repository.findTodaySelection(actionId, String(snapshot.localDate))
-      if (existing?.kind === 'intention') {
-        throw new ActionApplicationError(
-          'invariant-violation',
-          'T012 cannot remove an intention selection.'
+    try {
+      return this.dependencies.unitOfWork.transaction((baseRepository) => {
+        const repository = asActionRepository(baseRepository)
+        loadAction(repository, actionId)
+        const existing = repository.findTodaySelection(actionId, String(snapshot.localDate))
+        assertTodaySelectionCanBeRemoved(existing?.kind ?? null, commitment)
+        if (existing) {
+          const deleted = repository.deleteTodaySelectionByKind(
+            actionId,
+            String(snapshot.localDate),
+            commitment
+          )
+          if (!deleted) {
+            throw new TodayApplicationError(
+              'invariant-violation',
+              'The Today commitment changed before it could be removed.'
+            )
+          }
+        }
+        return buildTodayView(repository, String(snapshot.localDate))
+      })
+    } catch (error) {
+      mapDomainError(error)
+    }
+  }
+
+  public changeActionTodayCommitment(
+    actionId: string,
+    commitment: TodayCommitment
+  ): ActionDetailView {
+    const snapshot = this.dependencies.clock.snapshot()
+    try {
+      return this.dependencies.unitOfWork.transaction((baseRepository) => {
+        const repository = asActionRepository(baseRepository)
+        const current = loadAction(repository, actionId)
+        const goal = linkedGoal(repository, current.goalId)
+        assertActionCanBeSelectedForToday(actionFromPersistence(current), goal)
+        const existing = repository.findTodaySelection(actionId, String(snapshot.localDate))
+        const currentCommitment = existing?.kind ?? null
+        assertTodayCommitmentChange(currentCommitment, commitment)
+        const changed = repository.updateTodaySelectionCommitment(
+          actionId,
+          String(snapshot.localDate),
+          currentCommitment,
+          commitment
         )
-      }
-      if (existing) {
-        repository.deleteTodaySelection(actionId, String(snapshot.localDate))
-      }
-      return buildTodayView(repository, String(snapshot.localDate))
-    })
+        if (!changed) {
+          throw new TodayApplicationError(
+            'invariant-violation',
+            'The Today commitment changed before it could be updated.'
+          )
+        }
+        return buildActionDetail(repository, actionId, String(snapshot.localDate))
+      })
+    } catch (error) {
+      mapDomainError(error)
+    }
   }
 
   public getToday(): TodayView {
