@@ -20,6 +20,7 @@ MyTracer 是一个面向个人本地使用的 Windows 桌面应用，用于帮�
 - T011～T014 与门禁修复 T801 已由 PR #13 统一归档并合入 `dev`；最终实现验收 revision `74ebe346a86cf431d87e02e8a1220b713b33901c` 的本地/hosted `verify`、完整 AC-01、Windows package 与 unpacked/NSIS smoke 均通过。首轮 package smoke 失败仍保留在证据账本。
 - T021 已完成 Routine 生命周期、ISO 星期节奏、Goal 接缝和 Today 计划项；T022 已完成 RoutineRecord 四显式结果、缺行 `unknown`、非计划日事实及统一事实型 Progress，项目所有者完整人工 AC-03 已通过。
 - T023 已完成通用 Action 的非强制 Today intention：focus/intention 明确分区、同日互斥并由用户显式转换，未发生时不生成记录、失败或 Progress 事实，也不自动滚动到次日；本地/hosted 自动化、独立复核和项目所有者完整人工 AC-04 已通过。
+- T021～T023 与门禁修复 T802 已由 PR #20 统一归档并合入 `dev`；最终验收 revision `a9db1eb26134dac83b01f4a4d7da30f92a271242` 的本地/hosted `verify`、AC-01/03/04、LocalDate/SQLite/S1-only v1 数据守恒、Windows package、unpacked/NSIS smoke 与独立聚合 review 均通过。
 
 不要把架构完成理解为产品已经实现。
 
@@ -135,7 +136,7 @@ task/Txxx-short-name
 
 ## 下一步
 
-1. S1 的后续里程碑推进只通过 `dev → main` PR，不直接 push `main`。
+1. S2 的后续里程碑推进只通过 `dev → main` PR，不直接 push `main`。
 2. 里程碑 PR 必须在 exact head CI 与项目所有者批准后使用 merge commit 合入。
 3. PR 创建不授权合入 `main`；tag 和 GitHub Release 仍须在合入后另行批准。
 
