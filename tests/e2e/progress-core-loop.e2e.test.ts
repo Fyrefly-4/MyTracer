@@ -33,7 +33,7 @@ test('completes AC-01 through factual Progress and recalculates after a real reo
     await page.getByRole('button', { name: 'Today' }).click()
     await page.getByRole('button', { name: /运行一个 React 状态更新示例.*待行动/ }).click()
     const detail = page.getByLabel('运行一个 React 状态更新示例 行动详情')
-    await detail.getByRole('button', { name: '选入今天' }).click()
+    await detail.getByRole('button', { name: '选为今日重点' }).click()
     const panel = page.getByLabel('运行一个 React 状态更新示例 行动记录')
     await panel.getByRole('button', { name: '开始记录' }).click()
     await panel.getByLabel('投入分钟').fill('25')
@@ -51,7 +51,7 @@ test('completes AC-01 through factual Progress and recalculates after a real reo
     await expect(page.getByText('状态更新会进入队列')).toBeVisible()
     await expect(page.getByText('批处理何时结束')).toBeVisible()
     await expect(page.getByText('运行一个 React 状态更新示例', { exact: true })).toBeVisible()
-    await expect(page.getByLabel('进展汇总').locator('article')).toHaveCount(2)
+    await expect(page.getByLabel('进展汇总').locator('article')).toHaveCount(4)
     await expect(page.getByLabel('进展汇总')).not.toContainText(/评分|掌握度|失败率|排名|自律/)
 
     const beforeReopen = await page.evaluate(() => window.myTracer.progress.get({}))

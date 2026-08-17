@@ -57,8 +57,9 @@ class MemoryPersistence implements RepositoryPort, UnitOfWorkPort {
   saveRoutineScheduleDay(record: RoutineScheduleDayPersistenceRecord): void {
     this.routineScheduleDays.push(record)
   }
-  saveTodaySelection(record: TodaySelectionPersistenceRecord): void {
+  createTodaySelection(record: TodaySelectionPersistenceRecord): boolean {
     this.todaySelections.push(record)
+    return true
   }
   saveActionRecord(record: ActionRecordPersistenceRecord): void {
     this.upsert(this.actionRecords, record)

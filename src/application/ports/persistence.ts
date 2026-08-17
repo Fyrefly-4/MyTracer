@@ -1,5 +1,6 @@
 export type GoalStatus = 'active' | 'paused' | 'ended'
 export type ActionStatus = 'pending' | 'completed' | 'cancelled' | 'rescheduled'
+export type RoutineStatus = 'active' | 'paused' | 'ended'
 export type RoutineRecordOutcome = 'target_met' | 'acted' | 'intentional_rest' | 'not_done'
 
 export interface GoalPersistenceRecord {
@@ -28,7 +29,7 @@ export interface RoutinePersistenceRecord {
   readonly name: string
   readonly minimumAction: string
   readonly description: string | null
-  readonly status: GoalStatus
+  readonly status: RoutineStatus
   readonly createdAt: string
   readonly updatedAt: string
 }
@@ -137,6 +138,24 @@ export interface ProgressQueryRowPersistenceRecord {
   readonly confusionCreatedAt: string | null
 }
 
+export interface RoutineProgressQueryRecordPersistence {
+  readonly recordId: string
+  readonly routineId: string
+  readonly goalId: string | null
+  readonly routineName: string
+  readonly occurredOn: string
+  readonly outcome: RoutineRecordOutcome
+  readonly plannedForDate: boolean
+  readonly durationMinutes: number | null
+  readonly note: string | null
+  readonly recordCreatedAt: string
+}
+
+export interface ProgressQuerySnapshotPersistence {
+  readonly actionRows: readonly ProgressQueryRowPersistenceRecord[]
+  readonly routineRecords: readonly RoutineProgressQueryRecordPersistence[]
+}
+
 export interface CorePersistenceSnapshot {
   readonly goals: readonly GoalPersistenceRecord[]
   readonly actions: readonly ActionPersistenceRecord[]
@@ -155,7 +174,7 @@ export interface RepositoryPort {
   saveAction(record: ActionPersistenceRecord): void
   saveRoutine(record: RoutinePersistenceRecord): void
   saveRoutineScheduleDay(record: RoutineScheduleDayPersistenceRecord): void
-  saveTodaySelection(record: TodaySelectionPersistenceRecord): void
+  createTodaySelection(record: TodaySelectionPersistenceRecord): boolean
   saveActionRecord(record: ActionRecordPersistenceRecord): void
   saveRoutineRecord(record: RoutineRecordPersistenceRecord): void
   saveUnderstanding(record: UnderstandingPersistenceRecord): void
@@ -177,6 +196,17 @@ export interface ActionRepositoryPort extends RepositoryPort {
   listActions(): readonly ActionPersistenceRecord[]
   listTodaySelectionsOn(selectedFor: string): readonly TodaySelectionPersistenceRecord[]
   deleteTodaySelection(actionId: string, selectedFor: string): void
+  deleteTodaySelectionByKind(
+    actionId: string,
+    selectedFor: string,
+    kind: TodaySelectionPersistenceRecord['kind']
+  ): boolean
+  updateTodaySelectionCommitment(
+    actionId: string,
+    selectedFor: string,
+    current: TodaySelectionPersistenceRecord['kind'],
+    requested: TodaySelectionPersistenceRecord['kind']
+  ): boolean
 }
 
 export interface ActionRecordRepositoryPort extends ActionRepositoryPort {
@@ -189,18 +219,38 @@ export interface ActionRecordRepositoryPort extends ActionRepositoryPort {
 }
 
 export interface ProgressRepositoryPort extends RepositoryPort {
-  queryProgressRows(
-    filter: ProgressQueryFilterPersistence
-  ): readonly ProgressQueryRowPersistenceRecord[]
+  queryProgressSnapshot(filter: ProgressQueryFilterPersistence): ProgressQuerySnapshotPersistence
+}
+
+export interface RoutineRepositoryPort extends RepositoryPort {
+  findRoutineById(id: string): RoutinePersistenceRecord | null
+  listRoutines(status?: RoutineStatus): readonly RoutinePersistenceRecord[]
+  listRoutineScheduleDays(routineId: string): readonly RoutineScheduleDayPersistenceRecord[]
+  replaceRoutineScheduleDays(
+    routineId: string,
+    records: readonly RoutineScheduleDayPersistenceRecord[]
+  ): void
+}
+
+export interface RoutineRecordRepositoryPort extends RoutineRepositoryPort {
+  createRoutineRecord(record: RoutineRecordPersistenceRecord): boolean
+  findRoutineRecordByRoutineAndDate(
+    routineId: string,
+    occurredOn: string
+  ): RoutineRecordPersistenceRecord | null
+  listRoutineRecordsByRoutineId(routineId: string): readonly RoutineRecordPersistenceRecord[]
 }
 
 export function asActionRepository(repository: RepositoryPort): ActionRepositoryPort {
   const candidate = repository as Partial<ActionRepositoryPort>
   if (
+    typeof candidate.createTodaySelection !== 'function' ||
     typeof candidate.findTodaySelection !== 'function' ||
     typeof candidate.listActions !== 'function' ||
     typeof candidate.listTodaySelectionsOn !== 'function' ||
-    typeof candidate.deleteTodaySelection !== 'function'
+    typeof candidate.deleteTodaySelection !== 'function' ||
+    typeof candidate.deleteTodaySelectionByKind !== 'function' ||
+    typeof candidate.updateTodaySelectionCommitment !== 'function'
   ) {
     throw new TypeError('Repository does not provide the Action/Today contract.')
   }
@@ -222,10 +272,35 @@ export function asActionRecordRepository(repository: RepositoryPort): ActionReco
 
 export function asProgressRepository(repository: RepositoryPort): ProgressRepositoryPort {
   const candidate = repository as Partial<ProgressRepositoryPort>
-  if (typeof candidate.queryProgressRows !== 'function') {
+  if (typeof candidate.queryProgressSnapshot !== 'function') {
     throw new TypeError('Repository does not provide the Progress query contract.')
   }
   return repository as ProgressRepositoryPort
+}
+
+export function asRoutineRecordRepository(repository: RepositoryPort): RoutineRecordRepositoryPort {
+  const candidate = repository as Partial<RoutineRecordRepositoryPort>
+  if (
+    typeof candidate.createRoutineRecord !== 'function' ||
+    typeof candidate.findRoutineRecordByRoutineAndDate !== 'function' ||
+    typeof candidate.listRoutineRecordsByRoutineId !== 'function'
+  ) {
+    throw new TypeError('Repository does not provide the RoutineRecord contract.')
+  }
+  return repository as RoutineRecordRepositoryPort
+}
+
+export function asRoutineRepository(repository: RepositoryPort): RoutineRepositoryPort {
+  const candidate = repository as Partial<RoutineRepositoryPort>
+  if (
+    typeof candidate.findRoutineById !== 'function' ||
+    typeof candidate.listRoutines !== 'function' ||
+    typeof candidate.listRoutineScheduleDays !== 'function' ||
+    typeof candidate.replaceRoutineScheduleDays !== 'function'
+  ) {
+    throw new TypeError('Repository does not provide the Routine contract.')
+  }
+  return repository as RoutineRepositoryPort
 }
 
 export interface UnitOfWorkPort {

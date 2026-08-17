@@ -1,12 +1,17 @@
 import type { IpcMainInvokeEvent } from 'electron'
 import { ActionApplicationError } from '../application/actions'
-import type { TodayService } from '../application/today'
+import { TodayApplicationError, type TodayService } from '../application/today'
 import {
   type ActionErrorCode,
   type ActionIdInputDto,
   type ActionResult
 } from '../contracts/actions'
-import { TODAY_CHANNELS, type GetTodayInputDto } from '../contracts/today'
+import {
+  TODAY_CHANNELS,
+  type ChangeActionTodayCommitmentInputDto,
+  type GetTodayInputDto,
+  type TodayCommitmentDto
+} from '../contracts/today'
 
 type Handler = (event: IpcMainInvokeEvent, ...args: unknown[]) => unknown
 
@@ -40,6 +45,17 @@ function execute<T>(work: () => T): ActionResult<T> {
         'not-found': 'The requested Action was not found.',
         'invalid-transition': 'That Action cannot be selected for Today in its current state.',
         'invariant-violation': 'The requested Today relationship is not available.'
+      }
+      return fail(error.code, messages[error.code])
+    }
+    if (error instanceof TodayApplicationError) {
+      const messages: Record<TodayApplicationError['code'], string> = {
+        validation: 'Please provide the required Today information.',
+        'not-found': 'The requested Action was not found.',
+        'invalid-transition': 'That Action cannot be selected for Today in its current state.',
+        'invariant-violation': 'The requested Today relationship is not available.',
+        'selection-conflict':
+          'That Action already has a different Today commitment. Choose an explicit change.'
       }
       return fail(error.code, messages[error.code])
     }
@@ -81,6 +97,21 @@ function parseGet(args: readonly unknown[]): GetTodayInputDto {
   return {}
 }
 
+function requiredCommitment(value: unknown): TodayCommitmentDto {
+  if (value !== 'focus' && value !== 'intention') {
+    throw new TodayIpcValidationError('Expected a Today commitment.')
+  }
+  return value
+}
+
+function parseCommitmentChange(args: readonly unknown[]): ChangeActionTodayCommitmentInputDto {
+  const record = oneObject(args, ['actionId', 'commitment'])
+  return {
+    actionId: requiredId(record.actionId),
+    commitment: requiredCommitment(record.commitment)
+  }
+}
+
 export function registerTodayIpc(options: RegisterTodayIpcOptions): void {
   const register = (
     channel: string,
@@ -97,8 +128,20 @@ export function registerTodayIpc(options: RegisterTodayIpcOptions): void {
   register(TODAY_CHANNELS.selectAction, parseActionId, (input: ActionIdInputDto) =>
     options.service.selectActionForToday(input.actionId)
   )
+  register(TODAY_CHANNELS.selectActionAsIntention, parseActionId, (input: ActionIdInputDto) =>
+    options.service.selectActionAsIntentionForToday(input.actionId)
+  )
   register(TODAY_CHANNELS.removeAction, parseActionId, (input: ActionIdInputDto) =>
     options.service.removeActionFromToday(input.actionId)
+  )
+  register(TODAY_CHANNELS.removeActionIntention, parseActionId, (input: ActionIdInputDto) =>
+    options.service.removeActionIntentionFromToday(input.actionId)
+  )
+  register(
+    TODAY_CHANNELS.changeActionCommitment,
+    parseCommitmentChange,
+    (input: ChangeActionTodayCommitmentInputDto) =>
+      options.service.changeActionTodayCommitment(input.actionId, input.commitment)
   )
   register(TODAY_CHANNELS.get, parseGet, () => options.service.getToday())
 }

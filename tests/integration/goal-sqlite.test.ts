@@ -1,7 +1,11 @@
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { GoalService } from '../../src/application/goals'
-import type { RepositoryPort, UnitOfWorkPort } from '../../src/application/ports/persistence'
+import {
+  asActionRepository,
+  type RepositoryPort,
+  type UnitOfWorkPort
+} from '../../src/application/ports/persistence'
 import { SqliteConnection } from '../../src/infrastructure/sqlite/sqlite-connection'
 import { FakeClock } from '../support/fake-clock'
 import {
@@ -57,13 +61,22 @@ describe('Goal SQLite integration', () => {
       updatedAt: instant
     })
     connection.repository.saveRoutineScheduleDay({ routineId: 'routine-1', weekday: 1 })
-    connection.repository.saveTodaySelection({
+    connection.repository.createTodaySelection({
       actionId: 'action-1',
       selectedFor: '2026-08-09',
-      kind: 'focus',
+      kind: 'intention',
       selectedBy: 'user',
       createdAt: instant
     })
+    expect(service.getGoalDetail(created.id).currentNextAction?.selectedForToday).toBe(false)
+    expect(
+      asActionRepository(connection.repository).updateTodaySelectionCommitment(
+        'action-1',
+        '2026-08-09',
+        'intention',
+        'focus'
+      )
+    ).toBe(true)
     connection.repository.saveActionRecord({
       id: 'record-1',
       actionId: 'action-1',

@@ -33,11 +33,27 @@ export interface ProgressRecordFactDto {
   readonly openConfusions: readonly ProgressChildFactDto[]
 }
 
+export interface RoutineProgressRecordFactDto {
+  readonly recordId: string
+  readonly routineId: string
+  readonly goalId: string | null
+  readonly routineName: string
+  readonly occurredOn: string
+  readonly outcome: 'target_met' | 'acted' | 'intentional_rest' | 'not_done'
+  readonly plannedForDate: boolean
+  readonly durationMinutes: number | null
+  readonly note: string | null
+  readonly createdAt: string
+}
+
 export interface ProgressViewDto {
   readonly filter: ProgressFilterDto
   readonly totalDurationMinutes: number
   readonly realActionCount: number
+  readonly targetMetCount: number
+  readonly plannedTargetMetCount: number
   readonly records: readonly ProgressRecordFactDto[]
+  readonly routineRecords: readonly RoutineProgressRecordFactDto[]
 }
 
 export type ProgressErrorCode = 'validation' | 'not-found' | 'persistence-failed'

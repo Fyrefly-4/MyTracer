@@ -20,7 +20,12 @@ import {
   type TransitionActionInputDto,
   type UpdateActionDetailsInputDto
 } from '../contracts/actions'
-import { TODAY_CHANNELS, type GetTodayInputDto, type TodayViewDto } from '../contracts/today'
+import {
+  TODAY_CHANNELS,
+  type ChangeActionTodayCommitmentInputDto,
+  type GetTodayInputDto,
+  type TodayViewDto
+} from '../contracts/today'
 import {
   RECORD_CHANNELS,
   type ActionRecordDetailDto,
@@ -40,6 +45,28 @@ import {
   type ProgressResult,
   type ProgressViewDto
 } from '../contracts/progress'
+import {
+  ROUTINE_CHANNELS,
+  type CreateRoutineInputDto,
+  type ListRoutinesInputDto,
+  type ReplaceRoutineScheduleInputDto,
+  type RoutineDetailDto,
+  type RoutineIdInputDto,
+  type RoutineResult,
+  type RoutineSummaryDto,
+  type UpdateRoutineDetailsInputDto
+} from '../contracts/routines'
+import {
+  ROUTINE_RECORD_CHANNELS,
+  type BeginRoutineRecordingDto,
+  type BeginRoutineRecordingInputDto,
+  type CancelRoutineRecordingInputDto,
+  type GetRoutineDayStateInputDto,
+  type RecordRoutineInputDto,
+  type RecordRoutineValueDto,
+  type RoutineDayStateDto,
+  type RoutineRecordResult
+} from '../contracts/routine-records'
 
 const api: MyTracerApi = Object.freeze({
   shell: Object.freeze({
@@ -82,8 +109,16 @@ const api: MyTracerApi = Object.freeze({
   today: Object.freeze({
     selectAction: (input: ActionIdInputDto): Promise<ActionResult<ActionDetailDto>> =>
       ipcRenderer.invoke(TODAY_CHANNELS.selectAction, input),
+    selectActionAsIntention: (input: ActionIdInputDto): Promise<ActionResult<ActionDetailDto>> =>
+      ipcRenderer.invoke(TODAY_CHANNELS.selectActionAsIntention, input),
     removeAction: (input: ActionIdInputDto): Promise<ActionResult<TodayViewDto>> =>
       ipcRenderer.invoke(TODAY_CHANNELS.removeAction, input),
+    removeActionIntention: (input: ActionIdInputDto): Promise<ActionResult<TodayViewDto>> =>
+      ipcRenderer.invoke(TODAY_CHANNELS.removeActionIntention, input),
+    changeActionCommitment: (
+      input: ChangeActionTodayCommitmentInputDto
+    ): Promise<ActionResult<ActionDetailDto>> =>
+      ipcRenderer.invoke(TODAY_CHANNELS.changeActionCommitment, input),
     get: (input: GetTodayInputDto): Promise<ActionResult<TodayViewDto>> =>
       ipcRenderer.invoke(TODAY_CHANNELS.get, input)
   }),
@@ -106,6 +141,42 @@ const api: MyTracerApi = Object.freeze({
   progress: Object.freeze({
     get: (input: GetProgressInputDto): Promise<ProgressResult<ProgressViewDto>> =>
       ipcRenderer.invoke(PROGRESS_CHANNELS.get, input)
+  }),
+  routines: Object.freeze({
+    create: (input: CreateRoutineInputDto): Promise<RoutineResult<RoutineDetailDto>> =>
+      ipcRenderer.invoke(ROUTINE_CHANNELS.create, input),
+    updateDetails: (
+      input: UpdateRoutineDetailsInputDto
+    ): Promise<RoutineResult<RoutineDetailDto>> =>
+      ipcRenderer.invoke(ROUTINE_CHANNELS.updateDetails, input),
+    replaceSchedule: (
+      input: ReplaceRoutineScheduleInputDto
+    ): Promise<RoutineResult<RoutineDetailDto>> =>
+      ipcRenderer.invoke(ROUTINE_CHANNELS.replaceSchedule, input),
+    pause: (input: RoutineIdInputDto): Promise<RoutineResult<RoutineDetailDto>> =>
+      ipcRenderer.invoke(ROUTINE_CHANNELS.pause, input),
+    resume: (input: RoutineIdInputDto): Promise<RoutineResult<RoutineDetailDto>> =>
+      ipcRenderer.invoke(ROUTINE_CHANNELS.resume, input),
+    end: (input: RoutineIdInputDto): Promise<RoutineResult<RoutineDetailDto>> =>
+      ipcRenderer.invoke(ROUTINE_CHANNELS.end, input),
+    list: (input: ListRoutinesInputDto): Promise<RoutineResult<readonly RoutineSummaryDto[]>> =>
+      ipcRenderer.invoke(ROUTINE_CHANNELS.list, input),
+    getDetail: (input: RoutineIdInputDto): Promise<RoutineResult<RoutineDetailDto>> =>
+      ipcRenderer.invoke(ROUTINE_CHANNELS.getDetail, input),
+    beginRecording: (
+      input: BeginRoutineRecordingInputDto
+    ): Promise<RoutineRecordResult<BeginRoutineRecordingDto>> =>
+      ipcRenderer.invoke(ROUTINE_RECORD_CHANNELS.begin, input),
+    cancelRecording: (
+      input: CancelRoutineRecordingInputDto
+    ): Promise<RoutineRecordResult<{ readonly cancelled: true }>> =>
+      ipcRenderer.invoke(ROUTINE_RECORD_CHANNELS.cancel, input),
+    record: (input: RecordRoutineInputDto): Promise<RoutineRecordResult<RecordRoutineValueDto>> =>
+      ipcRenderer.invoke(ROUTINE_RECORD_CHANNELS.record, input),
+    getDayState: (
+      input: GetRoutineDayStateInputDto
+    ): Promise<RoutineRecordResult<RoutineDayStateDto>> =>
+      ipcRenderer.invoke(ROUTINE_RECORD_CHANNELS.getDayState, input)
   })
 })
 

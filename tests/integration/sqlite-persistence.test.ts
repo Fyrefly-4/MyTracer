@@ -64,7 +64,7 @@ function populate(repository: RepositoryPort): void {
     updatedAt: timestamp
   })
   repository.saveRoutineScheduleDay({ routineId: 'routine-1', weekday: 1 })
-  repository.saveTodaySelection({
+  repository.createTodaySelection({
     actionId: 'action-1',
     selectedFor: '2026-08-09',
     kind: 'focus',
@@ -172,6 +172,117 @@ describe('SQLite persistence', () => {
       } catch {
         // The assertion path above intentionally closes the connection first.
       }
+    }
+  })
+
+  it('opens an existing S1 v1 database without changing S1 facts or generating S2 data', async () => {
+    const { path, connection } = await openTestDatabase()
+    connection.transaction((repository) => {
+      repository.saveGoal({
+        id: 's1-goal',
+        title: 'Existing S1 goal',
+        description: 'Preserve this description',
+        status: 'active',
+        currentNextActionId: null,
+        createdAt: timestamp,
+        updatedAt: timestamp
+      })
+      repository.saveAction({
+        id: 's1-action',
+        goalId: 's1-goal',
+        title: 'Existing S1 action',
+        description: null,
+        status: 'pending',
+        createdAt: timestamp,
+        updatedAt: timestamp
+      })
+      repository.saveGoal({
+        id: 's1-goal',
+        title: 'Existing S1 goal',
+        description: 'Preserve this description',
+        status: 'active',
+        currentNextActionId: 's1-action',
+        createdAt: timestamp,
+        updatedAt: timestamp
+      })
+      repository.createTodaySelection({
+        actionId: 's1-action',
+        selectedFor: '2026-08-09',
+        kind: 'focus',
+        selectedBy: 'user',
+        createdAt: timestamp
+      })
+      repository.saveActionRecord({
+        id: 's1-record',
+        actionId: 's1-action',
+        occurredOn: '2026-08-09',
+        durationMinutes: 12,
+        outcome: 'partial',
+        nextStep: 'Continue from the preserved context',
+        note: 'Existing S1 note',
+        createdAt: timestamp,
+        updatedAt: timestamp
+      })
+      repository.saveUnderstanding({
+        id: 's1-understanding',
+        actionRecordId: 's1-record',
+        text: 'Existing confirmed understanding',
+        source: 'manual',
+        revokedAt: null,
+        createdAt: timestamp,
+        updatedAt: timestamp
+      })
+      repository.saveConfusion({
+        id: 's1-confusion',
+        actionRecordId: 's1-record',
+        text: 'Existing open confusion',
+        status: 'open',
+        resolvedAt: null,
+        resolution: null,
+        createdAt: timestamp,
+        updatedAt: timestamp
+      })
+    })
+    const beforeReopen = connection.repository.readSnapshot()
+    expect(beforeReopen.routines).toEqual([])
+    expect(beforeReopen.routineScheduleDays).toEqual([])
+    expect(beforeReopen.routineRecords).toEqual([])
+    connection.close()
+
+    const beforeInspection = new Database(path, { readonly: true })
+    const metadataBefore = beforeInspection.prepare('SELECT key, value FROM metadata').all()
+    beforeInspection.close()
+
+    const reopened = SqliteConnection.open(path)
+    try {
+      expect(reopened.repository.readSnapshot()).toEqual(beforeReopen)
+      expect(reopened.repository.readSnapshot()).toMatchObject({
+        goals: [expect.objectContaining({ id: 's1-goal', currentNextActionId: 's1-action' })],
+        actions: [expect.objectContaining({ id: 's1-action', status: 'pending' })],
+        todaySelections: [expect.objectContaining({ kind: 'focus' })],
+        actionRecords: [expect.objectContaining({ id: 's1-record', durationMinutes: 12 })],
+        routines: [],
+        routineScheduleDays: [],
+        routineRecords: []
+      })
+    } finally {
+      reopened.close()
+    }
+
+    const afterInspection = new Database(path, { readonly: true })
+    try {
+      expect(afterInspection.prepare('SELECT key, value FROM metadata').all()).toEqual(
+        metadataBefore
+      )
+      expect(
+        afterInspection
+          .prepare(
+            'SELECT (SELECT COUNT(*) FROM routines) AS routines, (SELECT COUNT(*) FROM routine_schedule_days) AS schedule_days, (SELECT COUNT(*) FROM routine_records) AS routine_records'
+          )
+          .get()
+      ).toEqual({ routines: 0, schedule_days: 0, routine_records: 0 })
+    } finally {
+      afterInspection.close()
     }
   })
 

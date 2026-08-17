@@ -3,6 +3,7 @@ import {
   normalizeProgressFilter,
   ProgressDomainError,
   type ProgressRecordFact,
+  type RoutineProgressRecordFact,
   type ProgressView
 } from '../domain/progress'
 import {
@@ -99,8 +100,24 @@ export class ProgressService {
       if (filter.goalId && !this.dependencies.repository.findGoalById(filter.goalId)) {
         throw new ProgressApplicationError('not-found', 'The requested Goal was not found.')
       }
-      const rows = asProgressRepository(this.dependencies.repository).queryProgressRows(filter)
-      return buildProgressView(filter, recordsFromRows(rows))
+      const snapshot = asProgressRepository(this.dependencies.repository).queryProgressSnapshot(
+        filter
+      )
+      const routineRecords: RoutineProgressRecordFact[] = snapshot.routineRecords.map((record) =>
+        Object.freeze({
+          recordId: record.recordId,
+          routineId: record.routineId,
+          goalId: record.goalId,
+          routineName: record.routineName,
+          occurredOn: record.occurredOn,
+          outcome: record.outcome,
+          plannedForDate: record.plannedForDate,
+          durationMinutes: record.durationMinutes,
+          note: record.note,
+          createdAt: record.recordCreatedAt
+        })
+      )
+      return buildProgressView(filter, recordsFromRows(snapshot.actionRows), routineRecords)
     } catch (error) {
       if (error instanceof ProgressDomainError) {
         throw new ProgressApplicationError(error.code, error.message)

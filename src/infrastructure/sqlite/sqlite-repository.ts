@@ -10,9 +10,12 @@ import type {
   GoalStatus,
   ProgressQueryFilterPersistence,
   ProgressQueryRowPersistenceRecord,
+  ProgressQuerySnapshotPersistence,
   ReviewResultPersistenceRecord,
   RoutinePersistenceRecord,
   RoutineRecordPersistenceRecord,
+  RoutineRecordRepositoryPort,
+  RoutineProgressQueryRecordPersistence,
   RoutineScheduleDayPersistenceRecord,
   TodaySelectionPersistenceRecord,
   UnderstandingPersistenceRecord
@@ -24,7 +27,7 @@ const asString = (row: Row, name: string): string => String(row[name])
 const asNullableString = (row: Row, name: string): string | null =>
   row[name] === null ? null : asString(row, name)
 
-export class SqliteRepository implements ActionRecordRepositoryPort {
+export class SqliteRepository implements ActionRecordRepositoryPort, RoutineRecordRepositoryPort {
   constructor(private readonly database: Database.Database) {}
 
   saveGoal(record: GoalPersistenceRecord): void {
@@ -71,15 +74,15 @@ export class SqliteRepository implements ActionRecordRepositoryPort {
       .run(record)
   }
 
-  saveTodaySelection(record: TodaySelectionPersistenceRecord): void {
-    this.database
+  createTodaySelection(record: TodaySelectionPersistenceRecord): boolean {
+    const result = this.database
       .prepare(
         `INSERT INTO today_selections (action_id, selected_for, kind, selected_by, created_at)
          VALUES (@actionId, @selectedFor, @kind, @selectedBy, @createdAt)
-         ON CONFLICT(action_id, selected_for) DO UPDATE SET kind = excluded.kind,
-           selected_by = excluded.selected_by, created_at = excluded.created_at`
+         ON CONFLICT(action_id, selected_for) DO NOTHING`
       )
       .run(record)
+    return result.changes === 1
   }
 
   saveActionRecord(record: ActionRecordPersistenceRecord): void {
@@ -104,6 +107,27 @@ export class SqliteRepository implements ActionRecordRepositoryPort {
            duration_minutes = excluded.duration_minutes, note = excluded.note, updated_at = excluded.updated_at`
       )
       .run({ ...record, plannedForDate: record.plannedForDate ? 1 : 0 })
+  }
+
+  createRoutineRecord(record: RoutineRecordPersistenceRecord): boolean {
+    try {
+      this.database
+        .prepare(
+          `INSERT INTO routine_records (id, routine_id, occurred_on, outcome, planned_for_date, duration_minutes, note, created_at, updated_at)
+           VALUES (@id, @routineId, @occurredOn, @outcome, @plannedForDate, @durationMinutes, @note, @createdAt, @updatedAt)`
+        )
+        .run({ ...record, plannedForDate: record.plannedForDate ? 1 : 0 })
+      return true
+    } catch (error) {
+      const code = error && typeof error === 'object' && 'code' in error ? String(error.code) : ''
+      if (
+        code.startsWith('SQLITE_CONSTRAINT') &&
+        this.findRoutineRecordByRoutineAndDate(record.routineId, record.occurredOn)
+      ) {
+        return false
+      }
+      throw error
+    }
   }
 
   saveUnderstanding(record: UnderstandingPersistenceRecord): void {
@@ -152,6 +176,12 @@ export class SqliteRepository implements ActionRecordRepositoryPort {
     return row ? this.actionFromRow(row) : null
   }
 
+  findRoutineById(id: string): RoutinePersistenceRecord | null {
+    const row = this.database.prepare('SELECT * FROM routines WHERE id = ?').get(id) as
+      Row | undefined
+    return row ? this.routineFromRow(row) : null
+  }
+
   findActionRecordById(id: string): ActionRecordPersistenceRecord | null {
     const row = this.database.prepare('SELECT * FROM action_records WHERE id = ?').get(id) as
       Row | undefined
@@ -181,6 +211,33 @@ export class SqliteRepository implements ActionRecordRepositoryPort {
     return this.rows('SELECT * FROM actions ORDER BY created_at ASC, id ASC').map((row) =>
       this.actionFromRow(row)
     )
+  }
+
+  listRoutines(status?: RoutinePersistenceRecord['status']): readonly RoutinePersistenceRecord[] {
+    const rows = status
+      ? (this.database
+          .prepare('SELECT * FROM routines WHERE status = ? ORDER BY created_at ASC, id ASC')
+          .all(status) as readonly Row[])
+      : this.rows('SELECT * FROM routines ORDER BY created_at ASC, id ASC')
+    return rows.map((row) => this.routineFromRow(row))
+  }
+
+  listRoutineScheduleDays(routineId: string): readonly RoutineScheduleDayPersistenceRecord[] {
+    return (
+      this.database
+        .prepare('SELECT * FROM routine_schedule_days WHERE routine_id = ? ORDER BY weekday ASC')
+        .all(routineId) as readonly Row[]
+    ).map((row) => ({ routineId: asString(row, 'routine_id'), weekday: Number(row.weekday) }))
+  }
+
+  replaceRoutineScheduleDays(
+    routineId: string,
+    records: readonly RoutineScheduleDayPersistenceRecord[]
+  ): void {
+    this.database.prepare('DELETE FROM routine_schedule_days WHERE routine_id = ?').run(routineId)
+    for (const record of records) {
+      this.saveRoutineScheduleDay(record)
+    }
   }
 
   listActionsByGoalId(goalId: string): readonly ActionPersistenceRecord[] {
@@ -286,14 +343,23 @@ export class SqliteRepository implements ActionRecordRepositoryPort {
           `SELECT selections.action_id
            FROM today_selections AS selections
            INNER JOIN actions ON actions.id = selections.action_id
-           WHERE actions.goal_id = ? AND selections.selected_for = ?
+           WHERE actions.goal_id = ? AND selections.selected_for = ? AND selections.kind = 'focus'
            ORDER BY selections.action_id ASC`
         )
         .all(goalId, selectedFor) as readonly Row[]
     ).map((row) => asString(row, 'action_id'))
   }
 
-  queryProgressRows(
+  queryProgressSnapshot(filter: ProgressQueryFilterPersistence): ProgressQuerySnapshotPersistence {
+    return this.database.transaction(() =>
+      Object.freeze({
+        actionRows: this.queryActionProgressRows(filter),
+        routineRecords: this.queryRoutineProgressRecords(filter)
+      })
+    )()
+  }
+
+  private queryActionProgressRows(
     filter: ProgressQueryFilterPersistence
   ): readonly ProgressQueryRowPersistenceRecord[] {
     const rows = this.database
@@ -342,26 +408,102 @@ export class SqliteRepository implements ActionRecordRepositoryPort {
     }))
   }
 
+  private queryRoutineProgressRecords(
+    filter: ProgressQueryFilterPersistence
+  ): readonly RoutineProgressQueryRecordPersistence[] {
+    const rows = this.database
+      .prepare(
+        `SELECT records.id AS record_id, records.routine_id, routines.goal_id,
+           routines.name AS routine_name, records.occurred_on, records.outcome,
+           records.planned_for_date, records.duration_minutes, records.note,
+           records.created_at AS record_created_at
+         FROM routine_records AS records
+         INNER JOIN routines ON routines.id = records.routine_id
+         WHERE (@goalId IS NULL OR routines.goal_id = @goalId)
+           AND (@fromDate IS NULL OR records.occurred_on >= @fromDate)
+           AND (@throughDate IS NULL OR records.occurred_on <= @throughDate)
+         ORDER BY records.occurred_on DESC, records.created_at DESC, records.id ASC`
+      )
+      .all({
+        goalId: filter.goalId,
+        fromDate: filter.from,
+        throughDate: filter.through
+      }) as readonly Row[]
+
+    return rows.map((row) => ({
+      recordId: asString(row, 'record_id'),
+      routineId: asString(row, 'routine_id'),
+      goalId: asNullableString(row, 'goal_id'),
+      routineName: asString(row, 'routine_name'),
+      occurredOn: asString(row, 'occurred_on'),
+      outcome: asString(row, 'outcome') as RoutineRecordPersistenceRecord['outcome'],
+      plannedForDate: Number(row.planned_for_date) === 1,
+      durationMinutes: row.duration_minutes === null ? null : Number(row.duration_minutes),
+      note: asNullableString(row, 'note'),
+      recordCreatedAt: asString(row, 'record_created_at')
+    }))
+  }
+
+  findRoutineRecordByRoutineAndDate(
+    routineId: string,
+    occurredOn: string
+  ): RoutineRecordPersistenceRecord | null {
+    const row = this.database
+      .prepare('SELECT * FROM routine_records WHERE routine_id = ? AND occurred_on = ?')
+      .get(routineId, occurredOn) as Row | undefined
+    return row ? this.routineRecordFromRow(row) : null
+  }
+
+  listRoutineRecordsByRoutineId(routineId: string): readonly RoutineRecordPersistenceRecord[] {
+    return (
+      this.database
+        .prepare(
+          `SELECT * FROM routine_records WHERE routine_id = ?
+           ORDER BY occurred_on DESC, created_at DESC, id ASC`
+        )
+        .all(routineId) as readonly Row[]
+    ).map((row) => this.routineRecordFromRow(row))
+  }
+
   deleteTodaySelection(actionId: string, selectedFor: string): void {
     this.database
       .prepare('DELETE FROM today_selections WHERE action_id = ? AND selected_for = ?')
       .run(actionId, selectedFor)
   }
 
+  deleteTodaySelectionByKind(
+    actionId: string,
+    selectedFor: string,
+    kind: TodaySelectionPersistenceRecord['kind']
+  ): boolean {
+    const result = this.database
+      .prepare('DELETE FROM today_selections WHERE action_id = ? AND selected_for = ? AND kind = ?')
+      .run(actionId, selectedFor, kind)
+    return result.changes === 1
+  }
+
+  updateTodaySelectionCommitment(
+    actionId: string,
+    selectedFor: string,
+    current: TodaySelectionPersistenceRecord['kind'],
+    requested: TodaySelectionPersistenceRecord['kind']
+  ): boolean {
+    const result = this.database
+      .prepare(
+        `UPDATE today_selections SET kind = ?
+         WHERE action_id = ? AND selected_for = ? AND kind = ?`
+      )
+      .run(requested, actionId, selectedFor, current)
+    return result.changes === 1
+  }
+
   readSnapshot(): CorePersistenceSnapshot {
     return {
       goals: this.rows('SELECT * FROM goals ORDER BY id').map((row) => this.goalFromRow(row)),
       actions: this.rows('SELECT * FROM actions ORDER BY id').map((row) => this.actionFromRow(row)),
-      routines: this.rows('SELECT * FROM routines ORDER BY id').map((row) => ({
-        id: asString(row, 'id'),
-        goalId: asNullableString(row, 'goal_id'),
-        name: asString(row, 'name'),
-        minimumAction: asString(row, 'minimum_action'),
-        description: asNullableString(row, 'description'),
-        status: asString(row, 'status') as RoutinePersistenceRecord['status'],
-        createdAt: asString(row, 'created_at'),
-        updatedAt: asString(row, 'updated_at')
-      })),
+      routines: this.rows('SELECT * FROM routines ORDER BY id').map((row) =>
+        this.routineFromRow(row)
+      ),
       routineScheduleDays: this.rows(
         'SELECT * FROM routine_schedule_days ORDER BY routine_id, weekday'
       ).map((row) => ({
@@ -391,17 +533,7 @@ export class SqliteRepository implements ActionRecordRepositoryPort {
         })
       ),
       routineRecords: this.rows('SELECT * FROM routine_records ORDER BY occurred_on, id').map(
-        (row) => ({
-          id: asString(row, 'id'),
-          routineId: asString(row, 'routine_id'),
-          occurredOn: asString(row, 'occurred_on'),
-          outcome: asString(row, 'outcome') as RoutineRecordPersistenceRecord['outcome'],
-          plannedForDate: Number(row.planned_for_date) === 1,
-          durationMinutes: row.duration_minutes === null ? null : Number(row.duration_minutes),
-          note: asNullableString(row, 'note'),
-          createdAt: asString(row, 'created_at'),
-          updatedAt: asString(row, 'updated_at')
-        })
+        (row) => this.routineRecordFromRow(row)
       ),
       understandings: this.rows('SELECT * FROM understandings ORDER BY id').map((row) => ({
         id: asString(row, 'id'),
@@ -460,6 +592,33 @@ export class SqliteRepository implements ActionRecordRepositoryPort {
       title: asString(row, 'title'),
       description: asNullableString(row, 'description'),
       status: asString(row, 'status') as ActionPersistenceRecord['status'],
+      createdAt: asString(row, 'created_at'),
+      updatedAt: asString(row, 'updated_at')
+    }
+  }
+
+  private routineFromRow(row: Row): RoutinePersistenceRecord {
+    return {
+      id: asString(row, 'id'),
+      goalId: asNullableString(row, 'goal_id'),
+      name: asString(row, 'name'),
+      minimumAction: asString(row, 'minimum_action'),
+      description: asNullableString(row, 'description'),
+      status: asString(row, 'status') as RoutinePersistenceRecord['status'],
+      createdAt: asString(row, 'created_at'),
+      updatedAt: asString(row, 'updated_at')
+    }
+  }
+
+  private routineRecordFromRow(row: Row): RoutineRecordPersistenceRecord {
+    return {
+      id: asString(row, 'id'),
+      routineId: asString(row, 'routine_id'),
+      occurredOn: asString(row, 'occurred_on'),
+      outcome: asString(row, 'outcome') as RoutineRecordPersistenceRecord['outcome'],
+      plannedForDate: Number(row.planned_for_date) === 1,
+      durationMinutes: row.duration_minutes === null ? null : Number(row.duration_minutes),
+      note: asNullableString(row, 'note'),
       createdAt: asString(row, 'created_at'),
       updatedAt: asString(row, 'updated_at')
     }

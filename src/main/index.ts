@@ -7,6 +7,8 @@ import { ActionService } from '../application/actions'
 import { TodayService } from '../application/today'
 import { ActionRecordService } from '../application/action-records'
 import { ProgressService } from '../application/progress'
+import { RoutineService } from '../application/routines'
+import { RoutineRecordService } from '../application/routine-records'
 import { queryShellStatus } from '../application/query-shell-status'
 import type { AiConfigurationPort } from '../application/ports/configuration'
 import type { DiagnosticsPort } from '../application/ports/diagnostics'
@@ -25,7 +27,10 @@ import { registerActionIpc } from './actions-ipc'
 import { registerTodayIpc } from './today-ipc'
 import { registerRecordIpc } from './records-ipc'
 import { registerProgressIpc } from './progress-ipc'
+import { registerRoutineIpc } from './routines-ipc'
+import { registerRoutineRecordIpc } from './routine-records-ipc'
 import { ActionRecordingContextStore } from './action-recording-contexts'
+import { RoutineRecordingContextStore } from './routine-recording-contexts'
 import { assertTrustedSender, type RendererLocation } from './ipc-security'
 
 let mainWindow: BrowserWindow | null = null
@@ -33,6 +38,7 @@ let sqliteConnection: SqliteConnection | null = null
 let aiConfiguration: AiConfigurationPort | null = null
 let diagnostics: DiagnosticsPort | null = null
 const actionRecordingContexts = new ActionRecordingContextStore(randomUUID)
+const routineRecordingContexts = new RoutineRecordingContextStore(randomUUID)
 
 function getRendererLocation(): RendererLocation {
   const rendererFile = join(__dirname, '../renderer/index.html')
@@ -103,13 +109,16 @@ async function createMainWindow(): Promise<void> {
   const senderId = mainWindow.webContents.id
   mainWindow.webContents.on('did-start-navigation', () => {
     actionRecordingContexts.clearSender(senderId)
+    routineRecordingContexts.clearSender(senderId)
   })
   mainWindow.webContents.on('destroyed', () => {
     actionRecordingContexts.clearSender(senderId)
+    routineRecordingContexts.clearSender(senderId)
   })
   mainWindow.once('ready-to-show', () => mainWindow?.show())
   mainWindow.on('closed', () => {
     actionRecordingContexts.clearSender(senderId)
+    routineRecordingContexts.clearSender(senderId)
     mainWindow = null
   })
 
@@ -170,7 +179,19 @@ app.whenReady().then(async () => {
     unitOfWork: sqliteConnection,
     clock
   })
+  const routineService = new RoutineService({
+    repository: sqliteConnection.repository,
+    unitOfWork: sqliteConnection,
+    clock,
+    generateId: randomUUID
+  })
   const actionRecordService = new ActionRecordService({
+    repository: sqliteConnection.repository,
+    unitOfWork: sqliteConnection,
+    clock,
+    generateId: randomUUID
+  })
+  const routineRecordService = new RoutineRecordService({
     repository: sqliteConnection.repository,
     unitOfWork: sqliteConnection,
     clock,
@@ -190,6 +211,17 @@ app.whenReady().then(async () => {
   registerTodayIpc({
     ipc: ipcMain,
     service: todayService,
+    assertSender: (event) => assertTrustedSender(event, mainWindow, getRendererLocation())
+  })
+  registerRoutineIpc({
+    ipc: ipcMain,
+    service: routineService,
+    assertSender: (event) => assertTrustedSender(event, mainWindow, getRendererLocation())
+  })
+  registerRoutineRecordIpc({
+    ipc: ipcMain,
+    service: routineRecordService,
+    contexts: routineRecordingContexts,
     assertSender: (event) => assertTrustedSender(event, mainWindow, getRendererLocation())
   })
   registerRecordIpc({
@@ -218,6 +250,7 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   actionRecordingContexts.clearAll()
+  routineRecordingContexts.clearAll()
   diagnostics?.record({
     code: 'application-stopping',
     severity: 'info',
