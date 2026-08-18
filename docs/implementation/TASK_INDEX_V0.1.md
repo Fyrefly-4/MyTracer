@@ -1,13 +1,14 @@
 # MyTracer v0.1 任务索引
 
 > 文档状态：v0.1 实施任务基线  
-> 当前阶段：G1、G2 已通过；S0/S1/S2 已归档；T021～T023/T802、AC-03/AC-04 自动化与人工验收及最终 S2 聚合验证均通过；`dev → main` 里程碑 merge、tag 和 release 仍受独立授权门禁约束
+> 当前阶段：G1、G2 已通过；S0/S1/S2 已归档；T021～T023/T802、AC-03/AC-04 自动化与人工验收及最终 S2 聚合验证均通过；T090 流程治理文档修订已完成；`dev → main` 里程碑 merge、tag 和 release 仍受独立授权门禁约束
 > 状态来源：本文件是任务执行状态的唯一账本，架构实施计划只定义范围和顺序
 
 ## 1. 使用规则
 
 - 每个任务必须从 [`TASK_TEMPLATE.md`](TASK_TEMPLATE.md) 形成独立任务合同后才能进入 `active`。
 - 任务必须引用 [`IMPLEMENTATION_PLAN_V0.1.md`](../architecture/IMPLEMENTATION_PLAN_V0.1.md) 中的切片，并列出直接相关的 FR/AC/D/ED。
+- 流程治理或纯文档任务可以使用 `GOV-*` plan item，并在合同中明确没有产品 FR/AC 变化及其替代授权依据。
 - `done` 只表示实现和规定验证已经完成；项目所有者尚未执行的人工验收必须单独标为 `pending`。
 - 真实验证记录写入 [`ACCEPTANCE_EVIDENCE_V0.1.md`](ACCEPTANCE_EVIDENCE_V0.1.md)，不得把本表状态当作证据。
 - Git 和 GitHub 操作遵循 [`GITHUB_WORKFLOW_V0.1.md`](GITHUB_WORKFLOW_V0.1.md)。
@@ -65,6 +66,7 @@
 | T063 | E6-03 | AI 建议接受/修改/拒绝和确认命令 | FR-AI05/06；FR-C02/C03；D-014/109；AC-02 | T062 | `pending` | — |
 | T071 | S7 | 11 条 SHOULD 的既定处理结论 | Traceability §4；Implementation §10.1 | S1～S6 | `pending` | — |
 | T072 | S7 | 全量回归、AC-01～AC-07、Windows Demo 收敛 | 全部 MUST/AC；Test Strategy §7～10 | T071 | `pending` | — |
+| T090 | GOV-01 | V2 Agent 流程第一、二批文档规范 | GW-001/002/004/005/006/009/010；T090 合同 | dev@112b909 | `done` | `EV-T090-001` |
 | T801 | S1 fix | 更新 Windows package smoke 的 S1 窄 API 契约并重新验证 unpacked/NSIS | G3/S1；GW-008/010；不改变 FR/AC/D/ED | `EV-G3-S1-001` | `done` | `EV-T801-001` |
 | T802 | S2 fix | 修复 package smoke、完整连续 E2E-AC-03、既有 S1 v1 数据守恒与 T021～T023 合同归档 | AC-03；FR-D01 S2 子集；GW-008/010；不改变生产语义 | S2 聚合验收失败与独立 review | `done` | `EV-T802-002` |
 
@@ -100,3 +102,4 @@
 - T021～T023 的最终 squash merge revisions 依次为 `e3e7346eba492f1de810ffe34b41b1d96831c3af`、`68239dafb0d742b09abb2583544a37361157c872`、`0106996b45a41275370c46bd3f6ea842573f0889`；任务级自动化、独立 review 与项目所有者人工验收均已通过。
 - T802 PR #20 已将 S2 聚合门禁修复与 [`S2_T021_T023_ARCHIVE.md`](archive/S2_T021_T023_ARCHIVE.md) squash 合入 `dev@a9db1eb26134dac83b01f4a4d7da30f92a271242`；最终同 revision 验收由 `EV-T802-002` 支持，`EV-T802-001` 的 partial 候选状态保留并被取代。
 - S2 聚合验收通过允许准备 `dev → main` 里程碑 PR，但不授权 Agent merge、tag 或 release；里程碑合入必须由项目所有者批准并使用 merge commit。
+- T090 已完成第一、二批流程文档规范落地；`EV-T090-001` 记录本地验证、PR candidate CI 和项目所有者人工审核通过。产品任务试点未进行，第二批仍是“文档已落地、尚未通过真实任务运行验证”；任务尚未合入 `dev`，因此 `dev_integration_revision` 仍为 `null`。

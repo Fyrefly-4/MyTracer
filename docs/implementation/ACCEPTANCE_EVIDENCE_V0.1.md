@@ -1,6 +1,6 @@
 # MyTracer v0.1 验收证据
 
-> 文档状态：证据账本已建立；已记录 T001～T004、T011～T014、T021～T023/T801/T802、AC-01、AC-03、AC-04、G2、G3/S1 及最终 S2 聚合证据
+> 文档状态：证据账本已建立；已记录 T001～T004、T011～T014、T021～T023/T801/T802、T090、AC-01、AC-03、AC-04、G2、G3/S1 及最终 S2 聚合证据
 > 作用：记录可复核的命令、版本、环境、产物和人工观察  
 > 禁止：用任务状态、测试名称、关键词存在或 Agent 自述替代实际结果
 
@@ -52,7 +52,11 @@ Evidence ID 不复用。失败记录保留，并由后续记录明确引用修�
 - **Requirements**：FR- / AC- / D- / ED-
 - **Source branch**：
 - **Source revision**：commit SHA，或 `uncommitted` + 记录时间
-- **CI head/merge revision**：如适用
+- **Task delivery revision**：证明任务自身合同的最终候选 revision
+- **Dev integration revision**：任务实际进入 `dev` 的 merge/squash revision；未合入时填写 `null`
+- **Stage final integration revision**：阶段最终聚合 revision；不适用时填写 `null`
+- **Integration freshness**：`fresh` / `refreshed-and-passed` / `blocked` / `not-required`，并记录原始基线、最新授权 `dev`、实际验证 revision 和刷新方法
+- **CI classification**：`early` / `candidate` / `final-head` / `post-merge`，同时记录对应 head/test-merge revision
 - **Environment**：OS、Node、Electron、数据库/fixture、关键工具版本
 - **Command or manual procedure**：
 - **Result**：
@@ -61,6 +65,39 @@ Evidence ID 不复用。失败记录保留，并由后续记录明确引用修�
 - **Known limitations**：
 - **Supersedes / superseded by**：
 - **Recorded at**：YYYY-MM-DD
+
+### 3.1 V2 revision and CI boundaries
+
+```yaml
+task_delivery_revision: bbb222
+dev_integration_revision: ddd444
+stage_final_integration_revision: null
+
+integration_freshness:
+  original_base_revision: abc123
+  latest_authorized_dev_revision: def456
+  verified_against_revision: def456
+  status: refreshed-and-passed
+  refresh_method: merge-dev-into-task-branch
+
+ci:
+  early:
+    head_revision: aaa111
+    result: feedback
+  candidate:
+    head_revision: bbb222
+    result: pass
+  final_head:
+    head_revision: bbb555
+    result: pass
+  post_merge:
+    merge_revision: ddd444
+    result: pass
+```
+
+`task_delivery_revision` 证明任务自身合同，`dev_integration_revision` 证明任务进入目标 `dev`，`stage_final_integration_revision` 证明整个阶段在同一最终集成版本成立。Draft PR、early CI 和中间 revision 不能单独证明任务完成。
+
+失败 Evidence 必须保留；后续成功记录通过 `Supersedes / superseded by` 建立关系，不删除失败事实。
 
 ## 4. 任务级证据索引
 
@@ -80,6 +117,7 @@ Evidence ID 不复用。失败记录保留，并由后续记录明确引用修�
 | `EV-T801-001` | T801 | `dd9bd4498b0339703f8cf992a564a7d7b80442b5` | S1 package smoke 精确 API、安全边界与 unpacked/NSIS 路径 | pass | not-required | 本地 `verify`/package/package smoke、独立 review、PR #12 head CI 与最终 dev push CI 通过；merge `74ebe346a86cf431d87e02e8a1220b713b33901c` |
 | `EV-T802-001` | T802 | `a61d0bc100752ae1209623a2ac020ff25a62bf8f` | S2 package API、连续 AC-03、S1 v1 数据守恒与合同归档候选 | partial | not-required | 实现候选本地完整门禁、独立 review 和 PR #20 hosted CI 通过；归档后最新 head CI、merge 与最终 dev 聚合复验待完成 |
 | `EV-T802-002` | T802 / S2 aggregate | `a9db1eb26134dac83b01f4a4d7da30f92a271242` | T021～T023 同 revision 聚合、AC-01/03/04、SQLite/LocalDate、Windows package 与归档 | pass | pass | 最终 dev 本地/hosted 门禁、定向验收、package smoke 与独立 review 通过；T021～T023 人工验收沿用已记录的 owner pass |
+| `EV-T090-001` | T090 / GOV-01 | `767ea6741411e2d2e7a82b297a0ed7dde3e3134e` | V2 第一、二批流程规范、Task Contract 字段、Stage Design 模板和 Escalation Proposal | pass | pass | 本地文档验证、PR candidate CI 和人工审核通过；无产品任务试点，尚未 merge 到 dev |
 | `EV-G3-S1-001` | G3/S1 | `623007dd4269df02771f6a526db269de1fe95a03` | T011～T014 同 revision 核心闭环、Windows package 与发布门禁 | fail | pending | `verify`、AC-01 和 package 构建通过；package smoke 因旧 Preload API 断言在 unpacked 阶段失败，NSIS 安装态未验证 |
 | `EV-G3-S1-002` | G3/S1 | `74ebe346a86cf431d87e02e8a1220b713b33901c` | T011～T014/T801 同 revision 核心闭环、Windows package 与发布门禁 | pass | pass | hosted/local `verify`、AC-01、package、unpacked/NSIS smoke 与独立 review 通过；确切里程碑 PR 的所有者 merge 批准仍单独待定 |
 
@@ -726,3 +764,35 @@ Agent 只提供步骤和观察位置，不得替项目所有者签署人工验�
 - G3/S1 首轮聚合验收已记录为 `EV-G3-S1-001`：固定 `dev@623007dd4269df02771f6a526db269de1fe95a03` 的 `verify`、AC-01 和 package 构建通过，但 package smoke 因旧 API 断言失败，故当时阶段门为 `fail`；该失败记录由后续 `EV-T801-001` / `EV-G3-S1-002` 显式取代但不删除。
 - T801 已由 `EV-T801-001` 证明单文件修复、本地 `verify`/package/package smoke、独立 review、PR #12 head CI、合并与最终 dev CI 通过；没有生产、依赖、schema 或产品语义变化。
 - G3/S1 最终聚合验收已记录为 `EV-G3-S1-002`：固定 `dev@74ebe346a86cf431d87e02e8a1220b713b33901c` 的 hosted/local `verify`、AC-01、package 和 unpacked/NSIS smoke 通过。首轮失败未删除；里程碑 PR 的 merge、tag 和 release 仍需所有者分别授权。
+
+### EV-T090-001
+
+- **Status**：pass
+- **Task / Gate**：T090 / GOV-01；不声明任何产品 FR、AC、阶段门或主线合入
+- **Requirements**：无产品 FR/AC；GW-001、GW-002、GW-004、GW-005/GW-006、GW-009、GW-010；T090 合同
+- **Source branch**：`docs/T090-agent-process-v2`
+- **Source revision**：`767ea6741411e2d2e7a82b297a0ed7dde3e3134e`
+- **Base revision**：`dev@112b90968dad05cd27f8421480cadaeff6f85e2c`
+- **Task delivery revision**：`5b5211aa4904aef39b5e3f4366efbce08b8d3229`
+- **Dev integration revision**：`null`；任务已发布 Draft PR，但尚未 merge 到 `dev`
+- **Stage final integration revision**：`null`
+- **Integration freshness**：`fresh`；original/latest/verified base 均为 `dev@112b90968dad05cd27f8421480cadaeff6f85e2c`，未发生 stale refresh
+- **CI classification**：`candidate`；PR #23 的 Windows required gate 在上述 revision 通过。本次状态收口提交推送后需重新执行 final-head CI，此处不预先声明其通过
+- **Environment**：Microsoft Windows NT 10.0.26200.0；Node.js v24.18.0；npm 11.16.0；无产品数据库、无 live AI、无外部写入
+- **Command or manual procedure**：
+  1. 在上述 source revision 执行 `npm.cmd run format:check`，exit code 0，Prettier 全部文件通过。
+  2. 执行 `git diff --check`，exit code 0。
+  3. 使用 PowerShell 对 AGENTS、Skill、GitHub workflow、Evidence、Task Template、Stage Design Template、Escalation Proposal 和 T090 合同执行逐文件字段断言；exit code 0，输出 `Structural checks passed`。
+  4. 检查 `git diff --name-only` 与新增文件列表；仅包含 T090 合同允许的 9 个文件，PRD、DECISIONS、需求变更规则、产品代码和 `.github/workflows/verify.yml` 未变更。
+  5. 核对 PR #23 的 base/head、Draft 状态和 hosted Windows required gate；head 为上述 revision，required gate conclusion 为 `SUCCESS`。
+  6. 项目所有者确认 review 和人工审核通过。
+- **Result**：
+  - V2 第一批的 Draft/early CI/candidate/final-head 顺序、最终 review、Integration Freshness Gate、Escalation Proposal、三类 revision 和失败证据 supersede 规则已写入规范。
+  - V2 第二批的 `references`、`dependencies`、`permissions`、`integration`、`shared_surface` 和 Stage Design baseline + delta 模板已写入规范。
+  - 第二批仅完成文档结构，尚未通过真实 Txxx 运行验证；没有创建产品任务试点。
+  - 第三批 evidence capture/metadata/CI artifact 自动化和第四批 Profile/调度/Review/Audit Skill 均未实施。
+- **Artifacts**：Draft PR #23（`https://github.com/Fyrefly-4/MyTracer/pull/23`）；Windows required gate（`https://github.com/Fyrefly-4/MyTracer/actions/runs/32122204319/job/95664895455`）在上述 candidate revision 通过；无安装包或用户数据产物。
+- **Manual acceptance**：pass；项目所有者于 2026-08-18 明确确认 review 和人工审核通过，并接受“第二批文档已落地、尚未真实任务运行验证”的限制声明。
+- **Known limitations**：第二批没有真实 Txxx 任务试点；尚未进入 `dev`，因此没有 `dev_integration_revision` 或阶段最终集成 revision；本次状态收口提交后的 final-head CI 尚待远端运行；PR 仍由项目所有者控制 Ready、merge、tag 和 release。
+- **Supersedes / superseded by**：无
+- **Recorded at**：2026-08-18
