@@ -130,6 +130,8 @@ V2 Batch 3 的 deterministic artifact 可以由 `tools/evidence/capture-command.
 
 工具只读取 allowlisted GitHub CI metadata，不保存 stdout/stderr、原始环境变量、凭据、safeStorage、SQLite、用户正文、绝对用户路径或完整日志。失败命令必须保留真实非零退出码；collector 或 metadata validator 失败不得生成通过结论。
 
+在 GitHub `pull_request` run 中，`ci.headRevision` 必须来自 event payload 的 PR head，`ci.mergeRevision` 必须记录实际 checkout/test-merge revision；两者不可混用。
+
 Artifact 位于 ignored `.tmp/evidence/`，可由 GitHub Actions 作为短期 artifact 上传。上传、metadata 检查和命令包装都不会自动更新本账本、任务状态或长期文档；Agent 必须检查 artifact 后，按 Evidence 模板记录它证明和未证明的内容。
 
 ## 4. 任务级证据索引

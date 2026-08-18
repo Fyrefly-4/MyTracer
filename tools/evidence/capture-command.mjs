@@ -142,15 +142,41 @@ async function readElectronVersion(errors) {
   }
 }
 
-function readCiMetadata() {
+async function readCiMetadata(errors) {
   const environment = process.env
+  let headRevision = environment.GITHUB_SHA ?? null
+  let mergeRevision = environment.GITHUB_MERGE_COMMIT_SHA ?? null
+  let baseRevision = environment.GITHUB_BASE_SHA ?? null
+
+  if (environment.GITHUB_EVENT_NAME === 'pull_request') {
+    mergeRevision = environment.GITHUB_SHA ?? mergeRevision
+    const eventPath = environment.GITHUB_EVENT_PATH
+    if (!eventPath) {
+      errors.push('ci-event-unavailable')
+    } else {
+      try {
+        const event = JSON.parse(await readFile(eventPath, 'utf8'))
+        headRevision = event.pull_request?.head?.sha ?? null
+        baseRevision = event.pull_request?.base?.sha ?? baseRevision
+        if (!headRevision) {
+          errors.push('ci-head-revision-unavailable')
+        }
+      } catch {
+        errors.push('ci-event-unavailable')
+      }
+    }
+  }
+
   return {
-    workflow: environment.GITHUB_WORKFLOW ?? null,
-    runId: environment.GITHUB_RUN_ID ?? null,
-    runAttempt: environment.GITHUB_RUN_ATTEMPT ?? null,
-    eventName: environment.GITHUB_EVENT_NAME ?? null,
-    headRevision: environment.GITHUB_SHA ?? null,
-    mergeRevision: environment.GITHUB_MERGE_COMMIT_SHA ?? null
+    baseRevision,
+    ci: {
+      workflow: environment.GITHUB_WORKFLOW ?? null,
+      runId: environment.GITHUB_RUN_ID ?? null,
+      runAttempt: environment.GITHUB_RUN_ATTEMPT ?? null,
+      eventName: environment.GITHUB_EVENT_NAME ?? null,
+      headRevision,
+      mergeRevision
+    }
   }
 }
 
@@ -217,13 +243,15 @@ async function run(argv) {
   const startedAt = new Date().toISOString()
   const captureErrors = []
   const sourceBranch =
-    readGitValue(['symbolic-ref', '--short', '-q', 'HEAD']) ??
-    readGitValue(['rev-parse', '--abbrev-ref', 'HEAD'])
+    process.env.GITHUB_HEAD_REF ||
+    (readGitValue(['symbolic-ref', '--short', '-q', 'HEAD']) ??
+      readGitValue(['rev-parse', '--abbrev-ref', 'HEAD']))
   const sourceRevision = readGitValue(['rev-parse', 'HEAD'])
   if (!sourceBranch) captureErrors.push('git-branch-unavailable')
   if (!sourceRevision) captureErrors.push('git-revision-unavailable')
   const electron = await readElectronVersion(captureErrors)
-  const baseRevision = options.baseRevision ?? process.env.GITHUB_BASE_SHA ?? null
+  const ciMetadata = await readCiMetadata(captureErrors)
+  const baseRevision = options.baseRevision ?? ciMetadata.baseRevision
   const command = redactCommand(options.command)
   const result = await childResult(options.command)
   const finishedAt = new Date().toISOString()
@@ -248,7 +276,7 @@ async function run(argv) {
     exitCode: result.spawnError ? null : result.code,
     signal: result.signal,
     artifacts: [],
-    ci: readCiMetadata(),
+    ci: ciMetadata.ci,
     commandStatus,
     captureStatus: captureErrors.length === 0 ? 'complete' : 'incomplete',
     captureErrors

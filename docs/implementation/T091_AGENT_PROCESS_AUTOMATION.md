@@ -182,6 +182,8 @@ node tools/evidence/capture-command.mjs \
 
 JSON artifact 至少包含：`schemaVersion`、`task`、`gate`、`sourceBranch`、`sourceRevision`、`baseRevision`、`platform`、`node`、`electron`、`command`、`startedAt`、`finishedAt`、`exitCode`、`artifacts` 和 `ci`。命令以 argv 数组保存；不保存 stdout/stderr、cwd 或环境变量。
 
+在 GitHub `pull_request` run 中，`ci.headRevision` 必须来自 event payload 的 PR head，`ci.mergeRevision` 必须记录实际 checkout/test-merge revision；两者不可混用。
+
 验收条件：
 
 1. collector 使用显式 argv 和 `shell: false`；Windows 的 `.cmd`/`.bat` 命令通过显式 `ComSpec` argv 启动且 artifact 仍记录原始命令 argv；成功命令退出码为 0，失败命令保留 artifact 并传递非零退出码。

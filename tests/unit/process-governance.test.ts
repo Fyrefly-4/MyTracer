@@ -16,7 +16,13 @@ function createOutputDirectory() {
   return relativeDirectory
 }
 
-function runCollector(output: string, command: string[], extraArgs: string[] = []) {
+function runCollector(
+  output: string,
+  command: string[],
+  extraArgs: string[] = [],
+  extraEnvironment: Record<string, string> = {},
+  baseRevision: string | null = 'base123'
+) {
   return spawnSync(
     process.execPath,
     [
@@ -25,15 +31,19 @@ function runCollector(output: string, command: string[], extraArgs: string[] = [
       'T091',
       '--gate',
       'unit',
-      '--base-revision',
-      'base123',
+      ...(baseRevision === null ? [] : ['--base-revision', baseRevision]),
       '--output',
       output,
       ...extraArgs,
       '--',
       ...command
     ],
-    { cwd: repositoryRoot, encoding: 'utf8', windowsHide: true }
+    {
+      cwd: repositoryRoot,
+      encoding: 'utf8',
+      windowsHide: true,
+      env: { ...process.env, ...extraEnvironment }
+    }
   )
 }
 
@@ -78,6 +88,49 @@ describe('deterministic evidence collector', () => {
     expect(artifact.command).toEqual(['node', '-e', 'process.exit(0)'])
     expect(JSON.stringify(artifact)).not.toContain(repositoryRoot)
     expect(artifact.artifacts[0].relativePath.startsWith('.tmp/')).toBe(true)
+  })
+
+  test('separates a pull-request head revision from its merge revision', () => {
+    const output = createOutputDirectory()
+    const eventDirectory = mkdtempSync(join(tmpdir(), 'mytracer-ci-event-'))
+    temporaryDirectories.push(eventDirectory)
+    const eventPath = join(eventDirectory, 'event.json')
+    writeFileSync(
+      eventPath,
+      JSON.stringify({
+        pull_request: {
+          head: { sha: 'head123' },
+          base: { sha: 'base456' }
+        }
+      })
+    )
+
+    const result = runCollector(
+      output,
+      ['node', '-e', 'process.exit(0)'],
+      [],
+      {
+        GITHUB_EVENT_NAME: 'pull_request',
+        GITHUB_EVENT_PATH: eventPath,
+        GITHUB_HEAD_REF: 'docs/T091-deterministic-evidence',
+        GITHUB_SHA: 'merge789',
+        GITHUB_WORKFLOW: 'Verification',
+        GITHUB_RUN_ID: '123'
+      },
+      null
+    )
+
+    expect(result.status).toBe(0)
+    expect(readArtifact(output)).toMatchObject({
+      sourceBranch: 'docs/T091-deterministic-evidence',
+      baseRevision: 'base456',
+      ci: {
+        eventName: 'pull_request',
+        headRevision: 'head123',
+        mergeRevision: 'merge789'
+      }
+    })
+    expect(JSON.stringify(readArtifact(output))).not.toContain(eventPath)
   })
 
   test('starts a Windows command wrapper without changing the recorded command', () => {
