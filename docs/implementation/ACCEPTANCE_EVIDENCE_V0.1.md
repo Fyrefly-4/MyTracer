@@ -153,6 +153,7 @@ Artifact 位于 ignored `.tmp/evidence/`，可由 GitHub Actions 作为短期 ar
 | `EV-T802-001` | T802 | `a61d0bc100752ae1209623a2ac020ff25a62bf8f` | S2 package API、连续 AC-03、S1 v1 数据守恒与合同归档候选 | partial | not-required | 实现候选本地完整门禁、独立 review 和 PR #20 hosted CI 通过；归档后最新 head CI、merge 与最终 dev 聚合复验待完成 |
 | `EV-T802-002` | T802 / S2 aggregate | `a9db1eb26134dac83b01f4a4d7da30f92a271242` | T021～T023 同 revision 聚合、AC-01/03/04、SQLite/LocalDate、Windows package 与归档 | pass | pass | 最终 dev 本地/hosted 门禁、定向验收、package smoke 与独立 review 通过；T021～T023 人工验收沿用已记录的 owner pass |
 | `EV-T090-001` | T090 / GOV-01 | `767ea6741411e2d2e7a82b297a0ed7dde3e3134e` | V2 第一、二批流程规范、Task Contract 字段、Stage Design 模板和 Escalation Proposal | pass | pass | 本地文档验证、PR candidate CI 和人工审核通过；无产品任务试点；PR #23 后续以 `aeb0d68` 进入 `dev` |
+| `EV-T091-001` | T091 / GOV-02 | `f12f5e5fa81cf23124be126f2e23486d518104bc` | V2 第三批确定性证据采集、CI artifact、metadata 校验和规则同步 | pass | pass | 本地完整验证与 PR #24 corrected candidate CI（run `32133490249`）通过；正确区分 PR head 与 test-merge revision；项目所有者批准 docs closeout 并将人工验收标记为通过；无 dev merge，T092 延后 |
 | `EV-G3-S1-001` | G3/S1 | `623007dd4269df02771f6a526db269de1fe95a03` | T011～T014 同 revision 核心闭环、Windows package 与发布门禁 | fail | pending | `verify`、AC-01 和 package 构建通过；package smoke 因旧 Preload API 断言在 unpacked 阶段失败，NSIS 安装态未验证 |
 | `EV-G3-S1-002` | G3/S1 | `74ebe346a86cf431d87e02e8a1220b713b33901c` | T011～T014/T801 同 revision 核心闭环、Windows package 与发布门禁 | pass | pass | hosted/local `verify`、AC-01、package、unpacked/NSIS smoke 与独立 review 通过；确切里程碑 PR 的所有者 merge 批准仍单独待定 |
 
@@ -830,4 +831,37 @@ Agent 只提供步骤和观察位置，不得替项目所有者签署人工验�
 - **Manual acceptance**：pass；项目所有者于 2026-08-18 明确确认 review 和人工审核通过，并接受“第二批文档已落地、尚未真实任务运行验证”的限制声明。
 - **Known limitations**：第二批没有真实 Txxx 任务试点；`stage_final_integration_revision` 仍为 `null`；PR #23 的最终 merge 状态已由 `aeb0d68` 记录；后续 PR 仍由项目所有者控制 Ready、merge、tag 和 release。
 - **Supersedes / superseded by**：无
+- **Recorded at**：2026-08-18
+
+### EV-T091-001
+
+- **Status**：pass
+- **Task / Gate**：T091 / GOV-02；不声明任何产品 FR、AC、阶段门或 `dev` 合入
+- **Requirements**：无产品 FR/AC；GW-001、GW-002、GW-004、GW-008、GW-009、GW-010；T091 合同
+- **Source branch**：`docs/T091-deterministic-evidence`
+- **Source revision**：`f12f5e5fa81cf23124be126f2e23486d518104bc`
+- **Base revision**：`dev@aeb0d68578e2c9fc91523e99272db3e1ec88cf52`
+- **Task delivery revision**：`f12f5e5fa81cf23124be126f2e23486d518104bc`
+- **Dev integration revision**：`null`；T091 尚未合入 `dev`
+- **Stage final integration revision**：`null`；本任务不声明阶段聚合完成
+- **Integration freshness**：`fresh`；original/latest/verified base 均为 `dev@aeb0d68578e2c9fc91523e99272db3e1ec88cf52`，未发生 stale refresh
+- **CI classification**：`candidate`；PR #24 corrected candidate run `32133490249`，job `95699517255`。artifact 中 `ci.headRevision` 为 PR head `f12f5e5fa81cf23124be126f2e23486d518104bc`，`ci.mergeRevision` 为实际 PR test-merge revision `758473eb65ede36743223c341f6afc5a883e49d8`，两者未混用。docs closeout 推送后的 final-head CI 由 Draft PR body 记录，不在本条目中预先声明通过。
+- **Environment**：Microsoft Windows 11，10.0.26200，x64；Node.js v24.18.0；npm 11.16.0；Electron 43.3.0；hosted runner 为 GitHub Actions `windows-2025`；无产品数据库、无 live AI、无用户数据写入
+- **Command or manual procedure**：
+  1. 执行 `npm.cmd run governance:metadata:check`，exit code 0。
+  2. 执行 `npm.cmd run evidence:verify`，exit code 0；本地生成 `.tmp/evidence/unscoped-aggregate-f12f5e5fa81c-20260818114637.json`。
+  3. 执行 `npm.cmd run format:check`、`npm.cmd run lint`、`npm.cmd run typecheck`，均 exit code 0。
+  4. 执行 `npm.cmd run test:unit`，23 个文件、111 个测试通过；执行 `npm.cmd run test:integration`，16 个文件、54 个测试通过。
+  5. 执行 `npm.cmd run verify`，build、lint、typecheck、unit、integration、E2E 均通过；既有 Windows package smoke 保持 1 项 skip。执行 `git diff --check`，exit code 0。
+  6. 检查 corrected candidate artifact `unscoped-aggregate-758473eb65ed-20260818114957.json`：`exitCode: 0`、`commandStatus: passed`、`captureStatus: complete`；未发现 stdout/stderr、原始环境变量、凭据、绝对路径或用户数据。
+  7. 项目所有者已批准本次 docs closeout 精确范围，并明确将人工验收标记为 `pass`。
+- **Result**：
+  - collector 使用显式 argv、`shell: false` 和 Windows `ComSpec` fallback；命令不存在、启动失败和非零退出均保留失败状态与真实退出码，不生成虚假通过证据。
+  - validator 检查必需字段、关系类型、重复项、`conflicts_with` 依据和 shared surface 完整性；不调度任务、不修改 TASK_INDEX 或长期文档。
+  - workflow 运行 metadata/evidence 检查并使用 `actions/upload-artifact@v4.6.2`、7 天保留，仅上传脱敏 JSON；没有产品代码、数据库、migration、npm 依赖或 lockfile 变化。
+  - 保持 `npm.cmd run verify` 语义不变；长期文档继续要求 Agent 解释事实并在获得授权后更新。
+- **Artifacts**：Draft PR #24（[PR link](https://github.com/Fyrefly-4/MyTracer/pull/24)）；corrected candidate [run `32133490249`](https://github.com/Fyrefly-4/MyTracer/actions/runs/32133490249)，job `95699517255`；artifact `unscoped-aggregate-758473eb65ed-20260818114957.json`。早一轮 run `32132410959` 的 CI 本身通过，但其 artifact 将 test-merge SHA 填入 `ci.headRevision`，该证据语义由 corrected run supersede，旧记录保留且不作为 T091 完成依据。
+- **Manual acceptance**：pass；项目所有者已明确批准上述 1–4 项 docs closeout，并要求人工验收标记为通过。
+- **Known limitations**：T091 尚未合入 `dev`；`dev_integration_revision`、`stage_final_integration_revision` 保持 `null`；final-head CI 属于文档 closeout 后的 PR 集成门禁；既有 Windows package smoke 有 1 项 skip；T092 仍需至少三个真实 Txxx 任务交付试运行并验证 early/candidate/final-head 区分、交付链追踪、artifact 脱敏、metadata/freshness 检查和长期文档不被自动改写后，另行授权启动。
+- **Supersedes / superseded by**：corrected candidate run `32133490249` supersedes the evidence semantics of run `32132410959`; neither implies `dev` merge、Ready、tag 或 release。
 - **Recorded at**：2026-08-18

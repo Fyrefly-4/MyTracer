@@ -67,7 +67,7 @@
 | T071 | S7 | 11 条 SHOULD 的既定处理结论 | Traceability §4；Implementation §10.1 | S1～S6 | `pending` | — |
 | T072 | S7 | 全量回归、AC-01～AC-07、Windows Demo 收敛 | 全部 MUST/AC；Test Strategy §7～10 | T071 | `pending` | — |
 | T090 | GOV-01 | V2 Agent 流程第一、二批文档规范 | GW-001/002/004/005/006/009/010；T090 合同 | dev@112b909 | `done` | `EV-T090-001` |
-| T091 | GOV-02 | V2 第三批确定性证据采集、CI artifact 和 metadata 校验 | V2 Batch 3；GW-001/002/004/008/009/010；T091 合同 | T090；dev@aeb0d68 | `active` | — |
+| T091 | GOV-02 | V2 第三批确定性证据采集、CI artifact 和 metadata 校验 | V2 Batch 3；GW-001/002/004/008/009/010；T091 合同 | T090；dev@aeb0d68 | `done` | `EV-T091-001` |
 | T801 | S1 fix | 更新 Windows package smoke 的 S1 窄 API 契约并重新验证 unpacked/NSIS | G3/S1；GW-008/010；不改变 FR/AC/D/ED | `EV-G3-S1-001` | `done` | `EV-T801-001` |
 | T802 | S2 fix | 修复 package smoke、完整连续 E2E-AC-03、既有 S1 v1 数据守恒与 T021～T023 合同归档 | AC-03；FR-D01 S2 子集；GW-008/010；不改变生产语义 | S2 聚合验收失败与独立 review | `done` | `EV-T802-002` |
 

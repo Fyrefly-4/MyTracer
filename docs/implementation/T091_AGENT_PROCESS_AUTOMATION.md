@@ -1,7 +1,7 @@
 # T091 V2 第三批确定性证据自动化任务合同
 
 > 任务类型：流程治理 / 工具与文档任务
-> 任务状态：active
+> 任务状态：done
 > 本合同承接 T090 已进入 `dev` 的第一、二批规范，落地 V2 第三批；不启用第四批 Profile。
 
 ## 1. 任务信息
@@ -9,7 +9,7 @@
 - **Task ID**：T091
 - **Title**：落地 V2 第三批确定性证据采集、CI artifact 和 metadata 校验
 - **Slice / Plan item**：GOV-02 / V2 Batch 3
-- **Status**：active
+- **Status**：done
 - **Base branch**：`dev`
 - **Observed authorized base**：`origin/dev@aeb0d68`
 - **Expected branch**：`docs/T091-deterministic-evidence`
@@ -60,7 +60,7 @@ References 是依据索引，不创建新的产品语义来源。
 - [x] 无新增或升级 npm 依赖；`package-lock.json` 不得变化。
 - [x] T091 独立 worktree 和任务分支已建立。
 - [x] T091 允许 push task branch 和创建/更新 Draft PR；Ready、merge、tag、release 均未授权。
-- [ ] candidate hosted CI 通过后，文档 closeout 范围仍须项目所有者单独确认。
+- [x] candidate hosted CI 通过后，项目所有者已批准本次文档 closeout：写入 `EV-T091-001`，将 T091 账本状态更新为 `done`，补齐本合同的交付、集成和人工验收事实，并更新 Draft PR body；不启动 T092。
 
 ```yaml
 dependencies:
@@ -158,14 +158,14 @@ permissions:
 
 ## 9. 交付物
 
-- [ ] Node evidence collector 和命令行参数校验。
-- [ ] Node metadata sidecar validator。
-- [ ] T091 JSON metadata sidecar。
-- [ ] `evidence:verify` 和 `governance:metadata:check` 稳定命令。
-- [ ] Windows CI evidence artifact 上传步骤，固定 `actions/upload-artifact@v4.6.2`、7 天保留。
-- [ ] collector/validator 的单元或黑盒测试。
-- [ ] AGENTS、Skill、Task Template、Evidence、GitHub workflow 的规则同步。
-- [ ] T091 状态记录和真实验证证据。
+- [x] Node evidence collector 和命令行参数校验。
+- [x] Node metadata sidecar validator。
+- [x] T091 JSON metadata sidecar。
+- [x] `evidence:verify` 和 `governance:metadata:check` 稳定命令。
+- [x] Windows CI evidence artifact 上传步骤，固定 `actions/upload-artifact@v4.6.2`、7 天保留。
+- [x] collector/validator 的单元或黑盒测试。
+- [x] AGENTS、Skill、Task Template、Evidence、GitHub workflow 的规则同步。
+- [x] T091 状态记录和真实验证证据。
 
 ## 10. 固定接口与验收标准
 
@@ -194,7 +194,7 @@ JSON artifact 至少包含：`schemaVersion`、`task`、`gate`、`sourceBranch`�
 6. CI 运行 metadata 检查和 evidence wrapper；artifact 上传步骤在验证失败时仍执行，且仅上传 `.tmp/evidence/*.json`。
 7. 现有 `npm.cmd run verify` 命令文本和执行语义保持不变；不引入 npm 依赖或改变产品运行时。
 8. 相关规范明确工具采集事实、Agent 解释证据、长期文档更新需授权。
-9. `MANUAL`：项目所有者在 hosted candidate CI 通过后确认 docs closeout 精确范围；未确认前保持 `pending`。
+9. `MANUAL`：项目所有者已在 hosted candidate CI 通过后确认本次 docs closeout 精确范围；人工验收标记为 `pass`。该确认不包含 Ready、merge、tag、release 或 T092 启动。
 
 ## 11. 验证计划
 
@@ -219,12 +219,14 @@ integration:
   base_revision: dev@aeb0d68
   freshness_required: true
   affected_regression_required: true
-  task_delivery_revision: null
+  task_delivery_revision: f12f5e5fa81cf23124be126f2e23486d518104bc
   dev_integration_revision: null
   stage_final_integration_revision: null
 ```
 
 若 `dev` 在 candidate 前推进，必须以普通 merge 刷新 T091，重新运行 affected regression，必要时重新 review，并记录 `fresh` 或 `refreshed-and-passed`。不得 force-push。
+
+本次 T091 以 `f12f5e5fa81cf23124be126f2e23486d518104bc` 作为实现与 task delivery revision；candidate hosted CI 已通过，文档 closeout 已获项目所有者批准，`manual acceptance` 为 `pass`。文档 closeout 推送后的 final-head CI 属于 PR 集成门禁，结果不预先写入本合同；最新 live 状态由 Draft PR body 记录。T091 未合入 `dev`，`dev_integration_revision` 与 `stage_final_integration_revision` 保持 `null`。
 
 ## 13. 停止条件与完成报告
 
