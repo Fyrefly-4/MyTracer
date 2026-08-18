@@ -75,6 +75,38 @@ dependencies:
 - `prefer_after`：不是硬依赖，但建议在其后执行。
 - `conflicts_with`：存在不可安全并行或必须先解决的共享修改，必须说明依据。
 
+### 4.2 Machine-readable metadata sidecar
+
+For a V2 Batch 3 task, add `docs/implementation/metadata/Txxx.json`. The sidecar is auxiliary machine-checkable metadata; the task contract, `TASK_INDEX` and Evidence ledger remain authoritative for scope, status and acceptance.
+
+```json
+{
+  "schemaVersion": 1,
+  "task": "Txxx",
+  "dependencies": {
+    "requires": [],
+    "blocks": [],
+    "can_parallel": [],
+    "prefer_after": [],
+    "conflicts_with": []
+  },
+  "shared_surfaces": [
+    {
+      "files": [],
+      "modules": [],
+      "schema_tables": [],
+      "ipc_contracts": [],
+      "domain_invariants": [],
+      "risk": "low",
+      "integration_policy": "serial"
+    }
+  ],
+  "external": []
+}
+```
+
+The validator checks the five finite dependency relations, task references, duplicate entries, shared-surface identifiers, risk/policy values and JSON integrity. It does not infer safe parallelism, schedule tasks or modify tracked files.
+
 ## 5. 允许修改范围
 
 列出允许修改的目录、模块或文件：
@@ -143,6 +175,14 @@ npm.cmd run verify
 ```
 
 `verify` 已包含 build 和 Electron E2E。若合同需要 `npm.cmd ci`、独立 `npm.cmd run build`、打包、人工步骤或平台专属验证，必须额外逐项列出；不得用 `verify` 声称它未覆盖的结果。
+
+### 10.1 Deterministic evidence capture
+
+```powershell
+node tools/evidence/capture-command.mjs --task Txxx --gate task-candidate --base-revision <sha> --output .tmp/evidence -- npm.cmd run verify
+```
+
+The wrapper must use explicit argv, keep child stdout/stderr out of the JSON, preserve the real child exit code, and write only redacted JSON under `.tmp/evidence/`. On Windows, `.cmd`/`.bat` commands are launched through explicit `ComSpec` argv while the Node child process remains `shell: false`; the recorded command remains the original argv. The artifact is factual input for later Evidence interpretation; it is not automatic acceptance.
 
 ### 人工步骤
 

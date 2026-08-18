@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "task": "T091",
+  "dependencies": {
+    "requires": ["T090"],
+    "blocks": [],
+    "can_parallel": [],
+    "prefer_after": [],
+    "conflicts_with": []
+  },
+  "shared_surfaces": [
+    {
+      "files": [
+        "AGENTS.md",
+        ".agents/skills/mytracer-stage-development/SKILL.md",
+        "docs/implementation/TASK_TEMPLATE.md",
+        "docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md",
+        "docs/implementation/GITHUB_WORKFLOW_V0.1.md",
+        "docs/implementation/TASK_INDEX_V0.1.md",
+        "package.json",
+        ".github/workflows/verify.yml"
+      ],
+      "modules": ["evidence-capture", "task-metadata-validation"],
+      "schema_tables": [],
+      "ipc_contracts": [],
+      "domain_invariants": ["evidence-facts-are-not-automatic-acceptance"],
+      "risk": "high",
+      "integration_policy": "serial"
+    }
+  ],
+  "external": ["github-actions-artifact-storage"]
+}
