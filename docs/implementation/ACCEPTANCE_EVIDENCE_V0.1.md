@@ -52,7 +52,11 @@ Evidence ID 不复用。失败记录保留，并由后续记录明确引用修�
 - **Requirements**：FR- / AC- / D- / ED-
 - **Source branch**：
 - **Source revision**：commit SHA，或 `uncommitted` + 记录时间
-- **CI head/merge revision**：如适用
+- **Task delivery revision**：证明任务自身合同的最终候选 revision
+- **Dev integration revision**：任务实际进入 `dev` 的 merge/squash revision；未合入时填写 `null`
+- **Stage final integration revision**：阶段最终聚合 revision；不适用时填写 `null`
+- **Integration freshness**：`fresh` / `refreshed-and-passed` / `blocked` / `not-required`，并记录原始基线、最新授权 `dev`、实际验证 revision 和刷新方法
+- **CI classification**：`early` / `candidate` / `final-head` / `post-merge`，同时记录对应 head/test-merge revision
 - **Environment**：OS、Node、Electron、数据库/fixture、关键工具版本
 - **Command or manual procedure**：
 - **Result**：
@@ -61,6 +65,39 @@ Evidence ID 不复用。失败记录保留，并由后续记录明确引用修�
 - **Known limitations**：
 - **Supersedes / superseded by**：
 - **Recorded at**：YYYY-MM-DD
+
+### 3.1 V2 revision and CI boundaries
+
+```yaml
+task_delivery_revision: bbb222
+dev_integration_revision: ddd444
+stage_final_integration_revision: null
+
+integration_freshness:
+  original_base_revision: abc123
+  latest_authorized_dev_revision: def456
+  verified_against_revision: def456
+  status: refreshed-and-passed
+  refresh_method: merge-dev-into-task-branch
+
+ci:
+  early:
+    head_revision: aaa111
+    result: feedback
+  candidate:
+    head_revision: bbb222
+    result: pass
+  final_head:
+    head_revision: bbb555
+    result: pass
+  post_merge:
+    merge_revision: ddd444
+    result: pass
+```
+
+`task_delivery_revision` 证明任务自身合同，`dev_integration_revision` 证明任务进入目标 `dev`，`stage_final_integration_revision` 证明整个阶段在同一最终集成版本成立。Draft PR、early CI 和中间 revision 不能单独证明任务完成。
+
+失败 Evidence 必须保留；后续成功记录通过 `Supersedes / superseded by` 建立关系，不删除失败事实。
 
 ## 4. 任务级证据索引
 
