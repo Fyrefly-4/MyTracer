@@ -2,7 +2,7 @@
 
 > 任务类型：流程治理 / 文档任务
 >
-> 状态：active
+> 状态：review
 >
 > 本合同把项目所有者批准的 V2 第一、二批落地方案转化为本仓库的执行边界。V2 用户文档仍是修订提案，不是本任务的规范来源。
 
@@ -11,7 +11,7 @@
 - **Task ID**：T090
 - **Title**：落地 MyTracer V2 Agent 流程第一、二批文档规范
 - **Slice / Plan item**：GOV-01 / V2 Batch 1-2
-- **Status**：active
+- **Status**：review
 - **Base branch**：`dev`，初始观察 revision `112b90968dad05cd27f8421480cadaeff6f85e2c`
 - **Expected branch**：`docs/T090-agent-process-v2`
 
@@ -111,7 +111,7 @@ integration:
   base_revision: dev@112b909
   freshness_required: true
   affected_regression_required: false
-  task_delivery_revision: null
+  task_delivery_revision: 5b5211aa4904aef39b5e3f4366efbce08b8d3229
   dev_integration_revision: null
   stage_final_integration_revision: null
 ```
