@@ -2,7 +2,7 @@
 
 > 任务类型：流程治理 / 文档任务
 >
-> 状态：review
+> 状态：done
 >
 > 本合同把项目所有者批准的 V2 第一、二批落地方案转化为本仓库的执行边界。V2 用户文档仍是修订提案，不是本任务的规范来源。
 
@@ -11,7 +11,7 @@
 - **Task ID**：T090
 - **Title**：落地 MyTracer V2 Agent 流程第一、二批文档规范
 - **Slice / Plan item**：GOV-01 / V2 Batch 1-2
-- **Status**：review
+- **Status**：done
 - **Base branch**：`dev`，初始观察 revision `112b90968dad05cd27f8421480cadaeff6f85e2c`
 - **Expected branch**：`docs/T090-agent-process-v2`
 
@@ -89,8 +89,8 @@ permissions:
   create_worktree: false
   create_task_branch: true
   create_commit: true
-  push_task_branch: false
-  create_or_update_draft_pr: false
+  push_task_branch: true
+  create_or_update_draft_pr: true
   mark_ready: false
   merge_dev: false
   merge_main: false
@@ -101,7 +101,7 @@ permissions:
   external_write: false
 ```
 
-不修改 GitHub Actions、branch protection、Actions secrets、远端 PR 或远端分支。
+不修改 GitHub Actions、branch protection 或 Actions secrets；项目所有者已另外授权本任务推送任务分支并创建 Draft PR。仍不标记 Ready、不合并、不创建 tag/release，也不进行其他外部写入。
 
 ## 7. Integration
 
@@ -116,7 +116,7 @@ integration:
   stage_final_integration_revision: null
 ```
 
-正式提交前重新读取当前授权 `dev` revision；若基线发生变化，记录实际 revision，不凭旧观察值宣称 fresh。由于本任务不 push 或创建 PR，hosted CI 和 dev integration revision 保持未发生状态。
+正式提交前重新读取当前授权 `dev` revision；若基线发生变化，记录实际 revision，不凭旧观察值宣称 fresh。当前授权 `dev` 仍为 `112b909...`；任务分支已推送并创建 Draft PR，hosted candidate CI 已通过，但尚未合入 `dev`，因此 `dev_integration_revision` 保持 `null`。
 
 ## 8. Allowed files
 
@@ -153,12 +153,12 @@ integration:
 
 ## 11. Deliverables
 
-- [ ] T090 任务索引记录。
-- [ ] 第一批流程规则同步到 AGENTS、Skill、GitHub workflow 和 Evidence 规范。
-- [ ] Escalation Proposal 模板。
-- [ ] Task Contract 的 references、dependencies、permissions、integration 和 shared surface 结构。
-- [ ] Stage Design baseline + delta 模板。
-- [ ] T090 验收证据、已知限制和未进行产品试点的记录。
+- [x] T090 任务索引记录。
+- [x] 第一批流程规则同步到 AGENTS、Skill、GitHub workflow 和 Evidence 规范。
+- [x] Escalation Proposal 模板。
+- [x] Task Contract 的 references、dependencies、permissions、integration 和 shared surface 结构。
+- [x] Stage Design baseline + delta 模板。
+- [x] T090 验收证据、已知限制和未进行产品试点的记录。
 
 ## 12. Acceptance criteria
 
@@ -169,7 +169,7 @@ integration:
 5. Task Template 能表达 references、五种依赖关系、permissions、integration 和 shared surface，且没有隐式授予 merge 或外部写入权限。
 6. Stage Design 模板包含 baseline manifest、stage delta、非范围、兼容性、migration/历史影响、连续 E2E、人工验收和停止条件。
 7. 结构检查确认没有启用第三、四批自动化或 Profile；PRD、决定、需求变更规则、产品代码和 CI workflow 实现没有变化。
-8. T090 证据明确记录：没有进行产品任务试点，第二批只完成文档结构，manual acceptance 仍为 `pending`。
+8. T090 证据明确记录：没有进行产品任务试点，第二批只完成文档结构；项目所有者已完成人工审核，manual acceptance 为 `pass`。
 
 ## 13. Validation plan
 
