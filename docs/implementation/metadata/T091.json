@@ -8,6 +8,7 @@
     "prefer_after": [],
     "conflicts_with": []
   },
+  "conflict_basis": {},
   "shared_surfaces": [
     {
       "files": [

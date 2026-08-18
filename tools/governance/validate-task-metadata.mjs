@@ -81,6 +81,11 @@ function validateSidecar(value, filename, knownTasks) {
   if (!isRecord(value.dependencies)) {
     errors.push(`${filename}: dependencies must be an object`)
   } else {
+    for (const relation of Object.keys(value.dependencies)) {
+      if (!RELATIONS.includes(relation)) {
+        errors.push(`${filename}:dependencies.${relation} is an unsupported relation`)
+      }
+    }
     for (const relation of RELATIONS) {
       validateStringArray(
         value.dependencies[relation],
@@ -98,6 +103,30 @@ function validateSidecar(value, filename, knownTasks) {
     for (const relation of RELATIONS) {
       if ((value.dependencies[relation] ?? []).includes(value.task)) {
         errors.push(`${filename}:dependencies.${relation} cannot reference itself`)
+      }
+    }
+  }
+
+  const conflicts = Array.isArray(value.dependencies?.conflicts_with)
+    ? value.dependencies.conflicts_with
+    : []
+  if (!isRecord(value.conflict_basis)) {
+    errors.push(`${filename}:conflict_basis must be an object`)
+  } else {
+    for (const task of Object.keys(value.conflict_basis)) {
+      if (!conflicts.includes(task)) {
+        errors.push(`${filename}:conflict_basis has no conflicts_with entry for ${task}`)
+      }
+      if (
+        typeof value.conflict_basis[task] !== 'string' ||
+        value.conflict_basis[task].trim() === ''
+      ) {
+        errors.push(`${filename}:conflict_basis.${task} must be a non-empty string`)
+      }
+    }
+    for (const task of conflicts) {
+      if (!(task in value.conflict_basis)) {
+        errors.push(`${filename}:conflict_basis is missing basis for ${task}`)
       }
     }
   }
@@ -128,13 +157,8 @@ function validateSidecar(value, filename, knownTasks) {
     }
   }
 
-  if (!Array.isArray(value.external)) {
-    errors.push(`${filename}:external must be an array`)
-  }
-  if (
-    (value.dependencies?.conflicts_with ?? []).length > 0 &&
-    !value.shared_surfaces?.some(hasSurfaceIdentifier)
-  ) {
+  validateStringArray(value.external, `${filename}:external`, errors)
+  if (conflicts.length > 0 && !value.shared_surfaces?.some(hasSurfaceIdentifier)) {
     errors.push(`${filename}:conflicts_with requires a shared-surface basis`)
   }
   return errors

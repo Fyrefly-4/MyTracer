@@ -170,8 +170,9 @@ describe('task metadata validator', () => {
           blocks: [],
           can_parallel: [],
           prefer_after: [],
-          conflicts_with: []
+          conflicts_with: ['T090']
         },
+        conflict_basis: { T090: 'shares governance documentation surface' },
         shared_surfaces: [
           {
             files: ['AGENTS.md'],
@@ -199,7 +200,7 @@ describe('task metadata validator', () => {
     const metadataDirectory = join(directory, 'metadata')
     mkdirSync(metadataDirectory)
     const taskIndex = join(directory, 'TASK_INDEX.md')
-    writeFileSync(taskIndex, '| T091 | GOV-02 |\n')
+    writeFileSync(taskIndex, '| T090 | GOV-01 |\n| T091 | GOV-02 |\n')
     writeFileSync(
       join(metadataDirectory, 'T091.json'),
       JSON.stringify({
@@ -210,9 +211,10 @@ describe('task metadata validator', () => {
           blocks: [],
           can_parallel: [],
           prefer_after: [],
-          conflicts_with: [],
+          conflicts_with: ['T090'],
           unsupported: []
         },
+        conflict_basis: {},
         shared_surfaces: [
           {
             files: ['AGENTS.md'],
@@ -232,5 +234,7 @@ describe('task metadata validator', () => {
 
     expect(result.status).toBe(1)
     expect(result.stderr).toContain('duplicate T091')
+    expect(result.stderr).toContain('unsupported relation')
+    expect(result.stderr).toContain('missing basis for T090')
   })
 })

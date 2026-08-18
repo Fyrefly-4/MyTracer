@@ -90,6 +90,7 @@ For a V2 Batch 3 task, add `docs/implementation/metadata/Txxx.json`. The sidecar
     "prefer_after": [],
     "conflicts_with": []
   },
+  "conflict_basis": {},
   "shared_surfaces": [
     {
       "files": [],
@@ -105,7 +106,7 @@ For a V2 Batch 3 task, add `docs/implementation/metadata/Txxx.json`. The sidecar
 }
 ```
 
-The validator checks the five finite dependency relations, task references, duplicate entries, shared-surface identifiers, risk/policy values and JSON integrity. It does not infer safe parallelism, schedule tasks or modify tracked files.
+The validator checks the five finite dependency relations, task references, duplicate entries, `conflict_basis` entries for every `conflicts_with` task, shared-surface identifiers, risk/policy values and JSON integrity. It does not infer safe parallelism, schedule tasks or modify tracked files.
 
 ## 5. 允许修改范围
 
