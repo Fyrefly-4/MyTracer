@@ -19,6 +19,8 @@
     "test:e2e:run": "playwright test",
     "test:e2e": "npm run build && npm run test:e2e:run",
     "test:package-smoke": "set \"MYTRACER_PACKAGE_SMOKE=1\" && playwright test tests/e2e/windows-package-smoke.e2e.test.ts",
+    "governance:metadata:check": "node tools/governance/validate-task-metadata.mjs --metadata-dir docs/implementation/metadata --task-index docs/implementation/TASK_INDEX_V0.1.md",
+    "evidence:verify": "node tools/evidence/capture-command.mjs --task unscoped --gate aggregate --output .tmp/evidence -- npm.cmd run verify",
     "verify": "npm run format:check && npm run lint && npm run typecheck && npm run test:unit && npm run test:integration && npm run test:e2e"
   },
   "engines": {

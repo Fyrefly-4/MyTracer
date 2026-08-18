@@ -301,6 +301,24 @@ clean install
 - 只有验证逻辑确实依赖 Git 历史时才使用完整 checkout 历史，并记录原因。
 - 精确 command、Node/Electron 版本和 workflow 文件需在依赖批准和 T002 执行时固定。
 
+### V2 Batch 3 evidence artifact
+
+采用 Batch 3 的任务应先运行 `npm.cmd run governance:metadata:check`，再用 `npm.cmd run evidence:verify` 包装现有 `npm.cmd run verify`。包装器必须保持原验证命令的退出码，并只在 ignored `.tmp/evidence/*.json` 生成脱敏事实 artifact。
+
+Windows required job 可以使用以下固定上传约束：
+
+```yaml
+- name: Upload verification evidence
+  if: always()
+  uses: actions/upload-artifact@v4.6.2
+  with:
+    path: .tmp/evidence/*.json
+    if-no-files-found: warn
+    retention-days: 7
+```
+
+上传步骤不得写入 repository contents、Secrets、任务账本或长期文档。Artifact 不是 acceptance；Agent 仍须区分 early、candidate、final-head 和 post-merge CI，并把实际 artifact/run/head revision 绑定到 Evidence。
+
 GitHub required checks 必须成功后才允许合并；被路径过滤跳过的 required workflow 可能长期 Pending。参考：[GitHub status checks](https://docs.github.com/en/pull-requests/reference/status-checks) 和 [required checks troubleshooting](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks)。
 
 ## 9. GW-009 Agent Git 权限

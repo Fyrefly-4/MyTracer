@@ -32,5 +32,15 @@ jobs:
         run: npm.cmd ci
       - name: Restore the approved Electron binary
         run: npm.cmd exec -- install-electron --no
+      - name: Validate governance metadata
+        run: npm.cmd run governance:metadata:check
       - name: Verify the repository
-        run: npm.cmd run verify
+        run: npm.cmd run evidence:verify
+      - name: Upload verification evidence
+        if: always()
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: verification-evidence-${{ github.run_id }}
+          path: .tmp/evidence/*.json
+          if-no-files-found: warn
+          retention-days: 7

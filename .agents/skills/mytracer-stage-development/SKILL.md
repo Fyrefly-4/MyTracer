@@ -104,6 +104,8 @@ Use isolated temporary databases and Electron `userData` roots. Use `FakeClock` 
 
 Report failed, skipped, unavailable, platform-limited, and manual checks explicitly. A test name, keyword match, plan entry, or earlier successful revision is not completion evidence. Keep project-owner manual acceptance `pending` until the owner performs it.
 
+For a contract that adopts V2 Batch 3, run `npm.cmd run governance:metadata:check` and use `capture-command.mjs` with explicit argv when command facts must be recorded. On Windows, `.cmd`/`.bat` commands are launched through explicit `ComSpec` argv while the Node child process remains `shell: false`, and the original command argv remains in the artifact. For GitHub `pull_request` runs, `ci.headRevision` must be the PR head from the event payload while `ci.mergeRevision` is the checked-out test-merge revision. The wrapper may create only ignored `.tmp/evidence/*.json`; it must not write long-term task, evidence, requirement or status documents. Inspect the artifact for source/base revisions, command exit code, CI classification, redaction and missing fields before using it as evidence. A failed child command or incomplete capture remains failed/incomplete and cannot be interpreted as acceptance.
+
 ## 5.1 Escalation Proposal
 
 When work encounters `requirement_conflict`, `architecture_change`, `contract_scope_change`, `dependency_change`, `migration_change`, `permission_change`, `integration_conflict`, `testability_problem`, `evidence_problem`, or `baseline_drift`:
@@ -131,6 +133,8 @@ Do not edit user-owned unrelated changes. If overlap prevents safe isolation, st
 ## 7. Prepare evidence and task records
 
 Record provisional evidence during implementation only from real results and only when the task authorizes the target file. Bind each claim to its Evidence ID, task and requirements, source revision, environment, procedure, result, artifacts, manual status, and limitations. For V2 tasks, distinguish `task_delivery_revision`, `dev_integration_revision`, and `stage_final_integration_revision`; record early, candidate, final-head, and post-merge CI separately. Preserve failed records and link later results with `supersedes`.
+
+When a CI workflow uploads a deterministic artifact, record the artifact name and exact CI run/head revision in the Evidence ledger after inspection. Artifact upload, metadata validation and command wrapping do not automatically update the ledger or mark a task complete.
 
 Keep `docs/implementation/TASK_INDEX_V0.1.md` as the single repository task-status ledger. Use `active` or `review` while implementation, independent review, task-required candidate CI, documentation authorization, or documentation closeout remains. Do not mark `done` before its definition is supported by evidence. Keep non-blocking limitations explicit.
 

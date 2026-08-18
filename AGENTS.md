@@ -179,6 +179,20 @@ For V2 task evidence, distinguish the task's own `task_delivery_revision`, the r
 
 A test name, plan entry, keyword match, or agent statement is not proof that behavior passed. Record evidence in `docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md`.
 
+### 9.1 Deterministic evidence capture and metadata
+
+When a V2 task uses the repository evidence tools:
+
+- run `npm.cmd run governance:metadata:check` before treating task metadata as valid;
+- use the explicit-argv `capture-command.mjs` wrapper for commands whose exit code and environment must be recorded;
+- on Windows, `.cmd`/`.bat` commands use an explicit `ComSpec` argv while the Node child process remains `shell: false`; the original command argv is preserved in the artifact;
+- for GitHub `pull_request` runs, `ci.headRevision` comes from the event payload's PR head and `ci.mergeRevision` records the checked-out test-merge revision; these fields must not be conflated;
+- treat the generated JSON as a factual artifact, not as automatic acceptance or a replacement for Evidence ledger interpretation;
+- keep artifacts under ignored `.tmp/evidence/`; they may contain only fixed metadata, relative artifact names and allowlisted CI fields;
+- never record stdout/stderr, raw environment variables, credentials, safeStorage, SQLite, user content, absolute user paths or complete logs;
+- preserve failed artifacts and exit codes; do not convert a failed child command into a successful task claim;
+- do not let validators or CI steps rewrite `TASK_INDEX`, `ACCEPTANCE_EVIDENCE`, task contracts, README, requirements, decisions or stage documents.
+
 ## 10. Git and GitHub authorization
 
 Follow `docs/implementation/GITHUB_WORKFLOW_V0.1.md`.
