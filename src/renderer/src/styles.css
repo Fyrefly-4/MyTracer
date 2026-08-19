@@ -285,6 +285,124 @@ button:focus-visible {
   font-size: 18px;
 }
 
+.data-workspace,
+.data-workspace > section {
+  display: grid;
+  gap: 16px;
+}
+
+.data-backfill-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.data-backfill-grid .goal-card {
+  display: grid;
+  gap: 12px;
+}
+
+.data-record-card {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid rgba(44, 74, 65, 0.14);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.74);
+}
+
+.data-record-heading,
+.data-root-list,
+.dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.data-record-heading > span {
+  color: #66756f;
+  font-size: 13px;
+}
+
+.data-record-heading .danger-button {
+  margin-left: auto;
+}
+
+.data-edit-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(120px, 1fr));
+  gap: 10px;
+  align-items: end;
+}
+
+.inline-check {
+  display: flex !important;
+  align-items: center;
+  gap: 8px !important;
+}
+
+.inline-check input {
+  width: auto;
+}
+
+.danger-button {
+  border: 1px solid #a14f45;
+  border-radius: 10px;
+  padding: 9px 12px;
+  color: #8a372e;
+  background: #fff7f5;
+}
+
+.data-facts {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.data-facts li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.data-facts input {
+  flex: 1 1 240px;
+}
+
+.fact-revoked {
+  opacity: 0.62;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(24, 38, 34, 0.48);
+}
+
+.confirmation-dialog {
+  width: min(520px, 100%);
+  padding: 26px;
+  border-radius: 20px;
+  background: #fffdf8;
+  box-shadow: 0 24px 80px rgba(18, 33, 28, 0.28);
+}
+
+.confirmation-dialog h2 {
+  color: #2c473f;
+}
+
+.dialog-actions {
+  justify-content: flex-end;
+}
+
 .goal-card label {
   display: grid;
   gap: 7px;
@@ -1110,6 +1228,11 @@ h1 {
 @media (max-width: 820px) {
   .workspace {
     grid-template-columns: 180px 1fr;
+  }
+
+  .data-backfill-grid,
+  .data-edit-grid {
+    grid-template-columns: 1fr;
   }
 
   .content {

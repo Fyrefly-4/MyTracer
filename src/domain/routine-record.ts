@@ -2,6 +2,7 @@ import { createLocalDate, type LocalDate } from './local-date'
 
 export type RoutineRecordOutcome = 'target_met' | 'acted' | 'intentional_rest' | 'not_done'
 export type RoutineRecordState = RoutineRecordOutcome | 'unknown'
+export type RoutinePlannedForDateBasis = 'schedule_at_recording' | 'user_confirmed_history'
 
 export interface RoutineRecord {
   readonly id: string
@@ -9,6 +10,7 @@ export interface RoutineRecord {
   readonly occurredOn: LocalDate
   readonly outcome: RoutineRecordOutcome
   readonly plannedForDate: boolean
+  readonly plannedForDateBasis: RoutinePlannedForDateBasis
   readonly durationMinutes: number | null
   readonly note: string | null
   readonly createdAt: string
@@ -68,6 +70,7 @@ export function createRoutineRecord(input: {
   readonly occurredOn: string
   readonly outcome: RoutineRecordOutcome
   readonly plannedForDate: boolean
+  readonly plannedForDateBasis: RoutinePlannedForDateBasis
   readonly durationMinutes?: number | null
   readonly note?: string | null
   readonly now: string
@@ -79,6 +82,12 @@ export function createRoutineRecord(input: {
     input.outcome !== 'not_done'
   ) {
     throw new RoutineRecordDomainError('validation', 'Routine record outcome is invalid.')
+  }
+  if (
+    input.plannedForDateBasis !== 'schedule_at_recording' &&
+    input.plannedForDateBasis !== 'user_confirmed_history'
+  ) {
+    throw new RoutineRecordDomainError('validation', 'Routine record plan provenance is invalid.')
   }
   let occurredOn: LocalDate
   try {
@@ -92,11 +101,32 @@ export function createRoutineRecord(input: {
     occurredOn,
     outcome: input.outcome,
     plannedForDate: input.plannedForDate,
+    plannedForDateBasis: input.plannedForDateBasis,
     durationMinutes: normalizeDuration(input.outcome, input.durationMinutes),
     note: optionalText(input.note),
     createdAt: requiredText(input.now, 'Routine record created time'),
     updatedAt: requiredText(input.now, 'Routine record updated time')
   })
+}
+
+export function updateRoutineRecord(
+  current: RoutineRecord,
+  changes: {
+    readonly occurredOn: string
+    readonly outcome: RoutineRecordOutcome
+    readonly plannedForDate: boolean
+    readonly plannedForDateBasis: RoutinePlannedForDateBasis
+    readonly durationMinutes?: number | null
+    readonly note?: string | null
+    readonly now: string
+  }
+): RoutineRecord {
+  const validated = createRoutineRecord({
+    id: current.id,
+    routineId: current.routineId,
+    ...changes
+  })
+  return Object.freeze({ ...validated, createdAt: current.createdAt })
 }
 
 export function projectRoutineRecordState(record: RoutineRecord | null): RoutineRecordState {

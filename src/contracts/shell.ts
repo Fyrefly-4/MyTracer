@@ -4,6 +4,7 @@ import type { TodayApi } from './today'
 import type { RecordApi } from './records'
 import type { ProgressApi } from './progress'
 import type { RoutineApi } from './routines'
+import type { DataControlApi } from './data-control'
 
 export const SHELL_STATUS_CHANNEL = 'shell:query-status' as const
 
@@ -27,4 +28,5 @@ export interface MyTracerApi {
   readonly records: RecordApi
   readonly progress: ProgressApi
   readonly routines: RoutineApi
+  readonly dataControl: DataControlApi
 }

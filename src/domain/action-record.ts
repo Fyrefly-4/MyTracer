@@ -101,6 +101,76 @@ export function createActionRecord(input: {
   })
 }
 
+export function updateActionRecord(
+  current: ActionRecord,
+  changes: {
+    readonly occurredOn: string
+    readonly durationMinutes: number
+    readonly outcome: ActionRecordOutcome
+    readonly nextStep?: string | null
+    readonly note?: string | null
+    readonly now: string
+  }
+): ActionRecord {
+  const validated = createActionRecord({
+    id: current.id,
+    actionId: current.actionId,
+    ...changes
+  })
+  return Object.freeze({ ...validated, createdAt: current.createdAt })
+}
+
+export function updateUnderstanding(input: {
+  readonly id: string
+  readonly actionRecordId: string
+  readonly text: string
+  readonly source: 'manual' | 'ai_candidate_confirmed'
+  readonly revokedAt: string | null
+  readonly createdAt: string
+  readonly now: string
+}) {
+  return Object.freeze({
+    id: requiredText(input.id, 'Understanding id'),
+    actionRecordId: requiredText(input.actionRecordId, 'Action record id'),
+    text: requiredText(input.text, 'Understanding text'),
+    source: input.source,
+    revokedAt: input.revokedAt,
+    createdAt: input.createdAt,
+    updatedAt: input.now
+  })
+}
+
+export function updateConfusion(input: {
+  readonly id: string
+  readonly actionRecordId: string
+  readonly text: string
+  readonly status: 'open' | 'resolved'
+  readonly resolvedAt: string | null
+  readonly resolution: string | null
+  readonly createdAt: string
+  readonly now: string
+}) {
+  if (input.status === 'open' && (input.resolvedAt !== null || input.resolution !== null)) {
+    throw new ActionRecordDomainError(
+      'validation',
+      'An open Confusion cannot retain resolution data.'
+    )
+  }
+  if (input.status === 'resolved' && input.resolvedAt === null) {
+    throw new ActionRecordDomainError('validation', 'A resolved Confusion requires resolvedAt.')
+  }
+  return Object.freeze({
+    id: requiredText(input.id, 'Confusion id'),
+    actionRecordId: requiredText(input.actionRecordId, 'Action record id'),
+    text: requiredText(input.text, 'Confusion text'),
+    status: input.status,
+    resolvedAt: input.resolvedAt,
+    resolution: optionalText(input.resolution),
+    createdAt: input.createdAt,
+    updatedAt: input.now
+  })
+}
+
 export function createManualUnderstanding(input: {
   readonly id: string
   readonly actionRecordId: string

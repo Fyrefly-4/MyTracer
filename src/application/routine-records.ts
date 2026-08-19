@@ -46,6 +46,7 @@ export interface RoutineRecordView {
   readonly occurredOn: string
   readonly outcome: RoutineRecordOutcome
   readonly plannedForDate: boolean
+  readonly plannedForDateBasis: RoutineRecordPersistenceRecord['plannedForDateBasis']
   readonly durationMinutes: number | null
   readonly note: string | null
   readonly createdAt: string
@@ -204,6 +205,7 @@ export class RoutineRecordService {
             routineWithSchedule(repository, routine),
             decision.occurredOn
           ),
+          plannedForDateBasis: 'schedule_at_recording',
           durationMinutes: input.durationMinutes,
           note: input.note,
           now: snapshot.instant

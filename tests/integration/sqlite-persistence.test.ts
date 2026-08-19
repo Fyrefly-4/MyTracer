@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import Database from 'better-sqlite3'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { RepositoryPort } from '../../src/application/ports/persistence'
+import initialSchema from '../../src/infrastructure/sqlite/migrations/001_initial.sql?raw'
 import { schemaVersion } from '../../src/infrastructure/sqlite/migrations'
 import { SqliteConnection } from '../../src/infrastructure/sqlite/sqlite-connection'
 import {
@@ -23,6 +24,156 @@ async function openTestDatabase(): Promise<{
   createdRoots.push(root)
   const path = join(root.database, `sqlite-${crypto.randomUUID()}.sqlite3`)
   return { root, path, connection: SqliteConnection.open(path) }
+}
+
+async function createV1Database(): Promise<{
+  readonly path: string
+  readonly database: Database.Database
+}> {
+  const root = await createTemporaryTestRoot()
+  createdRoots.push(root)
+  const path = join(root.database, `sqlite-v1-${crypto.randomUUID()}.sqlite3`)
+  const database = new Database(path)
+  database.pragma('foreign_keys = ON')
+  database.exec(initialSchema)
+  database.prepare('INSERT INTO metadata (key, value) VALUES (?, ?)').run('schemaVersion', '1')
+  return { path, database }
+}
+
+const legacyFactQueries = {
+  goals: 'SELECT * FROM goals ORDER BY id',
+  actions: 'SELECT * FROM actions ORDER BY id',
+  routines: 'SELECT * FROM routines ORDER BY id',
+  routineScheduleDays: 'SELECT * FROM routine_schedule_days ORDER BY routine_id, weekday',
+  todaySelections: 'SELECT * FROM today_selections ORDER BY selected_for, action_id',
+  actionRecords: 'SELECT * FROM action_records ORDER BY occurred_on, id',
+  routineRecords:
+    'SELECT id, routine_id, occurred_on, outcome, planned_for_date, duration_minutes, note, created_at, updated_at FROM routine_records ORDER BY occurred_on, id',
+  understandings: 'SELECT * FROM understandings ORDER BY id',
+  confusions: 'SELECT * FROM confusions ORDER BY id',
+  reviewResults: 'SELECT * FROM review_results ORDER BY period_started_on, id'
+} as const
+
+function readLegacyFacts(database: Database.Database): Record<string, readonly unknown[]> {
+  return Object.fromEntries(
+    Object.entries(legacyFactQueries).map(([name, sql]) => [name, database.prepare(sql).all()])
+  )
+}
+
+function populateV1(database: Database.Database): void {
+  database.transaction(() => {
+    database
+      .prepare(
+        'INSERT INTO goals (id, title, description, status, current_next_action_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+      )
+      .run('goal-1', 'Goal', null, 'active', null, timestamp, timestamp)
+    database
+      .prepare(
+        'INSERT INTO actions (id, goal_id, title, description, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+      )
+      .run(
+        'action-1',
+        'goal-1',
+        "safe '); DROP TABLE goals; --",
+        null,
+        'pending',
+        timestamp,
+        timestamp
+      )
+    database
+      .prepare('UPDATE goals SET current_next_action_id = ? WHERE id = ?')
+      .run('action-1', 'goal-1')
+    database
+      .prepare(
+        'INSERT INTO routines (id, goal_id, name, minimum_action, description, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+      )
+      .run('routine-1', 'goal-1', 'Routine', 'One minute', null, 'active', timestamp, timestamp)
+    database
+      .prepare('INSERT INTO routine_schedule_days (routine_id, weekday) VALUES (?, ?)')
+      .run('routine-1', 1)
+    database
+      .prepare(
+        'INSERT INTO today_selections (action_id, selected_for, kind, selected_by, created_at) VALUES (?, ?, ?, ?, ?)'
+      )
+      .run('action-1', '2026-08-09', 'focus', 'user', timestamp)
+    database
+      .prepare(
+        'INSERT INTO action_records (id, action_id, occurred_on, duration_minutes, outcome, next_step, note, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+      )
+      .run(
+        'action-record-1',
+        'action-1',
+        '2026-08-09',
+        12,
+        'partial',
+        'Continue',
+        'Existing note',
+        timestamp,
+        timestamp
+      )
+    const insertRoutineRecord = database.prepare(
+      'INSERT INTO routine_records (id, routine_id, occurred_on, outcome, planned_for_date, duration_minutes, note, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    )
+    for (const [index, outcome, planned, duration] of [
+      [1, 'target_met', 1, 10],
+      [2, 'acted', 0, 0],
+      [3, 'intentional_rest', 1, null],
+      [4, 'not_done', 0, null]
+    ] as const) {
+      insertRoutineRecord.run(
+        `routine-record-${index}`,
+        'routine-1',
+        `2026-08-${String(8 + index).padStart(2, '0')}`,
+        outcome,
+        planned,
+        duration,
+        null,
+        timestamp,
+        timestamp
+      )
+    }
+    database
+      .prepare(
+        'INSERT INTO understandings (id, action_record_id, text, source, revoked_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+      )
+      .run(
+        'understanding-1',
+        'action-record-1',
+        'Observed fact',
+        'manual',
+        null,
+        timestamp,
+        timestamp
+      )
+    database
+      .prepare(
+        'INSERT INTO confusions (id, action_record_id, text, status, resolved_at, resolution, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+      )
+      .run(
+        'confusion-1',
+        'action-record-1',
+        'Open question',
+        'open',
+        null,
+        null,
+        timestamp,
+        timestamp
+      )
+    database
+      .prepare(
+        'INSERT INTO review_results (id, period_started_on, summary, adjustment, next_focus, goal_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+      )
+      .run(
+        'review-1',
+        '2026-08-03',
+        'Summary',
+        'Adjustment',
+        'Focus',
+        'goal-1',
+        timestamp,
+        timestamp
+      )
+  })()
 }
 
 function populate(repository: RepositoryPort): void {
@@ -88,6 +239,7 @@ function populate(repository: RepositoryPort): void {
     occurredOn: '2026-08-09',
     outcome: 'intentional_rest',
     plannedForDate: true,
+    plannedForDateBasis: 'schedule_at_recording',
     durationMinutes: null,
     note: null,
     createdAt: timestamp,
@@ -129,7 +281,7 @@ afterEach(async () => {
 })
 
 describe('SQLite persistence', () => {
-  it('migrates a fresh isolated database to schema v1 with verified pragmas', async () => {
+  it('migrates a fresh isolated database to schema v2 with verified pragmas', async () => {
     const { path, connection } = await openTestDatabase()
 
     try {
@@ -175,118 +327,145 @@ describe('SQLite persistence', () => {
     }
   })
 
-  it('opens an existing S1 v1 database without changing S1 facts or generating S2 data', async () => {
-    const { path, connection } = await openTestDatabase()
-    connection.transaction((repository) => {
-      repository.saveGoal({
-        id: 's1-goal',
-        title: 'Existing S1 goal',
-        description: 'Preserve this description',
-        status: 'active',
-        currentNextActionId: null,
-        createdAt: timestamp,
-        updatedAt: timestamp
-      })
-      repository.saveAction({
-        id: 's1-action',
-        goalId: 's1-goal',
-        title: 'Existing S1 action',
-        description: null,
-        status: 'pending',
-        createdAt: timestamp,
-        updatedAt: timestamp
-      })
-      repository.saveGoal({
-        id: 's1-goal',
-        title: 'Existing S1 goal',
-        description: 'Preserve this description',
-        status: 'active',
-        currentNextActionId: 's1-action',
-        createdAt: timestamp,
-        updatedAt: timestamp
-      })
-      repository.createTodaySelection({
-        actionId: 's1-action',
-        selectedFor: '2026-08-09',
-        kind: 'focus',
-        selectedBy: 'user',
-        createdAt: timestamp
-      })
-      repository.saveActionRecord({
-        id: 's1-record',
-        actionId: 's1-action',
-        occurredOn: '2026-08-09',
-        durationMinutes: 12,
-        outcome: 'partial',
-        nextStep: 'Continue from the preserved context',
-        note: 'Existing S1 note',
-        createdAt: timestamp,
-        updatedAt: timestamp
-      })
-      repository.saveUnderstanding({
-        id: 's1-understanding',
-        actionRecordId: 's1-record',
-        text: 'Existing confirmed understanding',
-        source: 'manual',
-        revokedAt: null,
-        createdAt: timestamp,
-        updatedAt: timestamp
-      })
-      repository.saveConfusion({
-        id: 's1-confusion',
-        actionRecordId: 's1-record',
-        text: 'Existing open confusion',
-        status: 'open',
-        resolvedAt: null,
-        resolution: null,
-        createdAt: timestamp,
-        updatedAt: timestamp
-      })
-    })
-    const beforeReopen = connection.repository.readSnapshot()
-    expect(beforeReopen.routines).toEqual([])
-    expect(beforeReopen.routineScheduleDays).toEqual([])
-    expect(beforeReopen.routineRecords).toEqual([])
-    connection.close()
+  it('migrates a populated v1 database to v2 without changing any existing fact', async () => {
+    const { path, database } = await createV1Database()
+    populateV1(database)
+    const factsBefore = readLegacyFacts(database)
+    database.close()
 
-    const beforeInspection = new Database(path, { readonly: true })
-    const metadataBefore = beforeInspection.prepare('SELECT key, value FROM metadata').all()
-    beforeInspection.close()
-
-    const reopened = SqliteConnection.open(path)
+    const migrated = SqliteConnection.open(path)
     try {
-      expect(reopened.repository.readSnapshot()).toEqual(beforeReopen)
-      expect(reopened.repository.readSnapshot()).toMatchObject({
-        goals: [expect.objectContaining({ id: 's1-goal', currentNextActionId: 's1-action' })],
-        actions: [expect.objectContaining({ id: 's1-action', status: 'pending' })],
-        todaySelections: [expect.objectContaining({ kind: 'focus' })],
-        actionRecords: [expect.objectContaining({ id: 's1-record', durationMinutes: 12 })],
-        routines: [],
-        routineScheduleDays: [],
-        routineRecords: []
-      })
-    } finally {
-      reopened.close()
-    }
-
-    const afterInspection = new Database(path, { readonly: true })
-    try {
-      expect(afterInspection.prepare('SELECT key, value FROM metadata').all()).toEqual(
-        metadataBefore
+      const snapshot = migrated.repository.readSnapshot()
+      expect(snapshot.routineRecords).toHaveLength(4)
+      expect(snapshot.routineRecords).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ outcome: 'target_met', plannedForDate: true }),
+          expect.objectContaining({ outcome: 'acted', plannedForDate: false }),
+          expect.objectContaining({ outcome: 'intentional_rest', plannedForDate: true }),
+          expect.objectContaining({ outcome: 'not_done', plannedForDate: false })
+        ])
       )
       expect(
-        afterInspection
+        snapshot.routineRecords.every(
+          (record) => record.plannedForDateBasis === 'schedule_at_recording'
+        )
+      ).toBe(true)
+      expect(() =>
+        migrated.repository.saveRoutineRecord({
+          ...snapshot.routineRecords[0]!,
+          plannedForDateBasis: 'invalid' as never
+        })
+      ).toThrow(/CHECK constraint failed/)
+    } finally {
+      migrated.close()
+    }
+
+    const inspected = new Database(path, { readonly: true })
+    try {
+      expect(readLegacyFacts(inspected)).toEqual(factsBefore)
+      expect(inspected.prepare('PRAGMA foreign_key_check').all()).toEqual([])
+      expect(
+        inspected.prepare("SELECT value FROM metadata WHERE key = 'schemaVersion'").get()
+      ).toEqual({ value: '2' })
+      expect(
+        inspected
           .prepare(
-            'SELECT (SELECT COUNT(*) FROM routines) AS routines, (SELECT COUNT(*) FROM routine_schedule_days) AS schedule_days, (SELECT COUNT(*) FROM routine_records) AS routine_records'
+            "SELECT name, type, [notnull] AS is_not_null, dflt_value FROM pragma_table_info('routine_records') WHERE name = 'planned_for_date_basis'"
           )
           .get()
-      ).toEqual({ routines: 0, schedule_days: 0, routine_records: 0 })
+      ).toEqual({
+        name: 'planned_for_date_basis',
+        type: 'TEXT',
+        is_not_null: 1,
+        dflt_value: "'schedule_at_recording'"
+      })
     } finally {
-      afterInspection.close()
+      inspected.close()
     }
   })
 
-  it('writes and reads every v1 collection atomically, then persists it across reopen', async () => {
+  it('migrates an S1-only v1 database without inventing any S2 fact', async () => {
+    const { path, database } = await createV1Database()
+    database.transaction(() => {
+      database
+        .prepare(
+          'INSERT INTO goals (id, title, description, status, current_next_action_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+        )
+        .run('s1-goal', 'S1 Goal', null, 'active', null, timestamp, timestamp)
+      database
+        .prepare(
+          'INSERT INTO actions (id, goal_id, title, description, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+        )
+        .run('s1-action', 's1-goal', 'S1 Action', null, 'pending', timestamp, timestamp)
+      database
+        .prepare('UPDATE goals SET current_next_action_id = ? WHERE id = ?')
+        .run('s1-action', 's1-goal')
+      database
+        .prepare(
+          'INSERT INTO action_records (id, action_id, occurred_on, duration_minutes, outcome, next_step, note, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        )
+        .run('s1-record', 's1-action', '2026-08-09', 2, 'partial', null, null, timestamp, timestamp)
+    })()
+    const factsBefore = readLegacyFacts(database)
+    database.close()
+
+    const migrated = SqliteConnection.open(path)
+    try {
+      const snapshot = migrated.repository.readSnapshot()
+      expect(snapshot.goals).toEqual([expect.objectContaining({ id: 's1-goal' })])
+      expect(snapshot.routines).toEqual([])
+      expect(snapshot.routineScheduleDays).toEqual([])
+      expect(snapshot.routineRecords).toEqual([])
+    } finally {
+      migrated.close()
+    }
+    const inspected = new Database(path, { readonly: true })
+    try {
+      expect(readLegacyFacts(inspected)).toEqual(factsBefore)
+    } finally {
+      inspected.close()
+    }
+  })
+
+  it('rolls back the v1 to v2 migration when schema-version persistence fails', async () => {
+    const { path, database } = await createV1Database()
+    populateV1(database)
+    const factsBefore = readLegacyFacts(database)
+    database.exec(`
+      CREATE TRIGGER reject_schema_version_update
+      BEFORE UPDATE OF value ON metadata
+      WHEN OLD.key = 'schemaVersion'
+      BEGIN
+        SELECT RAISE(ABORT, 'injected migration failure');
+      END;
+    `)
+    database.close()
+
+    expect(() => SqliteConnection.open(path)).toThrow(/injected migration failure/)
+
+    const inspected = new Database(path)
+    try {
+      expect(readLegacyFacts(inspected)).toEqual(factsBefore)
+      expect(
+        inspected.prepare("SELECT value FROM metadata WHERE key = 'schemaVersion'").get()
+      ).toEqual({ value: '1' })
+      expect(
+        inspected
+          .prepare(
+            "SELECT name FROM pragma_table_info('routine_records') WHERE name = 'planned_for_date_basis'"
+          )
+          .get()
+      ).toBeUndefined()
+      inspected.exec('DROP TRIGGER reject_schema_version_update')
+    } finally {
+      inspected.close()
+    }
+
+    const retried = SqliteConnection.open(path)
+    retried.close()
+  })
+
+  it('writes and reads every v2 collection atomically, then persists it across reopen', async () => {
     const { path, connection } = await openTestDatabase()
     connection.transaction(populate)
     const beforeReopen = connection.repository.readSnapshot()
@@ -297,6 +476,7 @@ describe('SQLite persistence', () => {
       expect(reopened.repository.readSnapshot()).toEqual(beforeReopen)
       expect(beforeReopen.actions[0]?.title).toBe("safe '); DROP TABLE goals; --")
       expect(beforeReopen.routineRecords[0]?.plannedForDate).toBe(true)
+      expect(beforeReopen.routineRecords[0]?.plannedForDateBasis).toBe('schedule_at_recording')
     } finally {
       reopened.close()
     }
@@ -367,7 +547,7 @@ describe('SQLite persistence', () => {
     const future = await openTestDatabase()
     future.connection.close()
     const rawFuture = new Database(future.path)
-    rawFuture.prepare("UPDATE metadata SET value = '2' WHERE key = 'schemaVersion'").run()
+    rawFuture.prepare("UPDATE metadata SET value = '3' WHERE key = 'schemaVersion'").run()
     rawFuture.close()
     expect(() => SqliteConnection.open(future.path)).toThrow(/newer than supported/)
   })

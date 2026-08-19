@@ -1,11 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { createRoutineRecord, projectRoutineRecordState } from '../../src/domain/routine-record'
+import {
+  createRoutineRecord,
+  projectRoutineRecordState,
+  updateRoutineRecord
+} from '../../src/domain/routine-record'
 
 const base = {
   id: 'record-1',
   routineId: 'routine-1',
   occurredOn: '2026-08-10',
   plannedForDate: true,
+  plannedForDateBasis: 'schedule_at_recording' as const,
   now: '2026-08-10T08:00:00.000Z'
 }
 
@@ -42,5 +47,17 @@ describe('RoutineRecord domain', () => {
     expect(() =>
       createRoutineRecord({ ...base, occurredOn: '2026-02-30', outcome: 'acted' })
     ).toThrowError(/occurrence date is invalid/)
+  })
+
+  it('updates historical plan provenance while preserving identity and creation time', () => {
+    const current = createRoutineRecord({ ...base, outcome: 'acted', durationMinutes: 1 })
+    expect(updateRoutineRecord(current, {
+      occurredOn: '2026-08-09', outcome: 'target_met', plannedForDate: false,
+      plannedForDateBasis: 'user_confirmed_history', durationMinutes: 2,
+      now: '2026-08-11T08:00:00.000Z'
+    })).toMatchObject({
+      id: 'record-1', routineId: 'routine-1', createdAt: base.now,
+      plannedForDateBasis: 'user_confirmed_history', updatedAt: '2026-08-11T08:00:00.000Z'
+    })
   })
 })

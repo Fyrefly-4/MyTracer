@@ -9,6 +9,7 @@ import { ActionRecordService } from '../application/action-records'
 import { ProgressService } from '../application/progress'
 import { RoutineService } from '../application/routines'
 import { RoutineRecordService } from '../application/routine-records'
+import { DataControlService } from '../application/data-control'
 import { queryShellStatus } from '../application/query-shell-status'
 import type { AiConfigurationPort } from '../application/ports/configuration'
 import type { DiagnosticsPort } from '../application/ports/diagnostics'
@@ -31,6 +32,8 @@ import { registerRoutineIpc } from './routines-ipc'
 import { registerRoutineRecordIpc } from './routine-records-ipc'
 import { ActionRecordingContextStore } from './action-recording-contexts'
 import { RoutineRecordingContextStore } from './routine-recording-contexts'
+import { DeletePreviewContextStore } from './delete-preview-contexts'
+import { registerDataControlIpc } from './data-control-ipc'
 import { assertTrustedSender, type RendererLocation } from './ipc-security'
 
 let mainWindow: BrowserWindow | null = null
@@ -39,6 +42,7 @@ let aiConfiguration: AiConfigurationPort | null = null
 let diagnostics: DiagnosticsPort | null = null
 const actionRecordingContexts = new ActionRecordingContextStore(randomUUID)
 const routineRecordingContexts = new RoutineRecordingContextStore(randomUUID)
+const deletePreviewContexts = new DeletePreviewContextStore(randomUUID)
 
 function getRendererLocation(): RendererLocation {
   const rendererFile = join(__dirname, '../renderer/index.html')
@@ -110,15 +114,18 @@ async function createMainWindow(): Promise<void> {
   mainWindow.webContents.on('did-start-navigation', () => {
     actionRecordingContexts.clearSender(senderId)
     routineRecordingContexts.clearSender(senderId)
+    deletePreviewContexts.clearSender(senderId)
   })
   mainWindow.webContents.on('destroyed', () => {
     actionRecordingContexts.clearSender(senderId)
     routineRecordingContexts.clearSender(senderId)
+    deletePreviewContexts.clearSender(senderId)
   })
   mainWindow.once('ready-to-show', () => mainWindow?.show())
   mainWindow.on('closed', () => {
     actionRecordingContexts.clearSender(senderId)
     routineRecordingContexts.clearSender(senderId)
+    deletePreviewContexts.clearSender(senderId)
     mainWindow = null
   })
 
@@ -198,6 +205,12 @@ app.whenReady().then(async () => {
     generateId: randomUUID
   })
   const progressService = new ProgressService({ repository: sqliteConnection.repository })
+  const dataControlService = new DataControlService({
+    repository: sqliteConnection.repository,
+    unitOfWork: sqliteConnection,
+    clock,
+    generateId: randomUUID
+  })
   registerGoalIpc({
     ipc: ipcMain,
     service: goalService,
@@ -235,6 +248,13 @@ app.whenReady().then(async () => {
     service: progressService,
     assertSender: (event) => assertTrustedSender(event, mainWindow, getRendererLocation())
   })
+  registerDataControlIpc({
+    ipc: ipcMain,
+    service: dataControlService,
+    contexts: deletePreviewContexts,
+    assertSender: (event) => assertTrustedSender(event, mainWindow, getRendererLocation()),
+    now: () => clock.snapshot().instant
+  })
   await createMainWindow()
 })
 
@@ -251,6 +271,7 @@ app.on('window-all-closed', () => {
 app.on('before-quit', () => {
   actionRecordingContexts.clearAll()
   routineRecordingContexts.clearAll()
+  deletePreviewContexts.clearAll()
   diagnostics?.record({
     code: 'application-stopping',
     severity: 'info',
