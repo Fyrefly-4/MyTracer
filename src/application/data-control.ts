@@ -3,6 +3,7 @@ import {
   asDataControlRepository,
   type ActionRecordPersistenceRecord,
   type ConfusionPersistenceRecord,
+  type CorePersistenceSnapshot,
   type DataControlRepositoryPort,
   type RepositoryPort,
   type RoutineRecordPersistenceRecord,
@@ -162,6 +163,56 @@ function assertDeleteResult(repository: DataControlRepositoryPort, impact: Delet
       'Delete result did not match previewed relationship changes.'
     )
   }
+}
+
+function deletedIds<T extends { readonly id: string }>(before: readonly T[], after: readonly T[]) {
+  const remaining = new Set(after.map((item) => item.id))
+  return before.filter((item) => !remaining.has(item.id)).map((item) => item.id)
+}
+
+function actualDeleteImpact(
+  target: DeleteTarget,
+  before: CorePersistenceSnapshot,
+  after: CorePersistenceSnapshot
+): DeleteImpact {
+  const afterRoutines = new Map(after.routines.map((item) => [item.id, item]))
+  const afterReviews = new Map(after.reviewResults.map((item) => [item.id, item]))
+  const afterGoals = new Map(after.goals.map((item) => [item.id, item]))
+  const afterScheduleDays = new Set(
+    after.routineScheduleDays.map((item) => `${item.routineId}|${item.weekday}`)
+  )
+  const afterTodaySelections = new Set(
+    after.todaySelections.map((item) => `${item.actionId}|${item.selectedFor}`)
+  )
+  return normalizeDeleteImpact({
+    target,
+    goals: deletedIds(before.goals, after.goals),
+    actions: deletedIds(before.actions, after.actions),
+    routines: deletedIds(before.routines, after.routines),
+    routineScheduleDays: before.routineScheduleDays
+      .map((item) => `${item.routineId}|${item.weekday}`)
+      .filter((id) => !afterScheduleDays.has(id)),
+    todaySelections: before.todaySelections
+      .map((item) => `${item.actionId}|${item.selectedFor}`)
+      .filter((id) => !afterTodaySelections.has(id)),
+    actionRecords: deletedIds(before.actionRecords, after.actionRecords),
+    routineRecords: deletedIds(before.routineRecords, after.routineRecords),
+    understandings: deletedIds(before.understandings, after.understandings),
+    confusions: deletedIds(before.confusions, after.confusions),
+    reviewResults: deletedIds(before.reviewResults, after.reviewResults),
+    detachedRoutines: before.routines
+      .filter((item) => item.goalId !== null && afterRoutines.get(item.id)?.goalId === null)
+      .map((item) => `${item.id}|${item.goalId}`),
+    detachedReviewResults: before.reviewResults
+      .filter((item) => item.goalId !== null && afterReviews.get(item.id)?.goalId === null)
+      .map((item) => `${item.id}|${item.goalId}`),
+    clearedCurrentNext: before.goals
+      .filter(
+        (item) =>
+          item.currentNextActionId !== null && afterGoals.get(item.id)?.currentNextActionId === null
+      )
+      .map((item) => `${item.id}|${item.currentNextActionId}`)
+  })
 }
 
 export class DataControlService {
@@ -458,10 +509,18 @@ export class DataControlService {
             'Delete impact changed after preview.'
           )
         }
+        const before = repository.readSnapshot()
         if (!repository.deleteRoot(target)) {
           throw new DataControlApplicationError('not-found', 'Delete target was not found.')
         }
         assertDeleteResult(repository, normalized)
+        const actual = actualDeleteImpact(target, before, repository.readSnapshot())
+        if (fingerprintDeleteImpact(actual) !== trustedFingerprint) {
+          throw new DataControlApplicationError(
+            'invariant-violation',
+            'Actual delete effects did not match the preview.'
+          )
+        }
         return countDeleteImpact(normalized)
       })
     } catch (error) {

@@ -1,4 +1,5 @@
 import { join } from 'node:path'
+import Database from 'better-sqlite3'
 import { afterEach, describe, expect, it } from 'vitest'
 import { DataControlService } from '../../src/application/data-control'
 import { ProgressService } from '../../src/application/progress'
@@ -374,6 +375,37 @@ describe('data control SQLite integration', () => {
       /injected commit failure/
     )
     expect(connection.repository.readSnapshot()).toEqual(afterConcurrentChange)
+    connection.close()
+  })
+
+  it('rolls back when actual delete effects include anything outside the preview', async () => {
+    const { path, connection } = await openDatabase()
+    populate(connection)
+    const raw = new Database(path)
+    try {
+      raw.exec(`
+        CREATE TRIGGER inject_unexpected_routine_delete
+        AFTER DELETE ON actions
+        BEGIN
+          DELETE FROM routines;
+        END;
+      `)
+    } finally {
+      raw.close()
+    }
+    const clock = new FakeClock({
+      instant: '2026-08-20T08:00:00.000Z',
+      localDate: '2026-08-20',
+      timeZone: 'Asia/Shanghai'
+    })
+    const data = service(connection, clock)
+    const target = { type: 'action', id: 'action-1' } as const
+    const preview = data.previewDelete(target)
+    const before = connection.repository.readSnapshot()
+    expect(() => data.confirmDelete(target, preview.fingerprint)).toThrowError(
+      expect.objectContaining({ code: 'invariant-violation' })
+    )
+    expect(connection.repository.readSnapshot()).toEqual(before)
     connection.close()
   })
 })
