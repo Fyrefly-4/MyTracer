@@ -47,6 +47,9 @@ describe('RoutineRecord domain', () => {
     expect(() =>
       createRoutineRecord({ ...base, occurredOn: '2026-02-30', outcome: 'acted' })
     ).toThrowError(/occurrence date is invalid/)
+    expect(() =>
+      createRoutineRecord({ ...base, plannedForDate: 'yes' as never, outcome: 'acted' })
+    ).toThrowError(/planned-for-date must be explicit/)
   })
 
   it('updates historical plan provenance while preserving identity and creation time', () => {

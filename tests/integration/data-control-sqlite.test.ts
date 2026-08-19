@@ -5,6 +5,7 @@ import { DataControlService } from '../../src/application/data-control'
 import { ProgressService } from '../../src/application/progress'
 import { RoutineRecordService } from '../../src/application/routine-records'
 import type { UnitOfWorkPort } from '../../src/application/ports/persistence'
+import { asDataControlRepository } from '../../src/application/ports/persistence'
 import type { DeleteTarget } from '../../src/domain/data-control'
 import { SqliteConnection } from '../../src/infrastructure/sqlite/sqlite-connection'
 import { FakeClock } from '../support/fake-clock'
@@ -145,6 +146,31 @@ afterEach(async () => {
 })
 
 describe('data control SQLite integration', () => {
+  it('reports exact stable ids and relationship pairs for Action and Goal previews', async () => {
+    const { connection } = await openDatabase()
+    populate(connection)
+    const repository = asDataControlRepository(connection.repository)
+    expect(repository.findDeleteImpact({ type: 'action', id: 'action-1' })).toMatchObject({
+      actions: ['action-1'],
+      todaySelections: ['action-1|2026-08-19'],
+      actionRecords: ['action-record-1'],
+      understandings: ['understanding-1'],
+      confusions: ['confusion-1'],
+      clearedCurrentNext: ['goal-1|action-1']
+    })
+    expect(repository.findDeleteImpact({ type: 'goal', id: 'goal-1' })).toMatchObject({
+      goals: ['goal-1'],
+      actions: ['action-1'],
+      routines: [],
+      routineRecords: [],
+      reviewResults: [],
+      detachedRoutines: ['routine-1|goal-1'],
+      detachedReviewResults: ['review-1|goal-1'],
+      clearedCurrentNext: []
+    })
+    connection.close()
+  })
+
   it('edits and backfills facts without changing parent state, Today, or current-next', async () => {
     const { path, connection } = await openDatabase()
     populate(connection)

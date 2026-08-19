@@ -13,6 +13,8 @@ describe('DeletePreviewContextStore', () => {
     const second = store.begin(7, target, 'fingerprint-2', 'instant-2')
     expect(() => store.consume(7, first.id, target)).toThrow()
     expect(() => store.consume(8, second.id, target)).toThrow()
+    expect(() => store.consume(7, 'forged-preview', target)).toThrow()
+    expect(() => store.consume(7, second.id, { type: 'goal', id: target.id })).toThrow()
     expect(store.consume(7, second.id, target)).toMatchObject({ fingerprint: 'fingerprint-2' })
     expect(() => store.consume(7, second.id, target)).toThrow()
   })

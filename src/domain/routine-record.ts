@@ -89,6 +89,12 @@ export function createRoutineRecord(input: {
   ) {
     throw new RoutineRecordDomainError('validation', 'Routine record plan provenance is invalid.')
   }
+  if (typeof input.plannedForDate !== 'boolean') {
+    throw new RoutineRecordDomainError(
+      'validation',
+      'Routine record planned-for-date must be explicit.'
+    )
+  }
   let occurredOn: LocalDate
   try {
     occurredOn = createLocalDate(input.occurredOn)
