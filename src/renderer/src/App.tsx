@@ -2182,6 +2182,7 @@ function ActionRecordEditor(props: {
   const [occurredOn, setOccurredOn] = useState(props.record.occurredOn)
   const [duration, setDuration] = useState(String(props.record.durationMinutes))
   const [outcome, setOutcome] = useState(props.record.outcome)
+  const [nextStep, setNextStep] = useState(props.record.nextStep ?? '')
   const [note, setNote] = useState(props.record.note ?? '')
   const [error, setError] = useState<string | null>(null)
   const submit = async (): Promise<void> => {
@@ -2190,7 +2191,7 @@ function ActionRecordEditor(props: {
       occurredOn,
       durationMinutes: Number(duration),
       outcome,
-      nextStep: props.record.nextStep,
+      nextStep: nextStep || null,
       note: note || null
     })
     if (!result.ok) return setError(dataControlErrorText[result.error.code])
@@ -2210,6 +2211,7 @@ function ActionRecordEditor(props: {
           <option value="completed">达到预期</option><option value="partial">完成一部分</option><option value="stopped">停下</option>
         </select>
         <input aria-label="Action 备注" value={note} onChange={(event) => setNote(event.target.value)} placeholder="备注（可选）" />
+        <input aria-label="Action 下一步" value={nextStep} onChange={(event) => setNextStep(event.target.value)} placeholder="下一步（可选）" />
         <button className="secondary-button" type="button" onClick={() => void submit()}>保存修改</button>
       </div>
       {error ? <p className="form-error" role="alert">{error}</p> : null}
@@ -2226,6 +2228,7 @@ function RoutineRecordEditor(props: {
   const [duration, setDuration] = useState(props.record.durationMinutes === null ? '' : String(props.record.durationMinutes))
   const [outcome, setOutcome] = useState(props.record.outcome)
   const [planned, setPlanned] = useState(props.record.plannedForDate)
+  const [note, setNote] = useState(props.record.note ?? '')
   const [error, setError] = useState<string | null>(null)
   const dateChanged = occurredOn !== props.record.occurredOn
   const submit = async (): Promise<void> => {
@@ -2235,7 +2238,7 @@ function RoutineRecordEditor(props: {
       outcome,
       plannedForDate: dateChanged ? planned : undefined,
       durationMinutes: duration === '' ? null : Number(duration),
-      note: props.record.note
+      note: note || null
     })
     if (!result.ok) return setError(dataControlErrorText[result.error.code])
     setError(null)
@@ -2266,6 +2269,7 @@ function RoutineRecordEditor(props: {
           <option value="target_met">达到目标</option><option value="acted">有行动</option><option value="intentional_rest">有意休息</option><option value="not_done">明确未做</option>
         </select>
         <input aria-label="Routine 分钟" type="number" min="0" step="1" value={duration} onChange={(event) => setDuration(event.target.value)} />
+        <input aria-label="Routine 备注" value={note} onChange={(event) => setNote(event.target.value)} placeholder="备注（可选）" />
         {dateChanged ? <label className="inline-check"><input type="checkbox" checked={planned} onChange={(event) => setPlanned(event.target.checked)} />该历史日期当时属于计划日（明确确认）</label> : null}
         <button className="secondary-button" type="button" onClick={() => void submit()}>保存修改</button>
       </div>
@@ -2326,8 +2330,17 @@ function DataControlWorkspace(): ReactNode {
   const [actionId, setActionId] = useState('')
   const [routineId, setRoutineId] = useState('')
   const [actionDate, setActionDate] = useState('')
+  const [actionDuration, setActionDuration] = useState('0')
+  const [actionOutcome, setActionOutcome] = useState<ActionRecordDataDto['outcome']>('partial')
+  const [actionUnderstanding, setActionUnderstanding] = useState('')
+  const [actionConfusion, setActionConfusion] = useState('')
+  const [actionNextStep, setActionNextStep] = useState('')
+  const [actionNote, setActionNote] = useState('')
   const [routineDate, setRoutineDate] = useState('')
   const [routinePlanned, setRoutinePlanned] = useState(false)
+  const [routineOutcome, setRoutineOutcome] = useState<RoutineRecordDataDto['outcome']>('not_done')
+  const [routineDuration, setRoutineDuration] = useState('')
+  const [routineNote, setRoutineNote] = useState('')
 
   const load = async (): Promise<void> => {
     const result = await window.myTracer.dataControl.list()
@@ -2382,17 +2395,40 @@ function DataControlWorkspace(): ReactNode {
   }
   const backfillAction = async (): Promise<void> => {
     const result = await window.myTracer.dataControl.backfillActionRecord({
-      actionId, occurredOn: actionDate, durationMinutes: 0, outcome: 'partial'
+      actionId,
+      occurredOn: actionDate,
+      durationMinutes: Number(actionDuration),
+      outcome: actionOutcome,
+      understanding: actionUnderstanding || null,
+      confusion: actionConfusion || null,
+      nextStep: actionNextStep || null,
+      note: actionNote || null
     })
     if (!result.ok) return setError(dataControlErrorText[result.error.code])
-    setActionDate(''); await refreshAfterMutation()
+    setActionDate('')
+    setActionUnderstanding('')
+    setActionConfusion('')
+    setActionNextStep('')
+    setActionNote('')
+    await refreshAfterMutation()
   }
   const backfillRoutine = async (): Promise<void> => {
     const result = await window.myTracer.dataControl.backfillRoutineRecord({
-      routineId, occurredOn: routineDate, outcome: 'not_done', plannedForDate: routinePlanned
+      routineId,
+      occurredOn: routineDate,
+      outcome: routineOutcome,
+      plannedForDate: routinePlanned,
+      durationMinutes:
+        routineOutcome === 'intentional_rest' || routineOutcome === 'not_done'
+          ? null
+          : routineDuration === ''
+            ? null
+            : Number(routineDuration),
+      note: routineNote || null
     })
     if (!result.ok) return setError(dataControlErrorText[result.error.code])
     setRoutineDate('')
+    setRoutineNote('')
     await window.myTracer.routines.getDayState({ routineId, localDate: routineDate })
     await refreshAfterMutation()
   }
@@ -2412,14 +2448,23 @@ function DataControlWorkspace(): ReactNode {
           <h2>补记 ActionRecord</h2>
           <select aria-label="补记 Action" value={actionId} onChange={(event) => setActionId(event.target.value)}>{data?.actions.map((item) => <option key={item.id} value={item.id}>{item.title} · {item.status}</option>)}</select>
           <input aria-label="Action 补记日期" type="date" value={actionDate} onChange={(event) => setActionDate(event.target.value)} />
-          <button className="primary-button" type="button" disabled={!actionId || !actionDate} onClick={() => void backfillAction()}>补记 0 分钟部分行动</button>
+          <input aria-label="Action 补记分钟" type="number" min="0" step="1" value={actionDuration} onChange={(event) => setActionDuration(event.target.value)} />
+          <select aria-label="Action 补记结果" value={actionOutcome} onChange={(event) => setActionOutcome(event.target.value as ActionRecordDataDto['outcome'])}><option value="completed">达到预期</option><option value="partial">完成一部分</option><option value="stopped">停下</option></select>
+          <input aria-label="Action 补记理解" value={actionUnderstanding} onChange={(event) => setActionUnderstanding(event.target.value)} placeholder="确认理解（可选）" />
+          <input aria-label="Action 补记困惑" value={actionConfusion} onChange={(event) => setActionConfusion(event.target.value)} placeholder="开放困惑（可选）" />
+          <input aria-label="Action 补记下一步" value={actionNextStep} onChange={(event) => setActionNextStep(event.target.value)} placeholder="下一步（可选）" />
+          <input aria-label="Action 补记备注" value={actionNote} onChange={(event) => setActionNote(event.target.value)} placeholder="备注（可选）" />
+          <button className="primary-button" type="button" disabled={!actionId || !actionDate || actionDuration === ''} onClick={() => void backfillAction()}>补记 ActionRecord</button>
         </section>
         <section className="goal-card">
           <h2>补记 RoutineRecord</h2>
           <select aria-label="补记 Routine" value={routineId} onChange={(event) => setRoutineId(event.target.value)}>{data?.routines.map((item) => <option key={item.id} value={item.id}>{item.name} · {item.status}</option>)}</select>
           <input aria-label="Routine 补记日期" type="date" value={routineDate} onChange={(event) => setRoutineDate(event.target.value)} />
+          <select aria-label="Routine 补记结果" value={routineOutcome} onChange={(event) => setRoutineOutcome(event.target.value as RoutineRecordDataDto['outcome'])}><option value="target_met">达到目标</option><option value="acted">有行动</option><option value="intentional_rest">有意休息</option><option value="not_done">明确未做</option></select>
+          <input aria-label="Routine 补记分钟" type="number" min="0" step="1" disabled={routineOutcome === 'intentional_rest' || routineOutcome === 'not_done'} value={routineDuration} onChange={(event) => setRoutineDuration(event.target.value)} />
+          <input aria-label="Routine 补记备注" value={routineNote} onChange={(event) => setRoutineNote(event.target.value)} placeholder="备注（可选）" />
           <label className="inline-check"><input type="checkbox" checked={routinePlanned} onChange={(event) => setRoutinePlanned(event.target.checked)} />明确确认该历史日期属于计划日</label>
-          <button className="primary-button" type="button" disabled={!routineId || !routineDate} onClick={() => void backfillRoutine()}>补记为明确未做</button>
+          <button className="primary-button" type="button" disabled={!routineId || !routineDate} onClick={() => void backfillRoutine()}>补记 RoutineRecord</button>
         </section>
       </div>
 
