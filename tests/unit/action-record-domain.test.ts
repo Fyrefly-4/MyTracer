@@ -98,15 +98,27 @@ describe('ActionRecord domain', () => {
 
   it('updates editable facts while preserving identity, parent, and creation time', () => {
     const current = createActionRecord({
-      id: 'record-1', actionId: 'action-1', occurredOn: '2026-08-12',
-      durationMinutes: 1, outcome: 'partial', now
+      id: 'record-1',
+      actionId: 'action-1',
+      occurredOn: '2026-08-12',
+      durationMinutes: 1,
+      outcome: 'partial',
+      now
     })
-    expect(updateActionRecord(current, {
-      occurredOn: '2026-08-11', durationMinutes: 3, outcome: 'stopped',
-      note: 'Edited', now: '2026-08-13T08:00:00.000Z'
-    })).toMatchObject({
-      id: 'record-1', actionId: 'action-1', createdAt: now,
-      occurredOn: '2026-08-11', updatedAt: '2026-08-13T08:00:00.000Z'
+    expect(
+      updateActionRecord(current, {
+        occurredOn: '2026-08-11',
+        durationMinutes: 3,
+        outcome: 'stopped',
+        note: 'Edited',
+        now: '2026-08-13T08:00:00.000Z'
+      })
+    ).toMatchObject({
+      id: 'record-1',
+      actionId: 'action-1',
+      createdAt: now,
+      occurredOn: '2026-08-11',
+      updatedAt: '2026-08-13T08:00:00.000Z'
     })
   })
 })
