@@ -2,11 +2,13 @@
 
 > 任务类型：S3 产品实现任务
 >
-> 任务状态：**active**（项目所有者已批准合同、S3-Q02-B 解释、精确 migration 与 structured permissions）
+> 任务状态：**active**（项目所有者已批准合同、S3-Q02-B 解释、精确 migration、structured permissions 与两项 shell E2E 最小扩围）
 >
 > 合同准备基线：`dev@9903994e4ba0ef7eefa403ef65ebd5f40dcfa2be`
 >
 > 批准日期：2026-08-19；实现分支：`task/T031-record-data-control`
+>
+> 最小扩围批准：2026-08-20；仅允许同步 `tests/e2e/shell.e2e.test.ts` 的 schemaVersion v2 断言与顶层 `dataControl` allowlist 项
 
 ## 1. 任务信息
 
@@ -234,6 +236,7 @@ v1 → v2 守恒判定：
 - `tests/integration/data-control-ipc.test.ts`（新增）
 - `tests/e2e/data-control.e2e.test.ts`（新增）
 - `tests/e2e/routine-record.e2e.test.ts`
+- `tests/e2e/shell.e2e.test.ts`（2026-08-20 两次最小扩围；仅将 schemaVersion 期望从 `1` 同步为 `2`，并向顶层 API allowlist 追加 `dataControl`）
 - `tests/e2e/windows-package-smoke.e2e.test.ts`
 
 候选 CI 通过后的文档收口候选仅为以下文件，仍须按技能流程由项目所有者在 candidate CI 后再次批准精确事实与 push：
@@ -433,6 +436,7 @@ permissions:
 权限限制：
 
 - `local_write` 仅限第 6 节精确文件；
+- 项目所有者于 2026-08-20 分别批准 `T031_ESCALATION_PROPOSAL_001` 与 `T031_ESCALATION_PROPOSAL_002` 的最小扩围；授权只覆盖第 6 节所列 shell E2E 的 schemaVersion 断言与顶层 `dataControl` allowlist 项，不扩展产品、migration、依赖或其他测试行为；
 - `migration_change: true` 仅限第 5 节精确 002 migration、manifest/schemaVersion 2 及对应临时 fixture 测试；
 - `external_write: true` 仅限 push `task/T031-record-data-control`、创建/更新 Draft PR 到 `dev`、读取/触发该 PR CI、上传脱敏 `.tmp/evidence/*.json` artifact，以及 owner 批准后的 Draft PR body/docs closeout；
 - 不授权 branch protection、Secrets、Issue/Project、Ready、merge、远端分支删除、force-push、main、tag、release 或其他服务写入；
