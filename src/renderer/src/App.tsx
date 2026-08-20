@@ -48,6 +48,7 @@ import type {
   RoutineRecordDataDto,
   UnderstandingDataDto
 } from '../../contracts/data-control'
+import type { CompleteExportErrorCode } from '../../contracts/exports'
 
 type Section = 'goals' | 'routines' | 'today' | 'progress' | 'data' | 'review'
 
@@ -2341,6 +2342,8 @@ function DataControlWorkspace(): ReactNode {
   const [routineOutcome, setRoutineOutcome] = useState<RoutineRecordDataDto['outcome']>('not_done')
   const [routineDuration, setRoutineDuration] = useState('')
   const [routineNote, setRoutineNote] = useState('')
+  const [exportMessage, setExportMessage] = useState<string | null>(null)
+  const [exporting, setExporting] = useState(false)
 
   const load = async (): Promise<void> => {
     const result = await window.myTracer.dataControl.list()
@@ -2432,6 +2435,29 @@ function DataControlWorkspace(): ReactNode {
     await window.myTracer.routines.getDayState({ routineId, localDate: routineDate })
     await refreshAfterMutation()
   }
+  const generateExport = async (): Promise<void> => {
+    setExporting(true)
+    const result = await window.myTracer.exports.generate()
+    setExporting(false)
+    if (!result.ok) {
+      const messages: Record<CompleteExportErrorCode, string> = {
+        validation: '导出请求无效。',
+        'snapshot-failed': '无法读取一致的完整数据快照。',
+        'serialization-failed': '无法序列化导出文件。',
+        'export-validation-failed': '导出内容校验未通过，未交付文件。',
+        'write-failed': '文件未能安全写入。',
+        'destination-changed': '目标文件发生变化，请重新选择。',
+        'replace-not-supported': '请使用新文件名，现有导出文件未被修改。'
+      }
+      setExportMessage(messages[result.error.code])
+      return
+    }
+    setExportMessage(
+      result.value.kind === 'cancelled'
+        ? '已取消导出，未创建文件。'
+        : `已导出 ${result.value.fileName}（${result.value.byteLength} 字节）。`
+    )
+  }
   const impactLabels: Record<string, string> = {
     goals: 'Goals', actions: 'Actions', routines: 'Routines', routineScheduleDays: 'Routine 排期',
     todaySelections: 'Today 选择', actionRecords: 'Action Records', routineRecords: 'Routine Records',
@@ -2443,6 +2469,15 @@ function DataControlWorkspace(): ReactNode {
   return (
     <section className="data-workspace" aria-label="历史事实与数据控制">
       {error ? <p className="form-error" role="alert">{error}</p> : null}
+      <section className="goal-card export-card">
+        <h2>导出完整数据</h2>
+        <p>导出会包含当前保留的核心事实和关系，并由你在系统保存对话框中选择位置。</p>
+        <p>v0.1 目前只支持导出；尚不支持自动导入或一键恢复。</p>
+        <button className="primary-button" type="button" disabled={exporting} onClick={() => void generateExport()}>
+          {exporting ? '正在准备导出…' : '导出完整数据'}
+        </button>
+        {exportMessage ? <p role="status">{exportMessage}</p> : null}
+      </section>
       <div className="data-backfill-grid">
         <section className="goal-card">
           <h2>补记 ActionRecord</h2>

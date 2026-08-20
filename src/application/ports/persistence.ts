@@ -171,6 +171,11 @@ export interface CorePersistenceSnapshot {
   readonly reviewResults: readonly ReviewResultPersistenceRecord[]
 }
 
+export interface CompleteCorePersistenceSnapshot {
+  readonly sourceDataVersion: number
+  readonly coreSnapshot: CorePersistenceSnapshot
+}
+
 export interface RepositoryPort {
   saveGoal(record: GoalPersistenceRecord): void
   saveAction(record: ActionPersistenceRecord): void
@@ -191,6 +196,22 @@ export interface RepositoryPort {
   ): readonly GoalActionRecordSummaryPersistenceRecord[]
   listTodaySelectionActionIdsByGoalIdOn(goalId: string, selectedFor: string): readonly string[]
   readSnapshot(): CorePersistenceSnapshot
+}
+
+export interface CompleteExportRepositoryPort extends RepositoryPort {
+  readCompleteCoreSnapshot(): CompleteCorePersistenceSnapshot
+}
+
+export function asCompleteExportRepository(
+  repository: RepositoryPort
+): CompleteExportRepositoryPort {
+  if (
+    typeof (repository as Partial<CompleteExportRepositoryPort>).readCompleteCoreSnapshot !==
+    'function'
+  ) {
+    throw new TypeError('Repository does not provide the complete export snapshot contract.')
+  }
+  return repository as CompleteExportRepositoryPort
 }
 
 export interface ActionRepositoryPort extends RepositoryPort {

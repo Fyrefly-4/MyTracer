@@ -1,0 +1,101 @@
+{
+  "schemaVersion": 1,
+  "task": "T032",
+  "dependencies": {
+    "requires": ["T031"],
+    "blocks": ["T033"],
+    "can_parallel": [],
+    "prefer_after": [],
+    "conflicts_with": ["T033"]
+  },
+  "conflict_basis": {
+    "T033": "T033 consumes the completed export capability and overlaps Main composition, Preload API, Renderer, E2E-AC-07, and delivery evidence; the approved stage order is T032 then T033."
+  },
+  "shared_surfaces": [
+    {
+      "files": [
+        "src/application/ports/persistence.ts",
+        "src/infrastructure/sqlite/sqlite-repository.ts",
+        "src/application/complete-export.ts",
+        "src/application/ports/export.ts"
+      ],
+      "modules": ["complete-core-snapshot", "export-document-validation", "export-application"],
+      "schema_tables": [
+        "metadata",
+        "goals",
+        "actions",
+        "routines",
+        "routine_schedule_days",
+        "today_selections",
+        "action_records",
+        "routine_records",
+        "understandings",
+        "confusions",
+        "review_results"
+      ],
+      "ipc_contracts": [],
+      "domain_invariants": [
+        "complete-snapshot-binds-source-version-and-core-collections",
+        "export-validation-is-deterministic-and-read-only",
+        "routine-plan-provenance-is-preserved",
+        "hard-deleted-facts-are-absent-and-detached-references-are-null"
+      ],
+      "risk": "high",
+      "integration_policy": "serial"
+    },
+    {
+      "files": [
+        "src/infrastructure/export/system-export-adapter.ts",
+        "src/contracts/exports.ts",
+        "src/contracts/shell.ts",
+        "src/main/exports-ipc.ts",
+        "src/main/index.ts",
+        "src/preload/index.ts",
+        "src/renderer/src/App.tsx",
+        "src/renderer/src/styles.css",
+        "tests/e2e/shell.e2e.test.ts",
+        "tests/e2e/windows-package-smoke.e2e.test.ts"
+      ],
+      "modules": [
+        "main-only-export-delivery",
+        "electron-export-ipc",
+        "preload-export-api",
+        "renderer-export-ui"
+      ],
+      "schema_tables": [],
+      "ipc_contracts": [
+        "window.myTracer.exports",
+        "fixed-export-channel",
+        "main-only-export-destination"
+      ],
+      "domain_invariants": [
+        "renderer-has-no-node-sql-file-path-clock-or-repository-access",
+        "cancelled-export-has-zero-file-change",
+        "failed-export-preserves-existing-target",
+        "export-success-does-not-claim-import-or-restore"
+      ],
+      "risk": "high",
+      "integration_policy": "serial"
+    },
+    {
+      "files": [
+        "docs/implementation/T032_VERSIONED_COMPLETE_EXPORT.md",
+        "docs/implementation/TASK_INDEX_V0.1.md",
+        "docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md",
+        "docs/implementation/metadata/T032.json"
+      ],
+      "modules": ["task-contract", "delivery-evidence", "task-metadata"],
+      "schema_tables": [],
+      "ipc_contracts": [],
+      "domain_invariants": ["evidence-facts-are-not-automatic-acceptance"],
+      "risk": "medium",
+      "integration_policy": "serial"
+    }
+  ],
+  "external": [
+    "user-selected-local-export-destination",
+    "github-task-branch",
+    "github-draft-pr-to-dev",
+    "github-actions-redacted-evidence-artifact"
+  ]
+}

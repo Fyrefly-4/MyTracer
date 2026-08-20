@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { app, BrowserWindow, ipcMain, safeStorage } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, safeStorage } from 'electron'
 import { GoalService } from '../application/goals'
 import { ActionService } from '../application/actions'
 import { TodayService } from '../application/today'
@@ -10,6 +10,7 @@ import { ProgressService } from '../application/progress'
 import { RoutineService } from '../application/routines'
 import { RoutineRecordService } from '../application/routine-records'
 import { DataControlService } from '../application/data-control'
+import { CompleteExportService } from '../application/complete-export'
 import { queryShellStatus } from '../application/query-shell-status'
 import type { AiConfigurationPort } from '../application/ports/configuration'
 import type { DiagnosticsPort } from '../application/ports/diagnostics'
@@ -23,6 +24,7 @@ import {
 } from '../infrastructure/diagnostics/safe-diagnostics'
 import { resolveProductionDatabasePath } from '../infrastructure/sqlite/database-path'
 import { SqliteConnection } from '../infrastructure/sqlite/sqlite-connection'
+import { SystemExportAdapter } from '../infrastructure/export/system-export-adapter'
 import { registerGoalIpc } from './goals-ipc'
 import { registerActionIpc } from './actions-ipc'
 import { registerTodayIpc } from './today-ipc'
@@ -34,6 +36,7 @@ import { ActionRecordingContextStore } from './action-recording-contexts'
 import { RoutineRecordingContextStore } from './routine-recording-contexts'
 import { DeletePreviewContextStore } from './delete-preview-contexts'
 import { registerDataControlIpc } from './data-control-ipc'
+import { registerExportIpc } from './exports-ipc'
 import { assertTrustedSender, type RendererLocation } from './ipc-security'
 
 let mainWindow: BrowserWindow | null = null
@@ -211,6 +214,14 @@ app.whenReady().then(async () => {
     clock,
     generateId: randomUUID
   })
+  const completeExportService = new CompleteExportService({
+    repository: sqliteConnection.repository,
+    clock,
+    exportPort: new SystemExportAdapter({
+      dialog: { showSaveDialog: (options) => dialog.showSaveDialog(options) },
+      generateToken: randomUUID
+    })
+  })
   registerGoalIpc({
     ipc: ipcMain,
     service: goalService,
@@ -254,6 +265,11 @@ app.whenReady().then(async () => {
     contexts: deletePreviewContexts,
     assertSender: (event) => assertTrustedSender(event, mainWindow, getRendererLocation()),
     now: () => clock.snapshot().instant
+  })
+  registerExportIpc({
+    ipc: ipcMain,
+    service: completeExportService,
+    assertSender: (event) => assertTrustedSender(event, mainWindow, getRendererLocation())
   })
   await createMainWindow()
 })
