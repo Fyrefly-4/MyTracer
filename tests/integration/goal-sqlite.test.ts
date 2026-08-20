@@ -94,6 +94,7 @@ describe('Goal SQLite integration', () => {
       occurredOn: '2026-08-08',
       outcome: 'acted',
       plannedForDate: true,
+      plannedForDateBasis: 'schedule_at_recording',
       durationMinutes: 10,
       note: null,
       createdAt: instant,

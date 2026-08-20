@@ -82,6 +82,7 @@ describe('Routine SQLite integration', () => {
       occurredOn: '2026-08-13',
       outcome: 'acted',
       plannedForDate: false,
+      plannedForDateBasis: 'schedule_at_recording',
       durationMinutes: 5,
       note: null,
       createdAt: instant,

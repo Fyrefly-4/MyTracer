@@ -1,7 +1,8 @@
 import type Database from 'better-sqlite3'
 import initialSchema from './migrations/001_initial.sql?raw'
+import routineRecordPlannedForDateBasis from './migrations/002_add_routine_record_planned_for_date_basis.sql?raw'
 
-export const schemaVersion = 1
+export const schemaVersion = 2
 
 interface Migration {
   readonly version: number
@@ -9,7 +10,14 @@ interface Migration {
   readonly sql: string
 }
 
-const migrations: readonly Migration[] = [{ version: 1, name: '001_initial', sql: initialSchema }]
+const migrations: readonly Migration[] = [
+  { version: 1, name: '001_initial', sql: initialSchema },
+  {
+    version: 2,
+    name: '002_add_routine_record_planned_for_date_basis',
+    sql: routineRecordPlannedForDateBasis
+  }
+]
 
 function assertMigrationManifest(): void {
   for (const [index, migration] of migrations.entries()) {
@@ -76,7 +84,10 @@ export function migrateToCurrentSchema(database: Database.Database): void {
     database.transaction(() => {
       database.exec(migration.sql)
       database
-        .prepare('INSERT INTO metadata (key, value) VALUES (?, ?)')
+        .prepare(
+          `INSERT INTO metadata (key, value) VALUES (?, ?)
+           ON CONFLICT(key) DO UPDATE SET value = excluded.value`
+        )
         .run('schemaVersion', String(migration.version))
     })()
     currentVersion = migration.version

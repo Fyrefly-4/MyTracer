@@ -5,6 +5,7 @@ import type {
   ActionRecordPersistenceRecord,
   ConfusionPersistenceRecord,
   CorePersistenceSnapshot,
+  DataControlRepositoryPort,
   GoalActionRecordSummaryPersistenceRecord,
   GoalPersistenceRecord,
   GoalStatus,
@@ -20,6 +21,7 @@ import type {
   TodaySelectionPersistenceRecord,
   UnderstandingPersistenceRecord
 } from '../../application/ports/persistence'
+import type { DeleteImpact, DeleteTarget } from '../../domain/data-control'
 
 type Row = Readonly<Record<string, unknown>>
 
@@ -27,7 +29,9 @@ const asString = (row: Row, name: string): string => String(row[name])
 const asNullableString = (row: Row, name: string): string | null =>
   row[name] === null ? null : asString(row, name)
 
-export class SqliteRepository implements ActionRecordRepositoryPort, RoutineRecordRepositoryPort {
+export class SqliteRepository
+  implements ActionRecordRepositoryPort, RoutineRecordRepositoryPort, DataControlRepositoryPort
+{
   constructor(private readonly database: Database.Database) {}
 
   saveGoal(record: GoalPersistenceRecord): void {
@@ -97,13 +101,36 @@ export class SqliteRepository implements ActionRecordRepositoryPort, RoutineReco
       .run(record)
   }
 
+  createActionRecord(record: ActionRecordPersistenceRecord): boolean {
+    const result = this.database
+      .prepare(
+        `INSERT INTO action_records (id, action_id, occurred_on, duration_minutes, outcome, next_step, note, created_at, updated_at)
+         VALUES (@id, @actionId, @occurredOn, @durationMinutes, @outcome, @nextStep, @note, @createdAt, @updatedAt)
+         ON CONFLICT(id) DO NOTHING`
+      )
+      .run(record)
+    return result.changes === 1
+  }
+
+  updateActionRecord(record: ActionRecordPersistenceRecord): boolean {
+    const result = this.database
+      .prepare(
+        `UPDATE action_records SET occurred_on = @occurredOn, duration_minutes = @durationMinutes,
+           outcome = @outcome, next_step = @nextStep, note = @note, updated_at = @updatedAt
+         WHERE id = @id AND action_id = @actionId`
+      )
+      .run(record)
+    return result.changes === 1
+  }
+
   saveRoutineRecord(record: RoutineRecordPersistenceRecord): void {
     this.database
       .prepare(
-        `INSERT INTO routine_records (id, routine_id, occurred_on, outcome, planned_for_date, duration_minutes, note, created_at, updated_at)
-         VALUES (@id, @routineId, @occurredOn, @outcome, @plannedForDate, @durationMinutes, @note, @createdAt, @updatedAt)
+        `INSERT INTO routine_records (id, routine_id, occurred_on, outcome, planned_for_date, planned_for_date_basis, duration_minutes, note, created_at, updated_at)
+         VALUES (@id, @routineId, @occurredOn, @outcome, @plannedForDate, @plannedForDateBasis, @durationMinutes, @note, @createdAt, @updatedAt)
          ON CONFLICT(id) DO UPDATE SET routine_id = excluded.routine_id, occurred_on = excluded.occurred_on,
            outcome = excluded.outcome, planned_for_date = excluded.planned_for_date,
+           planned_for_date_basis = excluded.planned_for_date_basis,
            duration_minutes = excluded.duration_minutes, note = excluded.note, updated_at = excluded.updated_at`
       )
       .run({ ...record, plannedForDate: record.plannedForDate ? 1 : 0 })
@@ -113,8 +140,8 @@ export class SqliteRepository implements ActionRecordRepositoryPort, RoutineReco
     try {
       this.database
         .prepare(
-          `INSERT INTO routine_records (id, routine_id, occurred_on, outcome, planned_for_date, duration_minutes, note, created_at, updated_at)
-           VALUES (@id, @routineId, @occurredOn, @outcome, @plannedForDate, @durationMinutes, @note, @createdAt, @updatedAt)`
+          `INSERT INTO routine_records (id, routine_id, occurred_on, outcome, planned_for_date, planned_for_date_basis, duration_minutes, note, created_at, updated_at)
+           VALUES (@id, @routineId, @occurredOn, @outcome, @plannedForDate, @plannedForDateBasis, @durationMinutes, @note, @createdAt, @updatedAt)`
         )
         .run({ ...record, plannedForDate: record.plannedForDate ? 1 : 0 })
       return true
@@ -128,6 +155,18 @@ export class SqliteRepository implements ActionRecordRepositoryPort, RoutineReco
       }
       throw error
     }
+  }
+
+  updateRoutineRecord(record: RoutineRecordPersistenceRecord): boolean {
+    const result = this.database
+      .prepare(
+        `UPDATE routine_records SET occurred_on = @occurredOn, outcome = @outcome,
+           planned_for_date = @plannedForDate, planned_for_date_basis = @plannedForDateBasis,
+           duration_minutes = @durationMinutes, note = @note, updated_at = @updatedAt
+         WHERE id = @id AND routine_id = @routineId`
+      )
+      .run({ ...record, plannedForDate: record.plannedForDate ? 1 : 0 })
+    return result.changes === 1
   }
 
   saveUnderstanding(record: UnderstandingPersistenceRecord): void {
@@ -186,6 +225,45 @@ export class SqliteRepository implements ActionRecordRepositoryPort, RoutineReco
     const row = this.database.prepare('SELECT * FROM action_records WHERE id = ?').get(id) as
       Row | undefined
     return row ? this.actionRecordFromRow(row) : null
+  }
+
+  findRoutineRecordById(id: string): RoutineRecordPersistenceRecord | null {
+    const row = this.database.prepare('SELECT * FROM routine_records WHERE id = ?').get(id) as
+      Row | undefined
+    return row ? this.routineRecordFromRow(row) : null
+  }
+
+  findUnderstandingById(id: string): UnderstandingPersistenceRecord | null {
+    const row = this.database.prepare('SELECT * FROM understandings WHERE id = ?').get(id) as
+      Row | undefined
+    return row ? this.understandingFromRow(row) : null
+  }
+
+  updateUnderstanding(record: UnderstandingPersistenceRecord): boolean {
+    const result = this.database
+      .prepare(
+        `UPDATE understandings SET text = @text, revoked_at = @revokedAt, updated_at = @updatedAt
+         WHERE id = @id AND action_record_id = @actionRecordId`
+      )
+      .run(record)
+    return result.changes === 1
+  }
+
+  findConfusionById(id: string): ConfusionPersistenceRecord | null {
+    const row = this.database.prepare('SELECT * FROM confusions WHERE id = ?').get(id) as
+      Row | undefined
+    return row ? this.confusionFromRow(row) : null
+  }
+
+  updateConfusion(record: ConfusionPersistenceRecord): boolean {
+    const result = this.database
+      .prepare(
+        `UPDATE confusions SET text = @text, status = @status, resolved_at = @resolvedAt,
+           resolution = @resolution, updated_at = @updatedAt
+         WHERE id = @id AND action_record_id = @actionRecordId`
+      )
+      .run(record)
+    return result.changes === 1
   }
 
   findTodaySelection(
@@ -497,6 +575,120 @@ export class SqliteRepository implements ActionRecordRepositoryPort, RoutineReco
     return result.changes === 1
   }
 
+  findDeleteImpact(target: DeleteTarget): DeleteImpact | null {
+    const existsTable =
+      target.type === 'action-record'
+        ? 'action_records'
+        : target.type === 'routine-record'
+          ? 'routine_records'
+          : `${target.type}s`
+    if (!this.database.prepare(`SELECT 1 FROM ${existsTable} WHERE id = ?`).get(target.id)) {
+      return null
+    }
+
+    const goals = target.type === 'goal' ? [target.id] : []
+    const actions =
+      target.type === 'action'
+        ? [target.id]
+        : target.type === 'goal'
+          ? this.stringColumn('SELECT id FROM actions WHERE goal_id = ?', target.id)
+          : []
+    const routines = target.type === 'routine' ? [target.id] : []
+    const actionRecords =
+      target.type === 'action-record'
+        ? [target.id]
+        : actions.length
+          ? this.stringColumn(
+              `SELECT id FROM action_records WHERE action_id IN (${actions.map(() => '?').join(',')})`,
+              ...actions
+            )
+          : []
+    const routineRecords =
+      target.type === 'routine-record'
+        ? [target.id]
+        : routines.length
+          ? this.stringColumn(
+              `SELECT id FROM routine_records WHERE routine_id IN (${routines.map(() => '?').join(',')})`,
+              ...routines
+            )
+          : []
+    const understandings = actionRecords.length
+      ? this.stringColumn(
+          `SELECT id FROM understandings WHERE action_record_id IN (${actionRecords.map(() => '?').join(',')})`,
+          ...actionRecords
+        )
+      : []
+    const confusions = actionRecords.length
+      ? this.stringColumn(
+          `SELECT id FROM confusions WHERE action_record_id IN (${actionRecords.map(() => '?').join(',')})`,
+          ...actionRecords
+        )
+      : []
+    const todaySelections = actions.length
+      ? (
+          this.database
+            .prepare(
+              `SELECT action_id, selected_for FROM today_selections WHERE action_id IN (${actions.map(() => '?').join(',')})`
+            )
+            .all(...actions) as readonly Row[]
+        ).map((row) => `${asString(row, 'action_id')}|${asString(row, 'selected_for')}`)
+      : []
+    const routineScheduleDays = routines.length
+      ? (
+          this.database
+            .prepare(
+              `SELECT routine_id, weekday FROM routine_schedule_days WHERE routine_id IN (${routines.map(() => '?').join(',')})`
+            )
+            .all(...routines) as readonly Row[]
+        ).map((row) => `${asString(row, 'routine_id')}|${Number(row.weekday)}`)
+      : []
+    const detachedRoutines =
+      target.type === 'goal'
+        ? this.stringColumn('SELECT id FROM routines WHERE goal_id = ?', target.id).map(
+            (id) => `${id}|${target.id}`
+          )
+        : []
+    const detachedReviewResults =
+      target.type === 'goal'
+        ? this.stringColumn('SELECT id FROM review_results WHERE goal_id = ?', target.id).map(
+            (id) => `${id}|${target.id}`
+          )
+        : []
+    const clearedCurrentNext =
+      target.type === 'action'
+        ? this.stringColumn('SELECT id FROM goals WHERE current_next_action_id = ?', target.id).map(
+            (id) => `${id}|${target.id}`
+          )
+        : []
+
+    return {
+      target,
+      goals,
+      actions,
+      routines,
+      routineScheduleDays,
+      todaySelections,
+      actionRecords,
+      routineRecords,
+      understandings,
+      confusions,
+      reviewResults: [],
+      detachedRoutines,
+      detachedReviewResults,
+      clearedCurrentNext
+    }
+  }
+
+  deleteRoot(target: DeleteTarget): boolean {
+    const table =
+      target.type === 'action-record'
+        ? 'action_records'
+        : target.type === 'routine-record'
+          ? 'routine_records'
+          : `${target.type}s`
+    return this.database.prepare(`DELETE FROM ${table} WHERE id = ?`).run(target.id).changes === 1
+  }
+
   readSnapshot(): CorePersistenceSnapshot {
     return {
       goals: this.rows('SELECT * FROM goals ORDER BY id').map((row) => this.goalFromRow(row)),
@@ -573,6 +765,37 @@ export class SqliteRepository implements ActionRecordRepositoryPort, RoutineReco
     return this.database.prepare(sql).all() as readonly Row[]
   }
 
+  private stringColumn(sql: string, ...parameters: readonly unknown[]): string[] {
+    return (this.database.prepare(sql).all(...parameters) as readonly Row[]).map((row) =>
+      asString(row, 'id')
+    )
+  }
+
+  private understandingFromRow(row: Row): UnderstandingPersistenceRecord {
+    return {
+      id: asString(row, 'id'),
+      actionRecordId: asString(row, 'action_record_id'),
+      text: asString(row, 'text'),
+      source: asString(row, 'source') as UnderstandingPersistenceRecord['source'],
+      revokedAt: asNullableString(row, 'revoked_at'),
+      createdAt: asString(row, 'created_at'),
+      updatedAt: asString(row, 'updated_at')
+    }
+  }
+
+  private confusionFromRow(row: Row): ConfusionPersistenceRecord {
+    return {
+      id: asString(row, 'id'),
+      actionRecordId: asString(row, 'action_record_id'),
+      text: asString(row, 'text'),
+      status: asString(row, 'status') as ConfusionPersistenceRecord['status'],
+      resolvedAt: asNullableString(row, 'resolved_at'),
+      resolution: asNullableString(row, 'resolution'),
+      createdAt: asString(row, 'created_at'),
+      updatedAt: asString(row, 'updated_at')
+    }
+  }
+
   private goalFromRow(row: Row): GoalPersistenceRecord {
     return {
       id: asString(row, 'id'),
@@ -617,6 +840,10 @@ export class SqliteRepository implements ActionRecordRepositoryPort, RoutineReco
       occurredOn: asString(row, 'occurred_on'),
       outcome: asString(row, 'outcome') as RoutineRecordPersistenceRecord['outcome'],
       plannedForDate: Number(row.planned_for_date) === 1,
+      plannedForDateBasis: asString(
+        row,
+        'planned_for_date_basis'
+      ) as RoutineRecordPersistenceRecord['plannedForDateBasis'],
       durationMinutes: row.duration_minutes === null ? null : Number(row.duration_minutes),
       note: asNullableString(row, 'note'),
       createdAt: asString(row, 'created_at'),

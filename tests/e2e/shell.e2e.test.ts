@@ -66,7 +66,8 @@ test('runs the Electron shell with an isolated userData root', async () => {
       'today',
       'records',
       'progress',
-      'routines'
+      'routines',
+      'dataControl'
     ])
     expect(await page.evaluate(() => Object.keys(window.myTracer.shell))).toEqual(['getStatus'])
     expect(await page.evaluate(() => Object.keys(window.myTracer.goals))).toEqual([
@@ -137,7 +138,7 @@ test('runs the Electron shell with an isolated userData root', async () => {
           expect(
             database.prepare("SELECT value FROM metadata WHERE key = 'schemaVersion'").get()
           ).toEqual({
-            value: '1'
+            value: '2'
           })
         } finally {
           database.close()
