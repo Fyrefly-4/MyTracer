@@ -2,7 +2,7 @@
 
 > 任务类型：S3 产品实现任务
 >
-> 任务状态：**active**（项目所有者已批准合同、S3-Q02-B 解释、精确 migration、structured permissions 与两项 shell E2E 最小扩围）
+> 任务状态：**done**（自动实现、验证、独立复核与 candidate CI 已通过；人工验收 pending；Ready/merge 未授权）
 >
 > 合同准备基线：`dev@9903994e4ba0ef7eefa403ef65ebd5f40dcfa2be`
 >
@@ -15,7 +15,7 @@
 - **Task ID**：T031
 - **Title**：Record 修改、历史补记、删除影响预览及事务性删除
 - **Slice / Plan item**：S3 / E3-01
-- **Status**：active
+- **Status**：done
 - **Base branch**：`dev`
 - **Observed authorized base**：`dev@9903994e4ba0ef7eefa403ef65ebd5f40dcfa2be`
 - **Expected branch**：`task/T031-record-data-control`
@@ -333,14 +333,14 @@ Main 签发 opaque `previewId` 并只在内存保存 sender、target、fingerpri
 
 ## 10. 交付物
 
-- [ ] ActionRecord/RoutineRecord update/backfill 的 Domain、Application、Repository、SQLite、IPC、Preload、Renderer 纵向路径。
-- [ ] `planned_for_date_basis` v2 非破坏性 migration、类型/DTO/读写和 v1 守恒/失败回滚。
-- [ ] Understanding 修改/撤销与 Confusion 修改/resolve/reopen。
-- [ ] 五类删除根的精确影响预览、sender-bound 一次性 token、stale 校验和事务性确认。
-- [ ] cascade、SET NULL、current-next 清空、取消/冲突/故障零变化和真实关闭重开。
-- [ ] 成功后 Progress、Today/day-state、data-control detail 从事实重查。
-- [ ] 对应 unit、SQLite/Repository、IPC、E2E 和 S1/S2 affected regression。
-- [ ] 完整 diff 自查、独立只读 review、deterministic evidence、candidate/final-head CI 和获批文档收口。
+- [x] ActionRecord/RoutineRecord update/backfill 的 Domain、Application、Repository、SQLite、IPC、Preload、Renderer 纵向路径。
+- [x] `planned_for_date_basis` v2 非破坏性 migration、类型/DTO/读写和 v1 守恒/失败回滚。
+- [x] Understanding 修改/撤销与 Confusion 修改/resolve/reopen。
+- [x] 五类删除根的精确影响预览、sender-bound 一次性 token、stale 校验和事务性确认。
+- [x] cascade、SET NULL、current-next 清空、取消/冲突/故障零变化和真实关闭重开。
+- [x] 成功后 Progress、Today/day-state、data-control detail 从事实重查。
+- [x] 对应 unit、SQLite/Repository、IPC、E2E 和 S1/S2 affected regression。
+- [x] 完整 diff 自查、独立只读 review、deterministic evidence、candidate CI 和获批文档收口；final-head CI 作为本 docs revision 的后置 PR 门禁。
 
 ## 11. 可判定验收与完成条件
 
@@ -449,10 +449,12 @@ integration:
   base_revision: dev@9903994e4ba0ef7eefa403ef65ebd5f40dcfa2be
   freshness_required: true
   affected_regression_required: true
-  task_delivery_revision: null
+  task_delivery_revision: 1c08b3161021319d1c87ef4bf8cb2470d977bd48
   dev_integration_revision: null
   stage_final_integration_revision: null
 ```
+
+T031 以 `1c08b3161021319d1c87ef4bf8cb2470d977bd48` 作为 Implementation Candidate 与 task delivery revision；本地完整 `verify` 和 Draft PR #26 candidate hosted CI 已通过，Integration Freshness 为 `fresh`，完整 diff/独立复核无未处理 material finding。项目所有者已批准 docs closeout，人工验收保持 `pending`。docs closeout 推送后的 final-head CI 属于 PR 集成门禁，结果不预先写入本合同；最新 live 状态由 Draft PR body 和最终交付报告记录。T031 未合入 `dev`，`dev_integration_revision` 与 `stage_final_integration_revision` 保持 `null`。
 
 若合同批准时 `dev` 已推进，必须在任何分支/工作树创建前重新复核最新授权 revision 并更新合同；candidate 前若再次变 stale，只允许普通 merge `dev` 到任务分支，禁止 rebase/force-push 改写已发布历史。
 
