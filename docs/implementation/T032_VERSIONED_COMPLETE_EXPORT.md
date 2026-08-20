@@ -1,6 +1,6 @@
 # MyTracer T032 任务合同：版本化完整导出与引用校验
 
-> 合同状态：**review（实现、候选 CI、人工验收与获批准文档收尾已完成；final-head CI 未核验）**
+> 合同状态：**done（实现、候选/最终头部 CI、人工验收与文档收尾均已完成）**
 > 基线复核日期：2026-08-20
 > 基线：最新授权 `dev@f41c601a697f5fbdb6bc3f90656071f7263d7cfe`
 
@@ -9,7 +9,7 @@
 - **Task ID**：T032
 - **Title**：Versioned complete export and reference validation
 - **Slice / Plan item**：S3 / E3-02
-- **Status**：`review`
+- **Status**：`done`
 - **Base branch**：`dev`
 - **Expected branch**：`task/T032-versioned-complete-export`
 - **前置证据**：T031 已以 `EV-T031-001` 记录为通过；本合同按项目所有者指示把该证据视为有效
@@ -191,7 +191,7 @@ Application 从同一 Clock snapshot 取得导出 Instant、本地日期与时�
 - [x] 固定 export IPC、冻结 Preload API 和最小 Renderer 入口/说明。
 - [x] 取消、结构/引用拒绝、敏感排除、写入故障、旧目标守恒与重开测试。
 - [x] T031 删除/detach 后导出回归及 S1/S2 受影响回归。
-- [x] 精确 revision 的本地/hosted candidate 证据、完整 diff 检查与独立 review；docs push 后 final-head CI 未核验。
+- [x] 精确 revision 的本地/hosted candidate 与 final-head 证据、完整 diff 检查与独立 review。
 - [x] candidate CI 后经所有者另行批准完成 docs closeout；项目所有者已报告专用测试 `userData` 人工验收通过。
 
 ## 10. 可判定验收标准
@@ -266,7 +266,7 @@ node tools/evidence/capture-command.mjs --task T032 --gate task-candidate --base
 
 - 候选 revision：`79458b88b505346ef81c3cc920224c7cf0eb4ba4`；Draft PR #27 的 `Windows required gate`（run `32349762843` / job `96366157688`）在该 head 上通过。
 - 项目所有者已明确批准本合同 §5.6 的 docs closeout，并报告按专用测试 `userData` 执行保存、取消、JSON 解析、界面反馈和“不支持自动导入/恢复”检查均通过。
-- 按项目所有者最新指示，docs closeout 推送后不等待、读取或报告 final-head CI；因此任务保持 `review`，不声明 `done`、Ready、merge、`dev` 集成、tag 或 release。
+- docs closeout revision `219d7799fa17e7ba97609fc1c835b74aab060baf` 的 final-head `Windows required gate`（run `32354596797` / job `96380961831`）已通过；任务可标记 `done`，但仍不声明 Ready、merge、`dev` 集成、tag 或 release。
 
 ## 12. Git、GitHub、依赖与外部操作权限（待批准）
 

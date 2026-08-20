@@ -568,12 +568,12 @@ Artifact 位于 ignored `.tmp/evidence/`，可由 GitHub Actions 作为短期 ar
 
 ### EV-T032-001
 
-- **Status**：partial；实现、本地候选验证、candidate hosted CI、获批准 docs closeout 与项目所有者人工验收均通过；按项目所有者指示不核验 docs push 后的 final-head CI，故不声明任务 `done`、Ready 或合入
+- **Status**：pass；实现、本地候选验证、candidate/final-head hosted CI、获批准 docs closeout 与项目所有者人工验收均通过；任务 `done`，但不声明 Ready 或合入
 - **Task / Gate**：T032 / S3 E3-02；完成 AC-07 的版本化完整导出子集，不实现 T033、导入、恢复或完整 AC-07
 - **Requirements**：FR-D03、FR-D04；回归 FR-D01/FR-D02；D-111；ED-003、ED-004、ED-014、ED-015、ED-017～ED-019；S3 Design §5、§6.2、§6.4～§6.6、§7、§8.2、§9、§10～§12
 - **Source branch**：`task/T032-versioned-complete-export`
-- **Source revision**：Implementation Candidate `79458b88b505346ef81c3cc920224c7cf0eb4ba4`；base `dev@f41c601a697f5fbdb6bc3f90656071f7263d7cfe`；docs closeout revision 在本记录写入时尚未提交
-- **CI head/merge revision**：Draft PR #27 candidate run `32349762843` / job `96366157688` 为 success；PR head `79458b88b505346ef81c3cc920224c7cf0eb4ba4`。docs closeout push 后的 final-head CI 按项目所有者指示未读取或报告；无 `dev` integration revision
+- **Source revision**：Implementation Candidate `79458b88b505346ef81c3cc920224c7cf0eb4ba4`；docs closeout/final-head revision `219d7799fa17e7ba97609fc1c835b74aab060baf`；base `dev@f41c601a697f5fbdb6bc3f90656071f7263d7cfe`
+- **CI head/merge revision**：Draft PR #27 candidate run `32349762843` / job `96366157688` 为 success，head `79458b88b505346ef81c3cc920224c7cf0eb4ba4`；final-head run `32354596797` / job `96380961831` 为 success，head `219d7799fa17e7ba97609fc1c835b74aab060baf`。无 `dev` integration revision
 - **Environment**：Windows win32；Node.js 24.18.0；npm 11.16.0；Electron 43.3.0；自动化使用 FakeClock、每 case 唯一临时 SQLite、Electron `userData` 与导出根；无 live AI、真实 key 或真实用户数据
 - **Command or manual procedure**：
   1. `npm.cmd run governance:metadata:check`、`npm.cmd run verify`、`npm.cmd run package`、`npm.cmd run test:package-smoke` 均 exit code 0；完整 verify 通过 124 unit、84 integration、12 Electron E2E，既有 opt-in package smoke 在 aggregate 中按设计 skip。
@@ -581,14 +581,15 @@ Artifact 位于 ignored `.tmp/evidence/`，可由 GitHub Actions 作为短期 ar
   3. 完整 diff、`git diff --check`、Renderer/Preload 权限面和 dependency/migration 范围已复核；独立复核修正严格必填 export 字段与同一 Clock snapshot 的建议名后，无未处理 material finding。
   4. Draft PR #27 candidate hosted `Windows required gate` 在精确 candidate head 上 success；workflow 已执行 metadata validation 与 repository verify。
   5. 项目所有者使用专用测试 `userData` 完成保存、取消、JSON 可解析、界面反馈及“v0.1 不支持自动导入/恢复”人工测试，并明确报告通过；随后明确批准本条 docs closeout。
+  6. docs closeout 推送后的 PR #27 `Windows required gate` 在 final-head `219d779...` 上通过，完成最终头部 CI 门槛。
 - **Result**：
   - `readCompleteCoreSnapshot()` 在单个 SQLite transaction 中绑定 `sourceDataVersion=2` 与十个核心集合；显式排序和 T031 provenance/删除后的 null 关系保持事实，不经 Renderer 投影重建。
   - `MyTracerCoreExportV1` 与纯校验器拒绝结构、枚举、日期、数值、引用和技术字段错误；成功导出为 UTF-8 无 BOM，`exportVersion=1` 独立于数据版本。
   - Renderer 只调用零参数 `window.myTracer.exports.generate()`；系统保存对话框、同目录专属临时文件、flush/close/复读复验、目标新鲜度和原子交付均限于 Main。取消零文件变化；注入故障不破坏旧目标。
 - **Artifacts**：Draft PR #27：<https://github.com/Fyrefly-4/MyTracer/pull/27>；candidate hosted run：<https://github.com/Fyrefly-4/MyTracer/actions/runs/32349762843>；本地 evidence：`.tmp/evidence/T032-task-candidate-79458b88b505-20260820081235.json`。
 - **Manual acceptance**：pass；项目所有者于 2026-08-20 明确报告人工测试通过。
-- **Known limitations**：final-head CI 未核验（项目所有者明确要求 docs push 后无需检查）；任务未标记 Ready、未合入 `dev`/`main`，无 tag/release；T033、自动导入/恢复、自动备份、云同步与完整 AC-07 仍未完成。
-- **Supersedes / superseded by**：无；若之后核验 final-head CI 或发生 `dev` 集成，须以新证据记录，不回写为既有通过结论。
+- **Known limitations**：任务未标记 Ready、未合入 `dev`/`main`，无 tag/release；T033、自动导入/恢复、自动备份、云同步与完整 AC-07 仍未完成。
+- **Supersedes / superseded by**：本条的 final-head 事实取代其先前 `partial`/未核验 final-head 状态；若之后发生 `dev` 集成，须以新证据记录。
 - **Recorded at**：2026-08-20
 
 ### EV-T802-001
