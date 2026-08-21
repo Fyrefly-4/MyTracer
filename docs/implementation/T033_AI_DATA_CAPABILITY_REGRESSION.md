@@ -2,7 +2,7 @@
 
 > 任务类型：S3 数据独立性回归任务
 >
-> 任务状态：**active**（项目所有者已于 2026-08-21 明确批准本合同及 T033 实现）
+> 任务状态：**review**（Implementation Candidate 与候选 CI 已通过；获批 docs closeout 正在等待 final-head CI）
 >
 > 合同准备基线：`dev@43e6406684dbb1b1ef30d006063242e9a552da80`
 >
@@ -13,7 +13,7 @@
 - **Task ID**：T033
 - **Title**：AI 关闭、未配置或失败时的数据能力回归
 - **Slice / Plan item**：S3 / E3-03
-- **Status**：active
+- **Status**：review
 - **Base branch**：`dev`
 - **Observed authorized base**：`dev@43e6406684dbb1b1ef30d006063242e9a552da80`
 - **Expected branch**：`task/T033-ai-data-capability-regression`
@@ -271,14 +271,14 @@ README、架构、PRD、DECISIONS、需求变更规则、T031/T032 合同和其�
 
 ## 11. 交付物
 
-- [ ] T033 metadata sidecar 与治理校验通过。
-- [ ] 非用户可见的三态测试 harness，状态构造和 provider 调用规则可判定。
-- [ ] 三态统一数据能力矩阵的 unit/integration 自动化。
-- [ ] failure 前后完整核心快照零变化，以及 failure 后 SQLite/删除事务/ExportPort 可用的证据。
-- [ ] E2E-AC-07 连续程序与三态代表矩阵。
-- [ ] 同一 candidate revision 的 E2E-AC-01、E2E-AC-03、E2E-AC-04 受影响回归。
-- [ ] 完整 `verify`、Windows package/smoke、deterministic evidence、hosted candidate/final-head CI 与独立 review。
-- [ ] 经项目所有者另行批准的任务/证据文档收口；人工 AC-07 未执行时记录 `pending`。
+- [x] T033 metadata sidecar 与治理校验通过。
+- [x] 非用户可见的三态测试 harness，状态构造和 provider 调用规则可判定。
+- [x] 三态统一数据能力矩阵的 unit/integration 自动化。
+- [x] failure 前后完整核心快照零变化，以及 failure 后 SQLite/删除事务/ExportPort 可用的证据。
+- [x] E2E-AC-07 连续程序与三态代表矩阵。
+- [x] 同一 candidate revision 的 E2E-AC-01、E2E-AC-03、E2E-AC-04 受影响回归。
+- [ ] 完整 `verify`、Windows package/smoke、deterministic evidence、hosted candidate CI 与独立 review 已通过；docs closeout 后的 final-head CI 尚待执行。
+- [x] 项目所有者已批准任务状态、索引、Evidence 和 Draft PR 正文的 docs closeout；人工 AC-07 保持 `pending`。
 
 ## 12. 可判定验收与完成条件
 
