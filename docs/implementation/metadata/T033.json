@@ -1,0 +1,105 @@
+{
+  "schemaVersion": 1,
+  "task": "T033",
+  "dependencies": {
+    "requires": ["T031", "T032"],
+    "blocks": [],
+    "can_parallel": [],
+    "prefer_after": [],
+    "conflicts_with": ["T061", "T062", "T063"]
+  },
+  "conflict_basis": {
+    "T061": "T061 introduces the AI context and application boundary while T033 must remain a data-independence regression using only test-only AI states; both share AI test composition and Main boundary assumptions.",
+    "T062": "T062 introduces provider and degradation behavior while T033 uses the existing fake provider without production provider integration; both share fake-provider failure semantics and AI test infrastructure.",
+    "T063": "T063 introduces confirmed AI suggestion writes while T033 must prove provider failure has zero unconfirmed core writes; both share AI write-boundary tests and evidence surfaces."
+  },
+  "shared_surfaces": [
+    {
+      "files": [
+        "tests/support/fake-ai-provider.ts",
+        "tests/support/ai-data-capability-harness.ts",
+        "tests/unit/ai-data-capability-harness.test.ts",
+        "tests/integration/ai-data-capability.test.ts"
+      ],
+      "modules": [
+        "fake-ai-provider",
+        "ai-data-capability-harness",
+        "sqlite-data-capability-matrix"
+      ],
+      "schema_tables": [
+        "metadata",
+        "goals",
+        "actions",
+        "routines",
+        "routine_schedule_days",
+        "today_selections",
+        "action_records",
+        "routine_records",
+        "understandings",
+        "confusions",
+        "review_results"
+      ],
+      "ipc_contracts": [],
+      "domain_invariants": [
+        "ai-state-does-not-enter-core-storage",
+        "provider-failure-has-zero-unconfirmed-core-writes",
+        "data-services-have-no-ai-provider-dependency",
+        "failure-does-not-disable-sqlite-delete-or-export"
+      ],
+      "risk": "high",
+      "integration_policy": "serial"
+    },
+    {
+      "files": [
+        "tests/e2e/ai-data-capability.e2e.test.ts",
+        "tests/e2e/data-control.e2e.test.ts",
+        "tests/e2e/complete-export.e2e.test.ts",
+        "tests/e2e/progress-core-loop.e2e.test.ts",
+        "tests/e2e/routine-record.e2e.test.ts",
+        "tests/e2e/action-intention.e2e.test.ts",
+        "tests/e2e/shell.e2e.test.ts"
+      ],
+      "modules": ["e2e-ac07", "ai-three-state-regression", "ac01-ac03-ac04-affected-regression"],
+      "schema_tables": [],
+      "ipc_contracts": [
+        "window.myTracer.goals",
+        "window.myTracer.actions",
+        "window.myTracer.today",
+        "window.myTracer.records",
+        "window.myTracer.progress",
+        "window.myTracer.routines",
+        "window.myTracer.dataControl",
+        "window.myTracer.exports"
+      ],
+      "domain_invariants": [
+        "renderer-has-no-node-sql-path-provider-or-arbitrary-ipc-access",
+        "ac07-runs-with-isolated-user-data",
+        "ac01-ac03-ac04-semantics-remain-unchanged"
+      ],
+      "risk": "high",
+      "integration_policy": "serial"
+    },
+    {
+      "files": [
+        "docs/implementation/T033_AI_DATA_CAPABILITY_REGRESSION.md",
+        "docs/implementation/TASK_INDEX_V0.1.md",
+        "docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md",
+        "docs/implementation/metadata/T033.json"
+      ],
+      "modules": ["task-contract", "delivery-evidence", "task-metadata"],
+      "schema_tables": [],
+      "ipc_contracts": [],
+      "domain_invariants": [
+        "evidence-facts-are-not-automatic-acceptance",
+        "manual-ac07-remains-pending-until-owner-execution"
+      ],
+      "risk": "medium",
+      "integration_policy": "serial"
+    }
+  ],
+  "external": [
+    "github-task-branch",
+    "github-draft-pr-to-dev",
+    "github-actions-redacted-evidence-artifact"
+  ]
+}
