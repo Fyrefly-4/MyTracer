@@ -46,7 +46,9 @@ async function verifyPackagedApplication(
       'today',
       'records',
       'progress',
-      'routines'
+      'routines',
+      'dataControl',
+      'exports'
     ])
     expect(await page.evaluate(() => Object.keys(window.myTracer.shell))).toEqual(['getStatus'])
     expect(await page.evaluate(() => Object.keys(window.myTracer.goals))).toEqual([
@@ -97,6 +99,7 @@ async function verifyPackagedApplication(
       'getDetail'
     ])
     expect(await page.evaluate(() => Object.keys(window.myTracer.progress))).toEqual(['get'])
+    expect(await page.evaluate(() => Object.keys(window.myTracer.exports))).toEqual(['generate'])
     expect(
       await page.evaluate(() =>
         [
@@ -107,7 +110,9 @@ async function verifyPackagedApplication(
           window.myTracer.actions,
           window.myTracer.today,
           window.myTracer.records,
-          window.myTracer.progress
+          window.myTracer.progress,
+          window.myTracer.dataControl,
+          window.myTracer.exports
         ].every((value) => Object.isFrozen(value))
       )
     ).toBe(true)

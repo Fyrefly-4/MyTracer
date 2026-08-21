@@ -4,6 +4,7 @@ import type {
   ActionRecordRepositoryPort,
   ActionRecordPersistenceRecord,
   ConfusionPersistenceRecord,
+  CompleteCorePersistenceSnapshot,
   CorePersistenceSnapshot,
   DataControlRepositoryPort,
   GoalActionRecordSummaryPersistenceRecord,
@@ -690,6 +691,25 @@ export class SqliteRepository
   }
 
   readSnapshot(): CorePersistenceSnapshot {
+    return this.readCoreSnapshot()
+  }
+
+  readCompleteCoreSnapshot(): CompleteCorePersistenceSnapshot {
+    return this.database.transaction(() => {
+      const version = this.database
+        .prepare("SELECT value FROM metadata WHERE key = 'schemaVersion'")
+        .get() as { readonly value?: unknown } | undefined
+      if (typeof version?.value !== 'string' || !/^[1-9][0-9]*$/.test(version.value)) {
+        throw new Error('SQLite metadata.schemaVersion is missing or invalid.')
+      }
+      return Object.freeze({
+        sourceDataVersion: Number(version.value),
+        coreSnapshot: this.freezeCoreSnapshot(this.readCoreSnapshot())
+      })
+    })()
+  }
+
+  private readCoreSnapshot(): CorePersistenceSnapshot {
     return {
       goals: this.rows('SELECT * FROM goals ORDER BY id').map((row) => this.goalFromRow(row)),
       actions: this.rows('SELECT * FROM actions ORDER BY id').map((row) => this.actionFromRow(row)),
@@ -759,6 +779,23 @@ export class SqliteRepository
         })
       )
     }
+  }
+
+  private freezeCoreSnapshot(snapshot: CorePersistenceSnapshot): CorePersistenceSnapshot {
+    const freezeRows = <T extends object>(rows: readonly T[]): readonly T[] =>
+      Object.freeze(rows.map((row) => Object.freeze({ ...row })))
+    return Object.freeze({
+      goals: freezeRows(snapshot.goals),
+      actions: freezeRows(snapshot.actions),
+      routines: freezeRows(snapshot.routines),
+      routineScheduleDays: freezeRows(snapshot.routineScheduleDays),
+      todaySelections: freezeRows(snapshot.todaySelections),
+      actionRecords: freezeRows(snapshot.actionRecords),
+      routineRecords: freezeRows(snapshot.routineRecords),
+      understandings: freezeRows(snapshot.understandings),
+      confusions: freezeRows(snapshot.confusions),
+      reviewResults: freezeRows(snapshot.reviewResults)
+    })
   }
 
   private rows(sql: string): readonly Row[] {

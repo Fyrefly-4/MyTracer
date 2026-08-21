@@ -86,6 +86,7 @@ import {
   type UpdateActionRecordInputDto,
   type UpdateRoutineRecordInputDto
 } from '../contracts/data-control'
+import { EXPORT_CHANNELS, type CompleteExportResult } from '../contracts/exports'
 
 const api: MyTracerApi = Object.freeze({
   shell: Object.freeze({
@@ -246,6 +247,9 @@ const api: MyTracerApi = Object.freeze({
       readonly confirmation: 'permanently-delete'
     }): Promise<DataControlResult<{ readonly counts: DeleteImpactCountsDto }>> =>
       ipcRenderer.invoke(DATA_CONTROL_CHANNELS.confirmDelete, input)
+  }),
+  exports: Object.freeze({
+    generate: (): Promise<CompleteExportResult> => ipcRenderer.invoke(EXPORT_CHANNELS.generate)
   })
 })
 
