@@ -5,6 +5,10 @@ import { CompleteExportService } from '../../src/application/complete-export'
 import { DataControlApplicationError, DataControlService } from '../../src/application/data-control'
 import { GoalService } from '../../src/application/goals'
 import type { CompleteExportDocumentPort, ExportPort } from '../../src/application/ports/export'
+import {
+  asCompleteExportRepository,
+  type CompleteCorePersistenceSnapshot
+} from '../../src/application/ports/persistence'
 import { ProgressService } from '../../src/application/progress'
 import { RoutineService } from '../../src/application/routines'
 import { TodayService } from '../../src/application/today'
@@ -68,7 +72,8 @@ async function runMatrix(state: AiDataCapabilityState) {
 
   const ai = await observeAiDataCapabilityState({
     state,
-    readCoreSnapshot: () => connection.repository.readSnapshot()
+    readCoreSnapshot: () =>
+      asCompleteExportRepository(connection.repository).readCompleteCoreSnapshot()
   })
   expect(ai.after).toEqual(ai.before)
   expect(ai.providerCalls).toBe(state === 'failure' ? 1 : 0)
@@ -189,10 +194,10 @@ async function runMatrix(state: AiDataCapabilityState) {
   expect(JSON.stringify(exportPort.document)).not.toContain('authentication')
   expect(JSON.stringify(exportPort.document)).not.toContain('__fake_ai_request_marker__')
 
-  const beforeReopen = connection.repository.readSnapshot()
+  const beforeReopen = asCompleteExportRepository(connection.repository).readCompleteCoreSnapshot()
   connection.close()
   connection = SqliteConnection.open(databasePath)
-  const afterReopen = connection.repository.readSnapshot()
+  const afterReopen = asCompleteExportRepository(connection.repository).readCompleteCoreSnapshot()
   expect(afterReopen).toEqual(beforeReopen)
   listed = new DataControlService({
     repository: connection.repository,
@@ -221,11 +226,8 @@ async function runMatrix(state: AiDataCapabilityState) {
   }
 }
 
-function todaySafe(
-  snapshot: ReturnType<SqliteConnection['repository']['readSnapshot']>,
-  kind: 'focus' | 'intention'
-): number {
-  return snapshot.todaySelections.filter((selection) => selection.kind === kind).length
+function todaySafe(snapshot: CompleteCorePersistenceSnapshot, kind: 'focus' | 'intention'): number {
+  return snapshot.coreSnapshot.todaySelections.filter((selection) => selection.kind === kind).length
 }
 
 describe('T033 data capabilities across AI states', () => {
@@ -248,7 +250,8 @@ describe('T033 data capabilities across AI states', () => {
       const observation = await observeAiDataCapabilityState({
         state: 'failure',
         failureScenario,
-        readCoreSnapshot: () => connection.repository.readSnapshot()
+        readCoreSnapshot: () =>
+          asCompleteExportRepository(connection.repository).readCompleteCoreSnapshot()
       })
       expect(observation.after).toEqual(observation.before)
 
