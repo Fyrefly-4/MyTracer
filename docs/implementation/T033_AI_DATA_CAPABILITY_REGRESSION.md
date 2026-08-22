@@ -2,7 +2,7 @@
 
 > 任务类型：S3 数据独立性回归任务
 >
-> 任务状态：**review**（Implementation Candidate 与候选 CI 已通过；获批 docs closeout 正在等待 final-head CI）
+> 任务状态：**done**（实现、验证、代码 Review、final-head CI 与项目所有者人工 AC-07 均已完成）
 >
 > 合同准备基线：`dev@43e6406684dbb1b1ef30d006063242e9a552da80`
 >
@@ -13,7 +13,7 @@
 - **Task ID**：T033
 - **Title**：AI 关闭、未配置或失败时的数据能力回归
 - **Slice / Plan item**：S3 / E3-03
-- **Status**：review
+- **Status**：done
 - **Base branch**：`dev`
 - **Observed authorized base**：`dev@43e6406684dbb1b1ef30d006063242e9a552da80`
 - **Expected branch**：`task/T033-ai-data-capability-regression`
@@ -277,8 +277,8 @@ README、架构、PRD、DECISIONS、需求变更规则、T031/T032 合同和其�
 - [x] failure 前后完整核心快照零变化，以及 failure 后 SQLite/删除事务/ExportPort 可用的证据。
 - [x] E2E-AC-07 连续程序与三态代表矩阵。
 - [x] 同一 candidate revision 的 E2E-AC-01、E2E-AC-03、E2E-AC-04 受影响回归。
-- [ ] 完整 `verify`、Windows package/smoke、deterministic evidence、hosted candidate CI 与独立 review 已通过；docs closeout 后的 final-head CI 尚待执行。
-- [x] 项目所有者已批准任务状态、索引、Evidence 和 Draft PR 正文的 docs closeout；人工 AC-07 保持 `pending`。
+- [x] 完整 `verify`、Windows package/smoke、deterministic evidence、hosted candidate/final-head CI 与代码 Review 均已通过。
+- [x] 项目所有者已批准任务状态、索引、Evidence 和 Draft PR 正文的 docs closeout，并于 2026-08-22 报告人工 AC-07 为 `pass`。
 
 ## 12. 可判定验收与完成条件
 
@@ -354,7 +354,16 @@ node tools/evidence/capture-command.mjs --task T033 --gate task-candidate --base
 6. Evidence 至少绑定：task/base/source revision、Windows/Node/Electron、精确命令与 exit code、脱敏 artifact、三态结果、E2E-AC-07、AC-01/03/04、完整 diff/review、known limitations 和人工 `pending`。
 7. 若后续获批合入 `dev`，另记 `dev_integration_revision` 和最新 `dev` affected regression；本合同不授予 merge。
 
+### 13.6 实际收口记录
+
+- Implementation Candidate：`502ed1a282bc127684229f4405072acb7ef6fb11`；candidate Verification run `32460856950` / job `96707339727` 为 success。
+- Integration Freshness：`fresh`；candidate 与 docs closeout 均基于最新授权 `dev@43e6406684dbb1b1ef30d006063242e9a552da80`，未执行 refresh。
+- docs closeout revision：`94e74aba0607e83cdc4f130e7b146127c332ecf8`；final-head Verification run `32461644707` / job `96709596690` 为 success。
+- 项目所有者于 2026-08-22 明确报告人工 AC-07 为 `pass`、代码 Review 完成，并批准最后文档收口。
+- T033 只形成 G3/S3 数据安全候选；PR 保持 Draft，Ready、merge、`dev -> main`、tag 与 release 未授权。
+
 ## 14. Git、GitHub、依赖与外部操作权限
+
 
 ### 14.1 当前合同阶段已授权权限
 
