@@ -924,3 +924,34 @@ Agent 只提供步骤和观察位置，不得替项目所有者签署人工验�
 - **Known limitations**：T091 尚未合入 `dev`；`dev_integration_revision`、`stage_final_integration_revision` 保持 `null`；final-head CI 属于文档 closeout 后的 PR 集成门禁；既有 Windows package smoke 有 1 项 skip；T092 仍需至少三个真实 Txxx 任务交付试运行并验证 early/candidate/final-head 区分、交付链追踪、artifact 脱敏、metadata/freshness 检查和长期文档不被自动改写后，另行授权启动。
 - **Supersedes / superseded by**：corrected candidate run `32133490249` supersedes the evidence semantics of run `32132410959`; neither implies `dev` merge、Ready、tag 或 release。
 - **Recorded at**：2026-08-18
+
+### EV-T033-001
+
+- **Status**：pass；实现、本地完整验证、Windows package/smoke、candidate/final-head hosted CI、代码 Review、获批准 docs closeout 与项目所有者人工 AC-07 均通过；任务 `done`，但不声明 Ready 或合入
+- **Task / Gate**：T033 / S3 E3-03；证明 AI disabled、not-configured、failure 三态不影响核心数据能力，只形成 G3/S3 候选，不声明完整人工 AC-07、Ready、merge、tag 或 release
+- **Requirements**：FR-D01～FR-D05、FR-AI06/AI09；AC-07 自动化子集；受影响回归 AC-01/AC-03/AC-04；D-003/004/008～016/101/103～109/111；ED-003/004/008/010/011/014～019；T033 合同
+- **Source branch**：`task/T033-ai-data-capability-regression`
+- **Source revision**：Implementation Candidate `502ed1a282bc127684229f4405072acb7ef6fb11`；docs closeout revision `94e74aba0607e83cdc4f130e7b146127c332ecf8`；base `dev@43e6406684dbb1b1ef30d006063242e9a552da80`
+- **CI head/merge revision**：Draft PR #28 early run `32459230963` / job `96702610074` 在合同/metadata head `e162f6609d8ccb38fa9748a5c972af555625030c` 为 success；candidate run `32460856950` / job `96707339727` 在 head `502ed1a282bc127684229f4405072acb7ef6fb11` 为 success，PR test-merge revision `377768637a1575a7c8b05620a0bd79f440a7b9d5`；docs closeout final-head run `32461644707` / job `96709596690` 在 head `94e74aba0607e83cdc4f130e7b146127c332ecf8` 为 success，test-merge revision `cded9fda3afd968a5b3b3c018094923685a6c946`
+- **Integration freshness**：`fresh`；candidate 前 fetch 后 `origin/dev` 与 merge-base 均为 `43e6406684dbb1b1ef30d006063242e9a552da80`，无需 refresh
+- **Environment**：Windows 11 `10.0.26200`、Node.js v24.18.0、npm 11.16.0、Electron 43.3.0、`better-sqlite3` 13.0.1；SQLite、Electron `userData`、导出和 package smoke 均使用唯一临时根；无 live AI、真实 Provider、真实 key 或真实用户数据
+- **Command or manual procedure**：
+  1. `npm.cmd run governance:metadata:check` exit 0；T033 metadata sidecar 与索引关系校验通过。
+  2. 定向 harness unit 5/5、SQLite 三态/故障 integration 4/4、T031/T032 data-control/export IPC 与 integration 合计 22/22 通过；authentication、parse、abort-controlled timeout 均由离线 fake 构造。
+  3. 定向 Electron 回归 7/7 通过：E2E-AC-07、AC-01、AC-03、AC-04、T031 data-control 与 T032 complete export 在同一 candidate revision 执行。
+  4. evidence wrapper 在 candidate 执行 `npm.cmd run verify` exit 0：129 unit、88 integration、13 Electron E2E 通过，1 项 opt-in package smoke 按设计 skip；成功 artifact `.tmp/evidence/T033-task-candidate-502ed1a282bc-20260821075359.json`。
+  5. `npm.cmd run package` 与 `npm.cmd run test:package-smoke` exit 0；Windows x64 unpacked 与隔离 NSIS-installed smoke 1/1 通过。
+  6. 完整 diff、允许文件、Renderer/Preload 权限、dependency/migration/T031/T032 合同差异检查通过；复核发现 failure 证据最初使用较窄 `readSnapshot()`，已改为 `readCompleteCoreSnapshot()` 并重新通过完整验证，无剩余 material finding。
+  7. 项目所有者在 candidate CI 通过后明确批准修改任务状态、索引、Evidence 和 Draft PR 正文；本条只记录实际自动化，未把人工 AC-07 预标为通过。
+- **Result**：
+  - `disabled` 使用关闭调用门且 provider calls 为 0；`not-configured` 复用 `EmptyAiConfiguration` 并固定返回 `configured=false`/`availability=not-configured`，provider calls 为 0；`failure` 使用现有 fake provider，完全离线。
+  - authentication/parse/timeout 每次失败前后的十集合完整核心快照与 sourceDataVersion 相等，没有未经确认的 Goal/Action/Routine/Record/Understanding/Confusion/TodaySelection/ReviewResult 写入。
+  - 三态重复 Goal/Action/Routine CRUD、Today focus/intention、Action/Routine Record 补记与修改、Understanding/Confusion、Progress、删除 cancel/stale/confirm、完整导出和真实关闭重开；确定性 integration 结果逐对象相等，E2E 语义结果相等。
+  - AI failure 后新的 SQLite 写事务、Progress 查询、删除事务、ExportPort、SQLite 重开与完整导出继续可用；导出不含 fake request marker、Provider 错误、凭据或技术路径。
+  - 未修改生产代码、依赖、lockfile、schema、migration 或 T031/T032 合同；`dependency_change: false`、`migration_change: false`。
+- **Artifacts**：Draft PR #28：<https://github.com/Fyrefly-4/MyTracer/pull/28>；candidate run：<https://github.com/Fyrefly-4/MyTracer/actions/runs/32460856950>；docs closeout final-head run：<https://github.com/Fyrefly-4/MyTracer/actions/runs/32461644707>；成功本地 artifact `.tmp/evidence/T033-task-candidate-502ed1a282bc-20260821075359.json`
+- **Failed evidence retained**：`.tmp/evidence/T033-task-candidate-7e68d696758f-20260821074700.json` 因 worktree 未暴露已安装 Electron/better-sqlite3 native runtime 而失败；建立忽略且不改依赖的本地 junction 后，`T033-task-candidate-7e68d696758f-20260821074856.json` 成功 supersede；最终 candidate artifact 绑定审查修订 `502ed1a`
+- **Manual acceptance**：pass；项目所有者于 2026-08-22 明确报告“人工 AC-07：pass；代码 Review：完成”，未报告异常观察，并批准最后文档收口
+- **Known limitations**：PR 保持 Draft 且尚未合入 `dev`；T033 不实现 Provider 接入、AI 配置 UI、Start Help、AC-02、长期记忆、S6、自动导入/恢复，也不授权 Ready、merge、`dev -> main`、tag 或 release
+- **Supersedes / superseded by**：本条 pass 状态 supersedes 同 Evidence ID 的 partial/final-head pending 状态；成功 candidate artifact supersedes 早期环境失败，失败记录保留
+- **Recorded at**：2026-08-22
