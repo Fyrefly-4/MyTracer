@@ -12,7 +12,7 @@
 
 本合同把 V2 第四批的第一阶段重新定位为“普通任务自动化运行模式”，并定义 GitHub Workflow 的后续优化方向。T092 不建设 Agent 权限管理系统，不重写现有开发 Skill，也不在本任务内修改真实 GitHub Actions、ruleset 或 PR template。
 
-合同生成不等于批准合同内容或激活 T092 实施。项目所有者审核并明确激活前，只允许继续修改本合同草案。
+项目所有者已于 2026-08-24 审核本合同并激活 T092 实施；该批准不包含 candidate 后的 docs closeout、Ready 或 merge。
 
 ## 1. 任务信息
 
@@ -75,7 +75,7 @@ References 只是依据索引，不创建新的产品语义、自动化能力或
 
 ## 4. 开始条件、依赖与 shared surface
 
-合同获项目所有者审核并明确激活前，除修改本合同草案外不得开始实施。
+以下开始条件在实施前已经确认；后续权限仍以本合同和项目所有者精确批准为边界。
 
 - [x] T090 第一、二批规范已进入 `dev`。
 - [x] T091 第三批工具与规则已进入 `dev`，并被多个真实任务使用。
@@ -130,7 +130,7 @@ dependencies:
 - `tests/unit/process-governance.test.ts`
 - T092 Draft PR 正文
 
-本次合同重写步骤只允许修改 `docs/implementation/T092_STANDARD_TASK_PROFILE.md`；其余文件必须等合同审核和激活后才能修改。
+合同已激活；实施修改必须保持在上述文件范围内，任何扩围都需先停止并重新取得批准。
 
 ## 6. 明确非范围
 
@@ -462,7 +462,7 @@ permissions:
 
 - `external_write: true` 仅指推送 `docs/T092-standard-task-profile`、创建/更新该分支到 `dev` 的 Draft PR、读取其 CI，以及现有 workflow 上传脱敏 artifact。
 - 不允许其他外部写入、Ready、merge、tag、release、ruleset、Secrets、Workflow 配置写入或远端分支删除。
-- 当前合同重写步骤不使用已获准的 commit、push 或 Draft PR 权限；项目所有者审核合同后再决定是否进入实施。
+- T092 已获准创建范围内 commit、推送确切任务分支并维护该分支到 `dev` 的 Draft PR。
 - candidate hosted CI 通过后的 docs closeout 文件、事实、commit 和 push 仍须项目所有者单独精确批准。
 
 ## 14. 交付物
