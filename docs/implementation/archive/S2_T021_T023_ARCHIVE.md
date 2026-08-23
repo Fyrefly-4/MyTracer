@@ -1,6 +1,6 @@
 # MyTracer S2 / T021～T023 开发合同归档
 
-> 状态：已归档；T021～T023 与 T802 均为 `done`，S2 自动化、AC-03/AC-04 与项目所有者人工验收均为 `pass`；归档由 PR #20 合入 `dev`
+> 状态：已归档；T021～T023/T802 与 AC-03/AC-04 均为 `pass`；PR #22 合入 `main@581e443ea925715b1eb4f2343b735fce9e38e604`，并发布 `v0.1.0-alpha.3`
 >
 > 归档日期：2026-08-17
 >
@@ -24,7 +24,7 @@
 | T023 / E2-03 | 通用 Action 非强制 intention、显式转换、跨日不滚动与 AC-04 | `b747f41d647891d1de0ef77a61840fdbc87cfa0f` | [PR #19](https://github.com/Fyrefly-4/MyTracer/pull/19) / `0106996b45a41275370c46bd3f6ea842573f0889` | `EV-T023-001` |
 | T802 / S2 fix | package API 门禁、连续 AC-03、S1 v1 数据守恒与本归档 | `a61d0bc100752ae1209623a2ac020ff25a62bf8f` | [PR #20](https://github.com/Fyrefly-4/MyTracer/pull/20) / `a9db1eb26134dac83b01f4a4d7da30f92a271242` | `EV-T802-001` / `EV-T802-002` |
 
-T021～T023/T802 已在最终 `dev@a9db1eb26134dac83b01f4a4d7da30f92a271242` 完成同 revision 聚合验收。该事实不授权里程碑 `dev → main` merge、tag 或 release；这些动作仍受独立门禁约束。
+T021～T023/T802 已在 `dev@a9db1eb26134dac83b01f4a4d7da30f92a271242` 完成同 revision 聚合验收；项目所有者随后另行批准 PR #22 合入 `main` 并发布 `v0.1.0-alpha.3`。原任务权限记录不因此追溯扩大。
 
 ## 3. S2 最终行为合同
 
@@ -84,7 +84,7 @@ T021～T023/T802 已在最终 `dev@a9db1eb26134dac83b01f4a4d7da30f92a271242` 完
 - 实现 revision `a61d0bc100752ae1209623a2ac020ff25a62bf8f` 的本地 `npm.cmd run verify`、`npm.cmd run package`、unpacked/隔离 NSIS `npm.cmd run test:package-smoke`、独立 review及 hosted Windows required gate 均通过；详见 `EV-T802-001`。
 - T802 同时承担将 T021～T023 三份完成合同归档为本文并删除原文件。归档 head `dd20a1544e0e48008dea6d272618f8cdfef9e4ee` 的 required CI 通过后，项目所有者将 PR #20 squash 合入为 `dev@a9db1eb26134dac83b01f4a4d7da30f92a271242`。
 - 最终 dev 从头执行本地 `verify`、定向 AC-01/03/04、LocalDate/SQLite/S1-only v1 守恒、Windows package 与 unpacked/隔离 NSIS smoke，且同 revision hosted Windows gate 和独立聚合 review 通过；详见 `EV-T802-002`。
-- S2 聚合通过只允许准备 `dev → main` 里程碑 PR；里程碑 merge 必须由项目所有者另行批准并使用 merge commit，tag 和 release 仍须合入后单独授权。
+- S2 聚合通过时只允许准备里程碑 PR；项目所有者随后按独立门禁合入 PR #22 并发布 `v0.1.0-alpha.3`，该完成事实不改写当时权限。
 
 ## 8. 数据、兼容性与后续边界
 

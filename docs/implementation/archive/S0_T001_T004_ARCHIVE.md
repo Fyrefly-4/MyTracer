@@ -21,7 +21,7 @@
 | T002 / E0-02 | 验证工具链、测试替身、临时数据根和 Windows CI | `f60a38c4e69b8bead2aa8975c6fdb6886bec220a` | [PR #2](https://github.com/Fyrefly-4/MyTracer/pull/2) / `e64929057724f6458a798479d19de41a710a3028` | `EV-T002-001` |
 | T003 / E0-03 | SQLite schema/migration、Repository/Unit of Work 与原生模块 | `b7f20901c54bd883f6ebf6cda66e3d9b9b5fa347` | [PR #3](https://github.com/Fyrefly-4/MyTracer/pull/3) / `2ea8c6cb8584e4bf4d517938efacf68813f33604` | `EV-T003-001` |
 | T004 / E0-04 | LocalDate/Clock、诊断、空配置/safeStorage 与 package smoke | `0e9bf1f15614454f5618d5c910fe498dfa3de7ba` | [PR #4](https://github.com/Fyrefly-4/MyTracer/pull/4) / `2e95680c1965110b0d92ec54f9b28c6aee7df556` | `EV-T004-001` |
-| G2 | T001～T004 最终聚合与工程就绪 | `2e95680c1965110b0d92ec54f9b28c6aee7df556` | [PR #5](https://github.com/Fyrefly-4/MyTracer/pull/5) / `7cc047e8442d075fb308321ce799d0e8dc2538bf` | `EV-G2-001` |
+| G2 | T001～T004 最终聚合与工程就绪 | `2e95680c1965110b0d92ec54f9b28c6aee7df556` | [PR #5](https://github.com/Fyrefly-4/MyTracer/pull/5) / `7cc047e8442d075fb308321ce799d0e8dc2538bf` / `v0.1.0-alpha.1` | `EV-G2-001` |
 
 ## 3. T001 — Electron 空壳与进程边界
 
@@ -102,7 +102,7 @@
 
 - `dev` revision `2e95680c1965110b0d92ec54f9b28c6aee7df556` 包含 T001～T004。
 - 同一 revision 的本地 `verify`、package、package smoke 和 hosted run `31302341732` / job `93217046549` 通过。
-- 项目所有者于 2026-08-09 确认 G2 `pass`；PR #5 已以 merge commit `7cc047e8442d075fb308321ce799d0e8dc2538bf` 合入 `main`。
+- 项目所有者于 2026-08-09 确认 G2 `pass`；PR #5 以 merge commit `7cc047e8442d075fb308321ce799d0e8dc2538bf` 合入 `main`，随后发布 `v0.1.0-alpha.1`。
 - G2 不声明业务 FR 或 AC-01～AC-07 完成；当时 `main`/`dev` 未配置 branch protection/required check，Windows 产物未签名并使用默认 Electron 图标。
 - G2 通过只满足 T011 工程前置；T011 仍需独立合同和明确实现授权。
 

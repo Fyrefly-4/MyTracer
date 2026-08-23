@@ -2,7 +2,7 @@
 
 > 任务类型：S3 聚合验收 / 文档与证据收口
 >
-> 任务状态：**review**
+> 任务状态：**done**
 >
 > 项目所有者授权日期：2026-08-23
 >
@@ -15,13 +15,13 @@
 - **Task ID**：T803
 - **Title**：G3/S3 aggregate acceptance and milestone closeout
 - **Slice / Plan item**：S3 aggregate gate
-- **Status**：review
+- **Status**：done
 - **Base branch**：`dev`
 - **Expected branch**：`docs/T803-s3-final-acceptance`
 
 ## 2. 目标结果
 
-在同一最新 `origin/dev` revision 上聚合证明 T031～T033、AC-07、AC-01/03/04 回归、Windows package smoke 和 S3 数据安全边界；只在全部门禁通过后收口任务状态、证据、README 与单篇 S3 归档，并创建 Draft PR 到 `dev`。该 PR 合入后才固定新的 `origin/dev` 并创建 `dev → main` 里程碑 PR。
+本任务已在固定 `origin/dev@8058f7a...` 上聚合证明 T031～T033、AC-07、AC-01/03/04 回归、Windows package smoke 和 S3 数据安全边界，并完成证据、README 与单篇 S3 归档。后续 PR #29、里程碑 PR #30 和 beta release 的实际结果记录在第 10 节与 `EV-G3-S3-001`。
 
 ## 3. 依据与引用
 
@@ -155,8 +155,8 @@ npm.cmd run test:package-smoke
 5. `EV-G3-S3-001` 绑定 source SHA、最终文档 revision、命令、artifact、hosted CI、人工 AC-07 和限制。
 6. TASK_INDEX、Evidence、README、metadata 和归档不再把已合入的 T031～T033/T091 写成 pending 或未合入。
 7. 最终 head 重新通过本地规定验证和 hosted Windows CI。
-8. Draft PR 到 `dev` 已创建；Agent 不合并，等待项目所有者处理。
-9. 收口 PR 合入后重新 fetch，固定新的 `origin/dev`，再创建 `dev → main` 里程碑 PR；该 PR 只等待所有者批准 merge commit。
+8. Draft PR #29 的 final head CI 通过，项目所有者随后将其合入 `dev`。
+9. 项目所有者通过 PR #30 将同一内容树合入 `main`，并另行创建 beta tag/release；Agent 未执行 merge、tag 或 release。
 
 ## 10. Git、GitHub 与外部权限
 
@@ -188,10 +188,12 @@ integration:
   base_revision: dev@8058f7a3c9db9d3b488e727dfd85201dc14f11a0
   freshness_required: true
   affected_regression_required: true
-  task_delivery_revision: f5fd977bd32676cb617f3023091a20a40d72db70
-  dev_integration_revision: null
-  stage_final_integration_revision: null
+  task_delivery_revision: 0cd4a4bf42c3bc8328d5273bd9fd022c06095c9e
+  dev_integration_revision: eec093924ae061876805c657742283097824df2c
+  stage_final_integration_revision: 8058f7a3c9db9d3b488e727dfd85201dc14f11a0
 ```
+
+后续交付事实：final task head `0cd4a4b...` 的 run `32630998007` 通过；PR #29 squash merge 为 `dev@eec0939...`，其 push run `32631739929` 通过；PR #30 merge commit 为 `main@75e51b4...`；项目所有者另行发布 `v0.1.0-beta.1`。这些外部动作不追溯扩大本合同权限。
 
 ## 11. 风险与停止条件
 

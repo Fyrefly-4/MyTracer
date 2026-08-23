@@ -152,14 +152,15 @@ Artifact 位于 ignored `.tmp/evidence/`，可由 GitHub Actions 作为短期 ar
 | `EV-T031-001` | T031 | `1c08b3161021319d1c87ef4bf8cb2470d977bd48` / merge `f41c601` | Record 修改/补记、Routine provenance、子事实转换、五类删除预览与事务性删除 | pass | pending | 任务自动化/final-head CI 与 dev merge 已完成；专用人工清单仍保留 pending，完整人工 AC-07 由 T033/聚合证据记录 |
 | `EV-T032-001` | T032 | `79458b88b505346ef81c3cc920224c7cf0eb4ba4` / merge `43e6406` | 十集合一致性快照、版本化完整导出、结构/引用校验和原子交付 | pass | pass | 本地/hosted/package 与项目所有者人工导出验收通过；PR #27 已合入 `dev` |
 | `EV-T033-001` | T033 | `502ed1a282bc127684229f4405072acb7ef6fb11` / merge `8058f7a` | AI 三态数据独立性、失败零写入、CRUD/Progress/删除/导出/重开与 AC-07 | pass | pass | 本地/hosted/package、独立复核与项目所有者完整人工 AC-07 通过；PR #28 已合入 `dev` |
-| `EV-G3-S3-001` | T803 / G3/S3 | `8058f7a3c9db9d3b488e727dfd85201dc14f11a0` / docs `f5fd977` | T031～T033 同 revision 聚合、AC-01/03/04/07、migration/重开、package 与归档 | partial | pass | 固定 source 与文档候选本地聚合、PR #29 candidate CI 通过；owner merge 待完成 |
+| `EV-G3-S3-001` | T803 / G3/S3 | product `8058f7a` / task `0cd4a4b` / dev `eec0939` / main `75e51b4` | T031～T033 同 revision 聚合、AC-01/03/04/07、migration/重开、package、归档与 beta 里程碑 | pass | pass | pre-merge candidate 时间线保留；PR #29/#30、final/dev CI 与 `v0.1.0-beta.1` release 已完成 |
+| `EV-T804-001` | T804 / GOV-03 | base `eec0939` / candidate pending commit | 长期文档任务、里程碑、release 与 GitHub 配置事实统一收口 | partial | not-required | 远端审计和本地文档门禁通过；独立 review、candidate/final-head CI 与最终 closeout 待完成 |
 | `EV-T801-001` | T801 | `dd9bd4498b0339703f8cf992a564a7d7b80442b5` | S1 package smoke 精确 API、安全边界与 unpacked/NSIS 路径 | pass | not-required | 本地 `verify`/package/package smoke、独立 review、PR #12 head CI 与最终 dev push CI 通过；merge `74ebe346a86cf431d87e02e8a1220b713b33901c` |
 | `EV-T802-001` | T802 | `a61d0bc100752ae1209623a2ac020ff25a62bf8f` | S2 package API、连续 AC-03、S1 v1 数据守恒与合同归档候选 | partial | not-required | 实现候选本地完整门禁、独立 review 和 PR #20 hosted CI 通过；归档后最新 head CI、merge 与最终 dev 聚合复验待完成 |
 | `EV-T802-002` | T802 / S2 aggregate | `a9db1eb26134dac83b01f4a4d7da30f92a271242` | T021～T023 同 revision 聚合、AC-01/03/04、SQLite/LocalDate、Windows package 与归档 | pass | pass | 最终 dev 本地/hosted 门禁、定向验收、package smoke 与独立 review 通过；T021～T023 人工验收沿用已记录的 owner pass |
-| `EV-T090-001` | T090 / GOV-01 | `767ea6741411e2d2e7a82b297a0ed7dde3e3134e` | V2 第一、二批流程规范、Task Contract 字段、Stage Design 模板和 Escalation Proposal | pass | pass | 本地文档验证、PR candidate CI 和人工审核通过；无产品任务试点；PR #23 后续以 `aeb0d68` 进入 `dev` |
+| `EV-T090-001` | T090 / GOV-01 | `767ea6741411e2d2e7a82b297a0ed7dde3e3134e` | V2 第一、二批流程规范、Task Contract 字段、Stage Design 模板和 Escalation Proposal | pass | pass | T090 当时无产品试点；其流程后由 T031～T033/T803 实际使用，PR #23 以 `aeb0d68` 进入 `dev` |
 | `EV-T091-001` | T091 / GOV-02 | `f12f5e5fa81cf23124be126f2e23486d518104bc` / merge `4674597` | V2 第三批确定性证据采集、CI artifact、metadata 校验和规则同步 | pass | pass | 本地与 hosted 验证通过；PR #24 已合入 `dev`，T031～T033/T803 已实际使用其 artifact/metadata 能力；T092 延后 |
 | `EV-G3-S1-001` | G3/S1 | `623007dd4269df02771f6a526db269de1fe95a03` | T011～T014 同 revision 核心闭环、Windows package 与发布门禁 | fail | pending | `verify`、AC-01 和 package 构建通过；package smoke 因旧 Preload API 断言在 unpacked 阶段失败，NSIS 安装态未验证 |
-| `EV-G3-S1-002` | G3/S1 | `74ebe346a86cf431d87e02e8a1220b713b33901c` | T011～T014/T801 同 revision 核心闭环、Windows package 与发布门禁 | pass | pass | hosted/local `verify`、AC-01、package、unpacked/NSIS smoke 与独立 review 通过；确切里程碑 PR 的所有者 merge 批准仍单独待定 |
+| `EV-G3-S1-002` | G3/S1 | `74ebe346a86cf431d87e02e8a1220b713b33901c` | T011～T014/T801 同 revision 核心闭环、Windows package 与发布门禁 | pass | pass | 验收门禁通过；项目所有者后续另行批准 PR #14 合入 `main@3912e80...` 并发布 `v0.1.0-alpha.2` |
 
 ### EV-T001-001
 
@@ -799,8 +800,8 @@ Artifact 位于 ignored `.tmp/evidence/`，可由 GitHub Actions 作为短期 ar
 |---|---|---|---|---|
 | G1 设计就绪 | 架构、领域、数据、AI、测试、追踪 | `docs/architecture/` 最终基线 | pass | 已确认 |
 | G2 工程就绪 | T001～T004 | `EV-G2-001` | pass | 已确认 |
-| G3/S1 核心闭环 | T011～T014/T801 | `EV-G3-S1-001`（失败保留）；`EV-G3-S1-002`（最终） | pass | 已确认 AC-01；确切里程碑 PR 的 merge 授权另行待定 |
-| G3/S3 数据安全 | T031～T033/T803 | `EV-T031-001`～`EV-T033-001`；`EV-G3-S3-001` | partial | 完整人工 AC-07 与 candidate CI 已确认；T803 owner merge 待完成 |
+| G3/S1 核心闭环 | T011～T014/T801 | `EV-G3-S1-001`（失败保留）；`EV-G3-S1-002`（最终） | pass | AC-01、PR #14 与 `v0.1.0-alpha.2` 已完成 |
+| G3/S3 数据安全 | T031～T033/T803 | `EV-T031-001`～`EV-T033-001`；`EV-G3-S3-001` | pass | AC-07、PR #29/#30 与 `v0.1.0-beta.1` 已完成 |
 | G4 Demo 就绪 | AC-01～AC-07、数据安全、已知限制 | — | pending | pending |
 | G5 使用验证 | 7～14 天真实自用 | — | pending | pending |
 
@@ -853,16 +854,18 @@ Agent 只提供步骤和观察位置，不得替项目所有者签署人工验�
 - T002 验证工具链、测试替身、临时根、Electron E2E 和 hosted Windows CI 已记录为 `EV-T002-001`；它不执行 AC-01～AC-07，也不使 G2 自动通过。
 - T003 SQLite 基础、隔离验证和 Windows x64 原生模块证据已记录为 `EV-T003-001`；它不声明业务 FR、任何 AC、T004 或 G2 完成。
 - T004 LocalDate/Clock、诊断、空配置/safeStorage 边界和本地 Windows 打包冒烟已记录为 `EV-T004-001`；它不声明业务 FR、任何 AC 或 G2 完成。
-- G2 已由 `EV-G2-001` 绑定 T001～T004、最终 `dev` source revision、聚合验证、Windows package smoke、PR #5 和项目所有者验收；不声明任何业务 FR 或 AC-01～AC-07 完成。
+- G2 已由 `EV-G2-001` 绑定 T001～T004、最终 `dev` source revision、聚合验证、Windows package smoke、PR #5 和项目所有者验收；项目所有者后续发布 `v0.1.0-alpha.1`，但 G2 仍不声明任何业务 FR 或 AC-01～AC-07 完成。
 - T014 事实型 Progress 实现、本地/hosted 自动验证、独立 review、PR #11 合并及项目所有者完整人工验收已记录为 `EV-T014-001`；任务为 `done`。
 - T021 Routine 生命周期、ISO 星期节奏、Today 计划项、Goal 生命周期独立性、SQLite/IPC/UI/重开、本地与 hosted 自动验证、独立只读复核及项目所有者人工验收已记录为 `EV-T021-001`；T022 四显式结果、缺行 unknown、非计划日、Today/Progress、跨午夜与重开已记录为 `EV-T022-001`。两者均为 `done`，完整 AC-03 自动化和项目所有者人工验收为 `pass`。
 - T023 通用 Action 非强制 intention、显式转换、未发生零事实、跨日不滚动、普通 ActionRecord 复用、本地与 hosted 自动验证、独立只读复核及项目所有者人工验收已记录为 `EV-T023-001`；AC-04 为 `pass`。
-- T031 Record 修改/补记、Routine provenance、Understanding/Confusion 状态变更、五类删除预览与事务性确认、本地与 hosted 自动验证及独立复核已记录为 `EV-T031-001`；人工验收、T032/T033 与完整 AC-07 保持 `pending`，PR Ready/merge 未授权。
-- T802 的 package API、连续 AC-03、S1-only v1 数据守恒修复及 T021～T023 合同归档候选保留为 `EV-T802-001`；最终 `dev@a9db1eb...` 的同 revision 聚合结论记录为 `EV-T802-002` 并取代 partial 状态。S2 自动化与既有项目所有者 AC-03/AC-04 人工验收为 `pass`，但不授权里程碑 merge、tag 或 release。
+- T031 的任务自动化和 dev merge 已由 `EV-T031-001` 证明；其专用人工清单历史仍为 `pending`，但后续 T033/T803 完整人工 AC-07 与 S3 聚合为 `pass`，不得把早期任务快照继续当成当前 S3 状态。
+- T802 的 candidate 保留为 `EV-T802-001`，最终同 revision 聚合记录为 `EV-T802-002`；项目所有者后续通过 PR #22 合入 `main` 并发布 `v0.1.0-alpha.3`，原任务权限记录不因此扩大。
 - 完整 Goal → Action → Today → ActionRecord → Progress 自动化与项目所有者人工闭环已记录为 `EV-AC01-001`，AC-01 为 `pass`；这不自动通过 G3/S1、完整 FR-P02、完整 FR-D01 或 AC-07。
 - G3/S1 首轮聚合验收已记录为 `EV-G3-S1-001`：固定 `dev@623007dd4269df02771f6a526db269de1fe95a03` 的 `verify`、AC-01 和 package 构建通过，但 package smoke 因旧 API 断言失败，故当时阶段门为 `fail`；该失败记录由后续 `EV-T801-001` / `EV-G3-S1-002` 显式取代但不删除。
 - T801 已由 `EV-T801-001` 证明单文件修复、本地 `verify`/package/package smoke、独立 review、PR #12 head CI、合并与最终 dev CI 通过；没有生产、依赖、schema 或产品语义变化。
-- G3/S1 最终聚合验收已记录为 `EV-G3-S1-002`：固定 `dev@74ebe346a86cf431d87e02e8a1220b713b33901c` 的 hosted/local `verify`、AC-01、package 和 unpacked/NSIS smoke 通过。首轮失败未删除；里程碑 PR 的 merge、tag 和 release 仍需所有者分别授权。
+- G3/S1 最终聚合验收已记录为 `EV-G3-S1-002`：固定 `dev@74ebe346a86cf431d87e02e8a1220b713b33901c` 的 hosted/local `verify`、AC-01、package 和 unpacked/NSIS smoke 通过。首轮失败未删除；项目所有者后续通过 PR #14 合入 `main` 并发布 `v0.1.0-alpha.2`。
+- T032/T033 分别由 `EV-T032-001`、`EV-T033-001` 证明完整导出和 AI 三态数据独立性；项目所有者完整人工 AC-07 为 `pass`。
+- G3/S3 最终聚合与交付时间线由 `EV-G3-S3-001` 记录：T803 final head、PR #29、PR #30、required CI 与 `v0.1.0-beta.1` 均已完成；G4、S4～S7 和 AC-02/05/06 仍未完成。
 
 ### EV-T090-001
 
@@ -962,16 +965,16 @@ Agent 只提供步骤和观察位置，不得替项目所有者签署人工验�
 
 ### EV-G3-S3-001
 
-- **Status**：partial；固定 S3 产品 source 与文档候选的本地聚合自动化、Windows package、source post-merge CI、T803 early/candidate CI 与项目所有者完整人工 AC-07 均通过；T803 owner merge 待完成
-- **Task / Gate**：T803 / G3/S3 数据安全聚合；证明 T031～T033 在同一最终产品 revision 成立，不声明 G4、S4～S7、AC-02/05/06、`main`、tag 或 release
+- **Status**：pass；固定 S3 产品 source、本地聚合、Windows package、T803 early/candidate/final-head CI、`dev` integration CI 与项目所有者完整人工 AC-07 均通过；PR #29/#30 和 `v0.1.0-beta.1` release 已完成
+- **Task / Gate**：T803 / G3/S3 数据安全聚合；证明 T031～T033 在同一最终产品 revision 成立，并记录随后独立授权完成的 main/tag/release 事实；不声明 G4、S4～S7 或 AC-02/05/06
 - **Requirements**：FR-D01～FR-D05、FR-L07、FR-R08、FR-AI06/AI09；AC-07；回归 AC-01/AC-03/AC-04；D-003/004/007～016/101/103～109/111；ED-003/004/008/010～019；GW-001/002/004/008～010；已批准 S3-Q01=A、Q02=B、Q03=A、Q04=A
 - **Source branch**：产品 source 为 `dev`；文档收口为 `docs/T803-s3-final-acceptance`
 - **Source revision**：`8058f7a3c9db9d3b488e727dfd85201dc14f11a0`，即 T033 PR #28 squash merge 后的最新授权 `origin/dev`
-- **Task delivery revision**：`f5fd977bd32676cb617f3023091a20a40d72db70`；包含统一 S3 归档、聚合 Evidence 候选、README/metadata/任务状态收口，并通过最终本地门禁与 candidate hosted CI
-- **Dev integration revision**：T031 `f41c601a697f5fbdb6bc3f90656071f7263d7cfe`；T032 `43e6406684dbb1b1ef30d006063242e9a552da80`；T033 / stage product source `8058f7a3c9db9d3b488e727dfd85201dc14f11a0`；T803 owner merge pending
-- **Stage final integration revision**：`8058f7a3c9db9d3b488e727dfd85201dc14f11a0`（产品行为）；T803 文档归档进入 `dev` 后另记 docs integration revision
-- **Integration freshness**：`fresh`；original/latest/verified product base 均为 `origin/dev@8058f7a3c9db9d3b488e727dfd85201dc14f11a0`，`origin/main` 与 merge-base `112b90968dad05cd27f8421480cadaeff6f85e2c` 内容树相同，无 main-only 内容需回流
-- **CI classification**：source post-merge run `32555784685` / job `96989559513` 在 `8058f7a...` success；T803 Draft PR #29 early run `32626885866` / job `97163462767` 在合同 head `26848097ac273875fc6d74c331a16de1373f7e39` success；candidate run `32628650749` / job `97167874274` 在文档候选 `f5fd977bd32676cb617f3023091a20a40d72db70` success；Evidence closeout head 必须在 owner merge 前保持 green
+- **Task delivery revision**：`0cd4a4bf42c3bc8328d5273bd9fd022c06095c9e`；candidate `f5fd977bd32676cb617f3023091a20a40d72db70` 的本地/hosted 结果与最终两次文档提交继续保留在时间线
+- **Dev integration revision**：T031 `f41c601a...`；T032 `43e6406...`；T033 / stage product source `8058f7a3...`；T803 PR #29 squash merge `eec093924ae061876805c657742283097824df2c`
+- **Stage final integration revision**：产品行为 `8058f7a3c9db9d3b488e727dfd85201dc14f11a0`；T803 文档 integration `eec093924ae061876805c657742283097824df2c`；里程碑 main `75e51b4e63f8c9df960cccb444515b9e89be5fbd`
+- **Integration freshness**：candidate 时 original/latest/verified product base 均为 `origin/dev@8058f7a...`；PR #30 后 `dev@eec0939...` 与 `main@75e51b4...` 内容树相同，main 仅增加批准的 merge commit
+- **CI classification**：source run `32555784685`、early `32626885866`、candidate `32628650749`、final head `32630998007` 与 T803 merge 后 `dev` push run `32631739929` 均 success；早期结果不替代后续 revision，完整链按时间顺序保留
 - **Environment**：Microsoft Windows 11 `10.0.26200` x64；Node.js v24.18.0；npm 11.16.0；Electron 43.3.0；`better-sqlite3` 13.0.1；FakeClock、离线 fake AI、每 case/进程唯一 OS 临时 SQLite、导出、Electron `userData` 与 NSIS 安装根；无 live Provider、真实 key 或真实用户数据
 - **Command or manual procedure**：
   1. 核验 `origin/main...origin/dev` merge-base、全部提交/文件、PR #23～#28、tree equality、T031～T033 final task tree 与 squash merge tree；确认里程碑范围仅为 T090、T091、S3 设计和 T031～T033，无 main-only 产品内容或未批准依赖/migration。
@@ -984,6 +987,9 @@ Agent 只提供步骤和观察位置，不得替项目所有者签署人工验�
   8. 检查完整差异、tracked status、依赖/lockfile、生产/测试/config/schema/migration 范围；T803 只修改批准的任务、Evidence、metadata、README 和 S3 归档文档。
   9. 在文档候选 `f5fd977bd32676cb617f3023091a20a40d72db70` 从头重跑 evidence wrapper `npm.cmd run verify`，129 unit、88 integration、13 E2E 通过；再执行 `npm.cmd run package` 与 package smoke，均 exit 0；同 head hosted candidate CI success。
   10. 项目所有者明确授权删除已由统一归档取代的三份原任务合同；仅删除 `T031_RECORD_DATA_CONTROL.md`、`T032_VERSIONED_COMPLETE_EXPORT.md`、`T033_AI_DATA_CAPABILITY_REGRESSION.md`，同步 metadata、归档、Evidence 和 Draft PR 表述；完整合同仍可从固定 Git revision 与 PR #26～#28 恢复。
+  11. T803 final head `0cd4a4b...` 的 required run `32630998007` success；项目所有者将 PR #29 squash merge 为 `dev@eec0939...`，随后 push run `32631739929` success。
+  12. 项目所有者将 PR #30 以 merge commit `75e51b4...` 合入 `main`；该 commit 与 `dev@eec0939...`、final task head 共享内容树 `e69c72522b46e19603fed834937d806912525975`。
+  13. annotated tag `v0.1.0-beta.1` 指向 `main@75e51b4...`；GitHub prerelease 于 2026-08-23 发布 installer 和 `SHA256SUMS.txt`，不把发布动作归因于 Agent。
 - **Result**：
   - T031 修改/补记后相关投影从事实重查；五类删除 preview 与实际差异一致，取消/非法/stale/故障零变化，schema v1→v2 守恒、失败回滚和关闭重开通过。
   - T032 导出包含 sourceDataVersion 2 与十个完整核心集合，保留状态、关系、枚举、Routine provenance 与解除关联结果；结构/引用校验、敏感/技术字段排除、取消和所有写入故障路径通过。
@@ -991,10 +997,38 @@ Agent 只提供步骤和观察位置，不得替项目所有者签署人工验�
   - S1/AC-01 与 S2/AC-03/AC-04 在同一轮 Electron E2E 通过；没有修改产品语义、依赖、测试、配置或 migration。
   - T031 专用人工清单的历史 pending 不被重写；T033 final task head 与 merge tree 相同，且 Implementation Candidate 到 final task head 只有文档变化，因此项目所有者 2026-08-22 报告的完整人工 AC-07 可绑定当前产品 source。该绑定是基于 revision/tree 的明确推论，不是 Agent 代签。
 - **Artifacts**：
-  - source post-merge CI：<https://github.com/Fyrefly-4/MyTracer/actions/runs/32555784685>；T803 Draft PR #29：<https://github.com/Fyrefly-4/MyTracer/pull/29>；early CI：<https://github.com/Fyrefly-4/MyTracer/actions/runs/32626885866>；candidate CI：<https://github.com/Fyrefly-4/MyTracer/actions/runs/32628650749>。
+  - source、early 与 candidate artifacts 保持原记录；final head run `32630998007`、PR #29、dev push run `32631739929`、PR #30 和 `v0.1.0-beta.1` release 构成后续交付链。
+  - release installer `MyTracer-0.1.0-x64-setup.exe` 为 109226333 bytes，SHA-256 `52f6c7ba68dbcc3294fbe8439d57033feff2545d4d02d519da02ec9274db0049`；独立 `SHA256SUMS.txt` 已上传。tag 本身未签名，应用产物也保持 unsigned 限制。
   - 成功本地 artifacts：`.tmp/evidence/T803-s3-directed-unit-26848097ac27-20260823075658.json`、`T803-s3-directed-integration-26848097ac27-20260823075659.json`、`T803-native-smoke-recovery-26848097ac27-20260823080529.json`、`T803-task-candidate-recovered-26848097ac27-20260823080544.json`、`T803-package-26848097ac27-20260823080657.json`、`T803-package-smoke-26848097ac27-20260823080830.json`、`T803-s3-directed-e2e-26848097ac27-20260823080912.json`；文档候选 artifacts：`T803-docs-candidate-final-local-f5fd977bd326-20260823083518.json`、`T803-docs-candidate-package-f5fd977bd326-20260823083631.json`、`T803-docs-candidate-package-smoke-f5fd977bd326-20260823083730.json`。
   - 失败 artifacts 保留：`.tmp/evidence/T803-task-candidate-26848097ac27-20260823075727.json` 与 `T803-task-candidate-rerun-26848097ac27-20260823075922.json`；二者都绑定缺少按需 Electron dist 的环境前置失败，由 native smoke recovery 和最终完整成功 artifact supersede。
 - **Manual acceptance**：pass；项目所有者于 2026-08-22 明确报告完整人工 AC-07 `pass`。本条只引用该 owner 观察并验证其行为 revision 可绑定，不新增人工结论
-- **Known limitations**：T803 owner merge 尚未完成；Evidence closeout head 必须在 owner merge 前保持 hosted CI green。三份原任务合同已获项目所有者明确授权并从当前树删除，统一归档不替代 Git 历史与 PR #26～#28 中的审计全文；Windows 产物未签名并使用默认 Electron 图标；导出不等于自动导入/恢复；Provider、S4～S7、AC-02/05/06、G4、`main` merge、tag 和 release 均未完成或不在范围
-- **Supersedes / superseded by**：本条聚合任务级证据而不取代 `EV-T031-001`～`EV-T033-001`；成功 recovered verify supersedes 两个 T803 环境前置失败 artifact，但失败记录永久保留
+- **Known limitations**：三份原任务合同已从当前树删除但可从 Git 历史/PR #26～#28 恢复；Windows installer、tag 均未签名且应用使用默认 Electron 图标；导出不等于自动导入/恢复；Provider、S4～S7、AC-02/05/06 与 G4 仍未完成或不在范围
+- **Supersedes / superseded by**：本条原位从 pre-merge `partial` 更新为最终 `pass`；candidate 时间线、失败 artifacts 和 superseding recovery 均保留，不取代 `EV-T031-001`～`EV-T033-001`
+- **Recorded at**：2026-08-23；T804 于同日按已发生的后续外部事实完成最终状态校正
+
+### EV-T804-001
+
+- **Status**：partial；Git/GitHub 只读事实调查、文档事实修正、metadata、Prettier 和 diff integrity 已通过；独立 review、candidate hosted CI、owner-approved closeout 和 final-head CI 尚待完成
+- **Task / Gate**：T804 / GOV-03；只证明长期文档事实审计与收口流程，不重新证明产品行为、人工 AC 或 package
+- **Requirements**：GW-001、GW-002、GW-004、GW-008～GW-010；无 FR/AC/D/ED 变化
+- **Source branch / base**：`docs/T804-factual-closeout` / `origin/dev@eec093924ae061876805c657742283097824df2c`
+- **Task delivery revision**：candidate commit 创建后在 T804 closeout 中填写
+- **Integration freshness**：`fresh`；实施前重新 fetch，`origin/dev` 仍为 `eec093924ae061876805c657742283097824df2c`
+- **Environment**：Microsoft Windows 11；Node.js v24.18.0；npm 11.16.0；GitHub CLI 使用已登录项目所有者账号执行只读查询
+- **Command or procedure**：
+  1. 只读核验 PR #5/#14/#22/#29/#30 的 merged state、merge revision 和时间；核验四个 prerelease、beta assets/digests、tag 目标、Actions runs、repository rulesets、`.github` contents 与 GitHub Milestones。
+  2. 比较 `origin/dev@eec0939...`、`origin/main@75e51b4...` 和 T803 final head `0cd4a4b...` 的 tree；三者均为 `e69c72522b46e19603fed834937d806912525975`。
+  3. `npm.cmd run governance:metadata:check` exit 0，6 个 sidecar 通过。
+  4. `npm.cmd run format:check` exit 0；`git diff --check` exit 0。
+  5. 定向扫描当前状态措辞；三个直接命中分别是仍成立的 AI 空配置边界、已完成任务合同中保留的 Draft PR 权限表述，以及 T804 合同内保留的扫描命令文本；当前状态区无失效 T803 pending/owner merge 描述。
+  6. 检查完整 diff 和 tracked scope；没有产品代码、测试、依赖、lockfile、schema、migration、workflow、PR template、ruleset 或 `user/` 变化。
+- **Result**：
+  - T803 状态、S0～S3 main 里程碑、alpha/beta releases 和归档索引已与远端一致。
+  - `EV-G3-S3-001` 原位更新为最终 `pass`，同时保留 candidate、失败与 superseding recovery 时间线。
+  - 工作流文档区分目标流程、active rulesets、classic branch protection API 与未落地配置缺口。
+  - 设计文档把旧 schema/权限/门禁措辞限定为批准时事实，当前任务状态仍只由任务索引维护。
+- **Artifacts**：PR #5/#14/#22/#29/#30；Actions runs `32630998007`、`32631739929`；`v0.1.0-beta.1` release；rulesets `Dev-Rule` / `Main-Rule`
+- **Manual acceptance**：not-required；本任务无产品行为或体验变化
+- **Known limitations**：Git 忽略的 `user/` 本地流程说明仍含旧配置事实，按合同明确不修改；PR template、`main` 专用增强 CI 与 GitHub Milestones 仍未落地；candidate/final-head CI 和独立 review 待后续记录
+- **Supersedes / superseded by**：不取代任何产品 Evidence；最终 closeout 将在同一 Evidence ID 内补齐 candidate revision、review 和 CI
 - **Recorded at**：2026-08-23
