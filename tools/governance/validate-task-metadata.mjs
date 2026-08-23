@@ -407,6 +407,9 @@ async function run(argv) {
   const { knownTasks, taskStates } = readTaskIndex(taskIndex)
   const errors = []
   const profiles = await loadProfiles(options.profilesDir, errors)
+  if (!profiles.has('standard-task@1')) {
+    errors.push(`${options.profilesDir}: required profile standard-task@1 is missing`)
+  }
   const entries = (await readdir(options.metadataDir, { withFileTypes: true }))
     .filter((entry) => entry.isFile() && entry.name.endsWith('.json'))
     .sort((left, right) => left.name.localeCompare(right.name))

@@ -539,4 +539,25 @@ describe('task metadata validator', () => {
     expect(result.stderr).toContain('missing repository safety gate ready_for_review')
     expect(result.stderr).toContain('maxValidityDays must be an integer from 1 through 30')
   })
+
+  test('requires the standard-task@1 registry entry even before a task references it', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'mytracer-profile-registry-missing-'))
+    temporaryDirectories.push(directory)
+    const metadataDirectory = join(directory, 'metadata')
+    mkdirSync(metadataDirectory)
+    const profilesDirectory = join(directory, 'profiles')
+    mkdirSync(profilesDirectory)
+    writeFileSync(
+      join(profilesDirectory, 'future-task-v1.json'),
+      JSON.stringify(standardProfile({ id: 'future-task@1' }))
+    )
+    const taskIndex = join(directory, 'TASK_INDEX.md')
+    writeFileSync(taskIndex, '| T041 | S4 | scope | basis | none | `active` | — |\n')
+    writeFileSync(join(metadataDirectory, 'T041.json'), JSON.stringify(taskSidecar('T041')))
+
+    const result = runValidator(metadataDirectory, profilesDirectory, taskIndex)
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('required profile standard-task@1 is missing')
+  })
 })
