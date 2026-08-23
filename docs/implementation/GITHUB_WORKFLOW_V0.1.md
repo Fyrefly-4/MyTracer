@@ -2,7 +2,7 @@
 
 > 文档状态：已批准的开发工作流基线  
 > 批准范围：GW-001～GW-010  
-> 当前事实：本文只定义目标流程；远端仓库、保护规则、PR 模板和 GitHub Actions 尚未据此配置  
+> 配置快照：截至 2026-08-23，远端、Actions 与 `dev`/`main` active rulesets 已配置；PR template 和 `main` 里程碑 PR 专用增强 CI 尚未落地
 > 适用对象：项目所有者、Codex 和其他经授权 Agent
 
 ## 1. 目标
@@ -233,7 +233,7 @@ GitHub 支持 merge commit、squash 和 rebase 等不同合并方式；MyTracer 
 
 ## 7. GW-007 分支保护目标
 
-在远端仓库和订阅方案支持后，为 `dev` 和 `main` 配置：
+`dev` 和 `main` 的目标规则如下；实际配置差异见第 15 节：
 
 | 规则 | `dev` | `main` |
 |---|---:|---:|
@@ -253,7 +253,7 @@ GitHub 支持 merge commit、squash 和 rebase 等不同合并方式；MyTracer 
 
 GitHub 保护规则可以要求 PR、状态检查、讨论解决、禁止强推和删除；具体可用性受仓库类型和订阅方案影响。参考：[GitHub protected branches](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)。
 
-保护规则未实际配置前，README 和报告必须写“目标流程尚未应用”，不能把文档当作远端配置证据。
+当前保护通过 repository rulesets 实现，而非 classic branch protection API；报告必须引用实时 ruleset 查询，不能把 classic endpoint 的 404 误写为“分支无保护”。
 
 ## 8. GW-008 CI 门禁
 
@@ -300,6 +300,8 @@ clean install
 - AI 自动化测试使用 fake provider，不向普通 PR 暴露真实 provider key。
 - 只有验证逻辑确实依赖 Git 历史时才使用完整 checkout 历史，并记录原因。
 - 精确 command、Node/Electron 版本和 workflow 文件需在依赖批准和 T002 执行时固定。
+当前 `.github/workflows/verify.yml` 监听 `pull_request` 到 `dev`、`push` 到 `dev` 和手工触发，稳定 job 名为 `Windows required gate`。它没有监听 `main` PR/push，也不执行 package/NSIS smoke；里程碑增强门禁仍依赖同内容树的既有 required check 与另行记录的本地 Windows package 证据，不等于已落地独立 `main` workflow。
+
 
 ### V2 Batch 3 evidence artifact
 
@@ -416,19 +418,22 @@ main
 
 ## 14. 启用顺序
 
-1. 创建或确认 GitHub 远端和长期分支。
-2. 批准依赖、工具链和精确验证命令。
-3. T002 创建确定性 CI workflow。
-4. CI 实际成功报告稳定 check 名称后，再配置 required checks。
-5. 配置 `dev`、`main` 保护规则并验证管理员不可常规绕过。
-6. 增加 PR template。
-7. 用一个小型任务执行完整 Draft PR 演练。
-8. 有真实重复需求后再评估 GitHub Codex Review、Codex Action、Hooks、Rules 或 Skills。
+1. [x] GitHub 远端、`dev` 和 `main` 已建立；default branch 为 `main`。
+2. [x] 依赖、工具链和精确验证命令已批准并锁定。
+3. [x] T002 建立确定性 Windows CI workflow，T091 增加脱敏 evidence artifact。
+4. [x] stable check `Windows required gate` 已实际运行并纳入 rulesets。
+5. [partial] `Dev-Rule` / `Main-Rule` 已 active 且无 bypass actor；`main` 要求最新目标分支，`dev` 当前未启用 strict update，仍与第 7 节目标存在差异。
+6. [ ] PR template 尚不存在。
+7. [x] 多个任务已完成 Draft PR、candidate/final-head CI 和 owner merge 演练。
+8. [ ] GitHub Codex Review/Action 等扩展未采用；没有独立需求时不启用。
 
-顺序不能反转：不存在的 check 不能先设为 required，否则可能阻塞所有 PR。
+以上是 2026-08-23 的只读配置快照，不替代实时 GitHub 查询，也不自动授权任何配置写入。
 
 ## 15. 当前结论
 
-- GW-001～GW-010 已批准为 MyTracer v0.1 的目标开发流程。
-- 当前没有证据表明 GitHub 远端、`dev`/`main` 保护、Actions 或 PR template 已配置。
-- 下一步仍是依赖和工具链批准；具体 GitHub 配置必须作为独立获批任务执行并验证。
+- GW-001～GW-010 是 MyTracer v0.1 的批准流程；实时配置是其部分实现，差异不得靠文档假定消失。
+- 仓库为 private、default branch 为 `main`；Verification Actions 已持续运行，PR #29 final head run `32630998007` 与 `dev@eec0939...` push run `32631739929` 成功。
+- active `Dev-Rule` / `Main-Rule` 均要求 PR、讨论解决、`Windows required gate`，禁止删除和 non-fast-forward，且没有 bypass actor；`main` strict、`dev` non-strict。classic branch protection API 返回 404 是因为当前采用 rulesets，不代表无保护。
+- PR template 不存在；Verification 不监听 `main` PR/push；GitHub Milestones 列表为空。这三项均是事实或配置缺口，不在纯文档 T804 中修改。
+- 项目已通过 PR #5/#14/#22/#30 四次将 `dev` 里程碑合入 `main`，并发布 `v0.1.0-alpha.1`、`alpha.2`、`alpha.3` 和 `beta.1` prereleases。
+- 任何 ruleset、workflow、template、merge、tag 或 release 后续写入仍须独立授权和验证。

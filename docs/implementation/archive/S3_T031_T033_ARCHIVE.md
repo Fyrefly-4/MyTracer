@@ -1,6 +1,6 @@
 # MyTracer S3 / T031～T033 开发合同归档
 
-> 状态：已归档；T031～T033 均为 `done` 并已合入 `dev`，项目所有者完整人工 AC-07 为 `pass`；T803 在固定 `dev@8058f7a3c9db9d3b488e727dfd85201dc14f11a0` 上执行最终聚合验收与归档
+> 状态：已归档；T031～T033/T803 与完整人工 AC-07 均为 `pass`；PR #29 合入 `dev@eec093924ae061876805c657742283097824df2c`，PR #30 合入 `main@75e51b4e63f8c9df960cccb444515b9e89be5fbd`，并发布 `v0.1.0-beta.1`
 >
 > 归档日期：2026-08-23
 >
@@ -23,7 +23,7 @@
 | T031 / E3-01 | Record 修改/补记、子事实转换、五类删除预览与事务性删除、schema v2 provenance | `1c08b3161021319d1c87ef4bf8cb2470d977bd48` / `940cd2e821a80444003f82031b139c284a02c4be` | [PR #26](https://github.com/Fyrefly-4/MyTracer/pull/26) / `f41c601a697f5fbdb6bc3f90656071f7263d7cfe` | `EV-T031-001` |
 | T032 / E3-02 | UTF-8 JSON 完整导出、十集合快照、引用/枚举/结构校验与原子文件交付 | `79458b88b505346ef81c3cc920224c7cf0eb4ba4` / `aa835b5ecca2c98c320c01a9941bd3e48e2ad11e` | [PR #27](https://github.com/Fyrefly-4/MyTracer/pull/27) / `43e6406684dbb1b1ef30d006063242e9a552da80` | `EV-T032-001` |
 | T033 / E3-03 | AI disabled/not-configured/failure 三态数据能力、失败零写入与 AC-07 回归 | `502ed1a282bc127684229f4405072acb7ef6fb11` / `7706ffa424c787e13e08189a04c401ec043a165e` | [PR #28](https://github.com/Fyrefly-4/MyTracer/pull/28) / `8058f7a3c9db9d3b488e727dfd85201dc14f11a0` | `EV-T033-001` |
-| T803 / S3 aggregate | 同 revision 自动化、package、AC-07 绑定、证据/README/metadata 与本归档 | 文档验收分支；产品 source 固定为 `8058f7a3c9db9d3b488e727dfd85201dc14f11a0` | [Draft PR #29](https://github.com/Fyrefly-4/MyTracer/pull/29) / owner merge pending | `EV-G3-S3-001` |
+| T803 / S3 aggregate | 同 revision 自动化、package、AC-07 绑定、证据/README/metadata 与本归档 | `0cd4a4bf42c3bc8328d5273bd9fd022c06095c9e`；产品 source `8058f7a3c9db9d3b488e727dfd85201dc14f11a0` | [PR #29](https://github.com/Fyrefly-4/MyTracer/pull/29) / `eec093924ae061876805c657742283097824df2c` | `EV-G3-S3-001` |
 
 T031～T033 的 final task tree 分别与其 squash merge tree 一致；T033 Implementation Candidate 到 final task head 只变化任务/证据文档。因此项目所有者 2026-08-22 报告的完整人工 AC-07 可以绑定上述最终产品行为；本归档不代签或重做人工观察。
 
@@ -86,7 +86,8 @@ T031～T033 的 final task tree 分别与其 squash merge tree 一致；T033 Imp
 - T031 证明 unit/Application、SQLite/Repository、migration、IPC、E2E 和 candidate hosted CI；保留两次本地失败 artifact 与一次 hosted 旧断言失败。
 - T032 证明十集合快照、envelope/纯校验器、ExportPort 故障注入、IPC/UI、package 与人工保存/取消/JSON/限制提示；candidate 与 final-head hosted CI 通过。
 - T033 证明 AI 三态 harness、SQLite 结果全等、E2E-AC-07、AC-01/03/04、package 与人工完整 AC-07；环境前置失败 artifact 保留并由成功 candidate supersede。
-- T803 在相同产品 source 上从头运行 metadata、定向 unit/integration/E2E、完整 `verify`、Windows package 和 unpacked/隔离 NSIS smoke；长期事实记录于 `EV-G3-S3-001`。
+- T803 在相同产品 source 上从头运行 metadata、定向 unit/integration/E2E、完整 `verify`、Windows package 和 unpacked/隔离 NSIS smoke；final head 与 `dev` push required CI 均通过。
+- 项目所有者随后通过 PR #30 将同一内容树合入 `main`，并发布 `v0.1.0-beta.1`；完整时间线记录于 `EV-G3-S3-001`。
 - Windows 产物未签名并使用默认 Electron 图标。package 与 CI 只证明所记录的精确 revision，不授权 merge、tag 或 release。
 
 ## 6. 明确未交付
@@ -95,7 +96,7 @@ T031～T033 的 final task tree 分别与其 squash merge tree 一致；T033 Imp
 - 云同步、账号、远程存储、通用审计日志或事件溯源；
 - AI Provider、配置 UI、长期 AI 记忆或未经确认的数据写入；
 - S4～S7、AC-02/05/06、提醒、复杂日历及其他延期能力；
-- 代码签名、正式图标、`main` merge、tag 或 GitHub Release。
+- 代码签名与正式图标。
 
 ## 7. 原合同恢复入口
 

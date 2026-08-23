@@ -1,6 +1,8 @@
 # MyTracer v0.1 S3 数据可控与完整导出整体设计
 
-> 文档状态：**已获项目所有者批准；S3-Q01=A、S3-Q02=B、S3-Q03=A、S3-Q04=A。允许 T031～T033 在独立任务合同中标注“准备实现”，但不构成任务启动或实现授权。依赖当前 S1/S2 数据契约，实施前须完成兼容性复核。**
+> 文档状态：**已获项目所有者批准；S3-Q01=A、S3-Q02=B、S3-Q03=A、S3-Q04=A。下文权限与门禁措辞记录设计批准时边界。**
+>
+> 后续交付结果：T031～T033/T803 已完成并归档；PR #29 合入 `dev@eec093924ae061876805c657742283097824df2c`，里程碑 PR #30 合入 `main@75e51b4e63f8c9df960cccb444515b9e89be5fbd`，并发布 `v0.1.0-beta.1`。
 >
 > 批准日期：2026-08-19
 >
@@ -10,7 +12,7 @@
 
 ## 0. 文档用途、依据与权限边界
 
-本文把冻结产品语义、已批准工程决定、已验收 S1/S2 契约和当前 `schemaVersion = 1` 的实际数据结构收敛为 T031～T033 的整体设计。项目所有者已批准本文及第 12 节四项决定，并允许 T031～T033 的独立任务合同标注“准备实现”；每个任务仍须分别形成并批准合同，明确文件、migration、验证和 Git/GitHub 权限后才能启动实现。
+本文在设计批准时把冻结产品语义、已批准工程决定、已验收 S1/S2 契约和当时 `schemaVersion = 1` 的实际数据结构收敛为 T031～T033 的整体设计。项目所有者批准本文及第 12 节四项决定后，各任务仍分别通过合同获得文件、migration、验证和 Git/GitHub 权限。
 
 解释顺序保持为：
 
@@ -42,11 +44,11 @@
 
 ## 1. 基线核对与冲突结论
 
-### 1.1 当前事实
+### 1.1 设计批准时的当前事实
 
 - `TASK_INDEX_V0.1.md` 将 T031、T032、T033 分别映射到 E3-01、E3-02、E3-03，当前均为 `pending`，依赖顺序为 T031 → T032 → T033。
 - S1/S2 已完成 Goal、Action、Routine、TodaySelection、ActionRecord、RoutineRecord、Understanding、Confusion 和 Progress 的真实 SQLite 纵向路径；S3 必须兼容这些已验收行为。
-- 当前 SQLite `schemaVersion = 1`，唯一已发布 migration 为 `001_initial.sql`。v1 已具备全部核心表、状态字段、LocalDate 字段、外键和删除动作，但缺少 S3-Q02-B 已批准的 Routine 历史计划事实 provenance；T031 将通过顺序 v2 migration 补充。
+- 设计批准时 SQLite `schemaVersion = 1`，唯一已发布 migration 为 `001_initial.sql`。v1 已具备全部核心表、状态字段、LocalDate 字段、外键和删除动作，但缺少 S3-Q02-B 已批准的 Routine 历史计划事实 provenance；T031 后续通过顺序 v2 migration 补充。
 - 当前 `CorePersistenceSnapshot` 已覆盖 `goals`、`actions`、`routines`、`routineScheduleDays`、`todaySelections`、`actionRecords`、`routineRecords`、`understandings`、`confusions`、`reviewResults`；但现有 `readSnapshot()` 是测试/检查入口，没有把 `schemaVersion` 与集合绑定为一个生产导出契约，也没有在方法内部保证跨全部集合的一致性只读事务。
 - 当前 Progress 没有累计表；`GetProgress` 从 ActionRecord、有效 Understanding、open Confusion 和 RoutineRecord 的一致性快照即时计算。S3 不新增可漂移累计值。
 - 当前生产 AI 配置是未配置空边界，测试基础设施已有可脚本化 fake provider。S3 不依赖真实 Provider。
@@ -752,7 +754,7 @@ Application 的影响预览必须按上述实际路径计算；不能维护一�
 
 | 现有契约 | S3 依赖 | 兼容要求 |
 |---|---|---|
-| 当前 `schemaVersion=1`、唯一 `001_initial` | T031 基线 | 不回改 v1；新增已批准 provenance 的顺序 v2 migration |
+| 设计批准时 `schemaVersion=1`、唯一 `001_initial` | T031 基线 | 不回改 v1；新增已批准 provenance 的顺序 v2 migration |
 | Goal `currentNextActionId` 同 Goal pending | 修改/删除/导出 | Record 编辑不改；Action 删除由 FK 清空；导出验证 |
 | Action/Routine `goalId` 可空且创建后不 reassign | 删除/Progress/导出 | Goal 删除只 detach Routine/Review；Action 随 Goal cascade |
 | ActionRecord `completed/partial/stopped`、逐 Record 计次 | 修改/补记/Progress | outcome 不自动改 Action；多条记录不合并 |
@@ -847,7 +849,7 @@ Application 的影响预览必须按上述实际路径计算；不能维护一�
 - 项目所有者决定：S3-Q01=A、S3-Q02=B、S3-Q03=A、S3-Q04=A；
 - 权限：允许 T031～T033 合同标注“准备实现”；任务启动和实现授权尚未获得。
 
-## 14. 审批完成与后续门禁
+## 14. 审批完成与后续门禁（批准时记录）
 
 - [x] T031～T033 各有范围、非范围、依赖和可判定完成条件；
 - [x] AC-07 可在同一明确 revision 连续执行；
@@ -859,6 +861,6 @@ Application 的影响预览必须按上述实际路径计算；不能维护一�
 - [x] 所有引用的 FR/AC/D/ED 编号来自当前基线；
 - [x] 自动导入、回收站、自动备份、同步、审计、AI Provider 和 S4～S7 均保持非范围；
 - [x] 本文不包含完整 T031～T033 Prompt，也不替代独立任务合同；
-- [x] 本文已获项目所有者批准，四项 S3 决定已固定；任务启动和实现授权仍未获得。
+- [x] 本文获项目所有者批准时，四项 S3 决定已固定，任务启动和实现授权尚未获得。
 
-批准后的下一步是依据本文分别准备 T031、T032、T033 任务合同，并在合同中标注“整体设计已批准，准备实现”。每个合同仍须单独确认允许文件、依赖、migration、验证和 Git/GitHub 权限；在合同和启动授权完成前，不得修改代码、测试、schema 或任务状态为 `active`。
+设计批准后的原下一步是分别准备 T031、T032、T033 任务合同；该权限记录不因后续交付而改写。实际完成、归档与里程碑事实见页首、任务索引、S3 归档和 `EV-G3-S3-001`。
