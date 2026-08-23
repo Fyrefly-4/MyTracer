@@ -2,7 +2,7 @@
 
 > 任务类型：流程治理 / 自动化运行模式与协作规范任务
 >
-> 合同状态：**active — 项目所有者已审核并授权实施**
+> 合同状态：**done — Implementation Candidate、candidate CI、人工审核与 docs closeout 已通过**
 >
 > 项目所有者方案授权日期：2026-08-23
 >
@@ -12,14 +12,14 @@
 
 本合同把 V2 第四批的第一阶段重新定位为“普通任务自动化运行模式”，并定义 GitHub Workflow 的后续优化方向。T092 不建设 Agent 权限管理系统，不重写现有开发 Skill，也不在本任务内修改真实 GitHub Actions、ruleset 或 PR template。
 
-项目所有者已于 2026-08-24 审核本合同并激活 T092 实施；该批准不包含 candidate 后的 docs closeout、Ready 或 merge。
+项目所有者已于 2026-08-24 审核本合同并激活 T092 实施，并在 candidate CI 通过后精确批准 docs closeout 与治理设计 `MANUAL pass`；Ready 和 merge 仍未授权。
 
 ## 1. 任务信息
 
 - **Task ID**：T092
 - **Title**：Define the standard task automation profile and GitHub workflow optimization plan
 - **Slice / Plan item**：GOV-04 / V2 Batch 4A
-- **Status**：active
+- **Status**：done
 - **Base branch**：`dev`
 - **Observed authorized base**：`origin/dev@d00a0b3f6fad03bab17e83e7d68be14b03298aad`
 - **Expected branch**：`docs/T092-standard-task-profile`
@@ -46,7 +46,7 @@ T092 完成后，准确状态必须是：
 - **FR / AC / D**：无；本任务不改变产品需求、验收场景或产品决定。
 - **ED / GW**：GW-001、GW-002、GW-004、GW-008、GW-009、GW-010；现行 `AGENTS.md` 的任务合同、证据、文档收口和 merge handoff 规则。
 - **治理前置**：T090、T091、T804 均已完成并进入 `dev`；T031～T033/T803 已真实使用 V2 第一至第三批的 Draft/CI、freshness、escalation、metadata、evidence artifact 和 owner-confirm docs closeout。
-- **项目所有者批准方向**：正式建立 T092；把 Profile 定位为普通任务自动化运行模式；同意每任务最长 30 天、基础 registry/metadata 校验、阶段能力、Worktree 生命周期和 GitHub Workflow 优化方向；允许 T092 任务分支、commit、push 和 Draft PR；T092 docs closeout 仍等待后续精确审批。
+- **项目所有者批准方向**：正式建立 T092；把 Profile 定位为普通任务自动化运行模式；同意每任务最长 30 天、基础 registry/metadata 校验、阶段能力、Worktree 生命周期和 GitHub Workflow 优化方向；允许 T092 任务分支、commit、push 和 Draft PR；2026-08-24 已另行批准精确 docs closeout 和治理设计 `MANUAL pass`。
 - **提案输入**：`user/MYTRACER_V0.1_DEVELOPMENT_PROCESS_REVISION_V2.md` 及项目所有者对 T092 的后续修订方向；它们用于形成当前合同，不单独成为实现或验收权威。
 
 ### 3.1 References
@@ -463,18 +463,18 @@ permissions:
 - `external_write: true` 仅指推送 `docs/T092-standard-task-profile`、创建/更新该分支到 `dev` 的 Draft PR、读取其 CI，以及现有 workflow 上传脱敏 artifact。
 - 不允许其他外部写入、Ready、merge、tag、release、ruleset、Secrets、Workflow 配置写入或远端分支删除。
 - T092 已获准创建范围内 commit、推送确切任务分支并维护该分支到 `dev` 的 Draft PR。
-- candidate hosted CI 通过后的 docs closeout 文件、事实、commit 和 push 仍须项目所有者单独精确批准。
+- candidate hosted CI 通过后，项目所有者已于 2026-08-24 精确批准本合同、TASK_INDEX、`EV-T092-001`、Draft PR 正文以及独立 closeout commit/push；该授权不包含 Ready 或 merge。
 
 ## 14. 交付物
 
-- [ ] `AUTOMATION_PROFILES_V0.1.md`：Profile 定位、阶段能力、人工 Gate、适用条件、Task Contract 接入和 Worktree 生命周期。
-- [ ] `standard-task-v1.json`：机器可读的 task kinds、automatic phases、owner gates 和基础生命周期字段。
-- [ ] AGENTS 对 Automation Profile“定义任务执行模式、不构成权限系统”的最小权威说明。
-- [ ] TASK_TEMPLATE 的可选 `execution.profile`、有效期和附加限制字段，同时保留无 Profile 任务的现行显式模式。
-- [ ] GITHUB_WORKFLOW 文档中的 Repository Safety Gate、change classification、目标 Workflow 结构、统一 CI Gate、main milestone、Draft/Ready、concurrency、推荐 Commit Convention 和 PR 协作规范；全部明确为设计目标而非本任务的 Workflow 实现。
-- [ ] metadata validator 的基础 Profile/schema/lifecycle 检查和向后兼容。
-- [ ] 对应 unit tests。
-- [ ] T092 metadata、任务状态和真实验收证据；只在获批 docs closeout 后收口。
+- [x] `AUTOMATION_PROFILES_V0.1.md`：Profile 定位、阶段能力、人工 Gate、适用条件、Task Contract 接入和 Worktree 生命周期。
+- [x] `standard-task-v1.json`：机器可读的 task kinds、automatic phases、owner gates 和基础生命周期字段。
+- [x] AGENTS 对 Automation Profile“定义任务执行模式、不构成权限系统”的最小权威说明。
+- [x] TASK_TEMPLATE 的可选 `execution.profile`、有效期和附加限制字段，同时保留无 Profile 任务的现行显式模式。
+- [x] GITHUB_WORKFLOW 文档中的 Repository Safety Gate、change classification、目标 Workflow 结构、统一 CI Gate、main milestone、Draft/Ready、concurrency、推荐 Commit Convention 和 PR 协作规范；全部明确为设计目标而非本任务的 Workflow 实现。
+- [x] metadata validator 的基础 Profile/schema/lifecycle 检查和向后兼容。
+- [x] 对应 unit tests。
+- [x] T092 metadata、任务状态和真实验收证据已按获批 docs closeout 收口。
 
 ## 15. 验收标准
 
@@ -497,7 +497,7 @@ permissions:
 17. Validator 只做 Profile 存在、schema、task kind、期限和基础生命周期校验，不计算或授权具体操作。
 18. T092 完整 diff 不包含 Skill、Workflow YAML、PR template、产品代码、依赖、lockfile、schema、migration、AI Provider 或 GitHub 配置变化。
 19. T092 完成记录明确：方案已定义但尚未接入，未向 T041 或其他任务启用 Profile。
-20. `MANUAL`：项目所有者审核 Profile 阶段、Repository Safety Gates、Worktree 生命周期、Workflow 目标结构、Commit/PR 规范和验证结果；candidate CI 通过后另行批准准确 docs closeout 范围。
+20. `MANUAL`：项目所有者已于 2026-08-24 审核 Profile 阶段、Repository Safety Gates、Worktree 生命周期、Workflow 目标结构、Commit/PR 规范和验证结果，并在 candidate CI 通过后批准准确 docs closeout 范围；结果为 `pass`。
 
 ## 16. 验证计划
 
@@ -548,7 +548,7 @@ integration:
   base_revision: dev@d00a0b3f6fad03bab17e83e7d68be14b03298aad
   freshness_required: true
   affected_regression_required: true
-  task_delivery_revision: null
+  task_delivery_revision: 9c7d9d3ae08dc7b32e9895deed1e43d26ca58985
   dev_integration_revision: null
   stage_final_integration_revision: null
 ```
@@ -557,6 +557,12 @@ integration:
 - 若基线推进，使用普通可追踪 merge 刷新，不 force-push；重新运行 affected regression，并在 review surface 改变时重新 review。
 - T092 合入 `dev` 之前，`standard-task@1` 不可用于任何任务。
 - T092 合入 `dev` 只表示定义和基础校验可用，不表示 Skill/Workflow 已接入，也不自动激活 T041。
+
+Implementation Candidate 与 task delivery revision 为 `9c7d9d3ae08dc7b32e9895deed1e43d26ca58985`，基于 `origin/dev@d00a0b3f6fad03bab17e83e7d68be14b03298aad`，Integration Freshness 为 `fresh`。Draft PR #32 的 early run `32650840212` 在首个有意义提交 `c981360...` 上通过；candidate run `32651915890` / job `97224750936` 的 `Windows required gate` 在精确 head `9c7d9d3...` 上通过。
+
+Candidate CI artifact `9496461131` / `verification-evidence-32651915890` 的 digest 为 `sha256:5ccf6bd54128f64edc4dcf8e6da763a60cdece067e8c8f6dafe7301cd763ae95`；其中 `npm.cmd run verify` exit 0，`ci.headRevision=9c7d9d3...`，`ci.mergeRevision=d76626f...`。本地共享 checkout 的 aggregate `verify` 只因未跟踪、未修改的 `.agents.backup/` 中一个 YAML 命中 Prettier 而 exit 1；失败 artifact 保留，T092 tracked 文件的 scoped Prettier、其余分层验证和 clean hosted candidate CI 均通过。
+
+项目所有者于 2026-08-24 批准 docs closeout 和治理设计 `MANUAL pass`。Closeout push 后的 final-head CI 与 Draft PR 最新状态属于后续 GitHub 集成事实，不预先写入本合同，也不再制造仓库提交只为记录该 run；`dev_integration_revision` 和 `stage_final_integration_revision` 在尚未合并时保持 `null`。
 
 ## 18. 后续独立任务边界
 
@@ -580,21 +586,19 @@ T092 完成后至少仍需一个独立接入任务，另行建立合同和权限
 
 上述任务可以在评审后决定合并或拆分，但都不由 T092 自动创建或激活。完成实际接入后，才可另行选择 T041 作为首个真实 Profile 试点。
 
-## 19. 文档收口候选与 owner gate
+## 19. 文档收口结果与后续 owner gate
 
-candidate hosted CI 通过后，必须先提交 docs impact matrix。预计始终评估：
+项目所有者于 2026-08-24 在 candidate hosted CI 通过后精确批准：
 
-- `docs/implementation/T092_STANDARD_TASK_PROFILE.md`
-- `docs/implementation/TASK_INDEX_V0.1.md`
-- `docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md`
-- T092 Draft PR 正文
+- 更新本合同、`TASK_INDEX_V0.1.md` 和 `ACCEPTANCE_EVIDENCE_V0.1.md`；
+- 新增 `EV-T092-001`，把 T092 账本状态更新为 `done`；
+- 将治理设计人工审核记录为 `MANUAL pass`；
+- 更新 T092 Draft PR 正文；
+- 创建并推送独立 `docs(T092): close task delivery records` 提交。
 
-条件评估但不得预先修改：
+`README.md` 与 `user/MYTRACER_V0.1_DEVELOPMENT_PROCESS_REVISION_V2.md` 经 impact matrix 评估无需修改；Profile 尚未接入 Skill 或任何真实任务，Workflow YAML、PR template、PR Quality Check、统一 CI Gate 和 ruleset 也尚未实现。
 
-- `README.md`：仅当产生需要长期向开发者说明的稳定入口；默认不改。
-- `user/MYTRACER_V0.1_DEVELOPMENT_PROCESS_REVISION_V2.md`：仅作为派生说明更新；默认不改。
-
-项目所有者尚未批准上述 closeout 修改、closeout commit 或 push；一般 T092 发布授权不能解释为 docs closeout 授权。
+Closeout 提交后必须等待 final-head required CI。Draft PR 保持 Draft；Ready、merge、tag、release、下一任务和任何实际接入仍是独立 owner gate。
 
 ## 20. 风险与停止条件
 
