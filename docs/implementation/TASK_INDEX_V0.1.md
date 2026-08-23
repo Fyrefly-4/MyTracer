@@ -38,7 +38,7 @@
 - T802 修复候选 `a61d0bc100752ae1209623a2ac020ff25a62bf8f` 与归档 head `dd20a1544e0e48008dea6d272618f8cdfef9e4ee` 的 required CI 均通过；PR #20 squash merge 为最终验收基线 `dev@a9db1eb26134dac83b01f4a4d7da30f92a271242`。
 - 最终 dev 的本地/hosted `verify`、定向 AC-01/03/04、LocalDate/SQLite/S1-only v1 数据守恒、Windows package、unpacked/隔离 NSIS smoke 与独立聚合 review 通过，详见 `EV-T802-002`。
 - T091 已由 PR #24 合入 `dev@4674597f736af9ba81e7c758681ae45bdd5c6a1b`；T031、T032、T033 已依次由 PR #26～#28 合入，最终 S3 产品 source 为 `dev@8058f7a3c9db9d3b488e727dfd85201dc14f11a0`。
-- T803 在该固定 source 的定向 unit/integration/E2E、完整 `verify`、Windows package 与 unpacked/隔离 NSIS smoke 均已通过；Draft PR #29 early Windows required gate 通过，最终文档 head CI 与项目所有者 merge 尚待完成。
+- T803 在该固定 source 和文档候选 `f5fd977bd32676cb617f3023091a20a40d72db70` 的定向 unit/integration/E2E、完整 `verify`、Windows package 与 unpacked/隔离 NSIS smoke 均已通过；Draft PR #29 candidate Windows required gate 通过，项目所有者 merge 尚待完成。
 - 项目所有者于 2026-08-22 报告完整人工 AC-07 `pass`；T031 专用人工清单未单独执行的历史仍保留在 `EV-T031-001`。
 - 首个 AI Provider、模型和 SDK 只阻塞 T062，不阻塞 S0～S5 的非 AI 能力。
 
@@ -110,5 +110,5 @@
 - T090 已完成第一、二批流程文档规范落地；`EV-T090-001` 记录本地验证、PR candidate CI 和项目所有者人工审核通过。产品任务试点未进行，第二批仍是“文档已落地、尚未通过真实任务运行验证”；PR #23 已以 `aeb0d68` 进入 `dev`，因此 T091 以该 revision 作为授权基线。
 - T091 PR #24 已以 `4674597f736af9ba81e7c758681ae45bdd5c6a1b` 合入 `dev`；其确定性 evidence、metadata 和 CI artifact 能力已由 T031～T033/T803 实际使用，早期记录中的“尚未合入”不再是当前集成事实。
 - S3 设计 PR #25、T031 PR #26、T032 PR #27、T033 PR #28 已依次合入，固定产品 source 为 `8058f7a3c9db9d3b488e727dfd85201dc14f11a0`；任务 Evidence 与失败历史继续保留。
-- T803 在固定 source 上的本地聚合门禁和 PR #29 early CI 已通过，项目所有者 2026-08-22 的完整人工 AC-07 为 `pass`；任务处于 `review`，等待最终文档 head CI 和项目所有者处理 Draft PR。
-- G3/S3 通过不表示 G4、AC-02/05/06、自动导入/恢复、AI Provider、`main` merge、tag 或 release 完成；T803 合入 `dev` 后才按授权创建 `dev → main` 里程碑 PR。
+- T803 在固定 source 与文档候选 `f5fd977bd32676cb617f3023091a20a40d72db70` 上的本地聚合门禁和 PR #29 candidate CI 已通过，项目所有者 2026-08-22 的完整人工 AC-07 为 `pass`；任务处于 `review`，等待项目所有者处理 Draft PR。
+- G3/S3 聚合候选通过不表示 G4、AC-02/05/06、自动导入/恢复、AI Provider、`main` merge、tag 或 release 完成；T803 合入 `dev` 后才按授权创建 `dev → main` 里程碑 PR。

@@ -24,7 +24,7 @@ MyTracer 是一个面向个人本地使用的 Windows 桌面应用，用于帮�
 - T031 已完成 Record 修改/补记、子事实转换、Routine 历史计划 provenance、五类删除影响预览和事务性删除；PR #26 已合入 `dev`。
 - T032 已完成十集合一致性快照、`exportVersion=1` UTF-8 JSON、结构/枚举/引用校验、Main-only 目标和原子文件交付；PR #27 已合入 `dev`。
 - T033 已证明 AI disabled、not-configured、failure 时 CRUD、Progress、删除、导出和重开继续可用；PR #28 已合入 `dev`，项目所有者于 2026-08-22 报告完整人工 AC-07 通过。
-- T803 正在固定 `dev@8058f7a3c9db9d3b488e727dfd85201dc14f11a0` 上聚合复验 T031～T033、AC-01/03/04/07、migration/重开、Windows package 与合同归档；Draft PR #29 等待最终文档 head 门禁和项目所有者处理。
+- T803 已在固定 `dev@8058f7a3c9db9d3b488e727dfd85201dc14f11a0` 上完成 T031～T033、AC-01/03/04/07、migration/重开、Windows package 与合同归档候选复验；Draft PR #29 candidate CI 已通过，等待项目所有者处理。
 
 不要把架构完成理解为产品已经实现。
 
