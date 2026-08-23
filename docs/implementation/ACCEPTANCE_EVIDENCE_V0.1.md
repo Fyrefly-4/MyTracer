@@ -153,7 +153,7 @@ Artifact 位于 ignored `.tmp/evidence/`，可由 GitHub Actions 作为短期 ar
 | `EV-T032-001` | T032 | `79458b88b505346ef81c3cc920224c7cf0eb4ba4` / merge `43e6406` | 十集合一致性快照、版本化完整导出、结构/引用校验和原子交付 | pass | pass | 本地/hosted/package 与项目所有者人工导出验收通过；PR #27 已合入 `dev` |
 | `EV-T033-001` | T033 | `502ed1a282bc127684229f4405072acb7ef6fb11` / merge `8058f7a` | AI 三态数据独立性、失败零写入、CRUD/Progress/删除/导出/重开与 AC-07 | pass | pass | 本地/hosted/package、独立复核与项目所有者完整人工 AC-07 通过；PR #28 已合入 `dev` |
 | `EV-G3-S3-001` | T803 / G3/S3 | product `8058f7a` / task `0cd4a4b` / dev `eec0939` / main `75e51b4` | T031～T033 同 revision 聚合、AC-01/03/04/07、migration/重开、package、归档与 beta 里程碑 | pass | pass | pre-merge candidate 时间线保留；PR #29/#30、final/dev CI 与 `v0.1.0-beta.1` release 已完成 |
-| `EV-T804-001` | T804 / GOV-03 | base `eec0939` / candidate pending commit | 长期文档任务、里程碑、release 与 GitHub 配置事实统一收口 | partial | not-required | 远端审计和本地文档门禁通过；独立 review、candidate/final-head CI 与最终 closeout 待完成 |
+| `EV-T804-001` | T804 / GOV-03 | base `eec0939` / candidate-task `1610aae` | 长期文档任务、里程碑、release 与 GitHub 配置事实统一收口 | pass | not-required | 本地门禁、完整 diff 独立 review、PR #31 candidate CI 与 owner-approved closeout 通过；final-head CI 为后续 PR 集成门禁 |
 | `EV-T801-001` | T801 | `dd9bd4498b0339703f8cf992a564a7d7b80442b5` | S1 package smoke 精确 API、安全边界与 unpacked/NSIS 路径 | pass | not-required | 本地 `verify`/package/package smoke、独立 review、PR #12 head CI 与最终 dev push CI 通过；merge `74ebe346a86cf431d87e02e8a1220b713b33901c` |
 | `EV-T802-001` | T802 | `a61d0bc100752ae1209623a2ac020ff25a62bf8f` | S2 package API、连续 AC-03、S1 v1 数据守恒与合同归档候选 | partial | not-required | 实现候选本地完整门禁、独立 review 和 PR #20 hosted CI 通过；归档后最新 head CI、merge 与最终 dev 聚合复验待完成 |
 | `EV-T802-002` | T802 / S2 aggregate | `a9db1eb26134dac83b01f4a4d7da30f92a271242` | T021～T023 同 revision 聚合、AC-01/03/04、SQLite/LocalDate、Windows package 与归档 | pass | pass | 最终 dev 本地/hosted 门禁、定向验收、package smoke 与独立 review 通过；T021～T023 人工验收沿用已记录的 owner pass |
@@ -1008,27 +1008,31 @@ Agent 只提供步骤和观察位置，不得替项目所有者签署人工验�
 
 ### EV-T804-001
 
-- **Status**：partial；Git/GitHub 只读事实调查、文档事实修正、metadata、Prettier 和 diff integrity 已通过；独立 review、candidate hosted CI、owner-approved closeout 和 final-head CI 尚待完成
+- **Status**：pass；Git/GitHub 只读事实调查、文档事实修正、metadata、task-scoped Prettier、diff integrity、完整独立 review、candidate hosted CI 和 owner-approved closeout 均通过
 - **Task / Gate**：T804 / GOV-03；只证明长期文档事实审计与收口流程，不重新证明产品行为、人工 AC 或 package
 - **Requirements**：GW-001、GW-002、GW-004、GW-008～GW-010；无 FR/AC/D/ED 变化
 - **Source branch / base**：`docs/T804-factual-closeout` / `origin/dev@eec093924ae061876805c657742283097824df2c`
-- **Task delivery revision**：candidate commit 创建后在 T804 closeout 中填写
+- **Task delivery revision**：`1610aaefb26d38a9fabad75402d8aaa5fc28192d`
 - **Integration freshness**：`fresh`；实施前重新 fetch，`origin/dev` 仍为 `eec093924ae061876805c657742283097824df2c`
 - **Environment**：Microsoft Windows 11；Node.js v24.18.0；npm 11.16.0；GitHub CLI 使用已登录项目所有者账号执行只读查询
 - **Command or procedure**：
   1. 只读核验 PR #5/#14/#22/#29/#30 的 merged state、merge revision 和时间；核验四个 prerelease、beta assets/digests、tag 目标、Actions runs、repository rulesets、`.github` contents 与 GitHub Milestones。
   2. 比较 `origin/dev@eec0939...`、`origin/main@75e51b4...` 和 T803 final head `0cd4a4b...` 的 tree；三者均为 `e69c72522b46e19603fed834937d806912525975`。
-  3. `npm.cmd run governance:metadata:check` exit 0，6 个 sidecar 通过。
-  4. `npm.cmd run format:check` exit 0；`git diff --check` exit 0。
+  3. 在最终 candidate 上以 wrapper 运行 `npm.cmd run governance:metadata:check`，exit 0，6 个 sidecar 通过；artifact 为 `.tmp/evidence/T804-candidate-governance-metadata-final-1610aaefb26d-20260823142922.json`。
+  4. 15 个 tracked T804 文件的 Prettier 检查和 `git diff --check origin/dev...HEAD` 均 exit 0；对应 artifacts 为 `T804-candidate-tracked-docs-format-final-1610aaefb26d-20260823142921.json` 与 `T804-candidate-diff-integrity-final-1610aaefb26d-20260823142922.json`。共享 checkout 的全仓格式恢复检查只因所有者指定忽略的未跟踪 `.agents.backup/` 命中而失败，失败 artifact 保留；干净 GitHub checkout 的 candidate `verify` 随后通过。
   5. 定向扫描当前状态措辞；三个直接命中分别是仍成立的 AI 空配置边界、已完成任务合同中保留的 Draft PR 权限表述，以及 T804 合同内保留的扫描命令文本；当前状态区无失效 T803 pending/owner merge 描述。
   6. 检查完整 diff 和 tracked scope；没有产品代码、测试、依赖、lockfile、schema、migration、workflow、PR template、ruleset 或 `user/` 变化。
+  7. 只读 reviewer 在 `origin/dev@eec0939...` 到 candidate `1610aaef...` 的完整 15 文件、285+/87- diff 上独立复核关键 GitHub 事实、历史/当前边界、授权范围和同类长期文档遗漏；P0/P1/P2/P3 均无 finding。
+  8. Draft PR #31 candidate run `32645711355` / job `97209543904` 的 `Windows required gate` 在 head `1610aaef...` 上 success；上传 artifact `verification-evidence-32645711355`，archive digest `sha256:7a2d197daf8bcdff58261e47e44731e311460b02729637ce2897fd63120d2595`。
+  9. 下载检查 CI artifact 内 `unscoped-aggregate-b787f729ef1a-20260823143333.json`：`npm.cmd run verify` exit 0，`captureStatus=complete`，`ci.headRevision=1610aaef...`，`ci.mergeRevision=b787f729...`，未混淆 PR head 与测试 merge。
+  10. 项目所有者于 2026-08-23 明确批准更新本合同、任务索引、Evidence、Draft PR 正文并创建/push 独立 closeout 提交。
 - **Result**：
   - T803 状态、S0～S3 main 里程碑、alpha/beta releases 和归档索引已与远端一致。
   - `EV-G3-S3-001` 原位更新为最终 `pass`，同时保留 candidate、失败与 superseding recovery 时间线。
   - 工作流文档区分目标流程、active rulesets、classic branch protection API 与未落地配置缺口。
   - 设计文档把旧 schema/权限/门禁措辞限定为批准时事实，当前任务状态仍只由任务索引维护。
-- **Artifacts**：PR #5/#14/#22/#29/#30；Actions runs `32630998007`、`32631739929`；`v0.1.0-beta.1` release；rulesets `Dev-Rule` / `Main-Rule`
+- **Artifacts**：PR #5/#14/#22/#29/#30/#31；Actions runs `32630998007`、`32631739929`、`32645711355`；candidate CI artifact `9494839603` / `verification-evidence-32645711355`；`v0.1.0-beta.1` release；rulesets `Dev-Rule` / `Main-Rule`；上述三个最终本地 candidate artifacts
 - **Manual acceptance**：not-required；本任务无产品行为或体验变化
-- **Known limitations**：Git 忽略的 `user/` 本地流程说明仍含旧配置事实，按合同明确不修改；PR template、`main` 专用增强 CI 与 GitHub Milestones 仍未落地；candidate/final-head CI 和独立 review 待后续记录
-- **Supersedes / superseded by**：不取代任何产品 Evidence；最终 closeout 将在同一 Evidence ID 内补齐 candidate revision、review 和 CI
+- **Known limitations**：Git 忽略的 `user/` 本地流程说明仍含旧配置事实，按合同明确不修改；所有者指定忽略的未跟踪 `.agents.backup/` 未修改、清理或纳入交付；PR template、`main` 专用增强 CI 与 GitHub Milestones 仍未落地；closeout push 后的 final-head CI 和最新 Draft PR 状态保留为 GitHub 集成事实，不再制造仓库提交只为记录该 run
+- **Supersedes / superseded by**：本条从 candidate `partial` 原位更新为 `pass`，不取代任何产品 Evidence；保留全仓恢复格式检查的备份文件命中失败及随后 task-scoped/clean-CI success
 - **Recorded at**：2026-08-23

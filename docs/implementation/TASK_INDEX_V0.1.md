@@ -1,7 +1,7 @@
 # MyTracer v0.1 任务索引
 
 > 文档状态：v0.1 实施任务基线  
-> 当前阶段：S0～S3 已完成并形成 `v0.1.0-beta.1` 里程碑；T803 已合入 `dev`，T804 正在统一收口长期文档与 Git/GitHub 事实
+> 当前阶段：S0～S3 已完成并形成 `v0.1.0-beta.1` 里程碑；T804 已完成长期文档与 Git/GitHub 事实统一收口，后续产品或治理任务仍须独立合同与授权
 > 状态来源：本文件是任务执行状态的唯一账本，架构实施计划只定义范围和顺序
 
 ## 1. 使用规则
@@ -74,7 +74,7 @@
 | T801 | S1 fix | 更新 Windows package smoke 的 S1 窄 API 契约并重新验证 unpacked/NSIS | G3/S1；GW-008/010；不改变 FR/AC/D/ED | `EV-G3-S1-001` | `done` | `EV-T801-001` |
 | T802 | S2 fix | 修复 package smoke、完整连续 E2E-AC-03、既有 S1 v1 数据守恒与 T021～T023 合同归档 | AC-03；FR-D01 S2 子集；GW-008/010；不改变生产语义 | S2 聚合验收失败与独立 review | `done` | `EV-T802-002` |
 | T803 | S3 aggregate | 聚合验收 T031～T033、AC-07、package/重开/导出/AI 三态并归档 S3 合同 | AC-07；FR-D01～D05；GW-008/010；不改变生产语义 | T031～T033、T090、T091 | `done` | `EV-G3-S3-001` |
-| T804 | GOV-03 | 统一收口长期文档中的任务、里程碑、tag/release 与 GitHub 配置事实 | GW-001/002/004/008～010；不改变 FR/AC/D/ED | T803、T091 | `active` | `EV-T804-001` |
+| T804 | GOV-03 | 统一收口长期文档中的任务、里程碑、tag/release 与 GitHub 配置事实 | GW-001/002/004/008～010；不改变 FR/AC/D/ED | T803、T091 | `done` | `EV-T804-001` |
 
 ## 5. 阶段门与主线合并
 
@@ -114,3 +114,5 @@
 - S3 设计 PR #25、T031 PR #26、T032 PR #27、T033 PR #28 已依次合入，固定产品 source 为 `8058f7a3c9db9d3b488e727dfd85201dc14f11a0`；任务 Evidence 与失败历史继续保留。
 - T803 final head `0cd4a4b...`、PR #29 / `dev@eec0939...`、PR #30 / `main@75e51b4...`、required CI 与项目所有者完整人工 AC-07 均已完成；`EV-G3-S3-001` 记录 candidate 到最终里程碑的完整时间线。
 - `v0.1.0-beta.1` 不表示 G4、AC-02/05/06、自动导入/恢复、AI Provider 或 S4～S7 完成；后续任务仍按独立合同和授权执行。
+- T804 在 `dev@eec0939...` 基线上完成 15 个长期文档的事实审计、完整 diff 独立复核与 candidate required CI；`EV-T804-001` 记录实际 revision、命令、GitHub 事实、限制和项目所有者 closeout 授权，未改变产品语义或 GitHub 配置。
+- 当前没有自动启动的下一任务；T041 或任何治理配置工作仍须独立合同、范围和项目所有者授权。

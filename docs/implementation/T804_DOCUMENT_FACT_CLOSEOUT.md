@@ -1,7 +1,7 @@
 # T804 长期文档事实统一收口任务合同
 
 > 任务类型：纯文档事实审计与治理收口
-> 任务状态：**active**
+> 任务状态：**done**
 > 项目所有者授权日期：2026-08-23
 > 固定基线：`origin/dev@eec093924ae061876805c657742283097824df2c`
 > 分支：`docs/T804-factual-closeout`
@@ -11,7 +11,7 @@
 - **Task ID**：T804
 - **Title**：Reconcile durable milestone and repository facts
 - **Slice / Plan item**：GOV-03
-- **Status**：active
+- **Status**：done
 - **Base / branch**：`dev` / `docs/T804-factual-closeout`
 
 调查 tracked 长期文档与 Git/GitHub 真实状态之间的事实漂移，统一收口 T803、S0～S3 里程碑、tag/release、Actions、rulesets 和剩余配置缺口。保留历史审批、失败与 candidate 时间线，不再以当前事实口吻声称已经完成的动作仍待执行。
@@ -91,7 +91,7 @@ integration:
   base_revision: dev@eec093924ae061876805c657742283097824df2c
   freshness_required: true
   affected_regression_required: false
-  task_delivery_revision: null
+  task_delivery_revision: 1610aaefb26d38a9fabad75402d8aaa5fc28192d
   dev_integration_revision: null
   stage_final_integration_revision: null
 ```
@@ -99,7 +99,15 @@ integration:
 - **网络/外部写入**：GitHub 只读查询；推送 `docs/T804-factual-closeout`；创建/更新其 Draft PR；读取 CI。
 - **禁止**：Ready、任何 merge、tag/release、GitHub 配置写入或数据破坏操作。
 
-## 8. 停止条件与报告
+## 8. 收口结果与后续门禁
+
+- **Implementation Candidate / task delivery revision**：`1610aaefb26d38a9fabad75402d8aaa5fc28192d`；基于最新授权 `origin/dev@eec093924ae061876805c657742283097824df2c`，Integration Freshness 为 `fresh`。
+- **独立复核**：只读 reviewer 检查完整 15 文件 diff、关键 GitHub 事实、历史/当前边界、授权范围和同类长期文档遗漏；P0/P1/P2/P3 均无 finding。
+- **Candidate hosted CI**：Draft PR #31 run `32645711355` / job `97209543904` 的 `Windows required gate` 在精确 head `1610aaef...` 上 `success`；上传 artifact `verification-evidence-32645711355`，其中 `ci.headRevision` 为 candidate、`ci.mergeRevision` 为测试 merge `b787f729ef1a31968501ebb93f2c009c104fcf2d`。
+- **Closeout 授权**：项目所有者于 2026-08-23 明确批准更新本合同、任务索引、`EV-T804-001`、Draft PR 正文并创建/push 独立 `docs: close T804 delivery records` 提交。
+- **后续门禁**：closeout push 后的 final-head CI 与 Draft PR 最新状态记录在 GitHub；不得为只记录后续 CI 再制造仓库提交，且 Ready/merge 仍由项目所有者另行决定。
+
+## 9. 停止条件与报告
 
 GitHub 事实冲突、需要扩大文件/权限/语义、无法保留审计历史、freshness 无法证明或验证/review/CI 无法在范围内修复时停止受影响工作。
 
