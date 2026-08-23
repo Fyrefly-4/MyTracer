@@ -445,6 +445,13 @@ describe('task metadata validator', () => {
       expected: 'valid_until must be later than activated_at'
     },
     {
+      name: 'timestamp without timezone',
+      taskKind: 'implementation',
+      state: 'active',
+      execution: { activated_at: '2026-08-24T00:00:00' },
+      expected: 'activated_at must be an RFC3339 timestamp with timezone'
+    },
+    {
       name: 'validity longer than registry maximum',
       taskKind: 'implementation',
       state: 'active',
@@ -462,6 +469,15 @@ describe('task metadata validator', () => {
         additional_constraints: [{ type: 'pause_before', phase: 'merge_dev' }]
       },
       expected: 'phase is not defined by profile standard-task@1'
+    },
+    {
+      name: 'unsupported constraint type',
+      taskKind: 'implementation',
+      state: 'active',
+      execution: {
+        additional_constraints: [{ type: 'grant_phase', phase: 'review_handoff' }]
+      },
+      expected: 'type is not allowed by profile standard-task@1'
     },
     {
       name: 'inactive lifecycle state',
