@@ -80,6 +80,7 @@
     {
       "files": [
         "docs/implementation/T032_VERSIONED_COMPLETE_EXPORT.md",
+        "docs/implementation/archive/S3_T031_T033_ARCHIVE.md",
         "docs/implementation/TASK_INDEX_V0.1.md",
         "docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md",
         "docs/implementation/metadata/T032.json"

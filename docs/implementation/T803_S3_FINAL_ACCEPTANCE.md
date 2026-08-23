@@ -2,7 +2,7 @@
 
 > 任务类型：S3 聚合验收 / 文档与证据收口
 >
-> 任务状态：**active**
+> 任务状态：**review**
 >
 > 项目所有者授权日期：2026-08-23
 >
@@ -15,7 +15,7 @@
 - **Task ID**：T803
 - **Title**：G3/S3 aggregate acceptance and milestone closeout
 - **Slice / Plan item**：S3 aggregate gate
-- **Status**：active
+- **Status**：review
 - **Base branch**：`dev`
 - **Expected branch**：`docs/T803-s3-final-acceptance`
 
@@ -89,7 +89,7 @@ dependencies:
 - `docs/implementation/TASK_INDEX_V0.1.md`
 - `docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md`
 - `docs/implementation/archive/S3_T031_T033_ARCHIVE.md`
-- 删除归档后被取代的 `T031_RECORD_DATA_CONTROL.md`、`T032_VERSIONED_COMPLETE_EXPORT.md`、`T033_AI_DATA_CAPABILITY_REGRESSION.md`
+- 保留 `T031_RECORD_DATA_CONTROL.md`、`T032_VERSIONED_COMPLETE_EXPORT.md`、`T033_AI_DATA_CAPABILITY_REGRESSION.md`；本次删除未获单独授权
 - `README.md`
 - Draft PR 正文
 
@@ -144,7 +144,7 @@ npm.cmd run test:package-smoke
 
 ### 8.4 文档归档
 
-仿照既有 S0～S2 归档，将 T031～T033 的最终范围、数据契约、交付 revision、PR、Evidence、批准、限制和原合同恢复命令收敛到 `archive/S3_T031_T033_ARCHIVE.md`。原合同在归档 commit 中删除，Git 历史继续保留全文。
+仿照既有 S0～S2 归档，将 T031～T033 的最终范围、数据契约、交付 revision、PR、Evidence、批准、限制和原合同恢复命令收敛到 `archive/S3_T031_T033_ARCHIVE.md`。原合同继续保留在当前树与 Git 历史；若未来拟删除，必须取得对文件删除的单独明确授权。
 
 ## 9. 可判定完成条件
 
