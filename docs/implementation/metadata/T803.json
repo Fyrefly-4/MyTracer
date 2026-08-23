@@ -35,6 +35,6 @@
     "github-docs-branch",
     "github-draft-pr-to-dev",
     "github-actions-redacted-evidence-artifact",
-    "owner-created-dev-to-main-milestone-pr"
+    "github-dev-to-main-milestone-pr-after-owner-merge"
   ]
 }
