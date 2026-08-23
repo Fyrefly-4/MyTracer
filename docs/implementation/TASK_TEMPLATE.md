@@ -26,6 +26,22 @@
 
 若没有需求依据，先按需求变更规则分类，不进入实现。
 
+### 3.1 References
+
+References 是依据索引，不是新的语义来源。每个引用应指向具体文件和必要章节：
+
+```yaml
+references:
+  requirements: []
+  decisions: []
+  engineering_decisions: []
+  stage_design:
+    - file: docs/architecture/Sx_....md
+      sections: []
+  architecture:
+    - docs/architecture/....md
+```
+
 ## 4. 开始条件
 
 - [ ] 前置任务已完成并有证据。
@@ -34,6 +50,63 @@
 - [ ] 当前基线没有未处理冲突。
 - [ ] 分支/worktree 和发布权限明确。
 - [ ] 真实验证命令已经存在，或本任务明确负责建立这些命令。
+
+### 4.1 Dependencies
+
+依赖关系必须来自阶段设计、架构检查或任务合同，不得只由 Agent 临时推断：
+
+```yaml
+dependencies:
+  tasks:
+    requires: []
+    blocks: []
+    can_parallel: []
+    prefer_after: []
+    conflicts_with: []
+  revisions:
+    required_dev_base: dev@<revision>
+  shared_surfaces: []
+  external: []
+```
+
+- `requires`：前置完成前不能开始。
+- `blocks`：本任务未完成时会阻塞另一任务。
+- `can_parallel`：逻辑上可并行，但仍受 shared surface 和 owner policy 限制。
+- `prefer_after`：不是硬依赖，但建议在其后执行。
+- `conflicts_with`：存在不可安全并行或必须先解决的共享修改，必须说明依据。
+
+### 4.2 Machine-readable metadata sidecar
+
+For a V2 Batch 3 task, add `docs/implementation/metadata/Txxx.json`. The sidecar is auxiliary machine-checkable metadata; the task contract, `TASK_INDEX` and Evidence ledger remain authoritative for scope, status and acceptance.
+
+```json
+{
+  "schemaVersion": 1,
+  "task": "Txxx",
+  "dependencies": {
+    "requires": [],
+    "blocks": [],
+    "can_parallel": [],
+    "prefer_after": [],
+    "conflicts_with": []
+  },
+  "conflict_basis": {},
+  "shared_surfaces": [
+    {
+      "files": [],
+      "modules": [],
+      "schema_tables": [],
+      "ipc_contracts": [],
+      "domain_invariants": [],
+      "risk": "low",
+      "integration_policy": "serial"
+    }
+  ],
+  "external": []
+}
+```
+
+The validator checks the five finite dependency relations, task references, duplicate entries, `conflict_basis` entries for every `conflicts_with` task, shared-surface identifiers, risk/policy values and JSON integrity. It does not infer safe parallelism, schedule tasks or modify tracked files.
 
 ## 5. 允许修改范围
 
@@ -54,6 +127,11 @@
 从领域、数据、AI 和 Electron 边界中列出本任务直接相关的不变量：
 
 - 
+
+引用的不变量只能作为稳定规则索引；必须补充本任务最容易破坏的局部风险：
+
+- **引用不变量**：
+- **本任务局部风险**：
 
 ## 8. 交付物
 
@@ -99,6 +177,14 @@ npm.cmd run verify
 
 `verify` 已包含 build 和 Electron E2E。若合同需要 `npm.cmd ci`、独立 `npm.cmd run build`、打包、人工步骤或平台专属验证，必须额外逐项列出；不得用 `verify` 声称它未覆盖的结果。
 
+### 10.1 Deterministic evidence capture
+
+```powershell
+node tools/evidence/capture-command.mjs --task Txxx --gate task-candidate --base-revision <sha> --output .tmp/evidence -- npm.cmd run verify
+```
+
+The wrapper must use explicit argv, keep child stdout/stderr out of the JSON, preserve the real child exit code, and write only redacted JSON under `.tmp/evidence/`. On Windows, `.cmd`/`.bat` commands are launched through explicit `ComSpec` argv while the Node child process remains `shell: false`; the recorded command remains the original argv. The artifact is factual input for later Evidence interpretation; it is not automatic acceptance.
+
 ### 人工步骤
 
 1. 
@@ -125,6 +211,28 @@ npm.cmd run verify
 - [ ] 不允许 Agent 创建或合并 `dev -> main` PR。
 - [ ] 不允许 Agent 创建 tag 或 release。
 
+### 11.1 Structured permissions
+
+复选框是面向人的确认；以下字段是合同中的机器可读表达。未明确为 `true` 的权限不得执行：
+
+```yaml
+permissions:
+  local_write: false
+  create_worktree: false
+  create_task_branch: false
+  create_commit: false
+  push_task_branch: false
+  create_or_update_draft_pr: false
+  mark_ready: false
+  merge_dev: false
+  merge_main: false
+  tag: false
+  release: false
+  dependency_change: false
+  migration_change: false
+  external_write: false
+```
+
 任何 merge、tag 或 release 权限必须由项目所有者针对确切目标另行授权。
 
 ## 12. 依赖与外部操作权限
@@ -134,6 +242,21 @@ npm.cmd run verify
 - AI Provider：fake / 已批准 Provider
 - 外部写入：无 / 明确目标
 - 数据破坏性操作：无 / 已批准步骤和恢复方案
+
+### 12.1 Integration
+
+```yaml
+integration:
+  target_branch: dev
+  base_revision: dev@<revision>
+  freshness_required: true
+  affected_regression_required: true
+  task_delivery_revision: null
+  dev_integration_revision: null
+  stage_final_integration_revision: null
+```
+
+`integration` 描述任务如何证明自己进入当前集成线，不自动授予 merge 权限。Freshness 结果必须使用 `fresh`、`refreshed-and-passed`、`blocked` 或 `not-required`，并绑定实际命令和 revision。
 
 ## 13. 风险与停止条件
 

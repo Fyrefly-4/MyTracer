@@ -160,9 +160,58 @@ Evidence ID、CI、截图或产物
 - 文档和需求追踪与实现一致；
 - 已知缺口明确列出；
 - 分支基于保护规则要求的最新 `dev`；
-- required checks 已针对最新 revision 运行；
-- 独立 Codex review 没有未处理的重大问题；
+- Implementation Candidate 的完整 diff 已检查；
+- Integration Freshness 状态为 `fresh` 或 `refreshed-and-passed`；
+- affected regression 和 candidate required checks 已针对对应 revision 运行；
+- 独立 Codex review 针对最终 candidate，且没有未处理的重大问题；
+- docs closeout 后的 final-head required checks 已针对最新 PR head 运行；
 - 项目所有者已授权标记 Ready，或亲自执行该操作。
+
+### Early、Candidate 和 Final-head CI
+
+- **early hosted CI**：Draft PR 创建后尽早运行，用于发现平台、依赖、Windows runner、Electron、打包和 CI 问题；结果只能标记为反馈或中间验证。
+- **candidate hosted CI**：Implementation Candidate 完成完整 diff 检查、独立 review、Integration Freshness Gate 和 affected regression 后运行，是任务交付证据的一部分。
+- **final-head CI**：owner-approved docs closeout commit 形成新的 PR head 后重新运行；较早 candidate CI 不能替代它。
+
+顺序固定为：
+
+```text
+candidate CI green
+  → owner confirms exact docs closeout scope
+  → docs closeout commit
+  → final-head CI
+  → Task Delivery Revision
+```
+
+Draft PR、early CI 和中间 revision 都不表示任务完成。
+
+## 5.1 Integration Freshness Gate
+
+任务进入最终可合入 `dev` 状态前，必须比较任务验证基线与最新授权 `dev`：
+
+| 状态 | 含义 |
+|---|---|
+| `fresh` | 验证基线就是最新授权 `dev` |
+| `refreshed-and-passed` | 任务曾基于旧基线，普通 merge 刷新后 affected regression 和 candidate CI 通过 |
+| `blocked` | 最新基线不可用、刷新不安全或冲突未解决 |
+| `not-required` | 合同明确任务不进入当前 `dev` 集成 |
+
+stale base 必须按以下顺序处理：获取最新授权 `dev`、以普通 merge 刷新任务分支、解决冲突、运行 affected regression、必要时重新 review、运行 candidate CI。不得 force-push 改写已发布任务历史。
+
+Evidence 至少记录：
+
+```yaml
+integration_freshness:
+  original_base_revision: abc123
+  latest_authorized_dev_revision: def456
+  verified_against_revision: def456
+  status: refreshed-and-passed
+  refresh_method: merge-dev-into-task-branch
+```
+
+`task_delivery_revision` 证明任务自身合同，`dev_integration_revision` 证明任务实际进入 `dev`，`stage_final_integration_revision` 只证明阶段最终集成 revision；三者不能互相替代。
+
+如果刷新发现需求、架构、合同范围、权限、依赖、migration、测试能力或证据问题，停止受影响工作并使用 [`ESCALATION_PROPOSAL_TEMPLATE.md`](ESCALATION_PROPOSAL_TEMPLATE.md)。
 
 ## 6. GW-005/GW-006 合并策略
 
@@ -251,6 +300,24 @@ clean install
 - AI 自动化测试使用 fake provider，不向普通 PR 暴露真实 provider key。
 - 只有验证逻辑确实依赖 Git 历史时才使用完整 checkout 历史，并记录原因。
 - 精确 command、Node/Electron 版本和 workflow 文件需在依赖批准和 T002 执行时固定。
+
+### V2 Batch 3 evidence artifact
+
+采用 Batch 3 的任务应先运行 `npm.cmd run governance:metadata:check`，再用 `npm.cmd run evidence:verify` 包装现有 `npm.cmd run verify`。包装器必须保持原验证命令的退出码，并只在 ignored `.tmp/evidence/*.json` 生成脱敏事实 artifact。
+
+Windows required job 可以使用以下固定上传约束：
+
+```yaml
+- name: Upload verification evidence
+  if: always()
+  uses: actions/upload-artifact@v4.6.2
+  with:
+    path: .tmp/evidence/*.json
+    if-no-files-found: warn
+    retention-days: 7
+```
+
+上传步骤不得写入 repository contents、Secrets、任务账本或长期文档。Artifact 不是 acceptance；Agent 仍须区分 early、candidate、final-head 和 post-merge CI，并把实际 artifact/run/head revision 绑定到 Evidence。
 
 GitHub required checks 必须成功后才允许合并；被路径过滤跳过的 required workflow 可能长期 Pending。参考：[GitHub status checks](https://docs.github.com/en/pull-requests/reference/status-checks) 和 [required checks troubleshooting](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks)。
 

@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "task": "T803",
+  "dependencies": {
+    "requires": ["T031", "T032", "T033", "T090", "T091"],
+    "blocks": [],
+    "can_parallel": [],
+    "prefer_after": [],
+    "conflicts_with": []
+  },
+  "conflict_basis": {},
+  "shared_surfaces": [
+    {
+      "files": [
+        "docs/implementation/T803_S3_FINAL_ACCEPTANCE.md",
+        "docs/implementation/TASK_INDEX_V0.1.md",
+        "docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md",
+        "docs/implementation/archive/S3_T031_T033_ARCHIVE.md",
+        "README.md"
+      ],
+      "modules": ["s3-aggregate-acceptance", "delivery-evidence", "milestone-release-notes"],
+      "schema_tables": [],
+      "ipc_contracts": [],
+      "domain_invariants": [
+        "evidence-binds-exact-source-revision",
+        "manual-acceptance-is-owner-reported",
+        "aggregate-evidence-preserves-task-history",
+        "documentation-closeout-does-not-change-product-semantics"
+      ],
+      "risk": "high",
+      "integration_policy": "serial"
+    }
+  ],
+  "external": [
+    "github-docs-branch",
+    "github-draft-pr-to-dev",
+    "github-actions-redacted-evidence-artifact",
+    "github-dev-to-main-milestone-pr-after-owner-merge"
+  ]
+}

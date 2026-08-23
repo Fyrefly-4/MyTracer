@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   createActionRecord,
   createManualUnderstanding,
-  createOpenConfusion
+  createOpenConfusion,
+  updateActionRecord
 } from '../../src/domain/action-record'
 
 const now = '2026-08-12T08:00:00.000Z'
@@ -93,5 +94,31 @@ describe('ActionRecord domain', () => {
         now
       })
     ).toThrowError(expect.objectContaining({ code: 'validation' }))
+  })
+
+  it('updates editable facts while preserving identity, parent, and creation time', () => {
+    const current = createActionRecord({
+      id: 'record-1',
+      actionId: 'action-1',
+      occurredOn: '2026-08-12',
+      durationMinutes: 1,
+      outcome: 'partial',
+      now
+    })
+    expect(
+      updateActionRecord(current, {
+        occurredOn: '2026-08-11',
+        durationMinutes: 3,
+        outcome: 'stopped',
+        note: 'Edited',
+        now: '2026-08-13T08:00:00.000Z'
+      })
+    ).toMatchObject({
+      id: 'record-1',
+      actionId: 'action-1',
+      createdAt: now,
+      occurredOn: '2026-08-11',
+      updatedAt: '2026-08-13T08:00:00.000Z'
+    })
   })
 })

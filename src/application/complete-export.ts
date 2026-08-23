@@ -1,0 +1,552 @@
+import type { ClockPort } from './ports/clock'
+import {
+  ExportDeliveryError,
+  type CompleteExportDocumentPort,
+  type ExportPort
+} from './ports/export'
+import {
+  asCompleteExportRepository,
+  type CompleteCorePersistenceSnapshot,
+  CorePersistenceSnapshot,
+  RepositoryPort
+} from './ports/persistence'
+import { createLocalDate } from '../domain/local-date'
+
+export const COMPLETE_EXPORT_FORMAT = 'mytracer-core-export' as const
+export const COMPLETE_EXPORT_VERSION = 1 as const
+
+export const COMPLETE_EXPORT_ENUM_VALUES = Object.freeze({
+  goalStatus: Object.freeze(['active', 'paused', 'ended']),
+  actionStatus: Object.freeze(['pending', 'completed', 'cancelled', 'rescheduled']),
+  routineStatus: Object.freeze(['active', 'paused', 'ended']),
+  actionRecordOutcome: Object.freeze(['completed', 'partial', 'stopped']),
+  routineRecordOutcome: Object.freeze(['target_met', 'acted', 'intentional_rest', 'not_done']),
+  routinePlannedForDateBasis: Object.freeze(['schedule_at_recording', 'user_confirmed_history']),
+  todayCommitment: Object.freeze(['focus', 'intention']),
+  understandingSource: Object.freeze(['manual', 'ai_candidate_confirmed']),
+  confusionStatus: Object.freeze(['open', 'resolved'])
+})
+
+export interface MyTracerCoreExportV1 extends CompleteExportDocumentPort {
+  readonly enumValues: typeof COMPLETE_EXPORT_ENUM_VALUES
+  readonly data: CorePersistenceSnapshot
+}
+
+export type CompleteExportApplicationErrorCode =
+  | 'snapshot-failed'
+  | 'serialization-failed'
+  | 'export-validation-failed'
+  | 'write-failed'
+  | 'destination-changed'
+  | 'replace-not-supported'
+
+export class CompleteExportApplicationError extends Error {
+  public constructor(
+    readonly code: CompleteExportApplicationErrorCode,
+    message: string
+  ) {
+    super(message)
+    this.name = 'CompleteExportApplicationError'
+  }
+}
+
+function freezeRows<T extends object>(rows: readonly T[]): readonly T[] {
+  return Object.freeze(rows.map((row) => Object.freeze({ ...row })))
+}
+
+function freezeSnapshot(snapshot: CorePersistenceSnapshot): CorePersistenceSnapshot {
+  return Object.freeze({
+    goals: freezeRows(snapshot.goals),
+    actions: freezeRows(snapshot.actions),
+    routines: freezeRows(snapshot.routines),
+    routineScheduleDays: freezeRows(snapshot.routineScheduleDays),
+    todaySelections: freezeRows(snapshot.todaySelections),
+    actionRecords: freezeRows(snapshot.actionRecords),
+    routineRecords: freezeRows(snapshot.routineRecords),
+    understandings: freezeRows(snapshot.understandings),
+    confusions: freezeRows(snapshot.confusions),
+    reviewResults: freezeRows(snapshot.reviewResults)
+  })
+}
+
+function validInstant(value: unknown): value is string {
+  return (
+    typeof value === 'string' &&
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value) &&
+    !Number.isNaN(Date.parse(value))
+  )
+}
+
+function validLocalDate(value: unknown): value is string {
+  if (typeof value !== 'string') return false
+  try {
+    return String(createLocalDate(value)) === value
+  } catch {
+    return false
+  }
+}
+
+function validEnum(value: unknown, allowed: readonly string[]): value is string {
+  return typeof value === 'string' && allowed.includes(value)
+}
+
+function assert(condition: unknown, message: string): asserts condition {
+  if (!condition) throw new CompleteExportApplicationError('export-validation-failed', message)
+}
+
+function assertKeys(
+  record: Record<string, unknown>,
+  allowed: readonly string[],
+  label: string,
+  optional: readonly string[] = []
+): void {
+  assert(
+    Object.keys(record).every((key) => allowed.includes(key) || optional.includes(key)) &&
+      allowed.every((key) => Object.hasOwn(record, key)),
+    `${label} contains an unsupported field.`
+  )
+}
+
+function record(value: unknown, label: string): Record<string, unknown> {
+  assert(
+    value !== null && typeof value === 'object' && !Array.isArray(value),
+    `${label} is invalid.`
+  )
+  return value as Record<string, unknown>
+}
+
+function rows(value: unknown, label: string): readonly Record<string, unknown>[] {
+  assert(Array.isArray(value), `${label} must be an array.`)
+  return value.map((item) => record(item, label))
+}
+
+function unique(rowsToCheck: readonly Record<string, unknown>[], key: string, label: string): void {
+  const values = rowsToCheck.map((item) => item[key])
+  assert(
+    values.every((value) => typeof value === 'string' && value.trim().length > 0),
+    `${label} has an invalid key.`
+  )
+  assert(new Set(values).size === values.length, `${label} contains duplicate values.`)
+}
+
+function assertNoForbiddenKeys(value: unknown): void {
+  if (Array.isArray(value)) {
+    value.forEach(assertNoForbiddenKeys)
+    return
+  }
+  if (!value || typeof value !== 'object') return
+  for (const [key, child] of Object.entries(value)) {
+    assert(
+      !/(?:credential|api[_-]?key|safe[_-]?storage|password|token|prompt|request|response|diagnostic|stack|cache|path|userData|environment)/i.test(
+        key
+      ),
+      'Export contains a forbidden technical field.'
+    )
+    assertNoForbiddenKeys(child)
+  }
+}
+
+function assertSorted<T extends Record<string, unknown>>(
+  values: readonly T[],
+  compare: (left: T, right: T) => number,
+  label: string
+): void {
+  for (let index = 1; index < values.length; index += 1) {
+    assert(compare(values[index - 1]!, values[index]!) <= 0, `${label} is not stably sorted.`)
+  }
+}
+
+const byId = (left: Record<string, unknown>, right: Record<string, unknown>) =>
+  String(left.id).localeCompare(String(right.id))
+const byOccurrence = (left: Record<string, unknown>, right: Record<string, unknown>) =>
+  String(left.occurredOn).localeCompare(String(right.occurredOn)) || byId(left, right)
+
+export function validateCompleteExport(value: unknown): asserts value is MyTracerCoreExportV1 {
+  const document = record(value, 'Export document')
+  assertKeys(
+    document,
+    [
+      'format',
+      'exportVersion',
+      'sourceDataVersion',
+      'exportedAt',
+      'localTimeZone',
+      'enumValues',
+      'data'
+    ],
+    'Export document',
+    ['appVersion']
+  )
+  assert(document.format === COMPLETE_EXPORT_FORMAT, 'Export format is invalid.')
+  assert(document.exportVersion === COMPLETE_EXPORT_VERSION, 'Export version is invalid.')
+  assert(
+    Number.isInteger(document.sourceDataVersion) && Number(document.sourceDataVersion) > 0,
+    'Source data version is invalid.'
+  )
+  assert(validInstant(document.exportedAt), 'Export timestamp is invalid.')
+  assert(
+    document.appVersion === undefined ||
+      (typeof document.appVersion === 'string' && document.appVersion.trim().length > 0),
+    'App version is invalid.'
+  )
+  assert(
+    typeof document.localTimeZone === 'string' && document.localTimeZone.trim(),
+    'Export time zone is invalid.'
+  )
+
+  const enumValues = record(document.enumValues, 'Export enum values')
+  assertKeys(enumValues, Object.keys(COMPLETE_EXPORT_ENUM_VALUES), 'Export enum values')
+  for (const [key, expected] of Object.entries(COMPLETE_EXPORT_ENUM_VALUES)) {
+    assert(Array.isArray(enumValues[key]), `Export enum ${key} is invalid.`)
+    assert(
+      JSON.stringify(enumValues[key]) === JSON.stringify(expected),
+      `Export enum ${key} changed.`
+    )
+  }
+
+  const data = record(document.data, 'Export data')
+  const collectionNames = [
+    'goals',
+    'actions',
+    'routines',
+    'routineScheduleDays',
+    'todaySelections',
+    'actionRecords',
+    'routineRecords',
+    'understandings',
+    'confusions',
+    'reviewResults'
+  ] as const
+  assertKeys(data, collectionNames, 'Export data')
+  const collections = Object.fromEntries(
+    collectionNames.map((name) => [name, rows(data[name], name)])
+  ) as Record<(typeof collectionNames)[number], readonly Record<string, unknown>[]>
+  assertNoForbiddenKeys(document)
+
+  const goals = collections.goals
+  const actions = collections.actions
+  const routines = collections.routines
+  const scheduleDays = collections.routineScheduleDays
+  const selections = collections.todaySelections
+  const actionRecords = collections.actionRecords
+  const routineRecords = collections.routineRecords
+  const understandings = collections.understandings
+  const confusions = collections.confusions
+  const reviews = collections.reviewResults
+  ;[
+    goals,
+    actions,
+    routines,
+    actionRecords,
+    routineRecords,
+    understandings,
+    confusions,
+    reviews
+  ].forEach((items, index) =>
+    unique(items, 'id', collectionNames[[0, 1, 2, 5, 6, 7, 8, 9][index]!]!)
+  )
+  assert(
+    new Set(scheduleDays.map((item) => `${item.routineId}|${item.weekday}`)).size ===
+      scheduleDays.length,
+    'Routine schedule days contain duplicates.'
+  )
+  assert(
+    new Set(selections.map((item) => `${item.actionId}|${item.selectedFor}`)).size ===
+      selections.length,
+    'Today selections contain duplicates.'
+  )
+  assert(
+    new Set(routineRecords.map((item) => `${item.routineId}|${item.occurredOn}`)).size ===
+      routineRecords.length,
+    'Routine records contain duplicates.'
+  )
+
+  assertSorted(goals, byId, 'Goals')
+  assertSorted(actions, byId, 'Actions')
+  assertSorted(routines, byId, 'Routines')
+  assertSorted(actionRecords, byOccurrence, 'Action records')
+  assertSorted(routineRecords, byOccurrence, 'Routine records')
+  assertSorted(understandings, byId, 'Understandings')
+  assertSorted(confusions, byId, 'Confusions')
+
+  const goalIds = new Set(goals.map((item) => String(item.id)))
+  const actionById = new Map(actions.map((item) => [String(item.id), item]))
+  const routineIds = new Set(routines.map((item) => String(item.id)))
+  const actionRecordIds = new Set(actionRecords.map((item) => String(item.id)))
+  for (const goal of goals) {
+    assertKeys(
+      goal,
+      ['id', 'title', 'description', 'status', 'currentNextActionId', 'createdAt', 'updatedAt'],
+      'Goal'
+    )
+    assert(
+      validEnum(goal.status, COMPLETE_EXPORT_ENUM_VALUES.goalStatus) &&
+        validInstant(goal.createdAt) &&
+        validInstant(goal.updatedAt),
+      'Goal is invalid.'
+    )
+    if (goal.currentNextActionId !== null) {
+      const action = actionById.get(String(goal.currentNextActionId))
+      assert(
+        action?.goalId === goal.id && action?.status === 'pending',
+        'Goal current next action is invalid.'
+      )
+    }
+  }
+  for (const action of actions) {
+    assertKeys(
+      action,
+      ['id', 'goalId', 'title', 'description', 'status', 'createdAt', 'updatedAt'],
+      'Action'
+    )
+    assert(
+      (action.goalId === null || goalIds.has(String(action.goalId))) &&
+        validEnum(action.status, COMPLETE_EXPORT_ENUM_VALUES.actionStatus) &&
+        validInstant(action.createdAt) &&
+        validInstant(action.updatedAt),
+      'Action is invalid.'
+    )
+  }
+  for (const routine of routines) {
+    assertKeys(
+      routine,
+      ['id', 'goalId', 'name', 'minimumAction', 'description', 'status', 'createdAt', 'updatedAt'],
+      'Routine'
+    )
+    assert(
+      (routine.goalId === null || goalIds.has(String(routine.goalId))) &&
+        validEnum(routine.status, COMPLETE_EXPORT_ENUM_VALUES.routineStatus) &&
+        validInstant(routine.createdAt) &&
+        validInstant(routine.updatedAt),
+      'Routine is invalid.'
+    )
+  }
+  for (const schedule of scheduleDays) {
+    assertKeys(schedule, ['routineId', 'weekday'], 'Routine schedule day')
+    assert(
+      routineIds.has(String(schedule.routineId)) &&
+        Number.isInteger(schedule.weekday) &&
+        Number(schedule.weekday) >= 1 &&
+        Number(schedule.weekday) <= 7,
+      'Routine schedule day is invalid.'
+    )
+  }
+  for (const selection of selections) {
+    assertKeys(
+      selection,
+      ['actionId', 'selectedFor', 'kind', 'selectedBy', 'createdAt'],
+      'Today selection'
+    )
+    assert(
+      actionById.has(String(selection.actionId)) &&
+        validLocalDate(selection.selectedFor) &&
+        validEnum(selection.kind, COMPLETE_EXPORT_ENUM_VALUES.todayCommitment) &&
+        selection.selectedBy === 'user' &&
+        validInstant(selection.createdAt),
+      'Today selection is invalid.'
+    )
+  }
+  for (const actionRecord of actionRecords) {
+    assertKeys(
+      actionRecord,
+      [
+        'id',
+        'actionId',
+        'occurredOn',
+        'durationMinutes',
+        'outcome',
+        'nextStep',
+        'note',
+        'createdAt',
+        'updatedAt'
+      ],
+      'Action record'
+    )
+    assert(
+      actionById.has(String(actionRecord.actionId)) &&
+        validLocalDate(actionRecord.occurredOn) &&
+        Number.isInteger(actionRecord.durationMinutes) &&
+        Number(actionRecord.durationMinutes) >= 0 &&
+        validEnum(actionRecord.outcome, COMPLETE_EXPORT_ENUM_VALUES.actionRecordOutcome) &&
+        validInstant(actionRecord.createdAt) &&
+        validInstant(actionRecord.updatedAt),
+      'Action record is invalid.'
+    )
+  }
+  for (const routineRecord of routineRecords) {
+    assertKeys(
+      routineRecord,
+      [
+        'id',
+        'routineId',
+        'occurredOn',
+        'outcome',
+        'plannedForDate',
+        'plannedForDateBasis',
+        'durationMinutes',
+        'note',
+        'createdAt',
+        'updatedAt'
+      ],
+      'Routine record'
+    )
+    const noDuration =
+      routineRecord.outcome === 'intentional_rest' || routineRecord.outcome === 'not_done'
+    assert(
+      routineIds.has(String(routineRecord.routineId)) &&
+        validLocalDate(routineRecord.occurredOn) &&
+        typeof routineRecord.plannedForDate === 'boolean' &&
+        validEnum(routineRecord.outcome, COMPLETE_EXPORT_ENUM_VALUES.routineRecordOutcome) &&
+        validEnum(
+          routineRecord.plannedForDateBasis,
+          COMPLETE_EXPORT_ENUM_VALUES.routinePlannedForDateBasis
+        ) &&
+        (noDuration
+          ? routineRecord.durationMinutes === null
+          : routineRecord.durationMinutes === null ||
+            (Number.isInteger(routineRecord.durationMinutes) &&
+              Number(routineRecord.durationMinutes) >= 0)) &&
+        validInstant(routineRecord.createdAt) &&
+        validInstant(routineRecord.updatedAt),
+      'Routine record is invalid.'
+    )
+  }
+  for (const understanding of understandings) {
+    assertKeys(
+      understanding,
+      ['id', 'actionRecordId', 'text', 'source', 'revokedAt', 'createdAt', 'updatedAt'],
+      'Understanding'
+    )
+    assert(
+      actionRecordIds.has(String(understanding.actionRecordId)) &&
+        validEnum(understanding.source, COMPLETE_EXPORT_ENUM_VALUES.understandingSource) &&
+        (understanding.revokedAt === null || validInstant(understanding.revokedAt)) &&
+        validInstant(understanding.createdAt) &&
+        validInstant(understanding.updatedAt),
+      'Understanding is invalid.'
+    )
+  }
+  for (const confusion of confusions) {
+    assertKeys(
+      confusion,
+      [
+        'id',
+        'actionRecordId',
+        'text',
+        'status',
+        'resolvedAt',
+        'resolution',
+        'createdAt',
+        'updatedAt'
+      ],
+      'Confusion'
+    )
+    const resolved = confusion.status === 'resolved'
+    assert(
+      actionRecordIds.has(String(confusion.actionRecordId)) &&
+        validEnum(confusion.status, COMPLETE_EXPORT_ENUM_VALUES.confusionStatus) &&
+        (resolved
+          ? validInstant(confusion.resolvedAt)
+          : confusion.resolvedAt === null && confusion.resolution === null) &&
+        validInstant(confusion.createdAt) &&
+        validInstant(confusion.updatedAt),
+      'Confusion is invalid.'
+    )
+  }
+  for (const review of reviews) {
+    assertKeys(
+      review,
+      [
+        'id',
+        'periodStartedOn',
+        'summary',
+        'adjustment',
+        'nextFocus',
+        'goalId',
+        'createdAt',
+        'updatedAt'
+      ],
+      'Review result'
+    )
+    assert(
+      validLocalDate(review.periodStartedOn) &&
+        (review.goalId === null || goalIds.has(String(review.goalId))) &&
+        validInstant(review.createdAt) &&
+        validInstant(review.updatedAt),
+      'Review result is invalid.'
+    )
+  }
+}
+
+export function buildCompleteExport(
+  snapshot: CompleteCorePersistenceSnapshot,
+  clock: Pick<ClockPort, 'snapshot'>
+): MyTracerCoreExportV1 {
+  const now = clock.snapshot()
+  const document: MyTracerCoreExportV1 = Object.freeze({
+    format: COMPLETE_EXPORT_FORMAT,
+    exportVersion: COMPLETE_EXPORT_VERSION,
+    sourceDataVersion: snapshot.sourceDataVersion,
+    exportedAt: now.instant,
+    localTimeZone: now.timeZone,
+    enumValues: COMPLETE_EXPORT_ENUM_VALUES,
+    data: freezeSnapshot(snapshot.coreSnapshot)
+  })
+  validateCompleteExport(document)
+  return document
+}
+
+export interface CompleteExportServiceDependencies {
+  readonly repository: RepositoryPort
+  readonly clock: ClockPort
+  readonly exportPort: ExportPort
+}
+
+export class CompleteExportService {
+  public constructor(private readonly dependencies: CompleteExportServiceDependencies) {}
+
+  public async generateCompleteExport(): Promise<
+    | { readonly kind: 'cancelled' }
+    | {
+        readonly kind: 'exported'
+        readonly fileName: string
+        readonly byteLength: number
+        readonly exportVersion: 1
+        readonly exportedAt: string
+      }
+  > {
+    let document: MyTracerCoreExportV1
+    const clockSnapshot = this.dependencies.clock.snapshot()
+    try {
+      document = buildCompleteExport(
+        asCompleteExportRepository(this.dependencies.repository).readCompleteCoreSnapshot(),
+        { snapshot: () => clockSnapshot }
+      )
+    } catch (error) {
+      if (error instanceof CompleteExportApplicationError) throw error
+      throw new CompleteExportApplicationError(
+        'snapshot-failed',
+        'Could not read a complete export snapshot.'
+      )
+    }
+    const suggestedName = `mytracer-export-${String(clockSnapshot.localDate)}-v1.json`
+    try {
+      const result = await this.dependencies.exportPort.deliverCompleteExport(
+        document,
+        suggestedName
+      )
+      return result.kind === 'cancelled'
+        ? result
+        : Object.freeze({
+            ...result,
+            exportVersion: COMPLETE_EXPORT_VERSION,
+            exportedAt: document.exportedAt
+          })
+    } catch (error) {
+      if (error instanceof ExportDeliveryError) {
+        throw new CompleteExportApplicationError(error.code, error.message)
+      }
+      throw new CompleteExportApplicationError('write-failed', 'Could not deliver the export file.')
+    }
+  }
+}

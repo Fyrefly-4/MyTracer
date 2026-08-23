@@ -67,6 +67,26 @@ import {
   type RoutineDayStateDto,
   type RoutineRecordResult
 } from '../contracts/routine-records'
+import {
+  DATA_CONTROL_CHANNELS,
+  type ActionRecordDataDto,
+  type BackfillActionRecordInputDto,
+  type BackfillRoutineRecordInputDto,
+  type DataControlListDto,
+  type DataControlResult,
+  type DeleteImpactCountsDto,
+  type DeletePreviewDto,
+  type DeleteTargetDto,
+  type FactIdInputDto,
+  type ResolveConfusionInputDto,
+  type RoutineRecordDataDto,
+  type TextFactInputDto,
+  type UnderstandingDataDto,
+  type ConfusionDataDto,
+  type UpdateActionRecordInputDto,
+  type UpdateRoutineRecordInputDto
+} from '../contracts/data-control'
+import { EXPORT_CHANNELS, type CompleteExportResult } from '../contracts/exports'
 
 const api: MyTracerApi = Object.freeze({
   shell: Object.freeze({
@@ -177,6 +197,59 @@ const api: MyTracerApi = Object.freeze({
       input: GetRoutineDayStateInputDto
     ): Promise<RoutineRecordResult<RoutineDayStateDto>> =>
       ipcRenderer.invoke(ROUTINE_RECORD_CHANNELS.getDayState, input)
+  }),
+  dataControl: Object.freeze({
+    list: (): Promise<DataControlResult<DataControlListDto>> =>
+      ipcRenderer.invoke(DATA_CONTROL_CHANNELS.list),
+    backfillActionRecord: (
+      input: BackfillActionRecordInputDto
+    ): Promise<DataControlResult<ActionRecordDataDto>> =>
+      ipcRenderer.invoke(DATA_CONTROL_CHANNELS.backfillActionRecord, input),
+    updateActionRecord: (
+      input: UpdateActionRecordInputDto
+    ): Promise<DataControlResult<ActionRecordDataDto>> =>
+      ipcRenderer.invoke(DATA_CONTROL_CHANNELS.updateActionRecord, input),
+    backfillRoutineRecord: (
+      input: BackfillRoutineRecordInputDto
+    ): Promise<DataControlResult<RoutineRecordDataDto>> =>
+      ipcRenderer.invoke(DATA_CONTROL_CHANNELS.backfillRoutineRecord, input),
+    updateRoutineRecord: (
+      input: UpdateRoutineRecordInputDto
+    ): Promise<DataControlResult<RoutineRecordDataDto>> =>
+      ipcRenderer.invoke(DATA_CONTROL_CHANNELS.updateRoutineRecord, input),
+    updateUnderstanding: (
+      input: TextFactInputDto
+    ): Promise<DataControlResult<UnderstandingDataDto>> =>
+      ipcRenderer.invoke(DATA_CONTROL_CHANNELS.updateUnderstanding, input),
+    revokeUnderstanding: (
+      input: FactIdInputDto
+    ): Promise<DataControlResult<UnderstandingDataDto>> =>
+      ipcRenderer.invoke(DATA_CONTROL_CHANNELS.revokeUnderstanding, input),
+    updateConfusion: (input: TextFactInputDto): Promise<DataControlResult<ConfusionDataDto>> =>
+      ipcRenderer.invoke(DATA_CONTROL_CHANNELS.updateConfusion, input),
+    resolveConfusion: (
+      input: ResolveConfusionInputDto
+    ): Promise<DataControlResult<ConfusionDataDto>> =>
+      ipcRenderer.invoke(DATA_CONTROL_CHANNELS.resolveConfusion, input),
+    reopenConfusion: (input: FactIdInputDto): Promise<DataControlResult<ConfusionDataDto>> =>
+      ipcRenderer.invoke(DATA_CONTROL_CHANNELS.reopenConfusion, input),
+    previewDelete: (input: {
+      readonly target: DeleteTargetDto
+    }): Promise<DataControlResult<DeletePreviewDto>> =>
+      ipcRenderer.invoke(DATA_CONTROL_CHANNELS.previewDelete, input),
+    cancelDelete: (input: {
+      readonly previewId: string
+    }): Promise<DataControlResult<{ readonly cancelled: true }>> =>
+      ipcRenderer.invoke(DATA_CONTROL_CHANNELS.cancelDelete, input),
+    confirmDelete: (input: {
+      readonly previewId: string
+      readonly target: DeleteTargetDto
+      readonly confirmation: 'permanently-delete'
+    }): Promise<DataControlResult<{ readonly counts: DeleteImpactCountsDto }>> =>
+      ipcRenderer.invoke(DATA_CONTROL_CHANNELS.confirmDelete, input)
+  }),
+  exports: Object.freeze({
+    generate: (): Promise<CompleteExportResult> => ipcRenderer.invoke(EXPORT_CHANNELS.generate)
   })
 })
 

@@ -7,6 +7,7 @@ import tseslint from 'typescript-eslint'
 
 const sourceFiles = ['src/**/*.{ts,tsx}']
 const testFiles = ['tests/**/*.ts', 'vitest.config.ts', 'playwright.config.ts']
+const toolFiles = ['tools/**/*.mjs']
 
 export default defineConfig(
   globalIgnores([
@@ -20,12 +21,13 @@ export default defineConfig(
     'playwright-report/**'
   ]),
   {
-    files: [...sourceFiles, ...testFiles, 'electron.vite.config.ts'],
+    files: [...sourceFiles, ...testFiles, ...toolFiles, 'electron.vite.config.ts'],
     extends: [js.configs.recommended, tseslint.configs.recommended]
   },
   {
     files: [
       ...testFiles,
+      ...toolFiles,
       'electron.vite.config.ts',
       'src/main/**/*.ts',
       'src/preload/**/*.ts',

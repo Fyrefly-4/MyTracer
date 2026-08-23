@@ -21,6 +21,10 @@ MyTracer 是一个面向个人本地使用的 Windows 桌面应用，用于帮�
 - T021 已完成 Routine 生命周期、ISO 星期节奏、Goal 接缝和 Today 计划项；T022 已完成 RoutineRecord 四显式结果、缺行 `unknown`、非计划日事实及统一事实型 Progress，项目所有者完整人工 AC-03 已通过。
 - T023 已完成通用 Action 的非强制 Today intention：focus/intention 明确分区、同日互斥并由用户显式转换，未发生时不生成记录、失败或 Progress 事实，也不自动滚动到次日；本地/hosted 自动化、独立复核和项目所有者完整人工 AC-04 已通过。
 - T021～T023 与门禁修复 T802 已由 PR #20 统一归档并合入 `dev`；最终验收 revision `a9db1eb26134dac83b01f4a4d7da30f92a271242` 的本地/hosted `verify`、AC-01/03/04、LocalDate/SQLite/S1-only v1 数据守恒、Windows package、unpacked/NSIS smoke 与独立聚合 review 均通过。
+- T031 已完成 Record 修改/补记、子事实转换、Routine 历史计划 provenance、五类删除影响预览和事务性删除；PR #26 已合入 `dev`。
+- T032 已完成十集合一致性快照、`exportVersion=1` UTF-8 JSON、结构/枚举/引用校验、Main-only 目标和原子文件交付；PR #27 已合入 `dev`。
+- T033 已证明 AI disabled、not-configured、failure 时 CRUD、Progress、删除、导出和重开继续可用；PR #28 已合入 `dev`，项目所有者于 2026-08-22 报告完整人工 AC-07 通过。
+- T803 已在固定 `dev@8058f7a3c9db9d3b488e727dfd85201dc14f11a0` 上完成 T031～T033、AC-01/03/04/07、migration/重开、Windows package 与合同归档候选复验；Draft PR #29 candidate CI 已通过，等待项目所有者处理。
 
 不要把架构完成理解为产品已经实现。
 
@@ -136,8 +140,8 @@ task/Txxx-short-name
 
 ## 下一步
 
-1. S2 的后续里程碑推进只通过 `dev → main` PR，不直接 push `main`。
-2. 里程碑 PR 必须在 exact head CI 与项目所有者批准后使用 merge commit 合入。
-3. PR 创建不授权合入 `main`；tag 和 GitHub Release 仍须在合入后另行批准。
+1. T803 Draft PR #29 必须在最终文档 head 的 hosted Windows gate 通过后，由项目所有者决定是否合入 `dev`。
+2. T803 合入后重新固定最新 `origin/dev`，再创建 `dev → main` 里程碑 PR；仅项目所有者可批准并以 merge commit 合入。
+3. 里程碑 PR 创建不授权 merge、tag 或 GitHub Release；tag/release 仍须合入后另行批准。
 
-T011～T014 已覆盖 Goal、Action/Today、ActionRecord、事实型 Progress 与完整 AC-01；T021～T023 已覆盖 S2 的 Routine 生命周期与事实、通用 intention，以及完整 AC-03/AC-04。FR-R08 的修改/补记/删除仍属于 T031，完整 FR-D01、AC-07、G4 Demo、merge 与发布均不能由这些任务的通过自动推定。
+T011～T014 已覆盖 S1 与完整 AC-01；T021～T023 已覆盖 S2 与完整 AC-03/AC-04；T031～T033 已覆盖 S3 数据控制、版本化完整导出、AI 三态数据独立性和完整人工 AC-07。T803 只聚合验证并归档这些既有事实，不实现自动导入/恢复、Provider、S4～S7、AC-02/05/06、G4 Demo，也不授权 merge、tag 或 release。

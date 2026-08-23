@@ -86,6 +86,47 @@ Use `docs/implementation/TASK_TEMPLATE.md`. Do not treat an open question, recom
 9. Update task status and acceptance evidence only from real results.
 10. Report completed work, evidence, risks, and anything not verified.
 
+### 6.1 V2 task candidate and integration gates
+
+For a task whose contract adopts the V2 process, use this order when the corresponding permission exists:
+
+```text
+Txxx Contract
+  → Task Gate
+  → Preflight
+  → first meaningful commit
+  → Draft PR + early hosted CI
+  → Implementation Candidate
+  → complete diff review
+  → Independent Review
+  → Integration Freshness Gate
+  → affected regression on the latest authorized dev
+  → candidate hosted CI
+  → owner-approved docs closeout
+  → final-head CI
+  → Task Delivery Revision
+  → owner-approved merge to dev
+  → Dev Integration Revision
+```
+
+- A Draft PR and early CI are intermediate visibility and feedback; neither proves implementation completion.
+- Final review must inspect the Implementation Candidate, not an earlier Draft revision.
+- If the task base is stale, refresh with a traceable ordinary merge from the latest authorized `dev`, resolve conflicts, rerun affected regression, and repeat review when the result changes the review surface.
+- Do not use force-push to rewrite published task history.
+
+Integration Freshness has only these states: `fresh`, `refreshed-and-passed`, `blocked`, and `not-required`. A task may claim `fresh` only when its validation base is the latest authorized integration base and the evidence records the actual revisions.
+
+### 6.2 Escalation Proposal
+
+When a requirement conflict, architecture change, contract or permission expansion, dependency/migration issue, integration conflict, testability problem, evidence problem, or baseline drift is found:
+
+1. Stop the affected work.
+2. Preserve safe completed work and record the actual branch, revision, commands, and results.
+3. Complete [`docs/implementation/ESCALATION_PROPOSAL_TEMPLATE.md`](docs/implementation/ESCALATION_PROPOSAL_TEMPLATE.md).
+4. Wait for new authority; do not silently rewrite architecture, requirements, scope, or neighboring tasks.
+
+An Escalation Proposal is an execution communication record, not a product requirement, decision, or authorization source.
+
 ## 7. Architecture invariants
 
 - All mutations pass through Application commands and Domain invariants.
@@ -134,7 +175,23 @@ Evidence must bind a claim to:
 - result and relevant artifact location;
 - known limitations and missing platform or manual evidence.
 
+For V2 task evidence, distinguish the task's own `task_delivery_revision`, the revision that actually entered `dev` as `dev_integration_revision`, and the aggregate stage `stage_final_integration_revision`. Record early, candidate, and final-head CI separately; an earlier green result cannot prove a later revision. Failed evidence remains in the ledger and later success records it through `supersedes` rather than deleting the failure.
+
 A test name, plan entry, keyword match, or agent statement is not proof that behavior passed. Record evidence in `docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md`.
+
+### 9.1 Deterministic evidence capture and metadata
+
+When a V2 task uses the repository evidence tools:
+
+- run `npm.cmd run governance:metadata:check` before treating task metadata as valid;
+- use the explicit-argv `capture-command.mjs` wrapper for commands whose exit code and environment must be recorded;
+- on Windows, `.cmd`/`.bat` commands use an explicit `ComSpec` argv while the Node child process remains `shell: false`; the original command argv is preserved in the artifact;
+- for GitHub `pull_request` runs, `ci.headRevision` comes from the event payload's PR head and `ci.mergeRevision` records the checked-out test-merge revision; these fields must not be conflated;
+- treat the generated JSON as a factual artifact, not as automatic acceptance or a replacement for Evidence ledger interpretation;
+- keep artifacts under ignored `.tmp/evidence/`; they may contain only fixed metadata, relative artifact names and allowlisted CI fields;
+- never record stdout/stderr, raw environment variables, credentials, safeStorage, SQLite, user content, absolute user paths or complete logs;
+- preserve failed artifacts and exit codes; do not convert a failed child command into a successful task claim;
+- do not let validators or CI steps rewrite `TASK_INDEX`, `ACCEPTANCE_EVIDENCE`, task contracts, README, requirements, decisions or stage documents.
 
 ## 10. Git and GitHub authorization
 

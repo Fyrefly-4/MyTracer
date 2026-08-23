@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "task": "T031",
+  "dependencies": {
+    "requires": ["T011", "T012", "T013", "T014", "T021", "T022", "T023"],
+    "blocks": ["T032"],
+    "can_parallel": [],
+    "prefer_after": [],
+    "conflicts_with": ["T032"]
+  },
+  "conflict_basis": {
+    "T032": "T032 consumes T031 schema v2 and shares RoutineRecord provenance, persistence snapshot, Preload and Renderer surfaces; the approved stage order is T031 then T032."
+  },
+  "shared_surfaces": [
+    {
+      "files": [
+        "src/application/ports/persistence.ts",
+        "src/infrastructure/sqlite/migrations.ts",
+        "src/infrastructure/sqlite/migrations/002_add_routine_record_planned_for_date_basis.sql",
+        "src/infrastructure/sqlite/sqlite-repository.ts"
+      ],
+      "modules": ["record-data-control", "sqlite-migrations", "delete-impact"],
+      "schema_tables": [
+        "goals",
+        "actions",
+        "routines",
+        "routine_schedule_days",
+        "today_selections",
+        "action_records",
+        "routine_records",
+        "understandings",
+        "confusions",
+        "review_results"
+      ],
+      "ipc_contracts": ["window.myTracer.dataControl", "window.myTracer.routines"],
+      "domain_invariants": [
+        "record-update-does-not-upsert",
+        "historical-local-date-is-explicit",
+        "routine-plan-provenance-is-preserved",
+        "delete-preview-matches-transactional-result",
+        "delete-failure-is-zero-change"
+      ],
+      "risk": "high",
+      "integration_policy": "serial"
+    },
+    {
+      "files": [
+        "src/main/index.ts",
+        "src/preload/index.ts",
+        "src/renderer/src/App.tsx",
+        "src/renderer/src/styles.css",
+        "docs/implementation/archive/S3_T031_T033_ARCHIVE.md",
+        "docs/implementation/TASK_INDEX_V0.1.md",
+        "docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md"
+      ],
+      "modules": ["electron-ipc", "preload-api", "renderer-data-control", "delivery-evidence"],
+      "schema_tables": [],
+      "ipc_contracts": ["sender-bound-delete-preview", "fixed-data-control-channels"],
+      "domain_invariants": [
+        "renderer-has-no-node-sql-file-clock-access",
+        "progress-and-today-are-requeried-from-facts"
+      ],
+      "risk": "high",
+      "integration_policy": "serial"
+    }
+  ],
+  "external": [
+    "github-task-branch",
+    "github-draft-pr-to-dev",
+    "github-actions-redacted-evidence-artifact"
+  ]
+}

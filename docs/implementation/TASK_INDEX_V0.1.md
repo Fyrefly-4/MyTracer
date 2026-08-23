@@ -1,13 +1,14 @@
 # MyTracer v0.1 任务索引
 
 > 文档状态：v0.1 实施任务基线  
-> 当前阶段：G1、G2 已通过；S0/S1/S2 已归档；T021～T023/T802、AC-03/AC-04 自动化与人工验收及最终 S2 聚合验证均通过；`dev → main` 里程碑 merge、tag 和 release 仍受独立授权门禁约束
+> 当前阶段：G1、G2 已通过；S0/S1/S2 已归档；T031～T033 已完成并合入 `dev`；T803 正在对同一最新 `origin/dev` 执行 G3/S3 聚合验收与文档证据收口；`dev → main` 里程碑 merge、tag 和 release 仍受独立授权门禁约束
 > 状态来源：本文件是任务执行状态的唯一账本，架构实施计划只定义范围和顺序
 
 ## 1. 使用规则
 
 - 每个任务必须从 [`TASK_TEMPLATE.md`](TASK_TEMPLATE.md) 形成独立任务合同后才能进入 `active`。
 - 任务必须引用 [`IMPLEMENTATION_PLAN_V0.1.md`](../architecture/IMPLEMENTATION_PLAN_V0.1.md) 中的切片，并列出直接相关的 FR/AC/D/ED。
+- 流程治理或纯文档任务可以使用 `GOV-*` plan item，并在合同中明确没有产品 FR/AC 变化及其替代授权依据。
 - `done` 只表示实现和规定验证已经完成；项目所有者尚未执行的人工验收必须单独标为 `pending`。
 - 真实验证记录写入 [`ACCEPTANCE_EVIDENCE_V0.1.md`](ACCEPTANCE_EVIDENCE_V0.1.md)，不得把本表状态当作证据。
 - Git 和 GitHub 操作遵循 [`GITHUB_WORKFLOW_V0.1.md`](GITHUB_WORKFLOW_V0.1.md)。
@@ -36,6 +37,9 @@
 - T021～T023 的最终范围、批准、PR、验证和限制已由 T802 PR #20 收敛为统一归档 [`archive/S2_T021_T023_ARCHIVE.md`](archive/S2_T021_T023_ARCHIVE.md) 并合入 `dev`；原合同仅从 Git 历史恢复。
 - T802 修复候选 `a61d0bc100752ae1209623a2ac020ff25a62bf8f` 与归档 head `dd20a1544e0e48008dea6d272618f8cdfef9e4ee` 的 required CI 均通过；PR #20 squash merge 为最终验收基线 `dev@a9db1eb26134dac83b01f4a4d7da30f92a271242`。
 - 最终 dev 的本地/hosted `verify`、定向 AC-01/03/04、LocalDate/SQLite/S1-only v1 数据守恒、Windows package、unpacked/隔离 NSIS smoke 与独立聚合 review 通过，详见 `EV-T802-002`。
+- T091 已由 PR #24 合入 `dev@4674597f736af9ba81e7c758681ae45bdd5c6a1b`；T031、T032、T033 已依次由 PR #26～#28 合入，最终 S3 产品 source 为 `dev@8058f7a3c9db9d3b488e727dfd85201dc14f11a0`。
+- T803 在该固定 source 和文档候选 `f5fd977bd32676cb617f3023091a20a40d72db70` 的定向 unit/integration/E2E、完整 `verify`、Windows package 与 unpacked/隔离 NSIS smoke 均已通过；Draft PR #29 candidate Windows required gate 通过，项目所有者 merge 尚待完成。
+- 项目所有者于 2026-08-22 报告完整人工 AC-07 `pass`；T031 专用人工清单未单独执行的历史仍保留在 `EV-T031-001`。
 - 首个 AI Provider、模型和 SDK 只阻塞 T062，不阻塞 S0～S5 的非 AI 能力。
 
 ## 4. 任务总表
@@ -53,9 +57,9 @@
 | T021 | E2-01 | Routine 生命周期和星期节奏 | FR-R01～R03；FR-T02；ED-006/009 | S1 | `done` | `EV-T021-001` |
 | T022 | E2-02 | Routine 五态、unknown 和非计划日事实 | FR-R04～R09；D-008～010/107；AC-03 | T021 | `done` | `EV-T022-001` |
 | T023 | E2-03 | 通用非强制意向 | FR-A07；FR-T03/T08；D-011；AC-04 | T021 | `done` | `EV-T023-001` |
-| T031 | E3-01 | 修改、补记、删除影响预览和事务 | FR-L07；FR-R08；FR-D02；ED-008 | S1/S2 | `pending` | — |
-| T032 | E3-02 | UTF-8 JSON 完整导出和引用检查 | FR-D03/D04；D-111；ED-014；AC-07 | T031 | `pending` | — |
-| T033 | E3-03 | AI 关闭/未配置/失败时的数据能力回归 | FR-D05；FR-AI09；D-015 | T032 | `pending` | — |
+| T031 | E3-01 | 修改、补记、删除影响预览和事务 | FR-L07；FR-R08；FR-D02；ED-008 | S1/S2 | `done` | `EV-T031-001` |
+| T032 | E3-02 | UTF-8 JSON 完整导出和引用检查 | FR-D03/D04；D-111；ED-014；AC-07 | T031 | `done` | `EV-T032-001` |
+| T033 | E3-03 | AI 关闭/未配置/失败时的数据能力回归 | FR-D05；FR-AI09；D-015 | T032 | `done` | `EV-T033-001` |
 | T041 | E4-01 | RecoveryContext 查询 | FR-REC01～REC03；D-002 | S1 | `pending` | — |
 | T042 | E4-02 | 清理过时内容并重新开始 | FR-REC04～REC06；FR-P04；D-013；AC-05 | T041 | `pending` | — |
 | T051 | E5-01 | 周期事实摘要 | FR-RV01/RV06；D-106；AC-06 | S2/S3 | `pending` | — |
@@ -65,8 +69,11 @@
 | T063 | E6-03 | AI 建议接受/修改/拒绝和确认命令 | FR-AI05/06；FR-C02/C03；D-014/109；AC-02 | T062 | `pending` | — |
 | T071 | S7 | 11 条 SHOULD 的既定处理结论 | Traceability §4；Implementation §10.1 | S1～S6 | `pending` | — |
 | T072 | S7 | 全量回归、AC-01～AC-07、Windows Demo 收敛 | 全部 MUST/AC；Test Strategy §7～10 | T071 | `pending` | — |
+| T090 | GOV-01 | V2 Agent 流程第一、二批文档规范 | GW-001/002/004/005/006/009/010；T090 合同 | dev@112b909 | `done` | `EV-T090-001` |
+| T091 | GOV-02 | V2 第三批确定性证据采集、CI artifact 和 metadata 校验 | V2 Batch 3；GW-001/002/004/008/009/010；T091 合同 | T090；dev@aeb0d68 | `done` | `EV-T091-001` |
 | T801 | S1 fix | 更新 Windows package smoke 的 S1 窄 API 契约并重新验证 unpacked/NSIS | G3/S1；GW-008/010；不改变 FR/AC/D/ED | `EV-G3-S1-001` | `done` | `EV-T801-001` |
 | T802 | S2 fix | 修复 package smoke、完整连续 E2E-AC-03、既有 S1 v1 数据守恒与 T021～T023 合同归档 | AC-03；FR-D01 S2 子集；GW-008/010；不改变生产语义 | S2 聚合验收失败与独立 review | `done` | `EV-T802-002` |
+| T803 | S3 aggregate | 聚合验收 T031～T033、AC-07、package/重开/导出/AI 三态并归档 S3 合同 | AC-07；FR-D01～D05；GW-008/010；不改变生产语义 | T031～T033、T090、T091 | `review` | `EV-G3-S3-001` |
 
 ## 5. 阶段门与主线合并
 
@@ -74,7 +81,7 @@
 |---|---|---|
 | G2 工程就绪 | T001～T004 | 已通过；PR #5 已合并到 `main`，未据此创建 tag/release |
 | G3/S1 核心闭环 | T011～T014 | 经项目所有者验收后进入后续切片；是否推进 `main` 由所有者决定 |
-| G3/S3 数据安全 | T031～T033 | 建议创建里程碑 PR，形成可恢复的数据基线 |
+| G3/S3 数据安全 | T031～T033/T803 | T803 收口 PR 合入 `dev` 后创建里程碑 PR；不自动授权 merge |
 | G4 Demo 就绪 | T021～T072 | 全量验收后合入 `main`，准备 beta 或 v0.1.0 |
 
 阶段门不会因任务表显示 `done` 自动通过；必须满足开发流程中的自动化和人工验收要求。
@@ -100,3 +107,8 @@
 - T021～T023 的最终 squash merge revisions 依次为 `e3e7346eba492f1de810ffe34b41b1d96831c3af`、`68239dafb0d742b09abb2583544a37361157c872`、`0106996b45a41275370c46bd3f6ea842573f0889`；任务级自动化、独立 review 与项目所有者人工验收均已通过。
 - T802 PR #20 已将 S2 聚合门禁修复与 [`S2_T021_T023_ARCHIVE.md`](archive/S2_T021_T023_ARCHIVE.md) squash 合入 `dev@a9db1eb26134dac83b01f4a4d7da30f92a271242`；最终同 revision 验收由 `EV-T802-002` 支持，`EV-T802-001` 的 partial 候选状态保留并被取代。
 - S2 聚合验收通过允许准备 `dev → main` 里程碑 PR，但不授权 Agent merge、tag 或 release；里程碑合入必须由项目所有者批准并使用 merge commit。
+- T090 已完成第一、二批流程文档规范落地；`EV-T090-001` 记录本地验证、PR candidate CI 和项目所有者人工审核通过。产品任务试点未进行，第二批仍是“文档已落地、尚未通过真实任务运行验证”；PR #23 已以 `aeb0d68` 进入 `dev`，因此 T091 以该 revision 作为授权基线。
+- T091 PR #24 已以 `4674597f736af9ba81e7c758681ae45bdd5c6a1b` 合入 `dev`；其确定性 evidence、metadata 和 CI artifact 能力已由 T031～T033/T803 实际使用，早期记录中的“尚未合入”不再是当前集成事实。
+- S3 设计 PR #25、T031 PR #26、T032 PR #27、T033 PR #28 已依次合入，固定产品 source 为 `8058f7a3c9db9d3b488e727dfd85201dc14f11a0`；任务 Evidence 与失败历史继续保留。
+- T803 在固定 source 与文档候选 `f5fd977bd32676cb617f3023091a20a40d72db70` 上的本地聚合门禁和 PR #29 candidate CI 已通过，项目所有者 2026-08-22 的完整人工 AC-07 为 `pass`；任务处于 `review`，等待项目所有者处理 Draft PR。
+- G3/S3 聚合候选通过不表示 G4、AC-02/05/06、自动导入/恢复、AI Provider、`main` merge、tag 或 release 完成；T803 合入 `dev` 后才按授权创建 `dev → main` 里程碑 PR。

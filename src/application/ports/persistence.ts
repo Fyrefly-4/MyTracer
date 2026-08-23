@@ -2,6 +2,7 @@ export type GoalStatus = 'active' | 'paused' | 'ended'
 export type ActionStatus = 'pending' | 'completed' | 'cancelled' | 'rescheduled'
 export type RoutineStatus = 'active' | 'paused' | 'ended'
 export type RoutineRecordOutcome = 'target_met' | 'acted' | 'intentional_rest' | 'not_done'
+export type RoutinePlannedForDateBasis = 'schedule_at_recording' | 'user_confirmed_history'
 
 export interface GoalPersistenceRecord {
   readonly id: string
@@ -65,6 +66,7 @@ export interface RoutineRecordPersistenceRecord {
   readonly occurredOn: string
   readonly outcome: RoutineRecordOutcome
   readonly plannedForDate: boolean
+  readonly plannedForDateBasis: RoutinePlannedForDateBasis
   readonly durationMinutes: number | null
   readonly note: string | null
   readonly createdAt: string
@@ -169,6 +171,11 @@ export interface CorePersistenceSnapshot {
   readonly reviewResults: readonly ReviewResultPersistenceRecord[]
 }
 
+export interface CompleteCorePersistenceSnapshot {
+  readonly sourceDataVersion: number
+  readonly coreSnapshot: CorePersistenceSnapshot
+}
+
 export interface RepositoryPort {
   saveGoal(record: GoalPersistenceRecord): void
   saveAction(record: ActionPersistenceRecord): void
@@ -189,6 +196,22 @@ export interface RepositoryPort {
   ): readonly GoalActionRecordSummaryPersistenceRecord[]
   listTodaySelectionActionIdsByGoalIdOn(goalId: string, selectedFor: string): readonly string[]
   readSnapshot(): CorePersistenceSnapshot
+}
+
+export interface CompleteExportRepositoryPort extends RepositoryPort {
+  readCompleteCoreSnapshot(): CompleteCorePersistenceSnapshot
+}
+
+export function asCompleteExportRepository(
+  repository: RepositoryPort
+): CompleteExportRepositoryPort {
+  if (
+    typeof (repository as Partial<CompleteExportRepositoryPort>).readCompleteCoreSnapshot !==
+    'function'
+  ) {
+    throw new TypeError('Repository does not provide the complete export snapshot contract.')
+  }
+  return repository as CompleteExportRepositoryPort
 }
 
 export interface ActionRepositoryPort extends RepositoryPort {
@@ -241,6 +264,20 @@ export interface RoutineRecordRepositoryPort extends RoutineRepositoryPort {
   listRoutineRecordsByRoutineId(routineId: string): readonly RoutineRecordPersistenceRecord[]
 }
 
+export interface DataControlRepositoryPort
+  extends ActionRecordRepositoryPort, RoutineRecordRepositoryPort {
+  createActionRecord(record: ActionRecordPersistenceRecord): boolean
+  updateActionRecord(record: ActionRecordPersistenceRecord): boolean
+  findUnderstandingById(id: string): UnderstandingPersistenceRecord | null
+  updateUnderstanding(record: UnderstandingPersistenceRecord): boolean
+  findConfusionById(id: string): ConfusionPersistenceRecord | null
+  updateConfusion(record: ConfusionPersistenceRecord): boolean
+  updateRoutineRecord(record: RoutineRecordPersistenceRecord): boolean
+  findRoutineRecordById(id: string): RoutineRecordPersistenceRecord | null
+  findDeleteImpact(target: DeleteTarget): DeleteImpact | null
+  deleteRoot(target: DeleteTarget): boolean
+}
+
 export function asActionRepository(repository: RepositoryPort): ActionRepositoryPort {
   const candidate = repository as Partial<ActionRepositoryPort>
   if (
@@ -290,6 +327,27 @@ export function asRoutineRecordRepository(repository: RepositoryPort): RoutineRe
   return repository as RoutineRecordRepositoryPort
 }
 
+export function asDataControlRepository(repository: RepositoryPort): DataControlRepositoryPort {
+  const candidate = repository as Partial<DataControlRepositoryPort>
+  asActionRecordRepository(repository)
+  asRoutineRecordRepository(repository)
+  if (
+    typeof candidate.createActionRecord !== 'function' ||
+    typeof candidate.updateActionRecord !== 'function' ||
+    typeof candidate.findUnderstandingById !== 'function' ||
+    typeof candidate.updateUnderstanding !== 'function' ||
+    typeof candidate.findConfusionById !== 'function' ||
+    typeof candidate.updateConfusion !== 'function' ||
+    typeof candidate.updateRoutineRecord !== 'function' ||
+    typeof candidate.findRoutineRecordById !== 'function' ||
+    typeof candidate.findDeleteImpact !== 'function' ||
+    typeof candidate.deleteRoot !== 'function'
+  ) {
+    throw new TypeError('Repository does not provide the data-control contract.')
+  }
+  return repository as DataControlRepositoryPort
+}
+
 export function asRoutineRepository(repository: RepositoryPort): RoutineRepositoryPort {
   const candidate = repository as Partial<RoutineRepositoryPort>
   if (
@@ -306,3 +364,4 @@ export function asRoutineRepository(repository: RepositoryPort): RoutineReposito
 export interface UnitOfWorkPort {
   transaction<T>(work: (repository: RepositoryPort) => T): T
 }
+import type { DeleteImpact, DeleteTarget } from '../../domain/data-control'

@@ -7,6 +7,7 @@ export const ROUTINE_RECORD_CHANNELS = Object.freeze({
 
 export type RoutineRecordOutcomeDto = 'target_met' | 'acted' | 'intentional_rest' | 'not_done'
 export type RoutineRecordStateDto = RoutineRecordOutcomeDto | 'unknown'
+export type RoutinePlannedForDateBasisDto = 'schedule_at_recording' | 'user_confirmed_history'
 export type RoutineRecordingDateChoiceDto = 'keep-captured-on' | 'use-current-on'
 
 export interface RoutineRecordDto {
@@ -15,6 +16,7 @@ export interface RoutineRecordDto {
   readonly occurredOn: string
   readonly outcome: RoutineRecordOutcomeDto
   readonly plannedForDate: boolean
+  readonly plannedForDateBasis: RoutinePlannedForDateBasisDto
   readonly durationMinutes: number | null
   readonly note: string | null
   readonly createdAt: string
