@@ -12,7 +12,7 @@
 - 当前任务状态以 [`TASK_INDEX_V0.1.md`](../TASK_INDEX_V0.1.md) 为准；实际结果以 [`ACCEPTANCE_EVIDENCE_V0.1.md`](../ACCEPTANCE_EVIDENCE_V0.1.md) 为准。
 - 冻结需求、决定、工程决定和 [`S3_DATA_CONTROL_EXPORT_DESIGN_V0.1.md`](../../architecture/S3_DATA_CONTROL_EXPORT_DESIGN_V0.1.md) 高于本文；本文不改变 FR、AC、D、ED 或 S3-Q。
 - S3-Q01=A、S3-Q02=B、S3-Q03=A、S3-Q04=A 已由项目所有者批准；未选方案不能从本归档重新进入实现。
-- 原 T031～T033 合同继续保留在当前树、Git 历史和 PR #26～#28 中；本文提供统一的最终范围、数据契约、批准、交付、验证、限制和恢复入口，不取代其审计全文。
+- 项目所有者已明确授权从当前树删除原 T031～T033 合同；完整合同继续保留在 Git 历史和 PR #26～#28 中。本文提供统一的最终范围、数据契约、批准、交付、验证、限制和恢复入口，不取代其审计全文。
 - T031 的两个 Escalation Proposal 保留为真实执行历史；归档不删除、不覆盖，也不把它们变成需求来源。
 - 本归档不授权 S4～S7、自动导入/恢复、AI Provider、`main` merge、tag 或 release。
 
@@ -97,9 +97,9 @@ T031～T033 的 final task tree 分别与其 squash merge tree 一致；T033 Imp
 - S4～S7、AC-02/05/06、提醒、复杂日历及其他延期能力；
 - 代码签名、正式图标、`main` merge、tag 或 GitHub Release。
 
-## 7. 原合同位置与恢复入口
+## 7. 原合同恢复入口
 
-完整 T031～T033 合同当前仍位于 `docs/implementation/`。若未来取得单独删除授权，仍可从最终 S3 产品 source 恢复：
+删除后的完整 T031～T033 合同可从最终 S3 产品 source 恢复：
 
 ```powershell
 git show 8058f7a3c9db9d3b488e727dfd85201dc14f11a0:docs/implementation/T031_RECORD_DATA_CONTROL.md

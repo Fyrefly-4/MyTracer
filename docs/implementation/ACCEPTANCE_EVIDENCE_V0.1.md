@@ -983,6 +983,7 @@ Agent 只提供步骤和观察位置，不得替项目所有者签署人工验�
   7. evidence wrapper 执行 `npm.cmd run package`，exit 0；生成 Windows x64 `win-unpacked` 和 unsigned NSIS。执行 `npm.cmd run test:package-smoke`，exit 0，unpacked 与隔离 NSIS-installed 启动、窄 API/安全边界、关闭、卸载和清理 1/1 通过。
   8. 检查完整差异、tracked status、依赖/lockfile、生产/测试/config/schema/migration 范围；T803 只修改批准的任务、Evidence、metadata、README 和 S3 归档文档。
   9. 在文档候选 `f5fd977bd32676cb617f3023091a20a40d72db70` 从头重跑 evidence wrapper `npm.cmd run verify`，129 unit、88 integration、13 E2E 通过；再执行 `npm.cmd run package` 与 package smoke，均 exit 0；同 head hosted candidate CI success。
+  10. 项目所有者明确授权删除已由统一归档取代的三份原任务合同；仅删除 `T031_RECORD_DATA_CONTROL.md`、`T032_VERSIONED_COMPLETE_EXPORT.md`、`T033_AI_DATA_CAPABILITY_REGRESSION.md`，同步 metadata、归档、Evidence 和 Draft PR 表述；完整合同仍可从固定 Git revision 与 PR #26～#28 恢复。
 - **Result**：
   - T031 修改/补记后相关投影从事实重查；五类删除 preview 与实际差异一致，取消/非法/stale/故障零变化，schema v1→v2 守恒、失败回滚和关闭重开通过。
   - T032 导出包含 sourceDataVersion 2 与十个完整核心集合，保留状态、关系、枚举、Routine provenance 与解除关联结果；结构/引用校验、敏感/技术字段排除、取消和所有写入故障路径通过。
@@ -994,6 +995,6 @@ Agent 只提供步骤和观察位置，不得替项目所有者签署人工验�
   - 成功本地 artifacts：`.tmp/evidence/T803-s3-directed-unit-26848097ac27-20260823075658.json`、`T803-s3-directed-integration-26848097ac27-20260823075659.json`、`T803-native-smoke-recovery-26848097ac27-20260823080529.json`、`T803-task-candidate-recovered-26848097ac27-20260823080544.json`、`T803-package-26848097ac27-20260823080657.json`、`T803-package-smoke-26848097ac27-20260823080830.json`、`T803-s3-directed-e2e-26848097ac27-20260823080912.json`；文档候选 artifacts：`T803-docs-candidate-final-local-f5fd977bd326-20260823083518.json`、`T803-docs-candidate-package-f5fd977bd326-20260823083631.json`、`T803-docs-candidate-package-smoke-f5fd977bd326-20260823083730.json`。
   - 失败 artifacts 保留：`.tmp/evidence/T803-task-candidate-26848097ac27-20260823075727.json` 与 `T803-task-candidate-rerun-26848097ac27-20260823075922.json`；二者都绑定缺少按需 Electron dist 的环境前置失败，由 native smoke recovery 和最终完整成功 artifact supersede。
 - **Manual acceptance**：pass；项目所有者于 2026-08-22 明确报告完整人工 AC-07 `pass`。本条只引用该 owner 观察并验证其行为 revision 可绑定，不新增人工结论
-- **Known limitations**：T803 owner merge 尚未完成；Evidence closeout head 必须在 owner merge 前保持 hosted CI green。三份原任务合同因文件删除未获单独授权而继续保留，单篇归档不替代其审计全文；Windows 产物未签名并使用默认 Electron 图标；导出不等于自动导入/恢复；Provider、S4～S7、AC-02/05/06、G4、`main` merge、tag 和 release 均未完成或不在范围
+- **Known limitations**：T803 owner merge 尚未完成；Evidence closeout head 必须在 owner merge 前保持 hosted CI green。三份原任务合同已获项目所有者明确授权并从当前树删除，统一归档不替代 Git 历史与 PR #26～#28 中的审计全文；Windows 产物未签名并使用默认 Electron 图标；导出不等于自动导入/恢复；Provider、S4～S7、AC-02/05/06、G4、`main` merge、tag 和 release 均未完成或不在范围
 - **Supersedes / superseded by**：本条聚合任务级证据而不取代 `EV-T031-001`～`EV-T033-001`；成功 recovered verify supersedes 两个 T803 环境前置失败 artifact，但失败记录永久保留
 - **Recorded at**：2026-08-23

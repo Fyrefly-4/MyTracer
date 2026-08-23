@@ -89,7 +89,7 @@ dependencies:
 - `docs/implementation/TASK_INDEX_V0.1.md`
 - `docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md`
 - `docs/implementation/archive/S3_T031_T033_ARCHIVE.md`
-- 保留 `T031_RECORD_DATA_CONTROL.md`、`T032_VERSIONED_COMPLETE_EXPORT.md`、`T033_AI_DATA_CAPABILITY_REGRESSION.md`；本次删除未获单独授权
+- 删除已由项目所有者明确授权、且被统一归档取代的 `T031_RECORD_DATA_CONTROL.md`、`T032_VERSIONED_COMPLETE_EXPORT.md`、`T033_AI_DATA_CAPABILITY_REGRESSION.md`
 - `README.md`
 - Draft PR 正文
 
@@ -144,7 +144,7 @@ npm.cmd run test:package-smoke
 
 ### 8.4 文档归档
 
-仿照既有 S0～S2 归档，将 T031～T033 的最终范围、数据契约、交付 revision、PR、Evidence、批准、限制和原合同恢复命令收敛到 `archive/S3_T031_T033_ARCHIVE.md`。原合同继续保留在当前树与 Git 历史；若未来拟删除，必须取得对文件删除的单独明确授权。
+仿照既有 S0～S2 归档，将 T031～T033 的最终范围、数据契约、交付 revision、PR、Evidence、批准、限制和原合同恢复命令收敛到 `archive/S3_T031_T033_ARCHIVE.md`。项目所有者已明确授权从当前树删除三份原合同；完整合同继续保留于 Git 历史和 PR #26～#28，并可按归档中的固定命令恢复。
 
 ## 9. 可判定完成条件
 
