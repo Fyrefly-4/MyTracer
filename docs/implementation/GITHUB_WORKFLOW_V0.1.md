@@ -323,6 +323,42 @@ Windows required job 可以使用以下固定上传约束：
 
 GitHub required checks 必须成功后才允许合并；被路径过滤跳过的 required workflow 可能长期 Pending。参考：[GitHub status checks](https://docs.github.com/en/pull-requests/reference/status-checks) 和 [required checks troubleshooting](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks)。
 
+### Workflow 优化目标（尚未实现）
+
+本节是后续 Workflow/协作自动化的设计目标，不等于当前实现状态或 T092 的 Workflow 实施范围。真实 YAML、PR template、PR Quality Check、commit/PR-title 检查、统一 gate 和 ruleset 变更必须由后续独立任务实现、验证并获得相应外部写入授权。
+
+GitHub Actions 的定位是 Repository Safety Gate：负责确定性的质量验证和流程约束，不解释 Task Contract、不计算 Agent 权限，也不授权 Agent 操作。默认 `permissions` 保持 `contents: read`；不引入自动 merge、tag、release、deployment 或 Agent 权限解析逻辑。
+
+后续 CI 应按变更面分层；混合变更执行其中最高等级，合同明确要求的验证不能被路径分类跳过：
+
+| 类别 | 典型范围 | 目标验证 |
+|---|---|---|
+| Source Change | `src/**`、`tests/**`、依赖/构建配置、工具脚本、Workflow YAML | 完整 verification，包括 build、unit、integration 和 Electron E2E |
+| Governance Change | AGENTS、任务/阶段模板、metadata/Profile JSON、治理规范 | metadata、governance、format 和 diff integrity；治理工具或测试代码变化同时按 Source Change |
+| Documentation Only | 不改变治理规则、稳定命令或产品语义的普通说明文档 | 轻量 format、链接/结构和 diff integrity |
+
+目标结构为：
+
+```text
+CI Router / Change Classifier
+  ├─ verification：代码、测试、构建与 Electron 验证
+  ├─ governance：metadata、Profile 与治理一致性检查
+  ├─ documentation：纯文档轻量检查
+  └─ milestone：dev -> main 与 main 集成验证
+          ↓
+       CI Gate
+```
+
+- `dev` 继续持续集成；`main` 和 `dev -> main` PR 增加 milestone 验证，但不自动 merge、tag 或 release。
+- `CI Gate` 是始终报告的稳定终端 context；ruleset 最终只绑定该 context，内部 job 可以演进，路径过滤不得令 required gate 永久 Pending。
+- Draft PR 默认提供按类别的快速反馈，Ready PR 执行完整验证。由于现行流程在 Ready 前已有 candidate 和 final-head CI，后续实现必须为 Draft 提供受控的 full-CI 入口；不得通过自动标记 Ready 绕过 owner gate。
+- 按 PR number 或 branch/ref 设置 concurrency，并用 `cancel-in-progress: true` 取消同一 PR/分支已被新 revision 取代的旧 CI。
+- 上述优化不改变 merge handoff：`Implementation Candidate → owner-approved docs closeout → final-head CI → owner-controlled Ready → owner-approved merge`。CI 只提供进入下一 Gate 的事实，不自动改变任务/PR 状态。
+
+后续 PR template 至少包含 `Task`、`Summary`、`Validation`、`Evidence` 和 `Risk`。PR Quality Check 只检查这些必要上下文是否存在；它不判断实现正确性，也不替代完整 diff review、独立 review、CI、人工体验或 owner merge 决策。
+
+推荐任务提交和 task PR squash 标题采用 `<type>(Txxx): description`，建议 `type` 为 `feat`、`fix`、`test`、`docs`、`refactor`、`chore`、`build` 或 `ci`。这是可读性规范，不是当前 required check，不追溯重写历史；若未来升级为强制检查，必须另行定义例外、迁移和失败语义。
+
 ## 9. GW-009 Agent Git 权限
 
 | 操作 | 默认规则 |
