@@ -1036,3 +1036,33 @@ Agent 只提供步骤和观察位置，不得替项目所有者签署人工验�
 - **Known limitations**：Git 忽略的 `user/` 本地流程说明仍含旧配置事实，按合同明确不修改；所有者指定忽略的未跟踪 `.agents.backup/` 未修改、清理或纳入交付；PR template、`main` 专用增强 CI 与 GitHub Milestones 仍未落地；closeout push 后的 final-head CI 和最新 Draft PR 状态保留为 GitHub 集成事实，不再制造仓库提交只为记录该 run
 - **Supersedes / superseded by**：本条从 candidate `partial` 原位更新为 `pass`，不取代任何产品 Evidence；保留全仓恢复格式检查的备份文件命中失败及随后 task-scoped/clean-CI success
 - **Recorded at**：2026-08-23
+
+### EV-T092-001
+
+- **Status**：pass；`standard-task@1` 定义、合同/治理接入、基础 metadata 校验、完整 diff review、candidate hosted CI、项目所有者治理设计 `MANUAL pass` 和 owner-approved docs closeout 均通过
+- **Task / Gate**：T092 / GOV-04；只证明普通任务自动化运行模式和 GitHub Workflow 优化目标已定义，不证明 Profile、Skill、Workflow、PR template、ruleset 或任何产品任务已接入
+- **Requirements**：GW-001、GW-002、GW-004、GW-008～GW-010；无 FR/AC/D/ED 变化
+- **Source branch / base**：`docs/T092-standard-task-profile` / `origin/dev@d00a0b3f6fad03bab17e83e7d68be14b03298aad`
+- **Task delivery revision**：`9c7d9d3ae08dc7b32e9895deed1e43d26ca58985`
+- **Integration freshness**：`fresh`；实施、candidate 和 docs closeout 前重新 fetch，`origin/dev` 均保持 `d00a0b3f6fad03bab17e83e7d68be14b03298aad`
+- **Environment**：Microsoft Windows 11；Node.js v24.18.0；npm 11.16.0；Electron 43.3.0；本地共享 checkout 与 GitHub Actions Windows runner
+- **Command or procedure**：
+  1. `npm.cmd run governance:metadata:check` exit 0：7 个 sidecar 与 1 个 Profile 通过；定向 `process-governance.test.ts` 最终 20 tests 通过，覆盖合法/历史 sidecar、未知或缺失 Profile、task kind、时间格式/顺序/最长 30 天、附加约束、生命周期、registry safety gate 和只读性。
+  2. T092 的 10 个 tracked 文件执行 scoped Prettier 与 `git diff --check origin/dev...HEAD`，exit 0；`npm.cmd run lint` 与 `npm.cmd run typecheck` exit 0。
+  3. 完整 unit 为 28 files / 140 tests，完整 integration 为 22 files / 88 tests；Windows 桌面环境 Electron E2E 为 13 passed / 1 package-only skipped，均通过。
+  4. 本地 wrapper 在 candidate `9c7d9d3...` 运行 `npm.cmd run verify`，只因用户已有、未跟踪且未修改的 `.agents.backup/skills/mytracer-stage-development/agents/openai.yaml` 命中全仓 Prettier 而 exit 1；失败 artifact `.tmp/evidence/T092-task-candidate-9c7d9d3ae08d-20260823162938.json` 保留，未修改或隐藏该目录。
+  5. 从 `origin/dev@d00a0b3...` 到 candidate `9c7d9d3...` 的完整 10 文件、1503+/14- diff 复核无 P0/P1/P2/P3 finding；变更不包含项目 Skill、Workflow YAML、PR template、产品代码、依赖、lockfile、schema、migration、AI Provider、ruleset 或 GitHub 配置。
+  6. Draft PR #32 early run `32650840212` / job `97222070491` 的 `Windows required gate` 在首个有意义提交 `c981360...` 上 success。
+  7. Draft PR #32 candidate run `32651915890` / job `97224750936` 在精确 head `9c7d9d3...` 上 success；artifact `9496461131` / `verification-evidence-32651915890`，digest `sha256:5ccf6bd54128f64edc4dcf8e6da763a60cdece067e8c8f6dafe7301cd763ae95`。
+  8. 下载核对 candidate CI artifact：`npm.cmd run verify` exit 0，`captureStatus=complete`，`ci.headRevision=9c7d9d3...`，`ci.mergeRevision=d76626f...`；PR head 与测试 merge 未混淆，clean hosted CI supersede 本地未跟踪备份文件导致的 aggregate format failure。
+  9. 项目所有者于 2026-08-24 明确批准更新 T092 合同、任务索引、Evidence、Draft PR 正文并创建/push 独立 closeout 提交，同时确认本次治理设计人工审核为 `MANUAL pass`。
+- **Result**：
+  - `standard-task@1` 以五个生命周期阶段、最长 30 天、强制 owner gates、受控扩展点和 disposable Worktree 生命周期完成定义；它不是权限系统、权限解析器、调度器或第二套 Skill。
+  - Task Contract 可以声明 Profile 并只增加限制；基础 validator 校验 registry、引用、task kind、期限、约束和基本生命周期，不计算或授权具体操作。
+  - GitHub Actions 被定义为 Repository Safety Gate；Source/Governance/Documentation 分层、main milestone、稳定统一 CI Gate、Draft/Ready、concurrency、最小权限、推荐 Commit Convention、PR Template/Quality Check 均明确为后续设计目标。
+  - Workflow 优化不改变 `Implementation Candidate → owner-approved docs closeout → final-head CI → owner-controlled Ready → owner-approved merge`，也不自动启动 T041 或其他任务。
+- **Artifacts**：Draft PR #32；early run `32650840212`；candidate run `32651915890`；candidate artifact `9496461131` / `verification-evidence-32651915890`；本地失败 artifact `.tmp/evidence/T092-task-candidate-9c7d9d3ae08d-20260823162938.json`；下载核对副本 `.tmp/evidence/T092-ci-32651915890/unscoped-aggregate-d76626fae2ce-20260823163311.json`
+- **Manual acceptance**：pass；项目所有者于 2026-08-24 明确审核并通过 Profile 阶段、Repository Safety Gates、Worktree 生命周期、Workflow 目标结构、Commit/PR 规范、验证结果和 docs closeout；不构成产品体验验收、Ready 或 merge 授权
+- **Known limitations**：Profile 尚未接入项目 Skill 或任何任务；真实 Workflow YAML、main milestone、统一 CI Gate、PR template、PR Quality Check、commit/PR-title 检查和 ruleset 均未实现；本地未跟踪 `.agents.backup/` 未修改、清理或纳入交付；closeout push 后 final-head CI 与 Draft PR 最新状态保留为 GitHub 集成事实，不再制造仓库提交只为记录该 run
+- **Supersedes / superseded by**：clean candidate hosted CI 与分层本地成功 supersede 同 revision 因未跟踪备份文件导致的 aggregate format failure；不取代任何产品 Evidence
+- **Recorded at**：2026-08-24

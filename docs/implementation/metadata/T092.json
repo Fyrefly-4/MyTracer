@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "task": "T092",
+  "task_kind": "governance",
+  "dependencies": {
+    "requires": ["T090", "T091", "T804"],
+    "blocks": [],
+    "can_parallel": [],
+    "prefer_after": [],
+    "conflicts_with": []
+  },
+  "conflict_basis": {},
+  "shared_surfaces": [
+    {
+      "files": [
+        "AGENTS.md",
+        "docs/implementation/AUTOMATION_PROFILES_V0.1.md",
+        "docs/implementation/profiles/standard-task-v1.json",
+        "docs/implementation/GITHUB_WORKFLOW_V0.1.md",
+        "docs/implementation/TASK_TEMPLATE.md",
+        "docs/implementation/TASK_INDEX_V0.1.md",
+        "docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md",
+        "docs/implementation/T092_STANDARD_TASK_PROFILE.md",
+        "tools/governance/validate-task-metadata.mjs",
+        "tests/unit/process-governance.test.ts"
+      ],
+      "modules": [
+        "standard-task-automation-profile",
+        "task-metadata-validation",
+        "github-workflow-design"
+      ],
+      "schema_tables": [],
+      "ipc_contracts": [],
+      "domain_invariants": [
+        "automation-profile-is-not-a-permission-system",
+        "repository-safety-gates-remain-owner-controlled",
+        "workflow-validation-does-not-change-merge-handoff"
+      ],
+      "risk": "high",
+      "integration_policy": "serial"
+    }
+  ],
+  "external": [
+    "github-task-branch",
+    "github-draft-pr-to-dev",
+    "github-actions-redacted-evidence-artifact"
+  ]
+}

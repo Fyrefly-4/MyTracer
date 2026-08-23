@@ -127,6 +127,23 @@ When a requirement conflict, architecture change, contract or permission expansi
 
 An Escalation Proposal is an execution communication record, not a product requirement, decision, or authorization source.
 
+### 6.3 Automation Profiles
+
+An Automation Profile is a versioned task-execution mode for the existing work loop, not an independent permission source, permission calculator, scheduler, or replacement Skill. Its authority order is:
+
+```text
+Approved Task Contract
+  → Automation Profile
+  → Repository Safety Rules
+  → Existing MyTracer Development Skill
+```
+
+- A task contract may narrow a Profile but cannot expand it or override Repository Safety Rules.
+- Owner gates for docs closeout, Ready, merge, tag, release, dependency or migration changes, non-task external writes, and AI provider or permission changes remain mandatory.
+- A Profile never starts the next task automatically.
+- Missing, inactive, expired, or inapplicable Profile declarations fall back to the current explicit task-permission process.
+- `docs/implementation/AUTOMATION_PROFILES_V0.1.md` and its registry define available modes. A definition is not executable automation until a separately approved Skill integration implements it.
+
 ## 7. Architecture invariants
 
 - All mutations pass through Application commands and Domain invariants.
