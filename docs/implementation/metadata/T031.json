@@ -49,6 +49,7 @@
         "src/preload/index.ts",
         "src/renderer/src/App.tsx",
         "src/renderer/src/styles.css",
+        "docs/implementation/archive/S3_T031_T033_ARCHIVE.md",
         "docs/implementation/TASK_INDEX_V0.1.md",
         "docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md"
       ],

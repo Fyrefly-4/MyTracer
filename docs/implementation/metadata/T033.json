@@ -81,7 +81,7 @@
     },
     {
       "files": [
-        "docs/implementation/T033_AI_DATA_CAPABILITY_REGRESSION.md",
+        "docs/implementation/archive/S3_T031_T033_ARCHIVE.md",
         "docs/implementation/TASK_INDEX_V0.1.md",
         "docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md",
         "docs/implementation/metadata/T033.json"
@@ -91,7 +91,7 @@
       "ipc_contracts": [],
       "domain_invariants": [
         "evidence-facts-are-not-automatic-acceptance",
-        "manual-ac07-remains-pending-until-owner-execution"
+        "manual-ac07-is-owner-reported-and-not-agent-inferred"
       ],
       "risk": "medium",
       "integration_policy": "serial"
