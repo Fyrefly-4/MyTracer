@@ -44,6 +44,68 @@ Continue only when the task is `ready` or explicitly activated and its prerequis
 
 Do not add or upgrade a dependency unless the task lists the approved package and version range. Do not invent validation commands before S0 establishes them. Read the current README, task contract, package configuration, and CI after commands exist, and use the same commands they specify.
 
+### 2.1 Select the explicit or Profile execution mode
+
+At task start and every later resume, determine whether the approved contract declares an Automation Profile. A Profile controls only whether already-authorized steps may continue without another routine confirmation; it is not a permission source, permission calculator, scheduler, or replacement workflow.
+
+Use this authority order as a conservative intersection:
+
+```text
+Approved Task Contract scope and permissions
+  ∩ valid and applicable Automation Profile
+  ∩ Repository Safety Rules
+  → this Skill's existing phases
+```
+
+Before relying on a declared Profile:
+
+1. Read the contract, its metadata sidecar, the task state in `TASK_INDEX_V0.1.md`, and the referenced registry entry in `docs/implementation/profiles/`.
+2. Run `npm.cmd run governance:metadata:check`. Structural validation is necessary but does not prove owner approval, current validity, applicability, or permission for an action.
+3. Confirm the contract and sidecar identify the same Profile, `activated_at`, `valid_until`, and `additional_constraints`. Stop Profile-driven execution when they disagree; do not choose one silently.
+4. Confirm the owner approved and activated the contract, the task kind is allowed by the Profile, and the task state is compatible.
+5. Compare the actual current time with the RFC3339 bounds. The Profile is current only while `activated_at <= now < valid_until`.
+
+Apply these lifecycle rules:
+
+- `ready`: begin at the Task Gate and run preflight before any mutation.
+- `active`: resume from the last evidenced safe point, then repeat preflight and all current checks before changing files or external state.
+- `review`: continue only Candidate validation, same-PR maintenance, freshness work, or review handoff already in scope; do not begin new implementation scope.
+- `done`: perform no development or publication phase. Read-only reporting remains allowed.
+
+Missing or unknown Profile declarations and inactive, expired, or inapplicable Profiles cannot drive automatic continuity; fall back to the contract's current explicit-permission process when its authority remains unambiguous. A fallback does not erase or broaden contract permissions. Invalid metadata prevents Profile use, while a contract/sidecar conflict stops the affected work until the inconsistency is corrected or the project owner gives an explicit decision.
+
+Recheck applicability, lifecycle state, constraints, and the current time:
+
+- before the first mutating task action;
+- whenever a session is resumed;
+- before entering each automatic phase;
+- after returning from an owner gate;
+- immediately before every GitHub or other external write.
+
+If a Profile expires during work, preserve safe completed work but do not begin another mutating or external action under that Profile. Continue only through the explicit-permission process. Never reinterpret the contract's initial permission fields as an unlimited extension of the Profile.
+
+### 2.2 Map `standard-task@1` onto this Skill
+
+For an applicable `standard-task@1`, use the existing sections rather than creating a parallel procedure:
+
+| Profile phase | Existing Skill steps | Automatic phase endpoint |
+|---|---|---|
+| `local_development` | Sections 1-4 and authorized checkpoint commits in Section 8 | A scoped local implementation candidate or a stop condition |
+| `validation_execution` | Sections 5-7, including targeted checks, affected regression, evidence, complete diff review, and independent review | A reviewed validation candidate |
+| `task_branch_publish` | Initial task-branch push and Draft PR creation in Section 9 | The exact task branch has one Draft PR to `dev` |
+| `draft_pr_maintenance` | Sections 3.1, 5, 6, and 9 for the same Draft PR | An Implementation Candidate on a fresh authorized base |
+| `review_handoff` | Sections 10.1-10.2 | A factual documentation impact matrix, followed by the `docs_closeout_scope` owner gate |
+
+Treat `additional_constraints` conservatively:
+
+- `disable_phase` removes that phase from Profile continuity. Enter it only through the explicit-permission process if the contract and owner authorization still allow it.
+- `pause_before` requires a pause immediately before the named phase even when every other Profile check passes.
+- Constraints may only remove continuity or add a pause; they never grant an action or remove a Repository Safety Gate.
+
+The following owner gates always pause Profile execution: final `docs_closeout_scope`, `ready_for_review`, `merge_dev`, `merge_main`, `tag`, `release`, `dependency_change`, `migration_change`, `non_task_publication_external_write`, and `ai_provider_or_permission_change`. A Profile also never authorizes force-push, remote branch deletion, ruleset or secret changes, automatic task activation, or starting the next task.
+
+Exit Profile continuity and use the applicable stop or escalation path when work encounters a dependency or migration change, product-semantics or major-architecture change, broader AI Provider/context/write authority, destructive data behavior, a non-task external write, or any scope or permission expansion. Safe read-only diagnosis may continue, but the affected mutation must wait for explicit authority.
+
 ## 3. Inspect the working state
 
 Perform read-only preflight checks before implementation:
