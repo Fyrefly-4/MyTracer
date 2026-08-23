@@ -1,7 +1,7 @@
 # MyTracer v0.1 任务索引
 
 > 文档状态：v0.1 实施任务基线  
-> 当前阶段：G1、G2 已通过；S0/S1/S2 已归档；T021～T023/T802、AC-03/AC-04 自动化与人工验收及最终 S2 聚合验证均通过；T090 流程治理文档修订已完成；`dev → main` 里程碑 merge、tag 和 release 仍受独立授权门禁约束
+> 当前阶段：G1、G2 已通过；S0/S1/S2 已归档；T031～T033 已完成并合入 `dev`；T803 正在对同一最新 `origin/dev` 执行 G3/S3 聚合验收与文档证据收口；`dev → main` 里程碑 merge、tag 和 release 仍受独立授权门禁约束
 > 状态来源：本文件是任务执行状态的唯一账本，架构实施计划只定义范围和顺序
 
 ## 1. 使用规则
@@ -70,6 +70,7 @@
 | T091 | GOV-02 | V2 第三批确定性证据采集、CI artifact 和 metadata 校验 | V2 Batch 3；GW-001/002/004/008/009/010；T091 合同 | T090；dev@aeb0d68 | `done` | `EV-T091-001` |
 | T801 | S1 fix | 更新 Windows package smoke 的 S1 窄 API 契约并重新验证 unpacked/NSIS | G3/S1；GW-008/010；不改变 FR/AC/D/ED | `EV-G3-S1-001` | `done` | `EV-T801-001` |
 | T802 | S2 fix | 修复 package smoke、完整连续 E2E-AC-03、既有 S1 v1 数据守恒与 T021～T023 合同归档 | AC-03；FR-D01 S2 子集；GW-008/010；不改变生产语义 | S2 聚合验收失败与独立 review | `done` | `EV-T802-002` |
+| T803 | S3 aggregate | 聚合验收 T031～T033、AC-07、package/重开/导出/AI 三态并归档 S3 合同 | AC-07；FR-D01～D05；GW-008/010；不改变生产语义 | T031～T033、T090、T091 | `active` | — |
 
 ## 5. 阶段门与主线合并
 
