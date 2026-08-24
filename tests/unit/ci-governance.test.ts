@@ -24,10 +24,21 @@ function writePaths(paths: string[]) {
 }
 
 function runClassifier(paths: string[], options: string[] = []) {
+  const environment = { ...process.env }
+  for (const name of [
+    'GITHUB_EVENT_NAME',
+    'GITHUB_EVENT_PATH',
+    'GITHUB_REF_NAME',
+    'GITHUB_SHA',
+    'MYTRACER_BASE_REVISION',
+    'MYTRACER_CI_MODE'
+  ]) {
+    delete environment[name]
+  }
   const result = spawnSync(
     process.execPath,
     [classifier, 'classify', '--paths-file', writePaths(paths), ...options],
-    { cwd: repositoryRoot, encoding: 'utf8', windowsHide: true }
+    { cwd: repositoryRoot, encoding: 'utf8', windowsHide: true, env: environment }
   )
   const output = result.stdout.trim().split(/\r?\n/).at(-1)
   return { result, classification: output ? JSON.parse(output) : null }
@@ -360,7 +371,7 @@ describe('documentation and workflow structure', () => {
   })
 
   test('keeps one workflow with layered jobs, terminal gates, and no path filter', () => {
-    const content = readFileSync(workflow, 'utf8')
+    const content = readFileSync(workflow, 'utf8').replaceAll('\r\n', '\n')
     for (const job of [
       'classify:',
       'pr_quality:',
