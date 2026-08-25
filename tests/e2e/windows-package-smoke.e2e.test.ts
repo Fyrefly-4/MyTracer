@@ -8,13 +8,14 @@ import { minimalElectronEnvironment } from '../support/electron-environment'
 import {
   assertExistingPathWithinRoot,
   createTemporaryTestRoot,
-  removeTemporaryTestRoot,
+  removeTemporaryTestRootWithOptions,
   type TemporaryTestRoot
 } from '../support/temporary-test-root'
 
 test.skip(process.env.MYTRACER_PACKAGE_SMOKE !== '1', 'Runs only after npm.cmd run package.')
 
 const nsisOperationTimeout = process.env.CI === 'true' ? 300_000 : 120_000
+const nsisCleanupOptions = process.env.CI === 'true' ? { maxRetries: 8, retryDelay: 500 } : {}
 
 async function verifyPackagedApplication(
   root: TemporaryTestRoot,
@@ -197,7 +198,7 @@ test('starts Windows x64 unpacked and isolated NSIS-installed applications', asy
         expect(fallbackUninstall.status, fallbackUninstall.stderr).toBe(0)
       }
     } finally {
-      await removeTemporaryTestRoot(root)
+      await removeTemporaryTestRootWithOptions(root, nsisCleanupOptions)
     }
   }
 })
