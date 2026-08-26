@@ -2,7 +2,7 @@
 
 > 任务类型：流程治理 / Skill 与 GitHub 协作自动化集成
 >
-> 合同状态：**active — 项目所有者已批准并激活；当前仅完成合同建立，实施尚未开始**
+> 合同状态：**done — 实现候选、ruleset 切换、项目所有者批准的文档收口和任务证据已完成；最新文档 head 的 required CI 与 merge 仍是 PR 集成 Gate**
 >
 > 项目所有者方案与权限批准日期：2026-08-24
 >
@@ -17,7 +17,7 @@
 - **Task ID**：T093
 - **Title**：Integrate MyTracer execution profiles, lifecycle Skills, and repository CI gates
 - **Slice / Plan item**：GOV-05 / V2 Profile and repository automation integration
-- **Status**：active
+- **Status**：done
 - **Base branch**：`dev`
 - **Observed authorized base**：`origin/dev@7f5e2edad62312ca3b79afb7684c64699d4ec8e5`
 - **Expected branch**：`task/T093-governance-integration`
@@ -87,8 +87,8 @@ References 只是依据索引，不创建新的产品语义、权限或验收事
 - [x] T093 不新增或升级 npm 依赖。
 - [x] T093 不使用 Automation Profile 为自身授权。
 - [x] T041 保持 `pending`，不创建其合同、metadata、分支或实现。
-- [ ] 创建确切 T093 任务分支前再次确认当前 checkout、用户变更和最新授权 `dev`。
-- [ ] 修改 ruleset 前取得实际 candidate CI、完整 diff review 和实时配置 before snapshot。
+- [x] 创建确切 T093 任务分支前再次确认当前 checkout、用户变更和最新授权 `dev`。
+- [x] 修改 ruleset 前取得实际 candidate CI、完整 diff review 和实时配置 before snapshot。
 
 ```yaml
 dependencies:
@@ -522,21 +522,21 @@ permissions:
 
 ## 16. 交付物
 
-- [ ] development Skill 中可执行、可恢复、保守 fallback 的 `standard-task@1` 接入。
-- [ ] `mytracer-stage-design` Skill 与 interface metadata。
-- [ ] `mytracer-stage-acceptance-release` Skill 与 interface metadata。
-- [ ] change classifier 与单元测试。
-- [ ] PR Template、PR Quality validator 与单元测试。
-- [ ] 分层 CI、milestone、concurrency、最小权限和始终报告的 `CI Gate`。
-- [ ] 保留的兼容 `Windows required gate`。
-- [ ] Candidate full/milestone hosted CI 与 artifact。
-- [ ] Dev/Main ruleset 精确切换、after snapshot 和回滚验证。
-- [ ] `AGENTS.md` 中唯一权威的 `BLOCK → SPARSE_POLL → HANDOFF` 长任务等待规则。
-- [ ] development 与 stage acceptance/release Skills 对仓库级规则的场景化引用、pending handoff 和 revision 恢复约束。
-- [ ] Phase F 的本地阻塞、sparse polling 退出、异步 handoff 和恢复核对场景复核。
-- [ ] T093 metadata、Task Index、Evidence、治理文档和 PR body 收口。
+- [x] development Skill 中可执行、可恢复、保守 fallback 的 `standard-task@1` 接入。
+- [x] `mytracer-stage-design` Skill 与 interface metadata。
+- [x] `mytracer-stage-acceptance-release` Skill 与 interface metadata。
+- [x] change classifier 与单元测试。
+- [x] PR Template、PR Quality validator 与单元测试。
+- [x] 分层 CI、milestone、concurrency、最小权限和始终报告的 `CI Gate`。
+- [x] 保留的兼容 `Windows required gate`。
+- [x] Candidate full/milestone hosted CI 与 artifact。
+- [x] Dev/Main ruleset 精确切换、after snapshot 和回滚验证。
+- [x] `AGENTS.md` 中唯一权威的 `BLOCK → SPARSE_POLL → HANDOFF` 长任务等待规则。
+- [x] development 与 stage acceptance/release Skills 对仓库级规则的场景化引用、pending handoff 和 revision 恢复约束。
+- [x] Phase F 的本地阻塞、sparse polling 退出、异步 handoff 和恢复核对场景复核。
+- [x] T093 metadata、Task Index、Evidence、治理文档和 PR body 收口。
 - [ ] final-head dual-gate CI 和 merge handoff。
-- [ ] 明确记录未实施 Worktree cleanup、未创建额外任务、未启动 T041。
+- [x] 明确记录未实施 Worktree cleanup、未创建额外任务、未启动 T041。
 
 ## 17. 验收标准
 
@@ -650,7 +650,7 @@ integration:
   base_revision: dev@7f5e2edad62312ca3b79afb7684c64699d4ec8e5
   freshness_required: true
   affected_regression_required: true
-  task_delivery_revision: null
+  task_delivery_revision: 189decb664b0ba2147f3ec1931eabd37bda6fc8d
   dev_integration_revision: null
   stage_final_integration_revision: null
 ```
@@ -679,6 +679,18 @@ Candidate、full/milestone CI、ruleset after snapshot 和完整 review 通过�
 - Draft PR body。
 
 项目所有者已经批准 T093 的总体 closeout 方向，但最终事实必须在 Candidate 和 ruleset 结果存在后再次确认，不能预先写成 pass。获批后创建独立 docs closeout commit，push 后等待 final-head dual-gate CI。
+
+2026-08-26，项目所有者在候选 CI 和 ruleset after snapshot 可见后批准以下完整 closeout 范围：T093 合同、Task Index、Evidence、Automation Profiles、GitHub Workflow 文档、README 和 Draft PR 正文。实现证据绑定 `189decb664b0ba2147f3ec1931eabd37bda6fc8d`；文档提交及其最新 head CI 属于后续 PR 集成 Gate，不把较早成功 run 机械继承为最新 head 结果。
+
+### 20.1 已确认候选事实
+
+- PR：#33，目标 `dev`，实现候选 head `189decb664b0ba2147f3ec1931eabd37bda6fc8d`。
+- Freshness：`fresh`；候选基于最新授权 `dev@7f5e2edad62312ca3b79afb7684c64699d4ec8e5`，closeout 前远端 `dev` 未前进。
+- Hosted candidate：run `32942810086`（2026-08-26，`pull_request`）在精确 head `189decb...` 上为 `success`；Full Windows verification job `98097268649`、Milestone packaging checks `98098136049`、CI Gate `98100179666` 和兼容 Windows required gate `98100316673` 均成功。
+- Artifacts：`verification-evidence-32942810086-1`（ID `9597230084`）与 `milestone-evidence-32942810086-1`（ID `9597468238`）。
+- Rulesets：`Dev-Rule` ID `20582011` 仅将 required context 切换为 `CI Gate`，保持 non-strict；`Main-Rule` ID `20582061` 仅将 required context 切换为 `CI Gate`，保持 strict。两者 `integration_id=15368`，其他保护字段及无 bypass actor 状态保持不变；未触发回滚。
+- 本地失败历史：sandbox 环境的完整 `verify` 因 Electron `Target crashed` 失败；首次可启动 Windows 桌面的完整 `verify` 有一次 `progress-core-loop` timeout，定向重跑与后续完整 `verify` 均通过。失败未被删除或改写为成功。
+- 人工状态：本任务不含产品体验 AC；项目所有者已批准治理结果的最终文档收口，Ready、merge、tag、release 仍未授权。
 
 Ready、merge 到 `dev`、`dev -> main`、tag 和 release 不包含在当前权限中。Agent 只能在 final-head CI 通过后推荐 Ready，并等待项目所有者决定。
 

@@ -1,6 +1,6 @@
 # MyTracer Automation Profiles v0.1
 
-> 文档状态：T092 定义候选；在 T092 合入 `dev` 且后续 Skill/Workflow 接入任务完成前，不构成可执行自动化授权
+> 文档状态：T092 定义已由 T093 接入 development Skill 与仓库 Workflow；具体任务仍须由项目所有者批准并激活 Profile
 >
 > 适用范围：普通 MyTracer Txxx 的任务运行模式；不改变产品需求、任务范围或 Repository Safety Rules
 
@@ -25,14 +25,12 @@ Existing MyTracer Development Skill
 
 ## 2. 状态与启用边界
 
-T092 只定义 Profile registry、合同接入和基础 metadata 校验。完成 T092 不会：
+T092 定义 Profile registry、合同接入和基础 metadata 校验；T093 随后把 `standard-task@1` 接入现有 development Skill，并实现配套 PR/Workflow Gate。两项任务都不会：
 
-- 修改或启用项目 Skill 中的 Profile 执行逻辑；
-- 修改真实 GitHub Workflow、ruleset 或 PR template；
 - 向 T041 或其他任务发放自动化运行模式；
 - 自动创建、激活、调度或开始任何任务。
 
-只有后续接入任务完成，且具体任务合同由项目所有者批准并激活 `execution.profile` 后，Profile 才能用于该任务。
+Profile 只有在具体任务合同由项目所有者批准并激活 `execution.profile`，且 metadata、期限、task kind 和附加约束均适用时才能用于该任务。T093 的接入事实本身不向任何任务发放权限。
 
 ## 3. 通用规则
 
@@ -149,11 +147,11 @@ PR Merged or Owner Released
 
 TASK_INDEX 暂时显示 `done` 不能单独触发清理。Worktree cleanup 不删除远端分支；`node_modules`、构建产物、临时数据库和 `.tmp/evidence` 不作为长期证据。
 
-本文件只定义生命周期；实际 Skill 接入和清理步骤由后续任务实现。
+本文件只定义生命周期；T093 未实施 Worktree cleanup，实际安全检查与清理步骤仍须由后续获批任务实现。
 
 ## 6. GitHub Workflow 关系
 
-GitHub Actions 是 Repository Safety Gate，负责质量和流程验证，不负责解释 Profile 或控制 Agent 权限。T092 只在 `GITHUB_WORKFLOW_V0.1.md` 定义后续 change classification、统一 CI Gate、main milestone、Draft/Ready、concurrency 和 PR 协作目标；真实 Workflow 实现必须另立任务。
+GitHub Actions 是 Repository Safety Gate，负责质量和流程验证，不负责解释 Profile 或控制 Agent 权限。T093 已实现 T092 定义的 change classification、统一 `CI Gate`、main milestone、Draft/Ready、concurrency、PR template 和 PR Quality；Workflow 仍不读取 Profile 来计算 Agent 权限或自动改变任务/PR 状态。
 
 Workflow 优化不能改变以下 merge handoff：
 

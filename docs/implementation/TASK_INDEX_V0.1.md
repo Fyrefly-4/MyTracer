@@ -1,7 +1,7 @@
 # MyTracer v0.1 任务索引
 
 > 文档状态：v0.1 实施任务基线  
-> 当前阶段：S0～S3 已完成并形成 `v0.1.0-beta.1` 里程碑；T804 已完成事实统一收口；T092 已完成 Standard Task Automation Profile 和 Workflow 优化目标定义；T093 已由项目所有者批准并激活，当前仅建立合同，尚未开始 Skill、Workflow、PR 或 ruleset 实施，T041 保持 `pending`
+> 当前阶段：S0～S3 已完成并形成 `v0.1.0-beta.1` 里程碑；T093 已完成 Profile、项目 Skills、PR/CI、ruleset 与长任务等待策略集成并进入 PR 最终集成 Gate；T041 保持 `pending`
 > 状态来源：本文件是任务执行状态的唯一账本，架构实施计划只定义范围和顺序
 
 ## 1. 使用规则
@@ -72,7 +72,7 @@
 | T090 | GOV-01 | V2 Agent 流程第一、二批文档规范 | GW-001/002/004/005/006/009/010；T090 合同 | dev@112b909 | `done` | `EV-T090-001` |
 | T091 | GOV-02 | V2 第三批确定性证据采集、CI artifact 和 metadata 校验 | V2 Batch 3；GW-001/002/004/008/009/010；T091 合同 | T090；dev@aeb0d68 | `done` | `EV-T091-001` |
 | T092 | GOV-04 | 定义 Standard Task Automation Profile、Workflow 优化目标与基础 metadata 校验 | GW-001/002/004/008～010；不改变 FR/AC/D | T090、T091、T804；dev@d00a0b3 | `done` | `EV-T092-001` |
-| T093 | GOV-05 | 串行接入 Profile、三项项目 Skill、PR/CI 自动化与统一 Gate，并切换 ruleset required context | GW-001/002/004～006/008～010；不改变 FR/AC/D | T092；dev@7f5e2ed；阻塞 T041 | `active` | — |
+| T093 | GOV-05 | 串行接入 Profile、三项项目 Skill、PR/CI 自动化、统一 Gate、ruleset context 与长任务等待策略 | GW-001/002/004～006/008～010；不改变 FR/AC/D | T092；dev@7f5e2ed；阻塞 T041 | `done` | `EV-T093-001` |
 | T801 | S1 fix | 更新 Windows package smoke 的 S1 窄 API 契约并重新验证 unpacked/NSIS | G3/S1；GW-008/010；不改变 FR/AC/D/ED | `EV-G3-S1-001` | `done` | `EV-T801-001` |
 | T802 | S2 fix | 修复 package smoke、完整连续 E2E-AC-03、既有 S1 v1 数据守恒与 T021～T023 合同归档 | AC-03；FR-D01 S2 子集；GW-008/010；不改变生产语义 | S2 聚合验收失败与独立 review | `done` | `EV-T802-002` |
 | T803 | S3 aggregate | 聚合验收 T031～T033、AC-07、package/重开/导出/AI 三态并归档 S3 合同 | AC-07；FR-D01～D05；GW-008/010；不改变生产语义 | T031～T033、T090、T091 | `done` | `EV-G3-S3-001` |
@@ -117,6 +117,6 @@
 - T803 final head `0cd4a4b...`、PR #29 / `dev@eec0939...`、PR #30 / `main@75e51b4...`、required CI 与项目所有者完整人工 AC-07 均已完成；`EV-G3-S3-001` 记录 candidate 到最终里程碑的完整时间线。
 - `v0.1.0-beta.1` 不表示 G4、AC-02/05/06、自动导入/恢复、AI Provider 或 S4～S7 完成；后续任务仍按独立合同和授权执行。
 - T804 在 `dev@eec0939...` 基线上完成 15 个长期文档的事实审计、完整 diff 独立复核与 candidate required CI；`EV-T804-001` 记录实际 revision、命令、GitHub 事实、限制和项目所有者 closeout 授权，未改变产品语义或 GitHub 配置。
-- T092 在 `dev@d00a0b3...` 基线上定义 `standard-task@1`、合同接入、Worktree 生命周期、Repository Safety Gate 与 Workflow/PR 协作目标，并以基础 metadata validator 和 `EV-T092-001` 收口；尚未修改项目 Skill、真实 Workflow、PR template、ruleset 或启用任何 Profile。
-- T093 已在最新 `origin/dev@7f5e2ed...` 上由项目所有者批准并激活，使用一个任务串行接入 Profile、Stage Design Skill、Stage Acceptance & Release Skill、Workflow/PR 自动化和 ruleset required-context 切换；当前只建立合同和 metadata，任何实施、外部配置写入和验收证据均尚未发生。
-- T093 明确不实施 Worktree 安全释放、不创建额外 Txxx、不自动启动下一任务；T041 在 T093 完成前保持 `pending`。
+- T092 在 `dev@d00a0b3...` 基线上定义 `standard-task@1`、合同接入、Worktree 生命周期、Repository Safety Gate 与 Workflow/PR 协作目标，并以基础 metadata validator 和 `EV-T092-001` 收口；T093 随后完成其 Skill/Workflow 实际接入。
+- T093 在 `dev@7f5e2ed...` 基线上完成 Profile 接入、Stage Design 与 Stage Acceptance/Release Skills、PR template、分层 CI 与双 Gate、ruleset required-context 切换，以及 `BLOCK → SPARSE_POLL → HANDOFF` 长任务策略；实现候选 `189decb...` 的 full/milestone hosted CI 成功，详见 `EV-T093-001`。最新文档 head CI 和 merge 仍是 PR 集成 Gate，不改变本账本的任务完成定义。
+- T093 未实施 Worktree 安全释放、未创建额外 Txxx、未自动启动下一任务；T041 继续保持 `pending`，须由项目所有者独立启动。
