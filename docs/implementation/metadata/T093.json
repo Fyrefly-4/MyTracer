@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "task": "T093",
+  "task_kind": "governance",
+  "dependencies": {
+    "requires": ["T092"],
+    "blocks": ["T041"],
+    "can_parallel": [],
+    "prefer_after": [],
+    "conflicts_with": []
+  },
+  "conflict_basis": {},
+  "shared_surfaces": [
+    {
+      "files": [
+        "AGENTS.md",
+        ".agents/skills/mytracer-stage-development/SKILL.md",
+        ".agents/skills/mytracer-stage-design/SKILL.md",
+        ".agents/skills/mytracer-stage-acceptance-release/SKILL.md",
+        "docs/implementation/AUTOMATION_PROFILES_V0.1.md",
+        "docs/implementation/GITHUB_WORKFLOW_V0.1.md",
+        "docs/implementation/TASK_TEMPLATE.md",
+        ".github/workflows/verify.yml",
+        ".github/pull_request_template.md",
+        "tools/ci/classify-changes.mjs",
+        "tools/governance/validate-pr-context.mjs",
+        "package.json"
+      ],
+      "modules": [
+        "standard-task-profile-skill-integration",
+        "stage-design-skill",
+        "stage-acceptance-release-skill",
+        "github-ci-router",
+        "pull-request-quality-gate",
+        "repository-ruleset-cutover"
+      ],
+      "schema_tables": [],
+      "ipc_contracts": [],
+      "domain_invariants": [
+        "automation-profile-is-not-a-permission-system",
+        "repository-safety-gates-remain-owner-controlled",
+        "ci-gate-does-not-change-task-or-pr-state",
+        "stage-skills-do-not-authorize-neighboring-tasks"
+      ],
+      "risk": "high",
+      "integration_policy": "serial"
+    }
+  ],
+  "external": [
+    "github-t093-task-branch",
+    "github-t093-draft-pr-to-dev",
+    "github-actions-full-and-milestone-ci",
+    "github-dev-rule-required-context",
+    "github-main-rule-required-context"
+  ]
+}

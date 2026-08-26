@@ -159,6 +159,8 @@ Artifact 位于 ignored `.tmp/evidence/`，可由 GitHub Actions 作为短期 ar
 | `EV-T802-002` | T802 / S2 aggregate | `a9db1eb26134dac83b01f4a4d7da30f92a271242` | T021～T023 同 revision 聚合、AC-01/03/04、SQLite/LocalDate、Windows package 与归档 | pass | pass | 最终 dev 本地/hosted 门禁、定向验收、package smoke 与独立 review 通过；T021～T023 人工验收沿用已记录的 owner pass |
 | `EV-T090-001` | T090 / GOV-01 | `767ea6741411e2d2e7a82b297a0ed7dde3e3134e` | V2 第一、二批流程规范、Task Contract 字段、Stage Design 模板和 Escalation Proposal | pass | pass | T090 当时无产品试点；其流程后由 T031～T033/T803 实际使用，PR #23 以 `aeb0d68` 进入 `dev` |
 | `EV-T091-001` | T091 / GOV-02 | `f12f5e5fa81cf23124be126f2e23486d518104bc` / merge `4674597` | V2 第三批确定性证据采集、CI artifact、metadata 校验和规则同步 | pass | pass | 本地与 hosted 验证通过；PR #24 已合入 `dev`，T031～T033/T803 已实际使用其 artifact/metadata 能力；T092 延后 |
+| `EV-T092-001` | T092 / GOV-04 | `9c7d9d3ae08dc7b32e9895deed1e43d26ca58985` | Standard Task Automation Profile、合同/metadata、Worktree 生命周期和 Workflow/PR 优化目标 | pass | pass | 本地分层验证、完整 diff review、candidate hosted CI 和 owner-approved docs closeout 通过；实际接入由 T093 证明 |
+| `EV-T093-001` | T093 / GOV-05 | `189decb664b0ba2147f3ec1931eabd37bda6fc8d` | Profile 与 lifecycle Skills、PR/CI 双 Gate、ruleset context、长任务等待策略 | pass | pass | 本地治理与完整验证、完整 diff/独立 review、精确 head full+milestone hosted CI、ruleset after snapshot 和 owner-approved docs closeout 通过；final-head CI/merge 仍是 PR 集成 Gate |
 | `EV-G3-S1-001` | G3/S1 | `623007dd4269df02771f6a526db269de1fe95a03` | T011～T014 同 revision 核心闭环、Windows package 与发布门禁 | fail | pending | `verify`、AC-01 和 package 构建通过；package smoke 因旧 Preload API 断言在 unpacked 阶段失败，NSIS 安装态未验证 |
 | `EV-G3-S1-002` | G3/S1 | `74ebe346a86cf431d87e02e8a1220b713b33901c` | T011～T014/T801 同 revision 核心闭环、Windows package 与发布门禁 | pass | pass | 验收门禁通过；项目所有者后续另行批准 PR #14 合入 `main@3912e80...` 并发布 `v0.1.0-alpha.2` |
 
@@ -1066,3 +1068,32 @@ Agent 只提供步骤和观察位置，不得替项目所有者签署人工验�
 - **Known limitations**：Profile 尚未接入项目 Skill 或任何任务；真实 Workflow YAML、main milestone、统一 CI Gate、PR template、PR Quality Check、commit/PR-title 检查和 ruleset 均未实现；本地未跟踪 `.agents.backup/` 未修改、清理或纳入交付；closeout push 后 final-head CI 与 Draft PR 最新状态保留为 GitHub 集成事实，不再制造仓库提交只为记录该 run
 - **Supersedes / superseded by**：clean candidate hosted CI 与分层本地成功 supersede 同 revision 因未跟踪备份文件导致的 aggregate format failure；不取代任何产品 Evidence
 - **Recorded at**：2026-08-24
+
+### EV-T093-001
+
+- **Status**：pass；Phase A～F 实现、分层本地验证、完整 diff review、独立 review、精确候选 head 的 full/milestone hosted CI、ruleset required-context 切换和 owner-approved docs closeout 均通过
+- **Task / Gate**：T093 / GOV-05；证明 Profile/Skills/PR/CI/ruleset/长任务等待策略集成，不声明产品 FR、AC、Ready、merge、tag 或 release
+- **Requirements**：GW-001、GW-002、GW-004～GW-006、GW-008～GW-010；无 FR/AC/D/ED 变化
+- **Source branch / base**：`task/T093-governance-integration` / `origin/dev@7f5e2edad62312ca3b79afb7684c64699d4ec8e5`
+- **Task delivery revision**：`189decb664b0ba2147f3ec1931eabd37bda6fc8d`
+- **Integration freshness**：`fresh`；实现候选和 docs closeout 前核对 `origin/dev` 均保持合同基线 `7f5e2ed...`
+- **Environment**：Microsoft Windows 11；Node.js v24.18.0；npm 11.16.0；Electron 43.3.0；本地 Windows 桌面环境、受限 sandbox 和 GitHub Actions `windows-2025`
+- **Command or procedure**：
+  1. `npm.cmd run governance:metadata:check` exit 0：8 个 sidecar 与 1 个 Profile 通过；定向 governance tests 最终为 process 20 tests、CI governance 19 tests，均通过。
+  2. `npm.cmd run format:check`、`npm.cmd run lint`、`npm.cmd run typecheck`、`git diff --check` 与相关治理单测通过；完整 `npm.cmd run verify` 在最终实现 revision 上通过：unit 159/159、integration 88/88、Electron E2E 13/13，普通模式跳过 1 个 package-smoke-only case。
+  3. 受限 sandbox 的完整 `verify` 曾因全部 Electron E2E `Target crashed` 失败；首次可启动桌面进程的完整 `verify` 又有一次 `progress-core-loop` timeout。定向重跑通过，随后完整 `verify` 及精确 commit 复验均通过；失败事实保留。
+  4. 从 base `7f5e2ed...` 到候选 `189decb...` 的完整 diff、授权范围、相对链接、等待规则单一事实来源、旧无限监控措辞和被明确排除文件均完成复核；独立 review 无未解决 required finding。
+  5. PR #33 candidate run `32942810086` 在精确 head `189decb...` 上 `success`：Classify `98097153155`、PR Quality `98097268685`、Governance `98097268787`、Full Windows verification `98097268649`、Milestone packaging `98098136049`、CI Gate `98100179666`、Windows required gate `98100316673` 成功；Documentation job `98097269717` 因更高分类按设计 skipped。
+  6. Candidate artifacts 为 `verification-evidence-32942810086-1`（ID `9597230084`，digest `sha256:47f387548261e522381f2f3839849d99ac986936918a2a224871ade45b6a2255`）和 `milestone-evidence-32942810086-1`（ID `9597468238`，digest `sha256:6ba46dadc339e6dae511ac3a7d5b71e63e1d7694fdab1981fd5d89b8319dd7ac`）。
+  7. `Dev-Rule` ID `20582011` 和 `Main-Rule` ID `20582061` 的 required context 均从 `Windows required gate` 精确切换为 `CI Gate`（`integration_id=15368`）；Dev 保持 non-strict，Main 保持 strict，PR/讨论解决、删除、non-fast-forward、allowed merge methods 与无 bypass actor 状态不变，未触发回滚。
+  8. Phase F 行为复核实际采用本地门禁 `BLOCK`、外部 CI pending `HANDOFF`，并在恢复时先核对 PR #33、run `32942810086`、head `189decb...` 和当前目标 revision；未把旧 run `32810100037` / head `e653685...` 的成功继承为当前证据。
+  9. 项目所有者于 2026-08-26 在上述候选 CI 和 ruleset 事实可见后批准 T093 合同、Task Index、Evidence、Automation Profiles、GitHub Workflow 文档、README、Draft PR 正文以及独立 docs closeout commit/push。
+- **Result**：
+  - `standard-task@1` 已接入唯一 development Skill；Stage Design 与 Stage Acceptance/Release Skills 已建立，并保留所有 owner gates。
+  - PR template、确定性 change classifier、PR Quality、分层 full/milestone CI、始终报告的 `CI Gate` 和兼容 `Windows required gate` 已落地；active Dev/Main rulesets 现只 require `CI Gate`。
+  - `AGENTS.md` 成为 `BLOCK → SPARSE_POLL → HANDOFF` 唯一主要事实来源；两个执行 Skills 只做场景引用和 revision 绑定补充。
+- **Artifacts**：Draft PR #33；candidate run `32942810086`；jobs `98097153155`、`98097268649`、`98097268685`、`98097268787`、`98098136049`、`98100179666`、`98100316673`；artifacts `9597230084`、`9597468238`；rulesets `20582011`、`20582061`
+- **Manual acceptance**：pass；项目所有者批准治理结果与最终 docs closeout；本任务无产品体验 AC，且该批准不构成 Ready、merge、tag 或 release 授权
+- **Known limitations**：Worktree cleanup 未实现；commit/PR-title convention 仍是建议而非 required check；T041 未创建或启动；docs closeout push 后最新 head 的 required CI 和 merge 状态继续作为 PR 集成事实处理
+- **Supersedes / superseded by**：候选 run `32942810086` supersedes 较早实现 run `32810100037` 作为当前 target revision 证据；本地后续完整成功 supersede sandbox `Target crashed` 和一次 transient timeout 的结论，但失败历史保留
+- **Recorded at**：2026-08-26

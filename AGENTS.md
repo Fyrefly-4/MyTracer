@@ -144,6 +144,20 @@ Approved Task Contract
 - Missing, inactive, expired, or inapplicable Profile declarations fall back to the current explicit task-permission process.
 - `docs/implementation/AUTOMATION_PROFILES_V0.1.md` and its registry define available modes. A definition is not executable automation until a separately approved Skill integration implements it.
 
+### 6.4 Long-running work
+
+> Waiting is not work. Do not spend agent turns observing an unchanged state.
+>
+> Elapsed time alone is not sufficient justification for another status check.
+
+Choose the waiting mode from the work, expected output, command timeout, observed history, and available tool behavior; do not impose one fixed interval on every task:
+
+- **BLOCK:** For a local test, build, lint, typecheck, or other command whose result directly determines the next action, use one practical blocking wait when the tool supports it. Size the wait to the command and tool limits instead of replacing an available blocking operation with short polling.
+- **SPARSE_POLL:** Use only when effective blocking is unavailable and the result is still required in the current run. Every status check needs a fresh, explicit reason, such as expected concrete output, suspected interactive input, an approaching known timeout or failure boundary, a known state-changing event, or an explicit owner request to monitor. Increase the interval after an unchanged result. Entering an expected completion window justifies one check; another elapsed interval does not by itself justify the next one. When repeated checks yield no decision-relevant information and no new reason exists, stop polling and reassess for handoff.
+- **HANDOFF:** For GitHub Actions or another external asynchronous operation, confirm that it started, then record the target revision and the applicable PR, run, job, source-head, and test-merge identifiers. If no other meaningful work remains, report what is pending and return control to the project owner. Also hand off when sparse polling has no justified next check. Continuous monitoring occurs only when the project owner explicitly requests it and still follows the sparse-poll requirements.
+
+On resume after a handoff, first verify that the saved identifiers still correspond to the current target revision. Check for a new head, replacement run, cancellation, or superseding execution before interpreting results. Use only evidence bound to the current target revision; a successful older run does not prove the current state.
+
 ## 7. Architecture invariants
 
 - All mutations pass through Application commands and Domain invariants.

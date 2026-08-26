@@ -134,14 +134,14 @@ task/Txxx-short-name
 - `dev` 表示当前集成版本。
 - 一个任务对应一个任务分支或 Codex worktree。
 - Agent 不直接推进 `main`，也不自动合并、打 tag 或发布。
-- GitHub 远端、Actions 和 `dev`/`main` active rulesets 已配置；PR template 与 `main` 里程碑 PR 专用增强 CI 尚未落地，实时配置以 GitHub 为准。
+- GitHub 远端、PR template、分层 Actions 和 `dev`/`main` active rulesets 已配置；full/milestone 验证汇总为统一 `CI Gate`，实时运行状态以 GitHub 为准。
 
 完整规则见 [`GITHUB_WORKFLOW_V0.1.md`](docs/implementation/GITHUB_WORKFLOW_V0.1.md)。
 
 ## 后续入口
 
 1. 产品任务实时状态以任务索引为准；T041 等后续任务仍须独立合同和项目所有者启动授权。
-2. PR template 与 `main` 里程碑 PR 专用增强 CI 是已知治理缺口，必须作为独立获批配置任务处理。
+2. `standard-task@1`、项目生命周期 Skills、PR/CI Gate 与长任务等待策略已经接入；具体任务仍须独立合同和项目所有者授权，Worktree cleanup 仍未实现。
 3. Agent 仍不得从任务完成推定 Ready、merge、tag 或 release 权限。
 
 T011～T014 已覆盖 S1 与完整 AC-01；T021～T023 已覆盖 S2 与完整 AC-03/AC-04；T031～T033/T803 已覆盖 S3 数据控制、版本化完整导出、AI 三态数据独立性和完整人工 AC-07。当前 beta 不实现自动导入/恢复、Provider、S4～S7、AC-02/05/06 或 G4 Demo。
