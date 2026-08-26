@@ -10,7 +10,7 @@
 >
 > 预期分支：`task/T093-governance-integration`
 
-本合同在一个 T093 内串行完成 `standard-task@1` Skill 接入、两项项目生命周期 Skill、GitHub Workflow/PR 自动化、双 Gate 验证和 ruleset required-context 切换。T093 不拆分或自动创建其他 Txxx，不实施 Worktree 安全释放，也不启动 T041。
+本合同在一个 T093 内串行完成 `standard-task@1` Skill 接入、两项项目生命周期 Skill、GitHub Workflow/PR 自动化、双 Gate 验证、ruleset required-context 切换和长任务等待策略。T093 不拆分或自动创建其他 Txxx，不实施 Worktree 安全释放，也不启动 T041。
 
 ## 1. 任务信息
 
@@ -36,7 +36,8 @@ T093 完成后，仓库应具备以下真实、可验证状态：
 6. 迁移期同时保留 `CI Gate` 和 `Windows required gate`，使 ruleset 可安全切换和回滚。
 7. `Dev-Rule` 和 `Main-Rule` 在候选门禁满足后只把 required context 从 `Windows required gate` 切换为 `CI Gate`，其他规则保持不变。
 8. 最终文档、Task Index、Evidence、PR body、真实 Actions 和实时 ruleset 配置一致。
-9. 不创建额外 Txxx，不实施 Worktree cleanup，不启动 T041。
+9. 仓库级 Agent 指令以 `BLOCK → SPARSE_POLL → HANDOFF` 统一长任务等待决策；本地阻塞任务、无法有效阻塞的等待和外部异步任务使用不同策略，且不把无变化状态或单纯时间流逝当作继续轮询的充分理由。
+10. 不创建额外 Txxx，不实施 Worktree cleanup，不启动 T041。
 
 T093 不是产品任务，不改变任何 FR、AC、D 或用户可见产品语义。
 
@@ -140,6 +141,9 @@ Contract and Task Gate
   → hosted full and forced milestone candidate CI
   → Phase E: owner-authorized ruleset context cutover
   → exact ruleset verification and rollback check
+  → Phase F: long-running wait and handoff policy
+  → targeted governance validation and renewed complete diff review
+  → refreshed hosted full and milestone candidate CI
   → owner-confirmed docs closeout
   → final-head dual-gate CI
   → owner-controlled Ready and merge
@@ -203,6 +207,7 @@ Contract and Task Gate
 - 不修改 AI Provider、模型、凭据、上下文或写入权限。
 - 不创建 Secrets、deployment、environment、GitHub App 或 `pull_request_target` workflow。
 - 不实现通用权限解析器、Current Owner Grant、任务调度器或自动任务派发。
+- 不修改 Agent runtime、命令执行工具或外部 CI 平台，不增加轮询调度器、后台守护程序或固定统一等待秒数。
 - 不自动创建 T094、T095 或任何其他 Txxx。
 - 不创建、激活或启动 T041；不修改 T041 的合同、metadata、分支或 `pending` 状态。
 - 不标记 Ready，不 merge `dev`/`main`，不创建 tag 或 release。
@@ -224,6 +229,8 @@ Contract and Task Gate
 - `CI Gate` 只汇总确定性检查，不自动 Ready、merge、tag 或 release。
 - 旧 `Windows required gate` 在 T093 中保留，作为迁移兼容与精确回滚目标。
 - Dev/Main ruleset 除 required context 外的 strict policy、PR、讨论、删除、non-fast-forward 和 bypass 设置保持不变。
+- `AGENTS.md` 是长任务等待策略的主要事实来源；相关 Skills 只做场景化引用和必要补充，不复制另一套完整规则。
+- hosted CI、PR 或其他异步结果只能绑定其真实 run、job、head、test-merge 和目标 revision；旧 revision 的成功不能证明当前目标状态。
 - T041 和任何下一任务都不自动开始。
 
 ## 9. Phase A：`standard-task@1` 接入 development Skill
@@ -445,7 +452,44 @@ Workflow 至少监听：
 
 项目所有者已条件批准精确回滚：若切换后 `CI Gate` 未报告、错误绑定或阻塞 T093 final-head 集成，则把受影响 ruleset 的 required context 恢复为 `Windows required gate`，并保持所有其他字段不变。回滚后停止、记录 before/after 和失败事实，不继续 Ready 或 merge。
 
-## 14. Git、GitHub 与外部权限
+## 14. Phase F：Long-running wait and handoff policy
+
+Phase F 只通过项目级治理规则和既有 Skills 改变 Agent 的等待决策，不修改 Agent runtime、工具实现、GitHub Actions 行为或任务权限。`AGENTS.md` 必须成为唯一主要事实来源，并明确：
+
+> Waiting is not work. Do not spend agent turns observing an unchanged state.
+>
+> Elapsed time alone is not sufficient justification for another status check.
+
+统一决策模型为：
+
+| Mode | Use when | Required behavior |
+|---|---|---|
+| `BLOCK` | 本地 test、build、lint、typecheck 或其他命令的结果直接决定下一步，且工具支持有效等待 | 使用与预计耗时、命令 timeout、历史表现和工具能力相称的一次阻塞等待；不得用任意短周期查询替代可用的阻塞等待 |
+| `SPARSE_POLL` | 工具无法有效阻塞，但当前任务确实必须取得结果 | 每次查询都必须有独立、可说明的依据；无变化后扩大间隔，并重新评估继续查询是否仍有决策价值 |
+| `HANDOFF` | 外部异步任务已成功启动且等待期间没有其他有效工作，或 sparse polling 已失去合理查询依据 | 保存目标与运行标识，准确报告 pending 项并把控制权交还项目所有者；等待项目所有者通知恢复 |
+
+`SPARSE_POLL` 必须有退出路径：
+
+- 连续查询没有产生有效新信息，且无法建立新的合理查询依据时，必须重新评估并默认转为 `HANDOFF`，不得无限延续低频 polling。
+- “进入合理完成窗口”只能证明当次查询合理。若结果仍无变化，后续每次查询都必须重新建立独立理由；又经过一段时间本身不是理由。
+- 合理依据限于：预期出现具体新输出、怀疑进程等待交互、接近已知 timeout/failure 边界、目标状态可能因一个已知事件改变，或项目所有者明确要求持续监控。
+- 项目所有者明确要求持续监控时仍使用有依据、可退出的 sparse polling；该要求不授权高频轮询或解除 revision/evidence 约束。
+
+`HANDOFF` 前必须确认异步任务已被服务接受，并保存适用的目标 revision、PR、run、job、source head 和 test-merge 标识。恢复后不得机械查询旧 run/job：
+
+1. 先核对保存标识是否仍对应当前目标 revision。
+2. 检查期间是否出现新 head、替代 run、取消或 superseding execution。
+3. 只把与当前目标 revision 一致的结果作为证据；旧 revision 的成功结果不得解释为当前状态。
+4. 完成核对后再决定继续、重新验证、重新启动 CI 或再次 `HANDOFF`。
+
+实施位置保持最小：
+
+- `AGENTS.md` 增加上述仓库级决策模型、核心原则、查询理由、退出路径和恢复时 revision 核对。
+- `mytracer-stage-development` 在 candidate/final-head CI 和 merge handoff 场景引用 `AGENTS.md`，删除默认无限监控要求，允许准确的 pending handoff，但继续禁止把 pending 状态报告成完成。
+- `mytracer-stage-acceptance-release` 在 candidate、final-head 和 milestone CI 场景引用同一规则，并只补充聚合 revision 绑定要求。
+- `mytracer-stage-design`、Automation Profiles、Task Template、Workflow 和 Skill metadata 不因 Phase F 修改；任务 prompt 只能显式要求持续监控，不能覆盖仓库级查询依据、退出和 revision 绑定规则。
+
+## 15. Git、GitHub 与外部权限
 
 ```yaml
 permissions:
@@ -476,7 +520,7 @@ permissions:
 
 以下仍未授权：Ready、任何 merge、`dev -> main` PR、tag、release、Secrets、deployment、远端分支删除、其他 ruleset 字段或其他外部写入。
 
-## 15. 交付物
+## 16. 交付物
 
 - [ ] development Skill 中可执行、可恢复、保守 fallback 的 `standard-task@1` 接入。
 - [ ] `mytracer-stage-design` Skill 与 interface metadata。
@@ -487,11 +531,14 @@ permissions:
 - [ ] 保留的兼容 `Windows required gate`。
 - [ ] Candidate full/milestone hosted CI 与 artifact。
 - [ ] Dev/Main ruleset 精确切换、after snapshot 和回滚验证。
+- [ ] `AGENTS.md` 中唯一权威的 `BLOCK → SPARSE_POLL → HANDOFF` 长任务等待规则。
+- [ ] development 与 stage acceptance/release Skills 对仓库级规则的场景化引用、pending handoff 和 revision 恢复约束。
+- [ ] Phase F 的本地阻塞、sparse polling 退出、异步 handoff 和恢复核对场景复核。
 - [ ] T093 metadata、Task Index、Evidence、治理文档和 PR body 收口。
 - [ ] final-head dual-gate CI 和 merge handoff。
 - [ ] 明确记录未实施 Worktree cleanup、未创建额外任务、未启动 T041。
 
-## 16. 验收标准
+## 17. 验收标准
 
 1. T093 基线绑定真实最新 `origin/dev@7f5e2ed...`，T092 的合入事实不依赖 PR Draft 或账本推断。
 2. Profile 被接入现有 development Skill，不复制或替代既有任务执行流程。
@@ -518,10 +565,19 @@ permissions:
 23. T093 不包含 Worktree cleanup、产品代码、依赖、lockfile、schema、migration、AI Provider 或真实凭据变化。
 24. T093 不创建额外 Txxx，不创建或启动 T041。
 25. `MANUAL`：项目所有者在 Candidate 与 ruleset 实际结果可见后确认最终 docs closeout 范围；Ready 和 merge 仍另行决定。
+26. `AGENTS.md` 是长任务等待策略的主要事实来源；Skills 不复制完整规则，Automation Profiles、Task Template 和 Workflow 不建立竞争性等待语义。
+27. 本地结果门禁在工具支持时优先 `BLOCK`，等待长度根据任务特征、timeout、历史耗时和工具限制决定，不使用统一固定秒数。
+28. `SPARSE_POLL` 的每次查询都有独立理由；连续无有效新信息且无法建立新依据时转为 `HANDOFF`，不会无限延续。
+29. “进入合理完成窗口”只证明一次查询合理；查询后仍无变化时，后续检查不能只依赖再次流逝的时间。
+30. 外部异步任务在成功启动且没有其他有效工作时默认 `HANDOFF`，报告保存的目标 revision、PR、run、job、head、test-merge 和待检查内容。
+31. handoff 恢复后先核对保存标识与当前目标 revision，并识别新 head、替代 run、取消和 superseding execution；旧 revision 成功不被误认为当前结果。
+32. development Skill 不再要求在无状态变化时无限监控 hosted CI 或 merge，但仍禁止把 pending 状态、较早 green run 或未执行 owner action 报告成完成。
+33. stage acceptance/release Skill 对 candidate、final-head 和 milestone CI 使用同一策略，并保持 `stage_final_integration_revision` 等聚合证据边界。
+34. Phase F 不修改 Agent runtime、工具实现、Workflow 行为、Profile 权限、依赖或产品语义。
 
-## 17. 验证计划
+## 18. 验证计划
 
-### 17.1 针对性验证
+### 18.1 针对性验证
 
 ```powershell
 npm.cmd run governance:metadata:check
@@ -540,7 +596,7 @@ npm.cmd run test:unit -- tests/unit/process-governance.test.ts
 - Draft/Ready PR body 的完整、pending、缺字段和非法 Task ID；
 - Gate 对 required job success/fail/cancel/unexpected skip 的处理。
 
-### 17.2 受影响范围回归
+### 18.2 受影响范围回归
 
 ```powershell
 npm.cmd run format:check
@@ -554,7 +610,7 @@ git diff --check
 
 T093 修改 standing Skills、governance tools、package scripts 和 Workflow，必须执行完整 `verify`。不新增依赖，不运行 live AI，不访问真实用户数据。
 
-### 17.3 Hosted CI
+### 18.3 Hosted CI
 
 - 第一个有意义 commit 后创建 T093 Draft PR并取得 early CI。
 - Implementation Candidate 使用 `CI mode: full` 运行完整 CI。
@@ -562,8 +618,10 @@ T093 修改 standing Skills、governance tools、package scripts 和 Workflow，
 - 记录 `CI Gate` 与 `Windows required gate` 的 run、job、head revision、test-merge revision 和 artifacts。
 - ruleset 切换和 docs closeout push 后，等待 exact final head 的两个 Gate。
 - 较早 green run 不替代 final-head CI。
+- Phase F 改变 standing Agent instructions 和两个执行 Skills，因此形成新的 review surface；在 Phase F commit 后重新执行完整 diff review、独立 review，并在新精确 head 上重新取得 required full/milestone CI。
+- Phase F hosted CI 成功启动且没有其他有效工作时，按 `HANDOFF` 保存目标 revision、PR、run、job、head/test-merge 和待检查内容并交还控制权；恢复时先做标识与当前目标 revision 的一致性核对。
 
-### 17.4 Skill review
+### 18.4 Skill review
 
 三个 Skill 必须分别检查：
 
@@ -574,7 +632,17 @@ T093 修改 standing Skills、governance tools、package scripts 和 Workflow，
 - 相对路径和引用可以从 Skill 目录正确解析；
 - 独立 read-only review 无未处理重大问题。
 
-## 18. Integration 与证据
+### 18.5 Long-running behavior review
+
+使用实际工具能力和线程记录复核以下场景，不把关键词存在当作行为通过：
+
+1. 本地 `npm.cmd run verify` 或等价结果门禁优先使用一次合理的阻塞等待。
+2. 阻塞不可用时，后续查询能说明独立理由，并在连续无变化且无新依据时转为 `HANDOFF`。
+3. hosted CI 启动后没有其他有效工作时，Agent 保存准确标识、报告 pending 状态并交还控制权。
+4. 恢复任务时先比较保存的 run/job/head/test-merge 与当前目标 revision，再解释 CI 结果。
+5. 项目所有者明确要求持续监控时，Agent 仍使用 sparse polling、独立查询理由和退出评估。
+
+## 19. Integration 与证据
 
 ```yaml
 integration:
@@ -591,11 +659,12 @@ integration:
 - stale 时只允许普通、可追踪 merge refresh，不 force-push；重新运行 affected regression，并在 review surface 变化时重新 review。
 - 规则配置事实必须记录 ruleset ID、before/after、时间、执行者授权、API 结果和回滚状态。
 - Workflow run 必须区分 early、full candidate、milestone、final-head 和 post-merge。
+- 长任务策略的行为复核记录实际命令或外部目标、使用的等待模式、每次非阻塞查询理由、handoff 保存标识和恢复时 revision 核对结果；它不替代命令 exit code、CI artifact 或 hosted check 证据。
 - Evidence 不得把结构校验、Skill 文本或 CI Gate 自身解释为产品验收。
 - T093 未 merge 前 `dev_integration_revision` 保持 `null`。
 - T093 不使用 `stage_final_integration_revision` 证明产品阶段；若无适用阶段则保持 `null`。
 
-## 19. Docs closeout、Ready 与 merge handoff
+## 20. Docs closeout、Ready 与 merge handoff
 
 Candidate、full/milestone CI、ruleset after snapshot 和完整 review 通过后，必须生成准确 docs impact matrix。至少评估：
 
@@ -613,7 +682,7 @@ Candidate、full/milestone CI、ruleset after snapshot 和完整 review 通过�
 
 Ready、merge 到 `dev`、`dev -> main`、tag 和 release 不包含在当前权限中。Agent 只能在 final-head CI 通过后推荐 Ready，并等待项目所有者决定。
 
-## 20. 风险与停止条件
+## 21. 风险与停止条件
 
 出现以下任一情况时停止受影响阶段并填写 Escalation Proposal；不得自动创建新任务：
 
@@ -628,6 +697,10 @@ Ready、merge 到 `dev`、`dev -> main`、tag 和 release 不包含在当前权�
 - ruleset 写入需要改变 required context 以外的字段。
 - ruleset 切换使 T093 final-head 或现有 PR 无法获得 required check。
 - 精确回滚不能安全恢复旧 context。
+- 长任务规则在 `AGENTS.md` 与 Skills 之间形成重复、分歧或竞争性事实来源。
+- `SPARSE_POLL` 没有可执行退出路径，或单纯时间流逝被重复用作新的查询理由。
+- handoff 恢复流程可能把旧 run、旧 head 或旧 test-merge 的成功误认为当前目标 revision 的结果。
+- Phase F 需要修改 Agent runtime、工具实现、Workflow 调度、Profile 权限或引入固定统一等待阈值。
 - 需要新增依赖、修改 lockfile、产品代码、schema、migration、Provider、Secrets 或 deployment。
 - 需要 Worktree cleanup、远端分支删除、force-push、Ready、merge、tag 或 release。
 - 需要创建、激活或启动 T041 或其他 Txxx。
@@ -636,7 +709,7 @@ Ready、merge 到 `dev`、`dev -> main`、tag 和 release 不包含在当前权�
 
 安全、独立且仍在合同范围内的其他串行阶段可以继续；共享面或权限冲突影响整体时，整个 T093 暂停。
 
-## 21. 完成报告
+## 22. 完成报告
 
 最终报告必须列出：
 
@@ -647,6 +720,7 @@ Ready、merge 到 `dev`、`dev -> main`、tag 和 release 不包含在当前权�
 - Dev/Main ruleset before/after 与回滚状态；
 - 实际命令、exit code、环境、artifact、run/job/revision；
 - branch、commits、Draft PR、full/milestone/final-head/post-merge CI；
+- Phase F 的 `BLOCK`、可退出 `SPARSE_POLL`、`HANDOFF`、保存标识和恢复 revision 核对结果；
 - 自动化和项目所有者人工验收状态；
 - docs closeout、Ready 和 merge handoff 状态；
 - 未实施 Worktree cleanup、未创建额外任务、未启动 T041；

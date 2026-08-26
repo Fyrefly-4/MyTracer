@@ -160,6 +160,8 @@ Run validation in this order, using only established commands:
 4. The repository aggregate verification command when required.
 5. Windows build, package, restart, migration, export, or manual procedures when the task or gate requires them.
 
+Apply the [`AGENTS.md`](../../../AGENTS.md) long-running-work policy to command execution. Local result-gating commands normally use `BLOCK`; use `SPARSE_POLL` only when effective blocking is unavailable, and use its required exit assessment rather than observing an unchanged process indefinitely.
+
 For every execution, retain the exact command, working directory, environment, source revision or timestamped uncommitted state, result, and relevant artifact. Distinguish local proof from hosted CI and source-branch revisions from test-merge revisions.
 
 Use isolated temporary databases and Electron `userData` roots. Use `FakeClock` for date behavior and `FakeAiProvider` for normal automated validation. Never place real credentials in source, fixtures, logs, SQLite, exports, screenshots, or copied worktrees. Keep live-provider tests separately approved and outside core verification.
@@ -236,7 +238,7 @@ Use this PR structure:
 - Risks and gaps
 - Dependency changes
 
-After the implementation commits, local verification, final diff review, and independent review are complete, push the implementation candidate and wait for required hosted CI on that exact PR head or test-merge revision. Treat the first green hosted CI as an implementation-complete candidate, not final task completion. Continue into the documentation closeout gate instead of issuing the final report.
+After the implementation commits, local verification, final diff review, and independent review are complete, push the implementation candidate and obtain required hosted CI on that exact PR head or test-merge revision. Follow the [`AGENTS.md`](../../../AGENTS.md) long-running-work policy: if no meaningful work remains after confirming that CI started, preserve the target revision and PR/run/job/head/test-merge identifiers and issue an accurate pending handoff. On resume, verify those identifiers still match the current target revision before using the result. Treat the first green hosted CI as an implementation-complete candidate, not final task completion, and continue into the documentation closeout gate after it is verified.
 
 Never mark Ready, merge to `dev`, create or merge `dev -> main`, tag, release, change branch protection, or modify secrets without the exact additional owner authorization required by the workflow.
 
@@ -250,7 +252,7 @@ Before proposing documentation changes, verify that:
 - Targeted and affected-scope local validation, final diff review, and independent review have no unresolved required issue.
 - The implementation stays within the task contract and has no unreported dependency, migration, platform, manual, or scope gap.
 
-Do not call the task complete, advance the next task, mark the PR Ready, or end the run at this point.
+Do not call the task complete, advance the next task, or mark the PR Ready at this point. Proceed to the documentation owner gate; returning control through an accurate handoff is not a completion claim.
 
 ### 10.2 Build a documentation impact matrix
 
@@ -273,7 +275,7 @@ PR <number> 的实现 revision <sha> 已通过 required CI，当前可视为实�
 - 必改：<files and exact facts>
 - 条件更新：<files and reasons>
 - 明确不改：<files and reasons>
-是否授权我修改上述文档、更新 Draft PR 正文、创建独立的 `docs: close Txxx delivery records` commit，并推送当前任务分支？推送后会等待新 PR head 的 required CI；merge 仍由你决定。
+是否授权我修改上述文档、更新 Draft PR 正文、创建独立的 `docs: close Txxx delivery records` commit，并推送当前任务分支？推送后会确认新 PR head 的 required CI 已启动；若没有其他有效工作，将记录 run/head/revision 并交还控制权。merge 仍由你决定。
 ```
 
 If the owner declines or narrows the scope, preserve that decision, keep the remaining state accurate, and do not silently perform the omitted edits.
@@ -295,15 +297,16 @@ Bind in-repository task evidence to the exact implementation revision it proves.
 
 ### 10.5 Require final-head CI
 
-Treat the documentation push as a new PR revision. Wait for all required checks on that exact latest head or test-merge revision; the earlier green implementation CI is insufficient for merge readiness. If a check fails, fix only the authorized scope, revalidate, push, and wait again.
+Treat the documentation push as a new PR revision and obtain all required checks on that exact latest head or test-merge revision; the earlier green implementation CI is insufficient for merge readiness. Use the repository long-running-work policy while the checks run, including pending handoff when nothing else is actionable and current-revision verification after resume. If a check fails, fix only the authorized scope, revalidate, push, and repeat the same exact-revision gate.
 
 After the final-head CI passes, update the PR body with the latest revision, CI result, evidence IDs, and remaining gaps. Recommend or mark Ready only as authorized.
 
-## 11. Wait for merge handoff
+## 11. Handle merge handoff
 
-For a published task PR, remain in monitoring mode after reporting the PR merge-ready until the project owner merges it, requests changes, declines, or explicitly releases the agent from waiting. Do not merge on the owner's behalf without exact authorization.
+For a published task PR, report the merge-ready state and hand control to the project owner unless the owner explicitly requests continued monitoring. Do not merge on the owner's behalf without exact authorization. Apply the [`AGENTS.md`](../../../AGENTS.md) long-running-work policy to any requested monitoring.
 
-- Monitor the PR until the owner merges it, requests changes, declines, or releases the agent from waiting.
+- Preserve the PR number, target branch, current head, required-check revision, and remaining owner action in the handoff.
+- On resume, verify that the saved PR/head still identifies the current target before interpreting reviews, checks, or merge state; do not reuse an older green run for a newer head.
 - If review or CI introduces a code change, re-enter affected validation and repeat documentation impact assessment when facts changed.
 - If only the PR body changes, do not manufacture a repository commit.
 - After merge, verify the PR state, target branch, squash or merge revision, and required checks before giving the final completion report.
@@ -337,4 +340,4 @@ Report to the project owner in Chinese. Include:
 
 Describe partial outcomes honestly. Do not call a task complete merely because implementation exists, local checks passed, or a Draft PR was opened.
 
-Do not issue the final completion report while an approved documentation closeout, required CI on the latest PR revision, or published-PR merge monitoring remains. If the owner pauses, declines, or withholds authority, report the exact partial state and pending decision instead.
+Do not issue the final completion report while an approved documentation closeout or required CI on the latest PR revision remains. An accurate pending handoff is allowed and required by the repository long-running-work policy when no meaningful work remains. If the owner pauses, declines, or withholds authority, report the exact partial state and pending decision instead.

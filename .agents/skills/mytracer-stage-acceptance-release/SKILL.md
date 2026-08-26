@@ -68,6 +68,8 @@ Run the contract's checks from narrow to broad on the fixed stage source:
 5. Windows package, unpacked and installed smoke, restart, migration, export, security, or other platform checks required by the stage design.
 6. Exact owner manual acceptance steps or a revision-safe binding to an already reported result.
 
+Apply the [`AGENTS.md`](../../../AGENTS.md) long-running-work policy to these commands. Local result-gating validation normally uses `BLOCK`; when effective blocking is unavailable, `SPARSE_POLL` must retain a justified next check and exit to `HANDOFF` when it does not.
+
 Use the repository evidence wrapper with explicit argv when command facts must be retained. Every automated run uses unique temporary SQLite, export, Electron `userData`, installation, and other data roots; fake clocks and fake Providers remain mandatory for normal automation. Never access real user data, credentials, or a live Provider without separate exact authority.
 
 Record each attempt's command, environment, source revision, exit code, artifact, and limitation. Environment recovery may adjust only disposable local runtime state when the contract permits it; retain the original failed artifact and rerun from the beginning. Never change tracked product code, tests, dependencies, schema, migration, or behavior to make an aggregate gate pass.
@@ -83,9 +85,9 @@ Before treating the result as an Implementation Candidate:
 - reconcile stage design, task contracts, Task Index, metadata, Evidence, README, archive, and live Git/GitHub facts;
 - verify all checks and manual bindings refer to the fixed revision;
 - perform an independent read-only review with no unresolved material finding;
-- obtain hosted candidate CI on the exact aggregate head and distinguish PR head from test-merge revision.
+- obtain hosted candidate CI on the exact aggregate head and distinguish PR head from test-merge revision; after confirming the run started, use the repository long-running-work policy and hand off when no other meaningful aggregate work remains.
 
-An earlier task CI, early aggregate CI, or green run on another revision cannot prove the candidate. If freshness work changes the review surface, repeat affected regression and independent review.
+An earlier task CI, early aggregate CI, or green run on another revision cannot prove the candidate. After any CI handoff, first verify that the saved PR/run/job/head/test-merge identifiers still bind the fixed aggregate revision and check for replacement, cancellation, or superseding execution. If freshness work changes the review surface, repeat affected regression and independent review.
 
 ## 6. Close documentation without rewriting history
 
@@ -102,7 +104,7 @@ State the exact fact proposed for each file and ask the project owner to approve
 
 Delete or replace task contracts only with exact project-owner authorization for the named files, a complete archive, and a fixed Git recovery path. Preserve escalation proposals, failed evidence, known limitations, and supersede history.
 
-After authorized closeout, run document and Skill checks plus every contract-required regression, create a separate closeout commit when appropriate, and obtain final-head hosted CI. Candidate CI does not substitute for final-head CI.
+After authorized closeout, run document and Skill checks plus every contract-required regression, create a separate closeout commit when appropriate, and obtain final-head hosted CI under the repository long-running-work policy. Candidate CI does not substitute for final-head CI, and a resumed run must rebind the saved CI identifiers to the current aggregate head before accepting the result.
 
 ## 7. Prepare the release handoff
 
@@ -115,6 +117,8 @@ Only when the aggregate task contract explicitly authorizes it, prepare or creat
 - known gaps, deferred behavior, and exact owner actions still required.
 
 Stop at each owner gate. This Skill does not mark Ready, merge to `dev` or `main`, create or move a tag, publish or edit a release, upload unapproved assets, change rulesets or Secrets, or start the next stage. After an owner performs an action, verify it read-only before recording it as fact; do not attribute the action to the Agent.
+
+When candidate, final-head, milestone, or owner-controlled release work is pending and no other meaningful work remains, record the fixed stage revision plus the relevant PR/run/job/head/test-merge identifiers and hand control to the project owner. On resume, verify that they still identify the current target before interpreting success or continuing the release handoff.
 
 ## 8. Stop conditions
 
