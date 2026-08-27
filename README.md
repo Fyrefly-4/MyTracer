@@ -24,7 +24,7 @@ MyTracer 是一个面向个人本地使用的 Windows 桌面应用，用于帮�
 - T031 已完成 Record 修改/补记、子事实转换、Routine 历史计划 provenance、五类删除影响预览和事务性删除；PR #26 已合入 `dev`。
 - T032 已完成十集合一致性快照、`exportVersion=1` UTF-8 JSON、结构/枚举/引用校验、Main-only 目标和原子文件交付；PR #27 已合入 `dev`。
 - T033 已证明 AI disabled、not-configured、failure 时 CRUD、Progress、删除、导出和重开继续可用；PR #28 已合入 `dev`，项目所有者于 2026-08-22 报告完整人工 AC-07 通过。
-- T803 已在固定 `dev@8058f7a3c9db9d3b488e727dfd85201dc14f11a0` 上完成 T031～T033、AC-01/03/04/07、migration/重开、Windows package 与合同归档候选复验；Draft PR #29 candidate CI 已通过，等待项目所有者处理。
+- T803 已完成 T031～T033 的同 revision 聚合验收与归档；PR #29 合入 `dev@eec093924ae061876805c657742283097824df2c`，里程碑 PR #30 合入 `main@75e51b4e63f8c9df960cccb444515b9e89be5fbd`，并发布 `v0.1.0-beta.1` prerelease。
 
 不要把架构完成理解为产品已经实现。
 
@@ -134,14 +134,14 @@ task/Txxx-short-name
 - `dev` 表示当前集成版本。
 - 一个任务对应一个任务分支或 Codex worktree。
 - Agent 不直接推进 `main`，也不自动合并、打 tag 或发布。
-- 当前文档描述目标流程，不代表 GitHub 远端、保护规则或 Actions 已经配置。
+- GitHub 远端、PR template、分层 Actions 和 `dev`/`main` active rulesets 已配置；full/milestone 验证汇总为统一 `CI Gate`，实时运行状态以 GitHub 为准。
 
 完整规则见 [`GITHUB_WORKFLOW_V0.1.md`](docs/implementation/GITHUB_WORKFLOW_V0.1.md)。
 
-## 下一步
+## 后续入口
 
-1. T803 Draft PR #29 必须在最终文档 head 的 hosted Windows gate 通过后，由项目所有者决定是否合入 `dev`。
-2. T803 合入后重新固定最新 `origin/dev`，再创建 `dev → main` 里程碑 PR；仅项目所有者可批准并以 merge commit 合入。
-3. 里程碑 PR 创建不授权 merge、tag 或 GitHub Release；tag/release 仍须合入后另行批准。
+1. 产品任务实时状态以任务索引为准；T041 等后续任务仍须独立合同和项目所有者启动授权。
+2. `standard-task@1`、项目生命周期 Skills、PR/CI Gate 与长任务等待策略已经接入；具体任务仍须独立合同和项目所有者授权，Worktree cleanup 仍未实现。
+3. Agent 仍不得从任务完成推定 Ready、merge、tag 或 release 权限。
 
-T011～T014 已覆盖 S1 与完整 AC-01；T021～T023 已覆盖 S2 与完整 AC-03/AC-04；T031～T033 已覆盖 S3 数据控制、版本化完整导出、AI 三态数据独立性和完整人工 AC-07。T803 只聚合验证并归档这些既有事实，不实现自动导入/恢复、Provider、S4～S7、AC-02/05/06、G4 Demo，也不授权 merge、tag 或 release。
+T011～T014 已覆盖 S1 与完整 AC-01；T021～T023 已覆盖 S2 与完整 AC-03/AC-04；T031～T033/T803 已覆盖 S3 数据控制、版本化完整导出、AI 三态数据独立性和完整人工 AC-07。当前 beta 不实现自动导入/恢复、Provider、S4～S7、AC-02/05/06 或 G4 Demo。

@@ -44,6 +44,68 @@ Continue only when the task is `ready` or explicitly activated and its prerequis
 
 Do not add or upgrade a dependency unless the task lists the approved package and version range. Do not invent validation commands before S0 establishes them. Read the current README, task contract, package configuration, and CI after commands exist, and use the same commands they specify.
 
+### 2.1 Select the explicit or Profile execution mode
+
+At task start and every later resume, determine whether the approved contract declares an Automation Profile. A Profile controls only whether already-authorized steps may continue without another routine confirmation; it is not a permission source, permission calculator, scheduler, or replacement workflow.
+
+Use this authority order as a conservative intersection:
+
+```text
+Approved Task Contract scope and permissions
+  ∩ valid and applicable Automation Profile
+  ∩ Repository Safety Rules
+  → this Skill's existing phases
+```
+
+Before relying on a declared Profile:
+
+1. Read the contract, its metadata sidecar, the task state in `TASK_INDEX_V0.1.md`, and the referenced registry entry in `docs/implementation/profiles/`.
+2. Run `npm.cmd run governance:metadata:check`. Structural validation is necessary but does not prove owner approval, current validity, applicability, or permission for an action.
+3. Confirm the contract and sidecar identify the same Profile, `activated_at`, `valid_until`, and `additional_constraints`. Stop Profile-driven execution when they disagree; do not choose one silently.
+4. Confirm the owner approved and activated the contract, the task kind is allowed by the Profile, and the task state is compatible.
+5. Compare the actual current time with the RFC3339 bounds. The Profile is current only while `activated_at <= now < valid_until`.
+
+Apply these lifecycle rules:
+
+- `ready`: begin at the Task Gate and run preflight before any mutation.
+- `active`: resume from the last evidenced safe point, then repeat preflight and all current checks before changing files or external state.
+- `review`: continue only Candidate validation, same-PR maintenance, freshness work, or review handoff already in scope; do not begin new implementation scope.
+- `done`: perform no development or publication phase. Read-only reporting remains allowed.
+
+Missing or unknown Profile declarations and inactive, expired, or inapplicable Profiles cannot drive automatic continuity; fall back to the contract's current explicit-permission process when its authority remains unambiguous. A fallback does not erase or broaden contract permissions. Invalid metadata prevents Profile use, while a contract/sidecar conflict stops the affected work until the inconsistency is corrected or the project owner gives an explicit decision.
+
+Recheck applicability, lifecycle state, constraints, and the current time:
+
+- before the first mutating task action;
+- whenever a session is resumed;
+- before entering each automatic phase;
+- after returning from an owner gate;
+- immediately before every GitHub or other external write.
+
+If a Profile expires during work, preserve safe completed work but do not begin another mutating or external action under that Profile. Continue only through the explicit-permission process. Never reinterpret the contract's initial permission fields as an unlimited extension of the Profile.
+
+### 2.2 Map `standard-task@1` onto this Skill
+
+For an applicable `standard-task@1`, use the existing sections rather than creating a parallel procedure:
+
+| Profile phase | Existing Skill steps | Automatic phase endpoint |
+|---|---|---|
+| `local_development` | Sections 1-4 and authorized checkpoint commits in Section 8 | A scoped local implementation candidate or a stop condition |
+| `validation_execution` | Sections 5-7, including targeted checks, affected regression, evidence, complete diff review, and independent review | A reviewed validation candidate |
+| `task_branch_publish` | Initial task-branch push and Draft PR creation in Section 9 | The exact task branch has one Draft PR to `dev` |
+| `draft_pr_maintenance` | Sections 3.1, 5, 6, and 9 for the same Draft PR | An Implementation Candidate on a fresh authorized base |
+| `review_handoff` | Sections 10.1-10.2 | A factual documentation impact matrix, followed by the `docs_closeout_scope` owner gate |
+
+Treat `additional_constraints` conservatively:
+
+- `disable_phase` removes that phase from Profile continuity. Enter it only through the explicit-permission process if the contract and owner authorization still allow it.
+- `pause_before` requires a pause immediately before the named phase even when every other Profile check passes.
+- Constraints may only remove continuity or add a pause; they never grant an action or remove a Repository Safety Gate.
+
+The following owner gates always pause Profile execution: final `docs_closeout_scope`, `ready_for_review`, `merge_dev`, `merge_main`, `tag`, `release`, `dependency_change`, `migration_change`, `non_task_publication_external_write`, and `ai_provider_or_permission_change`. A Profile also never authorizes force-push, remote branch deletion, ruleset or secret changes, automatic task activation, or starting the next task.
+
+Exit Profile continuity and use the applicable stop or escalation path when work encounters a dependency or migration change, product-semantics or major-architecture change, broader AI Provider/context/write authority, destructive data behavior, a non-task external write, or any scope or permission expansion. Safe read-only diagnosis may continue, but the affected mutation must wait for explicit authority.
+
 ## 3. Inspect the working state
 
 Perform read-only preflight checks before implementation:
@@ -97,6 +159,8 @@ Run validation in this order, using only established commands:
 3. The task contract's affected-scope regression.
 4. The repository aggregate verification command when required.
 5. Windows build, package, restart, migration, export, or manual procedures when the task or gate requires them.
+
+Apply the [`AGENTS.md`](../../../AGENTS.md) long-running-work policy to command execution. Local result-gating commands normally use `BLOCK`; use `SPARSE_POLL` only when effective blocking is unavailable, and use its required exit assessment rather than observing an unchanged process indefinitely.
 
 For every execution, retain the exact command, working directory, environment, source revision or timestamped uncommitted state, result, and relevant artifact. Distinguish local proof from hosted CI and source-branch revisions from test-merge revisions.
 
@@ -174,7 +238,7 @@ Use this PR structure:
 - Risks and gaps
 - Dependency changes
 
-After the implementation commits, local verification, final diff review, and independent review are complete, push the implementation candidate and wait for required hosted CI on that exact PR head or test-merge revision. Treat the first green hosted CI as an implementation-complete candidate, not final task completion. Continue into the documentation closeout gate instead of issuing the final report.
+After the implementation commits, local verification, final diff review, and independent review are complete, push the implementation candidate and obtain required hosted CI on that exact PR head or test-merge revision. Follow the [`AGENTS.md`](../../../AGENTS.md) long-running-work policy: if no meaningful work remains after confirming that CI started, preserve the target revision and PR/run/job/head/test-merge identifiers and issue an accurate pending handoff. On resume, verify those identifiers still match the current target revision before using the result. Treat the first green hosted CI as an implementation-complete candidate, not final task completion, and continue into the documentation closeout gate after it is verified.
 
 Never mark Ready, merge to `dev`, create or merge `dev -> main`, tag, release, change branch protection, or modify secrets without the exact additional owner authorization required by the workflow.
 
@@ -188,7 +252,7 @@ Before proposing documentation changes, verify that:
 - Targeted and affected-scope local validation, final diff review, and independent review have no unresolved required issue.
 - The implementation stays within the task contract and has no unreported dependency, migration, platform, manual, or scope gap.
 
-Do not call the task complete, advance the next task, mark the PR Ready, or end the run at this point.
+Do not call the task complete, advance the next task, or mark the PR Ready at this point. Proceed to the documentation owner gate; returning control through an accurate handoff is not a completion claim.
 
 ### 10.2 Build a documentation impact matrix
 
@@ -211,7 +275,7 @@ PR <number> 的实现 revision <sha> 已通过 required CI，当前可视为实�
 - 必改：<files and exact facts>
 - 条件更新：<files and reasons>
 - 明确不改：<files and reasons>
-是否授权我修改上述文档、更新 Draft PR 正文、创建独立的 `docs: close Txxx delivery records` commit，并推送当前任务分支？推送后会等待新 PR head 的 required CI；merge 仍由你决定。
+是否授权我修改上述文档、更新 Draft PR 正文、创建独立的 `docs: close Txxx delivery records` commit，并推送当前任务分支？推送后会确认新 PR head 的 required CI 已启动；若没有其他有效工作，将记录 run/head/revision 并交还控制权。merge 仍由你决定。
 ```
 
 If the owner declines or narrows the scope, preserve that decision, keep the remaining state accurate, and do not silently perform the omitted edits.
@@ -233,15 +297,16 @@ Bind in-repository task evidence to the exact implementation revision it proves.
 
 ### 10.5 Require final-head CI
 
-Treat the documentation push as a new PR revision. Wait for all required checks on that exact latest head or test-merge revision; the earlier green implementation CI is insufficient for merge readiness. If a check fails, fix only the authorized scope, revalidate, push, and wait again.
+Treat the documentation push as a new PR revision and obtain all required checks on that exact latest head or test-merge revision; the earlier green implementation CI is insufficient for merge readiness. Use the repository long-running-work policy while the checks run, including pending handoff when nothing else is actionable and current-revision verification after resume. If a check fails, fix only the authorized scope, revalidate, push, and repeat the same exact-revision gate.
 
 After the final-head CI passes, update the PR body with the latest revision, CI result, evidence IDs, and remaining gaps. Recommend or mark Ready only as authorized.
 
-## 11. Wait for merge handoff
+## 11. Handle merge handoff
 
-For a published task PR, remain in monitoring mode after reporting the PR merge-ready until the project owner merges it, requests changes, declines, or explicitly releases the agent from waiting. Do not merge on the owner's behalf without exact authorization.
+For a published task PR, report the merge-ready state and hand control to the project owner unless the owner explicitly requests continued monitoring. Do not merge on the owner's behalf without exact authorization. Apply the [`AGENTS.md`](../../../AGENTS.md) long-running-work policy to any requested monitoring.
 
-- Monitor the PR until the owner merges it, requests changes, declines, or releases the agent from waiting.
+- Preserve the PR number, target branch, current head, required-check revision, and remaining owner action in the handoff.
+- On resume, verify that the saved PR/head still identifies the current target before interpreting reviews, checks, or merge state; do not reuse an older green run for a newer head.
 - If review or CI introduces a code change, re-enter affected validation and repeat documentation impact assessment when facts changed.
 - If only the PR body changes, do not manufacture a repository commit.
 - After merge, verify the PR state, target branch, squash or merge revision, and required checks before giving the final completion report.
@@ -275,4 +340,4 @@ Report to the project owner in Chinese. Include:
 
 Describe partial outcomes honestly. Do not call a task complete merely because implementation exists, local checks passed, or a Draft PR was opened.
 
-Do not issue the final completion report while an approved documentation closeout, required CI on the latest PR revision, or published-PR merge monitoring remains. If the owner pauses, declines, or withholds authority, report the exact partial state and pending decision instead.
+Do not issue the final completion report while an approved documentation closeout or required CI on the latest PR revision remains. An accurate pending handoff is allowed and required by the repository long-running-work policy when no meaningful work remains. If the owner pauses, declines, or withholds authority, report the exact partial state and pending decision instead.

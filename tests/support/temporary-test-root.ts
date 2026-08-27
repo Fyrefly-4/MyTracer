@@ -16,6 +16,11 @@ export interface TemporaryTestRoot {
   readonly temporary: string
 }
 
+export interface TemporaryTestRootRemovalOptions {
+  readonly maxRetries?: number
+  readonly retryDelay?: number
+}
+
 function isStrictDescendant(parent: string, candidate: string): boolean {
   const pathFromParent = relative(parent, candidate)
   return (
@@ -89,7 +94,10 @@ export async function assertExistingPathWithinRoot(
   return canonicalCandidate
 }
 
-export async function removeTemporaryTestRoot(root: TemporaryTestRoot): Promise<void> {
+async function removeOwnedTemporaryTestRoot(
+  root: TemporaryTestRoot,
+  options: TemporaryTestRootRemovalOptions
+): Promise<void> {
   const temporaryDirectory = await realpath(tmpdir())
   const canonicalRoot = await realpath(root.root)
 
@@ -102,6 +110,22 @@ export async function removeTemporaryTestRoot(root: TemporaryTestRoot): Promise<
     throw new Error(`Refusing to remove an unowned test path: ${canonicalRoot}`)
   }
 
-  await rm(canonicalRoot, { recursive: true, force: false, maxRetries: 5, retryDelay: 100 })
+  await rm(canonicalRoot, {
+    recursive: true,
+    force: false,
+    maxRetries: options.maxRetries ?? 5,
+    retryDelay: options.retryDelay ?? 100
+  })
   ownedRoots.delete(root)
+}
+
+export async function removeTemporaryTestRoot(root: TemporaryTestRoot): Promise<void> {
+  await removeOwnedTemporaryTestRoot(root, {})
+}
+
+export async function removeTemporaryTestRootWithOptions(
+  root: TemporaryTestRoot,
+  options: TemporaryTestRootRemovalOptions
+): Promise<void> {
+  await removeOwnedTemporaryTestRoot(root, options)
 }

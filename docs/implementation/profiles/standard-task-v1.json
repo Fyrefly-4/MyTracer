@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "standard-task@1",
+  "taskKinds": ["implementation", "fix"],
+  "automaticPhases": [
+    "local_development",
+    "validation_execution",
+    "task_branch_publish",
+    "draft_pr_maintenance",
+    "review_handoff"
+  ],
+  "ownerGates": [
+    "docs_closeout_scope",
+    "ready_for_review",
+    "merge_dev",
+    "merge_main",
+    "tag",
+    "release",
+    "dependency_change",
+    "migration_change",
+    "non_task_publication_external_write",
+    "ai_provider_or_permission_change"
+  ],
+  "maxValidityDays": 30,
+  "allowedAdditionalConstraints": ["disable_phase", "pause_before"],
+  "worktree": {
+    "isolationRequired": true,
+    "disposable": true,
+    "cleanupAfter": ["merged", "owner-released"]
+  },
+  "extensionPoints": {
+    "compatibility": "additive-within-v1",
+    "breakingChanges": "require-new-profile-version"
+  }
+}

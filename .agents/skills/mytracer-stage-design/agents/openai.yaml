@@ -1,0 +1,4 @@
+interface:
+  display_name: 'MyTracer Stage Design'
+  short_description: 'Design an approved MyTracer stage and task graph'
+  default_prompt: 'Use $mytracer-stage-design to design one owner-authorized MyTracer stage from its approved baseline through its task graph and stage gates.'

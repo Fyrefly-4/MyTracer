@@ -1,6 +1,6 @@
 # MyTracer S1 / T011～T014 开发合同归档
 
-> 状态：已归档；T011～T014 与 T801 `done`，S1 自动化与人工 AC-01 验收 `pass`；归档由 PR #13 合入 `dev`
+> 状态：已归档；T011～T014/T801 与 AC-01 均为 `pass`；PR #14 合入 `main@3912e8082909a8ea99c4ca7aa8ec2f39fdc6cec7`，并发布 `v0.1.0-alpha.2`
 >
 > 归档日期：2026-08-13
 >
@@ -22,7 +22,7 @@
 | T013 / E1-03 | 快速/深入 ActionRecord、跨午夜与 post-record | `b10d5d40c4c1dc1f7a20801d5d904b1d37953270` | [PR #10](https://github.com/Fyrefly-4/MyTracer/pull/10) / `b3c61b403888b81e4f155fabcbefea689acd1d3a` | `EV-T013-001` |
 | T014 / E1-04 | 事实型 Progress、筛选、一致性读取与 AC-01 | `52cd33672b6b2632b09beb7cb8e66f48901f2bd0` | [PR #11](https://github.com/Fyrefly-4/MyTracer/pull/11) / `623007dd4269df02771f6a526db269de1fe95a03` | `EV-T014-001` |
 | T801 / S1 fix | S1 package smoke API 契约与完整 NSIS 路径 | `dd9bd4498b0339703f8cf992a564a7d7b80442b5` | [PR #12](https://github.com/Fyrefly-4/MyTracer/pull/12) / `74ebe346a86cf431d87e02e8a1220b713b33901c` | `EV-T801-001` |
-| G3/S1 | Goal → Action → Today → ActionRecord → Progress 聚合验收 | `74ebe346a86cf431d87e02e8a1220b713b33901c` | 待 `dev → main` 里程碑 PR | `EV-G3-S1-002` |
+| G3/S1 | Goal → Action → Today → ActionRecord → Progress 聚合验收 | `74ebe346a86cf431d87e02e8a1220b713b33901c` | [PR #14](https://github.com/Fyrefly-4/MyTracer/pull/14) / `3912e8082909a8ea99c4ca7aa8ec2f39fdc6cec7` / `v0.1.0-alpha.2` | `EV-G3-S1-002` |
 
 ## 3. S1 最终行为合同
 
@@ -90,7 +90,7 @@
 - T801 的本地 `verify`、package、unpacked/隔离 NSIS smoke、独立 review、PR #12 head CI 和最终 `dev` push CI 均通过。
 - 最终 `dev@74ebe346a86cf431d87e02e8a1220b713b33901c` 从头执行 `verify`、精确 AC-01、package 和 package smoke 通过；详见 `EV-G3-S1-002`。
 - 最终 Windows 产物仍未签名并使用默认 Electron 图标；hosted workflow 运行 `verify`，package/NSIS smoke 仍为本地 Windows 证据。
-- 自动化 S1 门禁通过不授权推进 `main`；确切 `dev → main` PR 仍需项目所有者批准 merge，且必须使用 merge commit。
+- S1 门禁本身未授权推进 `main`；项目所有者随后另行批准并合入 PR #14、发布 `v0.1.0-alpha.2`，原权限边界和过程顺序继续保留。
 
 ## 9. 原合同恢复入口
 

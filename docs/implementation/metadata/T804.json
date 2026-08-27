@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "task": "T804",
+  "dependencies": {
+    "requires": ["T803", "T091"],
+    "blocks": [],
+    "can_parallel": [],
+    "prefer_after": [],
+    "conflicts_with": []
+  },
+  "conflict_basis": {},
+  "shared_surfaces": [
+    {
+      "files": [
+        "docs/implementation/archive/GOVERNANCE_T090_T093_T804_ARCHIVE.md",
+        "docs/implementation/TASK_INDEX_V0.1.md",
+        "docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md",
+        "docs/implementation/GITHUB_WORKFLOW_V0.1.md",
+        "README.md"
+      ],
+      "modules": [
+        "durable-project-status",
+        "delivery-evidence",
+        "milestone-release-facts",
+        "github-configuration-snapshot"
+      ],
+      "schema_tables": [],
+      "ipc_contracts": [],
+      "domain_invariants": [
+        "historical-evidence-remains-auditable",
+        "current-facts-bind-exact-revisions",
+        "documentation-closeout-does-not-change-product-semantics"
+      ],
+      "risk": "high",
+      "integration_policy": "serial"
+    }
+  ],
+  "external": [
+    "github-readonly-audit",
+    "github-docs-branch",
+    "github-draft-pr-to-dev",
+    "github-actions-redacted-evidence-artifact"
+  ]
+}

@@ -8,11 +8,14 @@ import { minimalElectronEnvironment } from '../support/electron-environment'
 import {
   assertExistingPathWithinRoot,
   createTemporaryTestRoot,
-  removeTemporaryTestRoot,
+  removeTemporaryTestRootWithOptions,
   type TemporaryTestRoot
 } from '../support/temporary-test-root'
 
 test.skip(process.env.MYTRACER_PACKAGE_SMOKE !== '1', 'Runs only after npm.cmd run package.')
+
+const nsisOperationTimeout = process.env.CI === 'true' ? 300_000 : 120_000
+const nsisCleanupOptions = process.env.CI === 'true' ? { maxRetries: 8, retryDelay: 500 } : {}
 
 async function verifyPackagedApplication(
   root: TemporaryTestRoot,
@@ -140,7 +143,7 @@ async function verifyPackagedApplication(
 }
 
 test('starts Windows x64 unpacked and isolated NSIS-installed applications', async () => {
-  test.setTimeout(300_000)
+  test.setTimeout(process.env.CI === 'true' ? 720_000 : 300_000)
   test.skip(process.platform !== 'win32', 'T004 package smoke is Windows-only.')
 
   const root = await createTemporaryTestRoot()
@@ -160,7 +163,7 @@ test('starts Windows x64 unpacked and isolated NSIS-installed applications', asy
       cwd: root.root,
       encoding: 'utf8',
       env: minimalElectronEnvironment(root),
-      timeout: 120_000
+      timeout: nsisOperationTimeout
     })
     expect(install.error).toBeUndefined()
     expect(install.status, install.stderr).toBe(0)
@@ -177,7 +180,7 @@ test('starts Windows x64 unpacked and isolated NSIS-installed applications', asy
       cwd: root.root,
       encoding: 'utf8',
       env: minimalElectronEnvironment(root),
-      timeout: 120_000
+      timeout: nsisOperationTimeout
     })
     expect(uninstall.error).toBeUndefined()
     expect(uninstall.status, uninstall.stderr).toBe(0)
@@ -189,13 +192,13 @@ test('starts Windows x64 unpacked and isolated NSIS-installed applications', asy
           cwd: root.root,
           encoding: 'utf8',
           env: minimalElectronEnvironment(root),
-          timeout: 120_000
+          timeout: nsisOperationTimeout
         })
         expect(fallbackUninstall.error).toBeUndefined()
         expect(fallbackUninstall.status, fallbackUninstall.stderr).toBe(0)
       }
     } finally {
-      await removeTemporaryTestRoot(root)
+      await removeTemporaryTestRootWithOptions(root, nsisCleanupOptions)
     }
   }
 })

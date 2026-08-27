@@ -106,7 +106,39 @@ For a V2 Batch 3 task, add `docs/implementation/metadata/Txxx.json`. The sidecar
 }
 ```
 
-The validator checks the five finite dependency relations, task references, duplicate entries, `conflict_basis` entries for every `conflicts_with` task, shared-surface identifiers, risk/policy values and JSON integrity. It does not infer safe parallelism, schedule tasks or modify tracked files.
+The validator checks the five finite dependency relations, task references, duplicate entries, `conflict_basis` entries for every `conflicts_with` task, shared-surface identifiers, risk/policy values and JSON integrity. When optional Profile metadata is present, it also checks the registry reference, task kind, validity interval, allowed constraints and basic lifecycle compatibility. It does not infer safe parallelism, calculate operation permissions, prove owner approval, schedule tasks or modify tracked files.
+
+### 4.3 Automation Profile（可选）
+
+普通低风险任务可以在项目所有者批准合同时声明一个已登记的执行模式：
+
+```yaml
+execution:
+  profile: standard-task@1
+  activated_at: 2026-08-24T09:00:00+08:00
+  valid_until: 2026-09-23T09:00:00+08:00
+  additional_constraints: []
+```
+
+对应 sidecar 需要声明有限 `task_kind`，并以同样结构记录 `execution`。`standard-task@1` 当前只适用于 `implementation` 和 `fix`：
+
+```json
+{
+  "task_kind": "implementation",
+  "execution": {
+    "profile": "standard-task@1",
+    "activated_at": "2026-08-24T09:00:00+08:00",
+    "valid_until": "2026-09-23T09:00:00+08:00",
+    "additional_constraints": []
+  }
+}
+```
+
+- Profile 是现有开发流程的运行模式模板，不是独立权限来源或第二套 Skill。
+- 项目所有者必须明确批准并激活合同中的声明；最长有效期由 registry 限制，`standard-task@1` 不超过 30 天。
+- `additional_constraints` 只能禁用自动阶段或增加暂停点，不能扩大 Profile 或解除 Repository Safety Rules。
+- 没有 Profile 的历史或特殊任务继续使用第 11 节的显式权限模式。
+- Profile 定义本身不启用自动执行；在独立 Skill 接入任务完成前仍按现行显式权限执行。
 
 ## 5. 允许修改范围
 

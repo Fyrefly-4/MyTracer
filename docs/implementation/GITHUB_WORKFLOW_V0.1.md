@@ -2,7 +2,7 @@
 
 > 文档状态：已批准的开发工作流基线  
 > 批准范围：GW-001～GW-010  
-> 当前事实：本文只定义目标流程；远端仓库、保护规则、PR 模板和 GitHub Actions 尚未据此配置  
+> 配置快照：截至 2026-08-26，PR template、分层 Actions、main milestone CI 与统一 `CI Gate` 已由 T093 实现；`dev`/`main` active rulesets 均要求 `CI Gate`
 > 适用对象：项目所有者、Codex 和其他经授权 Agent
 
 ## 1. 目标
@@ -233,7 +233,7 @@ GitHub 支持 merge commit、squash 和 rebase 等不同合并方式；MyTracer 
 
 ## 7. GW-007 分支保护目标
 
-在远端仓库和订阅方案支持后，为 `dev` 和 `main` 配置：
+`dev` 和 `main` 的目标规则如下；实际配置差异见第 15 节：
 
 | 规则 | `dev` | `main` |
 |---|---:|---:|
@@ -253,7 +253,7 @@ GitHub 支持 merge commit、squash 和 rebase 等不同合并方式；MyTracer 
 
 GitHub 保护规则可以要求 PR、状态检查、讨论解决、禁止强推和删除；具体可用性受仓库类型和订阅方案影响。参考：[GitHub protected branches](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)。
 
-保护规则未实际配置前，README 和报告必须写“目标流程尚未应用”，不能把文档当作远端配置证据。
+当前保护通过 repository rulesets 实现，而非 classic branch protection API；报告必须引用实时 ruleset 查询，不能把 classic endpoint 的 404 误写为“分支无保护”。
 
 ## 8. GW-008 CI 门禁
 
@@ -300,12 +300,14 @@ clean install
 - AI 自动化测试使用 fake provider，不向普通 PR 暴露真实 provider key。
 - 只有验证逻辑确实依赖 Git 历史时才使用完整 checkout 历史，并记录原因。
 - 精确 command、Node/Electron 版本和 workflow 文件需在依赖批准和 T002 执行时固定。
+当前 `.github/workflows/verify.yml` 监听到 `dev`/`main` 的 `pull_request`、到 `dev`/`main` 的 `push` 和带 `full`/`milestone` mode 的手工触发。它以 change classifier 路由 PR Quality、documentation、governance、full Windows verification 和 milestone package/smoke，并始终汇总为 `CI Gate`；`Windows required gate` 作为迁移兼容 context 继续报告。
+
 
 ### V2 Batch 3 evidence artifact
 
 采用 Batch 3 的任务应先运行 `npm.cmd run governance:metadata:check`，再用 `npm.cmd run evidence:verify` 包装现有 `npm.cmd run verify`。包装器必须保持原验证命令的退出码，并只在 ignored `.tmp/evidence/*.json` 生成脱敏事实 artifact。
 
-Windows required job 可以使用以下固定上传约束：
+Full Windows verification job 使用以下固定上传约束：
 
 ```yaml
 - name: Upload verification evidence
@@ -320,6 +322,42 @@ Windows required job 可以使用以下固定上传约束：
 上传步骤不得写入 repository contents、Secrets、任务账本或长期文档。Artifact 不是 acceptance；Agent 仍须区分 early、candidate、final-head 和 post-merge CI，并把实际 artifact/run/head revision 绑定到 Evidence。
 
 GitHub required checks 必须成功后才允许合并；被路径过滤跳过的 required workflow 可能长期 Pending。参考：[GitHub status checks](https://docs.github.com/en/pull-requests/reference/status-checks) 和 [required checks troubleshooting](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks)。
+
+### Workflow 分层与协作自动化
+
+本节最初由 T092 定义目标，并由 T093 实现真实 YAML、PR template、PR Quality Check、统一 gate 和 ruleset required-context 切换。Commit/PR-title 仍只是推荐规范，不是 required check。
+
+GitHub Actions 的定位是 Repository Safety Gate：负责确定性的质量验证和流程约束，不解释 Task Contract、不计算 Agent 权限，也不授权 Agent 操作。默认 `permissions` 保持 `contents: read`；不引入自动 merge、tag、release、deployment 或 Agent 权限解析逻辑。
+
+CI 按变更面分层；混合变更执行其中最高等级，合同明确要求的验证不能被路径分类跳过：
+
+| 类别 | 典型范围 | 目标验证 |
+|---|---|---|
+| Source Change | `src/**`、`tests/**`、依赖/构建配置、工具脚本、Workflow YAML | 完整 verification，包括 build、unit、integration 和 Electron E2E |
+| Governance Change | AGENTS、任务/阶段模板、metadata/Profile JSON、治理规范 | metadata、governance、format 和 diff integrity；治理工具或测试代码变化同时按 Source Change |
+| Documentation Only | 不改变治理规则、稳定命令或产品语义的普通说明文档 | 轻量 format、链接/结构和 diff integrity |
+
+当前结构为：
+
+```text
+CI Router / Change Classifier
+  ├─ verification：代码、测试、构建与 Electron 验证
+  ├─ governance：metadata、Profile 与治理一致性检查
+  ├─ documentation：纯文档轻量检查
+  └─ milestone：dev -> main 与 main 集成验证
+          ↓
+       CI Gate
+```
+
+- `dev` 继续持续集成；`main` 和 `dev -> main` PR 增加 milestone 验证，但不自动 merge、tag 或 release。
+- `CI Gate` 是始终报告的稳定终端 context；active Dev/Main rulesets 只绑定该 context，内部 job 可以演进，路径过滤不得令 required gate 永久 Pending。兼容 `Windows required gate` 暂时保留，但不是 ruleset required context。
+- Draft PR 默认提供按类别的反馈，Ready PR 执行完整验证；Draft 可通过 PR body 的 `CI mode: full` 或 `CI mode: milestone` 只提高验证等级，不得通过自动标记 Ready 绕过 owner gate。
+- 按 PR number 或 branch/ref 设置 concurrency，并用 `cancel-in-progress: true` 取消同一 PR/分支已被新 revision 取代的旧 CI。
+- 上述优化不改变 merge handoff：`Implementation Candidate → owner-approved docs closeout → final-head CI → owner-controlled Ready → owner-approved merge`。CI 只提供进入下一 Gate 的事实，不自动改变任务/PR 状态。
+
+当前 PR template 包含 `Task`、`Summary`、`Requirements`、`Scope`、`Exclusions`、`Validation`、`Evidence`、`Risk`、`Dependency changes` 和可选 `CI mode`。PR Quality Check 只检查必要上下文是否存在；它不判断实现正确性，也不替代完整 diff review、独立 review、CI、人工体验或 owner merge 决策。
+
+推荐任务提交和 task PR squash 标题采用 `<type>(Txxx): description`，建议 `type` 为 `feat`、`fix`、`test`、`docs`、`refactor`、`chore`、`build` 或 `ci`。这是可读性规范，不是当前 required check，不追溯重写历史；若未来升级为强制检查，必须另行定义例外、迁移和失败语义。
 
 ## 9. GW-009 Agent Git 权限
 
@@ -416,19 +454,22 @@ main
 
 ## 14. 启用顺序
 
-1. 创建或确认 GitHub 远端和长期分支。
-2. 批准依赖、工具链和精确验证命令。
-3. T002 创建确定性 CI workflow。
-4. CI 实际成功报告稳定 check 名称后，再配置 required checks。
-5. 配置 `dev`、`main` 保护规则并验证管理员不可常规绕过。
-6. 增加 PR template。
-7. 用一个小型任务执行完整 Draft PR 演练。
-8. 有真实重复需求后再评估 GitHub Codex Review、Codex Action、Hooks、Rules 或 Skills。
+1. [x] GitHub 远端、`dev` 和 `main` 已建立；default branch 为 `main`。
+2. [x] 依赖、工具链和精确验证命令已批准并锁定。
+3. [x] T002 建立确定性 Windows CI workflow，T091 增加脱敏 evidence artifact。
+4. [x] stable check `Windows required gate` 已实际运行并曾纳入 rulesets；T093 切换后继续兼容报告，但 required context 已统一为 `CI Gate`。
+5. [x] `Dev-Rule` / `Main-Rule` 已 active、均要求 `CI Gate` 且无 bypass actor；`main` strict、`dev` non-strict。
+6. [x] PR template、PR Quality、change classification、分层 full/milestone CI 和兼容双 Gate 已实现。
+7. [x] 多个任务已完成 Draft PR、candidate/final-head CI 和 owner merge 演练。
+8. [ ] GitHub Codex Review/Action 等扩展未采用；没有独立需求时不启用。
 
-顺序不能反转：不存在的 check 不能先设为 required，否则可能阻塞所有 PR。
+以上是 2026-08-26 的配置快照，不替代实时 GitHub 查询，也不自动授权任何配置写入。
 
 ## 15. 当前结论
 
-- GW-001～GW-010 已批准为 MyTracer v0.1 的目标开发流程。
-- 当前没有证据表明 GitHub 远端、`dev`/`main` 保护、Actions 或 PR template 已配置。
-- 下一步仍是依赖和工具链批准；具体 GitHub 配置必须作为独立获批任务执行并验证。
+- GW-001～GW-010 是 MyTracer v0.1 的批准流程；实时配置是其部分实现，差异不得靠文档假定消失。
+- 仓库为 private、default branch 为 `main`；T093 PR #33 实现候选 `189decb...` 的 run `32942810086` 已实际通过 full Windows verification、milestone package/smoke、`CI Gate` 和兼容 `Windows required gate`。
+- active `Dev-Rule` / `Main-Rule` 均要求 PR、讨论解决、`CI Gate`，禁止删除和 non-fast-forward，且没有 bypass actor；`main` strict、`dev` non-strict。classic branch protection API 返回 404 是因为当前采用 rulesets，不代表无保护。
+- PR template、到 `main` 的 milestone CI、change classifier、PR Quality 和统一 Gate 已由 T093 落地；GitHub Milestones 列表为空，不影响本文件定义的 milestone PR 概念。
+- 项目已通过 PR #5/#14/#22/#30 四次将 `dev` 里程碑合入 `main`，并发布 `v0.1.0-alpha.1`、`alpha.2`、`alpha.3` 和 `beta.1` prereleases。
+- 任何 ruleset、workflow、template、merge、tag 或 release 后续写入仍须独立授权和验证。

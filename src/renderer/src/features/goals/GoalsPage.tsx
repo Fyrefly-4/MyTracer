@@ -1,0 +1,433 @@
+import { type ReactNode, useEffect, useRef, useState } from 'react'
+import type {
+  GoalDetailDto,
+  GoalErrorCode,
+  GoalStatusDto,
+  GoalSummaryDto
+} from '../../../../contracts/goals'
+
+const goalStatusText: Record<GoalStatusDto, string> = {
+  active: '活跃',
+  paused: '暂停',
+  ended: '结束'
+}
+
+const goalErrorText: Record<GoalErrorCode, string> = {
+  validation: '请检查必填内容。',
+  'not-found': '目标或行动已不存在，请刷新后重试。',
+  'invalid-transition': '当前状态不能执行这个操作。',
+  'invariant-violation': '这个行动不能作为该目标的当前下一步。',
+  'persistence-failed': '本地数据暂时无法保存或读取。'
+}
+
+interface PendingGoalEnd {
+  readonly goalId: string
+  readonly goalName: string
+}
+
+function GoalWorkspace(): ReactNode {
+  const [statusFilter, setStatusFilter] = useState<GoalStatusDto | ''>('')
+  const [refreshVersion, setRefreshVersion] = useState(0)
+  const [goals, setGoals] = useState<readonly GoalSummaryDto[]>([])
+  const [detail, setDetail] = useState<GoalDetailDto | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [createName, setCreateName] = useState('')
+  const [createDescription, setCreateDescription] = useState('')
+  const [createNextAction, setCreateNextAction] = useState('')
+  const [editName, setEditName] = useState('')
+  const [editDescription, setEditDescription] = useState('')
+  const [selectedActionId, setSelectedActionId] = useState('')
+  const [pendingGoalEnd, setPendingGoalEnd] = useState<PendingGoalEnd | null>(null)
+  const goalEndTriggerRef = useRef<HTMLButtonElement | null>(null)
+
+  useEffect(() => {
+    let active = true
+    window.myTracer.goals.list({ status: statusFilter || null }).then((result) => {
+      if (!active) return
+      if (result.ok) {
+        setGoals(result.value)
+        setError(null)
+      } else {
+        setError(goalErrorText[result.error.code])
+      }
+    })
+    return () => {
+      active = false
+    }
+  }, [statusFilter, refreshVersion])
+
+  const showDetail = (nextDetail: GoalDetailDto): void => {
+    setDetail(nextDetail)
+    setEditName(nextDetail.name)
+    setEditDescription(nextDetail.description ?? '')
+    setSelectedActionId(nextDetail.currentNextActionId ?? '')
+    setPendingGoalEnd(null)
+  }
+
+  const selectGoal = async (goalId: string): Promise<void> => {
+    setBusy(true)
+    const result = await window.myTracer.goals.getDetail({ goalId })
+    setBusy(false)
+    if (result.ok) {
+      showDetail(result.value)
+      setError(null)
+    } else {
+      setError(goalErrorText[result.error.code])
+    }
+  }
+
+  const reloadDetail = async (goalId: string): Promise<void> => {
+    await selectGoal(goalId)
+    setRefreshVersion((version) => version + 1)
+  }
+
+  const submitCreate = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
+    event.preventDefault()
+    setBusy(true)
+    const result = await window.myTracer.goals.create({
+      name: createName,
+      description: createDescription || null,
+      initialNextAction: createNextAction ? { title: createNextAction } : null
+    })
+    setBusy(false)
+    if (result.ok) {
+      showDetail(result.value)
+      setCreateName('')
+      setCreateDescription('')
+      setCreateNextAction('')
+      setStatusFilter('')
+      setRefreshVersion((version) => version + 1)
+      setError(null)
+    } else {
+      setError(goalErrorText[result.error.code])
+    }
+  }
+
+  const submitUpdate = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
+    event.preventDefault()
+    if (!detail) return
+    setBusy(true)
+    const result = await window.myTracer.goals.updateDetails({
+      goalId: detail.id,
+      name: editName,
+      description: editDescription || null
+    })
+    setBusy(false)
+    if (result.ok) {
+      await reloadDetail(detail.id)
+    } else {
+      setError(goalErrorText[result.error.code])
+    }
+  }
+
+  const changeStatus = async (transition: 'pause' | 'resume'): Promise<void> => {
+    if (!detail) return
+    setBusy(true)
+    const result = await window.myTracer.goals[transition]({ goalId: detail.id })
+    setBusy(false)
+    if (result.ok) {
+      await reloadDetail(detail.id)
+    } else {
+      setError(goalErrorText[result.error.code])
+    }
+  }
+
+  const requestGoalEnd = (trigger: HTMLButtonElement): void => {
+    if (!detail) return
+    goalEndTriggerRef.current = trigger
+    setPendingGoalEnd({ goalId: detail.id, goalName: detail.name })
+    setError(null)
+  }
+
+  const dismissGoalEnd = (): void => {
+    setPendingGoalEnd(null)
+    requestAnimationFrame(() => goalEndTriggerRef.current?.focus())
+  }
+
+  const confirmGoalEnd = async (): Promise<void> => {
+    if (!pendingGoalEnd) return
+    const request = pendingGoalEnd
+    setBusy(true)
+    try {
+      const result = await window.myTracer.goals.end({ goalId: request.goalId })
+      setPendingGoalEnd(null)
+      if (result.ok) {
+        await reloadDetail(request.goalId)
+      } else {
+        setError(goalErrorText[result.error.code])
+      }
+    } catch {
+      setPendingGoalEnd(null)
+      setError(goalErrorText['persistence-failed'])
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const saveCurrentNextAction = async (): Promise<void> => {
+    if (!detail) return
+    setBusy(true)
+    const result = await window.myTracer.goals.setCurrentNextAction({
+      goalId: detail.id,
+      actionId: selectedActionId || null
+    })
+    setBusy(false)
+    if (result.ok) {
+      await reloadDetail(detail.id)
+    } else {
+      setError(goalErrorText[result.error.code])
+    }
+  }
+
+  return (
+    <section className="goal-workspace" aria-label="目标管理">
+      {error ? (
+        <p className="form-error" role="alert">
+          {error}
+        </p>
+      ) : null}
+      <div className="goal-grid">
+        <div className="goal-column">
+          <form className="goal-card goal-create" onSubmit={(event) => void submitCreate(event)}>
+            <div className="card-heading">
+              <p className="eyebrow">新目标</p>
+              <h2>留下方向与一个可开始的步骤</h2>
+            </div>
+            <label>
+              目标名称
+              <input
+                required
+                value={createName}
+                onChange={(event) => setCreateName(event.target.value)}
+              />
+            </label>
+            <label>
+              说明（可选）
+              <textarea
+                rows={2}
+                value={createDescription}
+                onChange={(event) => setCreateDescription(event.target.value)}
+              />
+            </label>
+            <label>
+              当前下一步（可选）
+              <input
+                value={createNextAction}
+                onChange={(event) => setCreateNextAction(event.target.value)}
+                placeholder="例如：运行一个 React 状态更新示例"
+              />
+            </label>
+            <button className="primary-button" type="submit" disabled={busy}>
+              创建目标
+            </button>
+          </form>
+
+          <div className="goal-card goal-list-card">
+            <div className="card-heading inline-heading">
+              <div>
+                <p className="eyebrow">目标列表</p>
+                <h2>按当前状态查看</h2>
+              </div>
+              <label className="compact-field">
+                状态
+                <select
+                  value={statusFilter}
+                  onChange={(event) => setStatusFilter(event.target.value as GoalStatusDto | '')}
+                >
+                  <option value="">全部</option>
+                  <option value="active">活跃</option>
+                  <option value="paused">暂停</option>
+                  <option value="ended">结束</option>
+                </select>
+              </label>
+            </div>
+            {goals.length ? (
+              <div className="goal-list">
+                {goals.map((goal) => (
+                  <button
+                    className={`goal-list-item ${detail?.id === goal.id ? 'selected' : ''}`}
+                    key={goal.id}
+                    type="button"
+                    onClick={() => void selectGoal(goal.id)}
+                  >
+                    <span>{goal.name}</span>
+                    <small>
+                      {goalStatusText[goal.status]} ·{' '}
+                      {goal.currentNextActionId ? '有下一步' : '下一步为空'}
+                    </small>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="empty-copy">这个筛选下还没有目标。</p>
+            )}
+          </div>
+        </div>
+
+        <div className="goal-column">
+          {detail ? (
+            <article className="goal-card goal-detail" aria-label={`${detail.name} 详情`}>
+              <div className="detail-title-row">
+                <div>
+                  <p className="eyebrow">{goalStatusText[detail.status]}</p>
+                  <h2>{detail.name}</h2>
+                </div>
+                <span className={`status-badge status-${detail.status}`}>
+                  {goalStatusText[detail.status]}
+                </span>
+              </div>
+              <div className="next-action-panel">
+                <span>当前下一步</span>
+                <strong>{detail.currentNextAction?.title ?? '暂未设置'}</strong>
+                {detail.currentNextAction?.selectedForToday ? <small>今日已选择</small> : null}
+              </div>
+
+              <form className="detail-form" onSubmit={(event) => void submitUpdate(event)}>
+                <label>
+                  目标名称
+                  <input
+                    required
+                    value={editName}
+                    onChange={(event) => setEditName(event.target.value)}
+                  />
+                </label>
+                <label>
+                  说明（可选）
+                  <textarea
+                    rows={2}
+                    value={editDescription}
+                    onChange={(event) => setEditDescription(event.target.value)}
+                  />
+                </label>
+                <button className="secondary-button" type="submit" disabled={busy}>
+                  保存修改
+                </button>
+              </form>
+
+              {detail.status === 'active' ? (
+                <div className="current-action-control">
+                  <label>
+                    选择当前下一步
+                    <select
+                      value={selectedActionId}
+                      onChange={(event) => setSelectedActionId(event.target.value)}
+                    >
+                      <option value="">清空当前下一步</option>
+                      {detail.actions
+                        .filter((action) => action.status === 'pending')
+                        .map((action) => (
+                          <option key={action.id} value={action.id}>
+                            {action.title}
+                          </option>
+                        ))}
+                    </select>
+                  </label>
+                  <button
+                    className="secondary-button"
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void saveCurrentNextAction()}
+                  >
+                    保存当前下一步
+                  </button>
+                </div>
+              ) : null}
+
+              <div className="lifecycle-actions">
+                {detail.status === 'active' ? (
+                  <button type="button" disabled={busy} onClick={() => void changeStatus('pause')}>
+                    暂停目标
+                  </button>
+                ) : null}
+                {detail.status === 'paused' ? (
+                  <button type="button" disabled={busy} onClick={() => void changeStatus('resume')}>
+                    恢复目标
+                  </button>
+                ) : null}
+                {detail.status !== 'ended' ? (
+                  <button
+                    className="end-button"
+                    type="button"
+                    disabled={busy}
+                    onClick={(event) => requestGoalEnd(event.currentTarget)}
+                  >
+                    结束目标
+                  </button>
+                ) : (
+                  <p className="terminal-copy">该目标已结束。已有下一步、行动与记录仍然保留。</p>
+                )}
+              </div>
+              {pendingGoalEnd ? (
+                <div
+                  className="transition-confirmation"
+                  role="alertdialog"
+                  aria-labelledby="goal-end-confirmation-title"
+                >
+                  <div>
+                    <h3 id="goal-end-confirmation-title">确认结束目标</h3>
+                    <p>结束“{pendingGoalEnd.goalName}”后不能恢复，但已有下一步和历史会保留。</p>
+                  </div>
+                  <div className="transition-confirmation-actions">
+                    <button
+                      type="button"
+                      autoFocus
+                      disabled={busy}
+                      onClick={() => void confirmGoalEnd()}
+                    >
+                      确认结束
+                    </button>
+                    <button type="button" disabled={busy} onClick={dismissGoalEnd}>
+                      返回
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+
+              <div className="related-section">
+                <h3>关联行动</h3>
+                {detail.actions.length ? (
+                  detail.actions.map((action) => (
+                    <div className="related-row" key={action.id}>
+                      <span>{action.title}</span>
+                      <small>{action.status === 'pending' ? '待行动' : action.status}</small>
+                    </div>
+                  ))
+                ) : (
+                  <p className="empty-copy">暂无关联行动。</p>
+                )}
+              </div>
+              <div className="related-section">
+                <h3>已有记录</h3>
+                {detail.records.length ? (
+                  detail.records.map((record) => (
+                    <div className="related-row" key={record.id}>
+                      <span>
+                        {record.actionTitle} · {record.durationMinutes} 分钟
+                      </span>
+                      <small>
+                        {record.occurredOn} · {record.outcome}
+                      </small>
+                    </div>
+                  ))
+                ) : (
+                  <p className="empty-copy">暂无记录；T011 不会为了填满这里自动创建事实。</p>
+                )}
+              </div>
+            </article>
+          ) : (
+            <div className="goal-card detail-empty">
+              <div className="placeholder-icon" aria-hidden="true">
+                ◎
+              </div>
+              <h2>选择一个目标查看详情</h2>
+              <p>暂停或结束只改变目标状态，不会清除已有下一步和历史。</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+export { GoalWorkspace as GoalsPage }
