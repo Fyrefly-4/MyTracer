@@ -12,10 +12,9 @@
   "shared_surfaces": [
     {
       "files": [
-        "docs/implementation/T803_S3_FINAL_ACCEPTANCE.md",
+        "docs/implementation/archive/S3_T031_T033_ARCHIVE.md",
         "docs/implementation/TASK_INDEX_V0.1.md",
         "docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md",
-        "docs/implementation/archive/S3_T031_T033_ARCHIVE.md",
         "README.md"
       ],
       "modules": ["s3-aggregate-acceptance", "delivery-evidence", "milestone-release-notes"],

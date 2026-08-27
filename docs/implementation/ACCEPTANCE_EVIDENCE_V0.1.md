@@ -1,6 +1,6 @@
 # MyTracer v0.1 验收证据
 
-> 文档状态：证据账本已建立；已记录 T001～T004、T011～T014、T021～T023、T031～T033、T801～T803、T090/T091、AC-01、AC-03、AC-04、AC-07、G2、G3/S1、S2 及 G3/S3 聚合证据
+> 文档状态：证据账本已建立；已记录 T001～T004、T011～T014、T021～T023、T031～T033、T801～T805、AC-01、AC-03、AC-04、AC-07、G2、G3/S1、S2 及 G3/S3 聚合证据
 > 作用：记录可复核的命令、版本、环境、产物和人工观察  
 > 禁止：用任务状态、测试名称、关键词存在或 Agent 自述替代实际结果
 
@@ -161,6 +161,8 @@ Artifact 位于 ignored `.tmp/evidence/`，可由 GitHub Actions 作为短期 ar
 | `EV-T091-001` | T091 / GOV-02 | `f12f5e5fa81cf23124be126f2e23486d518104bc` / merge `4674597` | V2 第三批确定性证据采集、CI artifact、metadata 校验和规则同步 | pass | pass | 本地与 hosted 验证通过；PR #24 已合入 `dev`，T031～T033/T803 已实际使用其 artifact/metadata 能力；T092 延后 |
 | `EV-T092-001` | T092 / GOV-04 | `9c7d9d3ae08dc7b32e9895deed1e43d26ca58985` | Standard Task Automation Profile、合同/metadata、Worktree 生命周期和 Workflow/PR 优化目标 | pass | pass | 本地分层验证、完整 diff review、candidate hosted CI 和 owner-approved docs closeout 通过；实际接入由 T093 证明 |
 | `EV-T093-001` | T093 / GOV-05 | `189decb664b0ba2147f3ec1931eabd37bda6fc8d` | Profile 与 lifecycle Skills、PR/CI 双 Gate、ruleset context、长任务等待策略 | pass | pass | 本地治理与完整验证、完整 diff/独立 review、精确 head full+milestone hosted CI、ruleset after snapshot 和 owner-approved docs closeout 通过；final-head CI/merge 仍是 PR 集成 Gate |
+| `EV-T093-002` | T093 / GOV-05 | `2b31bc6be50d805f0dcad73a7a64cc3735a05d09` | PR #33 合入 dev 与 post-merge required checks | pass | not-required | 补充当前集成事实；不覆盖 `EV-T093-001` 的候选时间线，不声明产品验收、Ready、tag 或 release |
+| `EV-T805-001` | T805 / GOV-06 | `c5dc68c2601b150becb1959869d2f48e5954539b` | `/docs` 冗余收敛、已完成治理合同归档和历史快照边界 | partial | not-required | Draft PR #34 已创建；hosted checks 正在运行，项目所有者审阅仍待完成 |
 | `EV-G3-S1-001` | G3/S1 | `623007dd4269df02771f6a526db269de1fe95a03` | T011～T014 同 revision 核心闭环、Windows package 与发布门禁 | fail | pending | `verify`、AC-01 和 package 构建通过；package smoke 因旧 Preload API 断言在 unpacked 阶段失败，NSIS 安装态未验证 |
 | `EV-G3-S1-002` | G3/S1 | `74ebe346a86cf431d87e02e8a1220b713b33901c` | T011～T014/T801 同 revision 核心闭环、Windows package 与发布门禁 | pass | pass | 验收门禁通过；项目所有者后续另行批准 PR #14 合入 `main@3912e80...` 并发布 `v0.1.0-alpha.2` |
 
@@ -1097,3 +1099,58 @@ Agent 只提供步骤和观察位置，不得替项目所有者签署人工验�
 - **Known limitations**：Worktree cleanup 未实现；commit/PR-title convention 仍是建议而非 required check；T041 未创建或启动；docs closeout push 后最新 head 的 required CI 和 merge 状态继续作为 PR 集成事实处理
 - **Supersedes / superseded by**：候选 run `32942810086` supersedes 较早实现 run `32810100037` 作为当前 target revision 证据；本地后续完整成功 supersede sandbox `Target crashed` 和一次 transient timeout 的结论，但失败历史保留
 - **Recorded at**：2026-08-26
+
+### EV-T093-002
+
+- **Status**：pass；补充 T093 已进入 `dev` 的当前集成事实，不取代候选 Evidence
+- **Task / Gate**：T093 / GOV-05；只证明 PR #33 的合入状态和 post-merge required checks，不重新证明产品 FR、AC、Ready、tag 或 release
+- **Requirements**：GW-001、GW-004、GW-005、GW-006、GW-008、GW-009、GW-010；无 FR/AC/D/ED 变化
+- **Source branch / base**：`dev` / `origin/dev@2b31bc6be50d805f0dcad73a7a64cc3735a05d09`
+- **Source revision**：`2b31bc6be50d805f0dcad73a7a64cc3735a05d09`
+- **Task delivery revision**：`189decb664b0ba2147f3ec1931eabd37bda6fc8d`
+- **Dev integration revision**：`2b31bc6be50d805f0dcad73a7a64cc3735a05d09`
+- **Stage final integration revision**：`null`
+- **Integration freshness**：`not-required`；本条只核对已合入 revision 与 post-merge 状态，不重新执行 T093 candidate freshness
+- **CI classification**：`post-merge`；Verification run `32954788941`，head 为 `2b31bc6be50d805f0dcad73a7a64cc3735a05d09`
+- **Environment**：Microsoft Windows 11；GitHub CLI 只读查询；不访问产品数据库、真实凭据或 live AI
+- **Command or procedure**：
+  1. `git log --oneline --decorate --graph -12` 与 `git show -s` 核对当前 `dev`、T093 提交父子关系和 revision。
+  2. `gh pr view 33 --json number,state,isDraft,mergedAt,mergeCommit,headRefName,baseRefName,title` 返回 `MERGED`，merge commit 为 `2b31bc6...`，目标为 `dev`。
+  3. `gh pr checks 33` 显示 `CI Gate`、`Full Windows verification`、`Governance checks`、`Milestone packaging checks`、`PR quality`、`Windows required gate` 和 `Classify changes` 均为 `pass`；Documentation checks 按分类为 `skipping`。
+  4. `gh run list --commit 2b31bc6...` 返回 push Verification run `32954788941`，状态 `completed`、结论 `success`。
+- **Result**：T093 已由 PR #33 合入当前 `dev`；旧合同和 `EV-T093-001` 中的“等待集成”只作为完成时历史快照保留，当前状态由本条和 `TASK_INDEX` 表示。
+- **Artifacts**：PR #33；post-merge Verification run `32954788941`；对应 GitHub check URLs 由 `gh pr checks 33` 输出定位
+- **Manual acceptance**：not-required；本条没有产品行为或体验验收
+- **Known limitations**：Documentation checks 因变更分类跳过；本条不重新运行产品测试，不改变 T093 未实施 Worktree cleanup、未启动 T041 等既有限制
+- **Supersedes / superseded by**：supplements `EV-T093-001`；不删除、不覆盖候选、失败或历史 CI 记录
+- **Recorded at**：2026-08-27
+
+### EV-T805-001
+
+- **Status**：partial；本条证明 T805 的本地文档收敛和结构验证；Draft PR #34 已创建，但 hosted checks 和项目所有者后续审阅尚未完成
+- **Task / Gate**：T805 / GOV-06；只证明 `/docs` 归档、索引收敛、历史边界和引用完整性，不声明产品 FR、AC、阶段门或发布完成
+- **Requirements**：GW-001、GW-003、GW-004、GW-009、GW-010；无 FR/AC/D/ED 变化
+- **Source branch / base**：`task/T805-doc-redundancy` / `dev@2b31bc6be50d805f0dcad73a7a64cc3735a05d09`
+- **Source revision**：`c5dc68c2601b150becb1959869d2f48e5954539b`
+- **Task delivery revision**：`2c4d4fdeeb900a6a575a82c4c7e9367d85a72387`
+- **Dev integration revision**：`null`
+- **Stage final integration revision**：`null`
+- **Integration freshness**：`fresh`；任务分支从当前 `dev@2b31bc6...` 建立，变更验证针对该基线的工作树执行
+- **CI classification**：`candidate`；本地 candidate 文档验证通过；Draft PR #34 的 Verification run `33038603123` 已启动，head 为 `c5dc68c2601b150becb1959869d2f48e5954539b`，当前 `in_progress`
+- **Environment**：Microsoft Windows 11；Node.js/npm 以仓库命令实际运行环境为准；不访问产品数据库、真实凭据或 live AI
+- **Command or procedure**：
+  1. `npm.cmd run format:check` exit 0：所有文件符合 Prettier 格式。
+  2. `npm.cmd run governance:metadata:check` exit 0：8 个 metadata sidecar、1 个 Profile 通过；T092/T803/T804 的 shared surface 引用已指向现存归档。
+  3. `git diff --check` exit 0。
+  4. 只读 Markdown 本地链接解析 exit 0：没有 broken local targets。
+  5. 只读 SHA-256 文件重复扫描 exit 0：没有重复文件。
+  6. `git diff --name-status` 核对变更范围：新增治理归档和 T805 合同，更新 Task Index、Evidence、3 个 metadata sidecar，删除 6 个已归档完整合同；未修改 `/docs` 之外的文件。
+  7. 检查所有删除合同的 Git 恢复 revision 和新归档恢复入口；没有因本次删除产生的活动 Markdown 断链。
+  8. `git show --stat --oneline 2c4d4fdeeb900a6a575a82c4c7e9367d85a72387` 确认首个任务提交包含上述 13 个 `/docs` 文件变更。
+  9. `git push -u origin task/T805-doc-redundancy` 成功；`gh pr view 34` 核对 Draft、目标 `dev` 和 head `c5dc68c...`；`gh pr checks 34` 与 `gh run list --branch task/T805-doc-redundancy` 定位 Verification run `33038603123`，当前仍在运行。
+- **Result**：T090～T093、T804 已有一份治理归档；T803 继续由 S3 归档唯一承载；`TASK_INDEX` 的重复当前结论已压缩；历史 Evidence 和 Escalation Proposal 未删除。
+- **Artifacts**：任务提交 `2c4d4fdeeb900a6a575a82c4c7e9367d85a72387`；候选 head `c5dc68c2601b150becb1959869d2f48e5954539b`；[Draft PR #34](https://github.com/Fyrefly-4/MyTracer/pull/34)；Verification run `33038603123`
+- **Manual acceptance**：pending；项目所有者应在 Draft PR 中检查归档摘要的长期维护适用性
+- **Known limitations**：本任务 hosted CI 尚未完成，尚未取得独立 review 和最终 docs closeout 证据；本条不能使 T805 进入 `done`
+- **Supersedes / superseded by**：不取代任何既有产品或历史 Evidence；后续提交/CI 记录应补充本条，而不是删除本条的 partial 事实
+- **Recorded at**：2026-08-27
