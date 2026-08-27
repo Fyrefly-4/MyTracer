@@ -20,7 +20,7 @@
         "docs/implementation/TASK_TEMPLATE.md",
         "docs/implementation/TASK_INDEX_V0.1.md",
         "docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md",
-        "docs/implementation/T092_STANDARD_TASK_PROFILE.md",
+        "docs/implementation/archive/GOVERNANCE_T090_T093_T804_ARCHIVE.md",
         "tools/governance/validate-task-metadata.mjs",
         "tests/unit/process-governance.test.ts"
       ],
