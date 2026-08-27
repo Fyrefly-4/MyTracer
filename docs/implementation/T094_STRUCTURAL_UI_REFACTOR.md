@@ -2,7 +2,7 @@
 
 > 任务类型：implementation / engineering enabler
 >
-> 合同状态：**active**；项目所有者于 2026-08-27 批准创建任务分支、收口 T805、创建并激活本合同，但要求在 `local_development` 前暂停并等待下一步实际开发指令
+> 合同状态：**done**；实现 Candidate、独立复核、本地完整验证、Windows package smoke、PR #35 exact-head required CI 和项目所有者批准的 docs closeout 均已完成；final-head CI 与合入仍属于 PR 集成门禁
 >
 > 产品边界：本任务只重构 Renderer ownership，不改变产品行为、文案、布局、颜色、间距、响应式断点或交互语义
 
@@ -11,7 +11,7 @@
 - **Task ID**：T094
 - **Title**：Structural UI Refactor
 - **Slice / Plan item**：G4 pre-S4 Renderer foundation；不新增产品切片
-- **Status**：active；实际开发尚未开始
+- **Status**：done；人工同环境视觉对比、PR final-head CI 与 `dev` 合入状态见完成报告
 - **Base branch**：`dev`
 - **Authorized base**：`dev@353a4d42921175374dec178a75ad2748eb184cdf`
 - **Expected branch**：`task/T094-structural-ui-refactor`
@@ -65,7 +65,7 @@ references:
 - [x] 项目所有者已批准 T094 合同、Profile、任务分支和 Draft PR 权限。
 - [x] 不新增依赖、migration、IPC 或产品语义。
 - [x] 当前任务已激活。
-- [ ] 项目所有者尚未发出开始 `local_development` 的下一步指令；在此之前不得修改 Renderer 或测试。
+- [x] 项目所有者于 2026-08-27 发出开始 `local_development` 的明确指令，并在实现 CI 通过后批准 docs closeout 与再次推送。
 
 ```yaml
 dependencies:
@@ -102,7 +102,7 @@ execution:
       phase: local_development
 ```
 
-该暂停点记录项目所有者当前指令：任务保持 `active`，但实际开发必须等待下一步明确指令。它不缩小已批准合同范围，也不把等待误写为 `blocked` 或 `pending`。
+该暂停点保留激活时的 owner gate；项目所有者已于 2026-08-27 明确解除该暂停并授权实际开发。Profile、合同与 sidecar 的激活参数继续一致，不把一次性 owner 决定改写成新的 Profile 权限。
 
 ## 5. 允许修改范围
 
@@ -151,14 +151,14 @@ execution:
 
 ## 8. 交付物
 
-- [ ] `App.tsx` 收敛为 `AppErrorBoundary` 与 `AppShell` 的组合根。
-- [ ] AppShell 只保留 section、ShellStatus、导航和应用壳层。
-- [ ] 六个现有 feature 拥有各自 Renderer 状态、DTO、IPC、刷新和错误文案。
-- [ ] 局部草稿、展开和确认状态未提升到全局。
-- [ ] shared 抽象通过至少两个真实 feature 的复用证明。
-- [ ] 现有 Renderer E2E、AC-01/03/04/07、`verify` 和 Windows package smoke 通过。
-- [ ] 完整 diff 和独立 review 无未处理 finding。
-- [ ] 实现 Candidate、Draft PR、hosted CI 和后续获批 docs closeout 证据。
+- [x] `App.tsx` 收敛为 `AppErrorBoundary` 与 `AppShell` 的组合根。
+- [x] AppShell 只保留 section、ShellStatus、导航和应用壳层。
+- [x] 六个现有 feature 拥有各自 Renderer 状态、DTO、IPC、刷新和错误文案。
+- [x] 局部草稿、展开和确认状态未提升到全局。
+- [x] 未创建 shared abstraction；不存在低于两个真实 feature 复用的 shared component。
+- [x] 现有 Renderer E2E、AC-01/03/04/07、`verify` 和 Windows package smoke 通过。
+- [x] 完整 diff 和独立 review 无未处理 finding。
+- [x] 实现 Candidate、Draft PR、实现 hosted CI 和项目所有者批准的 docs closeout 已由 `EV-T094-001` 记录。
 
 ## 9. 验收标准
 
@@ -207,7 +207,7 @@ npm.cmd run test:package-smoke
 - Node/Electron：使用仓库锁定版本
 - 数据根：自动化使用唯一临时 `userData`；不得访问真实用户数据
 - AI：fake/disabled/not-configured；不得使用 live Provider
-- Source revision：完成时填写
+- Source revision：`543180b85960334808563af49d0aa96caab31b00`
 
 ## 11. Git 与 GitHub 权限
 
@@ -253,7 +253,7 @@ integration:
   base_revision: dev@353a4d42921175374dec178a75ad2748eb184cdf
   freshness_required: true
   affected_regression_required: true
-  task_delivery_revision: null
+  task_delivery_revision: 543180b85960334808563af49d0aa96caab31b00
   dev_integration_revision: null
   stage_final_integration_revision: null
 ```
@@ -272,8 +272,15 @@ integration:
 
 任务特有风险：CSS 级联漂移、StrictMode/effect 竞态、表单草稿重置、recording context 取消、对话框焦点、mutation 后刷新顺序和过度抽象。
 
-## 14. 当前暂停状态与完成报告要求
+## 14. 完成报告
 
-当前状态：合同、Profile 和任务分支已激活；`local_development` 尚未开始，等待项目所有者下一步明确指令。该等待不改变任务 `active` 状态。
-
-最终完成报告必须包含：修改文件、ownership 结果、AC/D/ED 覆盖、实际命令和结果、Evidence artifact、完整 diff/独立 review、branch/commit/PR/CI revision、人工验收状态、残余风险，以及是否发现需求冲突或范围变化。
+- **Ownership 结果**：`App.tsx` 只组合 `AppErrorBoundary` 与 `AppShell`；AppShell 只拥有 section、ShellStatus、导航、Hero、footer 和 feature 组合。Goals、Routines、Today、Progress、Data Control、Review 分别迁入真实 feature 边界；Routine recording 保持明确的 Routine 子边界并由 Today 组合。
+- **结构限制**：未创建 `shared/`、feature-local hook、service/client/repository、Context、Router、全局 Store、cache 或表单框架；`styles.css`、依赖、Renderer E2E、Main、Preload、Domain、Application、IPC/contracts、SQLite 和 migration 均未修改。
+- **Candidate / base**：实现 Candidate 与 task delivery revision 为 `543180b85960334808563af49d0aa96caab31b00`；授权并验证的最新 `dev` base 为 `353a4d42921175374dec178a75ad2748eb184cdf`，Integration Freshness 为 `fresh`。
+- **本地验证**：三组合同定向 Electron E2E 分别 6/6、4/4、3/3 通过；evidence-wrapped `npm.cmd run verify` 通过 159 unit、88 integration、13 Electron E2E；`npm.cmd run package` 和 Windows unpacked/隔离 NSIS smoke 1/1 通过；metadata、format、lint、typecheck 与 diff integrity 通过。
+- **Hosted CI**：PR #35 的 Verification run `33048721709` 在 exact head `543180b...` 上通过 PR quality、Governance checks、Full Windows verification、CI Gate 和 Windows required gate；CI test-merge revision 为 `c54ab7f82117e1673e934663adafac8ddd4c5526`。
+- **Review**：完整 branch diff 和独立只读复核无未处理 finding；没有需求冲突、架构冲突、依赖或范围变化。
+- **Evidence**：`EV-T094-001`；本地 artifact `.tmp/evidence/T094-task-candidate-543180b85960-20260827070521.json`；CI artifact `verification-evidence-33048721709-1`。
+- **人工状态**：项目所有者已批准 docs closeout；同一 Windows 环境的六 section 视觉对比仍为 `pending`，不得由 Agent 代签。CSS、文案、class 和现有语义断言未改，自动化行为回归已通过。
+- **PR 集成状态**：任务账本可在本次 closeout tree 上记为 `done`；closeout push 后的新 final-head required CI、Ready 和合入 `dev` 仍是独立 PR 集成门禁。Agent 未获授权 Ready 或 merge。
+- **下一入口**：T041 仍需独立合同和项目所有者启动授权；它可以在 Goals/Recovery feature 边界内接入，不需要重新设计 `App.tsx`、AppShell 或主导航。
