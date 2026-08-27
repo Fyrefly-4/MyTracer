@@ -1,7 +1,12 @@
 import { spawnSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 
-const REQUIRED_SECTIONS = ['Summary', 'Validation', 'Evidence', 'Risk']
+const REQUIRED_SECTIONS = [
+  { name: 'Summary', aliases: ['Summary', 'Goal'] },
+  { name: 'Validation', aliases: ['Validation', 'Verification'] },
+  { name: 'Evidence', aliases: ['Evidence'] },
+  { name: 'Risk', aliases: ['Risk', 'Risks and gaps'] }
+]
 
 function parseArguments(argv) {
   const options = {}
@@ -55,8 +60,11 @@ function parseSections(body) {
   return new Map([...sections.entries()].map(([name, lines]) => [name, lines.join('\n').trim()]))
 }
 
-function sectionValue(sections, name) {
-  return sections.get(name.toLowerCase()) ?? ''
+function sectionValue(sections, names) {
+  return names
+    .map((name) => sections.get(name.toLowerCase()) ?? '')
+    .filter(Boolean)
+    .join('\n')
 }
 
 function hasActualContext(value) {
@@ -73,6 +81,38 @@ function hasActualContext(value) {
     .filter(Boolean)
 
   return lines.some((line) => !/^(?:tbd|todo|pending|not yet|not run|n\/?a)(?:[.!])?$/i.test(line))
+}
+
+function firstContextLine(value) {
+  return value
+    .split(/\r?\n/)
+    .map((line) =>
+      line
+        .trim()
+        .replace(/^(?:[-*+]|\d+[.)])\s+/, '')
+        .replace(/^\[[ xX]\]\s*/, '')
+        .replace(/[*_`~]/g, '')
+        .trim()
+    )
+    .find(Boolean)
+}
+
+function parseTaskDeclaration(value) {
+  const declaration = firstContextLine(value)
+  if (!declaration) {
+    return { taskId: undefined, invalidTaskId: false }
+  }
+
+  if (!/^T\d/i.test(declaration)) {
+    return { taskId: undefined, invalidTaskId: false }
+  }
+
+  const taskId = declaration.match(/^T\d{3}(?=$|[\s:/|\-—])/i)?.[0]
+  if (!taskId) {
+    return { taskId: undefined, invalidTaskId: true }
+  }
+
+  return { taskId: taskId.toUpperCase(), invalidTaskId: false }
 }
 
 function escapeWorkflowMessage(value) {
@@ -116,20 +156,30 @@ function validatePullRequest(pullRequest) {
   const sections = parseSections(body)
   const missing = []
 
-  const task = sectionValue(sections, 'Task')
-  if (!/\bT\d{3}\b/.test(task)) {
-    missing.push('Task must contain a valid Txxx identifier')
+  const task = sectionValue(sections, ['Task'])
+  if (!hasActualContext(task)) {
+    missing.push('Task must contain actual context')
   }
-  for (const name of REQUIRED_SECTIONS) {
-    if (!hasActualContext(sectionValue(sections, name))) {
+  const { taskId, invalidTaskId } = parseTaskDeclaration(task)
+  if (invalidTaskId) {
+    missing.push('Task must use a valid Txxx identifier when declaring a task ID')
+  }
+  for (const { name, aliases } of REQUIRED_SECTIONS) {
+    if (!hasActualContext(sectionValue(sections, aliases))) {
       missing.push(`${name} must contain actual context`)
     }
   }
 
-  const taskId = task.match(/\bT\d{3}\b/)?.[0]
-  const titlePattern = /^(?:feat|fix|test|docs|refactor|chore|build|ci)\(T\d{3}\):\s+\S/i
+  const titlePattern = taskId
+    ? /^(?:feat|fix|test|docs|refactor|chore|build|ci)\(T\d{3}\):\s+\S/i
+    : /^(?:feat|fix|test|docs|refactor|chore|build|ci):\s+\S/i
   if (!titlePattern.test(title) || (taskId && !title.toUpperCase().includes(`(${taskId})`))) {
-    emit('warning', 'PR title should follow type(Txxx): summary and match the Task section')
+    emit(
+      'warning',
+      taskId
+        ? 'PR title should follow type(Txxx): summary and match the Task section'
+        : 'PR title should follow type: summary when the PR has no single task ID'
+    )
   }
   validateCommitTitles(pullRequest, titlePattern)
 

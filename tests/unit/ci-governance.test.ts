@@ -270,7 +270,65 @@ describe('PR context validation', () => {
 
     const result = runPrValidator(event)
     expect(result.status).toBe(1)
-    expect(result.stderr).toContain('valid Txxx identifier')
+    expect(result.stderr).toContain('valid Txxx identifier when declaring a task ID')
+  })
+
+  test('does not treat a malformed task prefix as non-task context', () => {
+    const event = writePullRequestEvent()
+    const parsed = JSON.parse(readFileSync(event, 'utf8'))
+    parsed.pull_request.body = parsed.pull_request.body.replace('T093', 'T093A')
+    writeFileSync(event, JSON.stringify(parsed), 'utf8')
+
+    const result = runPrValidator(event)
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('valid Txxx identifier when declaring a task ID')
+  })
+
+  test('accepts stage context and workflow heading aliases when Ready', () => {
+    const result = runPrValidator(
+      writePullRequestEvent({
+        title: 'docs: approve S4/S5 recovery and review design',
+        body: [
+          '## Task',
+          'S4/S5 stage architecture design; no T041-T052 implementation task is activated.',
+          '## Goal',
+          'Publish the owner-approved Recovery and Review design.',
+          '## Verification',
+          'Formatting and governance metadata checks passed.',
+          '## Evidence',
+          'Local design review is bound to the current revision.',
+          '## Risks and gaps',
+          'Implementation and manual acceptance remain pending.'
+        ].join('\n')
+      })
+    )
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).not.toContain('::warning')
+    expect(result.stdout).toContain('satisfies the structural requirements')
+  })
+
+  test('does not infer a task ID from task exclusions', () => {
+    const result = runPrValidator(
+      writePullRequestEvent({
+        title: 'docs: record stage design',
+        body: [
+          '## Task',
+          'Stage design only; T041 is not activated.',
+          '## Summary',
+          'Record the approved stage boundaries.',
+          '## Validation',
+          'Documentation checks passed.',
+          '## Evidence',
+          'Review is bound to the current revision.',
+          '## Risk',
+          'Implementation remains excluded.'
+        ].join('\n')
+      })
+    )
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).not.toContain('match the Task section')
   })
 
   test('rejects placeholder context when Ready', () => {
