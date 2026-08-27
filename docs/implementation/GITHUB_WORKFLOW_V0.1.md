@@ -151,6 +151,8 @@ Evidence ID、CI、截图或产物
 无 / 已批准依赖
 ```
 
+PR Quality 对既有正文保持兼容：`Goal`/`Summary`、`Verification`/`Validation`、`Risks and gaps`/`Risk` 分别视为同一类必要上下文。普通任务 PR 的 `Task` 应以单个 `Txxx` 开头；阶段设计、阶段验收、里程碑或明确的非任务治理 PR 可以在 `Task` 中写明对应上下文，不得为了通过校验虚构任务编号。校验器只从明确的任务声明中提取 Task ID，不从排除项或说明句中的 `Txxx` 引用推断当前任务。
+
 ### Draft 转 Ready 条件
 
 - 任务合同范围已经完成；
@@ -355,7 +357,7 @@ CI Router / Change Classifier
 - 按 PR number 或 branch/ref 设置 concurrency，并用 `cancel-in-progress: true` 取消同一 PR/分支已被新 revision 取代的旧 CI。
 - 上述优化不改变 merge handoff：`Implementation Candidate → owner-approved docs closeout → final-head CI → owner-controlled Ready → owner-approved merge`。CI 只提供进入下一 Gate 的事实，不自动改变任务/PR 状态。
 
-当前 PR template 包含 `Task`、`Summary`、`Requirements`、`Scope`、`Exclusions`、`Validation`、`Evidence`、`Risk`、`Dependency changes` 和可选 `CI mode`。PR Quality Check 只检查必要上下文是否存在；它不判断实现正确性，也不替代完整 diff review、独立 review、CI、人工体验或 owner merge 决策。
+当前 PR template 包含 `Task`、`Summary`、`Requirements`、`Scope`、`Exclusions`、`Validation`、`Evidence`、`Risk`、`Dependency changes` 和可选 `CI mode`。PR Quality Check 只检查必要上下文是否存在，并接受 §5 所列的既有标题别名和非任务工作上下文；它不判断实现正确性，也不替代完整 diff review、独立 review、CI、人工体验或 owner merge 决策。
 
 推荐任务提交和 task PR squash 标题采用 `<type>(Txxx): description`，建议 `type` 为 `feat`、`fix`、`test`、`docs`、`refactor`、`chore`、`build` 或 `ci`。这是可读性规范，不是当前 required check，不追溯重写历史；若未来升级为强制检查，必须另行定义例外、迁移和失败语义。
 
