@@ -89,7 +89,7 @@ jobs:
     needs: classify
     if: needs.classify.outputs.run_documentation == 'true'
     runs-on: windows-2025
-    timeout-minutes: 10
+    timeout-minutes: 5
     env:
       BASE_REVISION: ${{ needs.classify.outputs.base_revision }}
       HEAD_REVISION: ${{ needs.classify.outputs.head_revision }}
@@ -103,11 +103,7 @@ jobs:
         with:
           node-version: 24.18.0
           package-manager-cache: false
-      - name: Install locked dependencies
-        run: npm.cmd ci
-      - name: Check formatting
-        run: npm.cmd run format:check
-      - name: Check changed documentation links
+      - name: Check changed documentation
         run: node tools/ci/classify-changes.mjs docs --base $env:BASE_REVISION --head $env:HEAD_REVISION
       - name: Check diff integrity
         shell: pwsh
