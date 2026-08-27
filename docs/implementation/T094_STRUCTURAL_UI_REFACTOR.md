@@ -2,7 +2,7 @@
 
 > 任务类型：implementation / engineering enabler
 >
-> 合同状态：**done**；实现 Candidate、独立复核、本地完整验证、Windows package smoke、PR #35 exact-head required CI 和项目所有者批准的 docs closeout 均已完成；final-head CI 与合入仍属于 PR 集成门禁
+> 合同状态：**done**；实现 Candidate、独立复核、本地完整验证、Windows package smoke、PR #35 final-head required CI、项目所有者批准的 docs closeout 与 `dev` 集成均已完成；同环境视觉对比仍单独为 `pending`
 >
 > 产品边界：本任务只重构 Renderer ownership，不改变产品行为、文案、布局、颜色、间距、响应式断点或交互语义
 
@@ -11,7 +11,7 @@
 - **Task ID**：T094
 - **Title**：Structural UI Refactor
 - **Slice / Plan item**：G4 pre-S4 Renderer foundation；不新增产品切片
-- **Status**：done；人工同环境视觉对比、PR final-head CI 与 `dev` 合入状态见完成报告
+- **Status**：done；PR #35 已合入 `dev@2632ff0638fb02533100a1f9d0aea9f1323dbde3`，人工同环境视觉对比状态见完成报告
 - **Base branch**：`dev`
 - **Authorized base**：`dev@353a4d42921175374dec178a75ad2748eb184cdf`
 - **Expected branch**：`task/T094-structural-ui-refactor`
@@ -254,8 +254,8 @@ integration:
   freshness_required: true
   affected_regression_required: true
   task_delivery_revision: 543180b85960334808563af49d0aa96caab31b00
-  dev_integration_revision: null
-  stage_final_integration_revision: null
+  dev_integration_revision: 2632ff0638fb02533100a1f9d0aea9f1323dbde3
+  stage_final_integration_revision: 2632ff0638fb02533100a1f9d0aea9f1323dbde3
 ```
 
 ## 13. 风险与停止条件
@@ -278,9 +278,9 @@ integration:
 - **结构限制**：未创建 `shared/`、feature-local hook、service/client/repository、Context、Router、全局 Store、cache 或表单框架；`styles.css`、依赖、Renderer E2E、Main、Preload、Domain、Application、IPC/contracts、SQLite 和 migration 均未修改。
 - **Candidate / base**：实现 Candidate 与 task delivery revision 为 `543180b85960334808563af49d0aa96caab31b00`；授权并验证的最新 `dev` base 为 `353a4d42921175374dec178a75ad2748eb184cdf`，Integration Freshness 为 `fresh`。
 - **本地验证**：三组合同定向 Electron E2E 分别 6/6、4/4、3/3 通过；evidence-wrapped `npm.cmd run verify` 通过 159 unit、88 integration、13 Electron E2E；`npm.cmd run package` 和 Windows unpacked/隔离 NSIS smoke 1/1 通过；metadata、format、lint、typecheck 与 diff integrity 通过。
-- **Hosted CI**：PR #35 的 Verification run `33048721709` 在 exact head `543180b...` 上通过 PR quality、Governance checks、Full Windows verification、CI Gate 和 Windows required gate；CI test-merge revision 为 `c54ab7f82117e1673e934663adafac8ddd4c5526`。
-- **Review**：完整 branch diff 和独立只读复核无未处理 finding；没有需求冲突、架构冲突、依赖或范围变化。
-- **Evidence**：`EV-T094-001`；本地 artifact `.tmp/evidence/T094-task-candidate-543180b85960-20260827070521.json`；CI artifact `verification-evidence-33048721709-1`。
+- **Hosted CI**：PR #35 implementation-candidate run `33048721709` 在 head `543180b...` 上通过；docs closeout 后 final-head run `33051015744` 在 PR head `e2d75b16c142057ab43e600ae3d010464f9adf13`、test-merge `c7c8ebd7e9bfdddbac9c1fb31b2ca3cdd47e37f3` 上通过 PR quality、Governance checks、Full Windows verification、CI Gate 和 Windows required gate。项目所有者随后将 PR #35 合入 `dev@2632ff0638fb02533100a1f9d0aea9f1323dbde3`；post-merge push run `33052115133` 的 Governance checks、Full Windows verification、CI Gate 和 Windows required gate 通过。
+- **Review**：完整 branch diff 和独立只读复核无未处理 finding；S4 前聚合复核再次确认 `styles.css`、依赖、Renderer E2E、Main、Preload、Domain、Application、IPC/contracts、SQLite 和 migration 无差异，且没有需求冲突、架构冲突、依赖或范围变化。
+- **Evidence**：`EV-T094-001`、`EV-PRE-S4-FOUNDATION-001`；本地 artifact `.tmp/evidence/T094-task-candidate-543180b85960-20260827070521.json`；CI artifacts `verification-evidence-33048721709-1` 与 `verification-evidence-33051015744-1`。
 - **人工状态**：项目所有者已批准 docs closeout；同一 Windows 环境的六 section 视觉对比仍为 `pending`，不得由 Agent 代签。CSS、文案、class 和现有语义断言未改，自动化行为回归已通过。
-- **PR 集成状态**：任务账本可在本次 closeout tree 上记为 `done`；closeout push 后的新 final-head required CI、Ready 和合入 `dev` 仍是独立 PR 集成门禁。Agent 未获授权 Ready 或 merge。
+- **PR 集成状态**：项目所有者已将 PR #35 合入 `dev@2632ff0638fb02533100a1f9d0aea9f1323dbde3`；该事实不追溯扩大任务权限，也不授权 `dev -> main` merge、tag 或 release。
 - **下一入口**：T041 仍需独立合同和项目所有者启动授权；它可以在 Goals/Recovery feature 边界内接入，不需要重新设计 `App.tsx`、AppShell 或主导航。

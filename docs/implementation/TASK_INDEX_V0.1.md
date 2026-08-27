@@ -1,7 +1,7 @@
 # MyTracer v0.1 任务索引
 
 > 文档状态：v0.1 实施任务基线  
-> 当前阶段：S0～S3 已完成并形成 `v0.1.0-beta.1` 里程碑；T805 已由 PR #34 合入 `dev@353a4d42921175374dec178a75ad2748eb184cdf`；T094 实现 Candidate 与 owner-approved docs closeout 已完成，T041 保持 `pending`
+> 当前阶段：S0～S3 已完成并形成 `v0.1.0-beta.1` 里程碑；T804、T092、T093、T805、T094 均已进入 `dev@2632ff0638fb02533100a1f9d0aea9f1323dbde3`；S4 前工程治理与 UI Foundation 聚合的本地 candidate 已通过，T041 保持 `pending`
 > 状态来源：本文件是任务执行状态的唯一账本，架构实施计划只定义范围和顺序
 
 ## 1. 使用规则
@@ -39,7 +39,8 @@
 - T090～T093、T804 的完整治理合同已收敛至 [`archive/GOVERNANCE_T090_T093_T804_ARCHIVE.md`](archive/GOVERNANCE_T090_T093_T804_ARCHIVE.md)；T803 不在此重复归档。
 - T093 已由 PR #33 合入当前 `dev@2b31bc6be50d805f0dcad73a7a64cc3735a05d09`；post-merge Verification run `32954788941` 的 required checks 通过，补充事实见 `EV-T093-002`。
 - T805 已由 PR #34 final head `979fa1cd11da9c0e4a28e6c37e63a3e8e695c95f` 的 required CI 验证，并合入 `dev@353a4d42921175374dec178a75ad2748eb184cdf`；最终事实见 `EV-T805-002`。
-- T094 实现 Candidate `543180b85960334808563af49d0aa96caab31b00` 已通过本地完整验证、Windows package smoke、独立复核和 PR #35 exact-head required CI；项目所有者已批准 docs closeout，任务结果见 `EV-T094-001`。closeout push 后 final-head CI 与合入仍是 PR 集成门禁。
+- T094 实现 Candidate `543180b85960334808563af49d0aa96caab31b00` 已通过本地完整验证、Windows package smoke 和独立复核；PR #35 final-head `e2d75b16c142057ab43e600ae3d010464f9adf13` 的 required CI 通过，并由项目所有者合入 `dev@2632ff0638fb02533100a1f9d0aea9f1323dbde3`。任务结果见 `EV-T094-001`。
+- S4 前工程治理与 UI Foundation 聚合不登记为新任务；固定产品 source `dev@2632ff0638fb02533100a1f9d0aea9f1323dbde3`，范围为 T804、T092、T093、T805、T094。该 revision 的治理 metadata、AC-01/03/04/07 定向回归、完整 `verify`、Windows package/unpacked/隔离 NSIS smoke 与 `main..dev` 独立 review 已通过，候选证据见 `EV-PRE-S4-FOUNDATION-001`；人工视觉对比和聚合文档 PR 的 final-head hosted CI 分别记录，不由本地 candidate 代替。
 - 首个 AI Provider、模型和 SDK 只阻塞 T062，不阻塞 S0～S5 的非 AI 能力。
 
 ## 4. 任务总表
@@ -82,13 +83,14 @@
 
 ## 5. 阶段门与主线合并
 
-| 阶段门           | 任务范围         | 通过后 GitHub 动作                                     |
-| ---------------- | ---------------- | ------------------------------------------------------ |
-| G2 工程就绪      | T001～T004       | PR #5 合入 `main@7cc047e...`；`v0.1.0-alpha.1` 已发布  |
-| G3/S1 核心闭环   | T011～T014/T801  | PR #14 合入 `main@3912e80...`；`v0.1.0-alpha.2` 已发布 |
-| G3/S2 例行与意向 | T021～T023/T802  | PR #22 合入 `main@581e443...`；`v0.1.0-alpha.3` 已发布 |
-| G3/S3 数据安全   | T031～T033/T803  | PR #30 合入 `main@75e51b4...`；`v0.1.0-beta.1` 已发布  |
-| G4 Demo 就绪     | T094、T041～T072 | 全量验收后再决定 `rc.1` 或 `v0.1.0`；不自动授权发布    |
+| 阶段门            | 任务范围                 | 通过后 GitHub 动作                                                                          |
+| ----------------- | ------------------------ | ------------------------------------------------------------------------------------------- |
+| G2 工程就绪       | T001～T004               | PR #5 合入 `main@7cc047e...`；`v0.1.0-alpha.1` 已发布                                       |
+| G3/S1 核心闭环    | T011～T014/T801          | PR #14 合入 `main@3912e80...`；`v0.1.0-alpha.2` 已发布                                      |
+| G3/S2 例行与意向  | T021～T023/T802          | PR #22 合入 `main@581e443...`；`v0.1.0-alpha.3` 已发布                                      |
+| G3/S3 数据安全    | T031～T033/T803          | PR #30 合入 `main@75e51b4...`；`v0.1.0-beta.1` 已发布                                       |
+| S4 前工程/UI 基线 | T804/T092/T093/T805/T094 | `dev@2632ff0...` 本地聚合 candidate 通过；文档 final-head CI 与 `dev -> main` Draft PR 另记 |
+| G4 Demo 就绪      | T094、T041～T072         | 全量验收后再决定 `rc.1` 或 `v0.1.0`；不自动授权发布                                         |
 
 阶段门不会因任务表显示 `done` 自动通过；必须满足开发流程中的自动化和人工验收要求。
 
@@ -104,6 +106,6 @@
 
 - 当前任务状态以本表任务总表为唯一来源，具体验证以 Evidence 账本为准；归档文档只提供历史导航和最小有效事实。
 - S0～S3 均已完成并形成 `v0.1.0-beta.1`；这不表示 G4、AC-02/05/06、自动导入/恢复、AI Provider 或 S4～S7 已完成。
-- T805 已合入 `dev@353a4d42921175374dec178a75ad2748eb184cdf` 并由 `EV-T805-002` 收口；T094 已由 `EV-T094-001` 证明 Structural UI Refactor 实现 Candidate 和 owner-approved closeout，T041 的结构前置已满足但仍需独立合同与启动授权。
+- T805 已合入 `dev@353a4d42921175374dec178a75ad2748eb184cdf` 并由 `EV-T805-002` 收口；T094 已由 `EV-T094-001` 证明 Structural UI Refactor 完整任务交付并进入 `dev@2632ff0638fb02533100a1f9d0aea9f1323dbde3`。S4 前聚合 candidate 由 `EV-PRE-S4-FOUNDATION-001` 绑定同一产品 source；T041 的结构前置已满足但仍需独立合同与启动授权。
 - T090～T093、T804 的完整合同和 T803 的聚合合同均已按阶段/治理归档，失败、partial 和历史候选 Evidence 继续保留。
-- T094 只完成 Structural UI Refactor；它未实现 T041、S4～S7，也未改变产品语义、依赖、migration、IPC 或发布权限。PR #35 的 final-head CI、Ready 与 `dev` 合入继续按集成门禁处理。
+- T094 只完成 Structural UI Refactor；它未实现 T041、S4～S7，也未改变产品语义、依赖、migration、IPC 或发布权限。S4 前聚合验收不等于 G4、AC-02/05/06、tag 或 release 完成，`dev -> main` merge 仍由项目所有者针对确切 PR 决定。
