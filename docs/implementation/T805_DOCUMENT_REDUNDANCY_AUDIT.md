@@ -224,7 +224,7 @@ integration:
   base_revision: dev@2b31bc6be50d805f0dcad73a7a64cc3735a05d09
   freshness_required: true
   affected_regression_required: true
-  task_delivery_revision: null
+  task_delivery_revision: 2c4d4fdeeb900a6a575a82c4c7e9367d85a72387
   dev_integration_revision: null
   stage_final_integration_revision: null
 ```
