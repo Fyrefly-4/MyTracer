@@ -2,7 +2,7 @@
 
 > 任务类型：流程治理 / 纯文档收敛
 >
-> 合同状态：**review**；本地文档 candidate 已完成，Draft PR #34 已创建，等待 hosted CI 和项目所有者审阅
+> 合同状态：**done**；PR #34 final head `979fa1cd11da9c0e4a28e6c37e63a3e8e695c95f` 的 required CI 通过，并于 2026-08-27 合入 `dev@353a4d42921175374dec178a75ad2748eb184cdf`
 >
 > 项目所有者授权：2026-08-27 明确批准建立任务分支，并直接执行已确认的 1～4 项；完成验证后允许创建提交、推送任务分支和创建 Draft PR
 >
@@ -13,7 +13,7 @@
 - **Task ID**：T805
 - **Title**：收敛 `/docs` 文档冗余并归档已完成治理任务合同
 - **Slice / Plan item**：GOV-06 / Documentation redundancy and completed-contract archive
-- **Status**：review
+- **Status**：done
 - **Base branch**：`dev`
 - **Observed authorized base**：`origin/dev@2b31bc6be50d805f0dcad73a7a64cc3735a05d09`
 - **Expected branch**：`task/T805-doc-redundancy`
@@ -97,6 +97,7 @@ dependencies:
 - `docs/implementation/metadata/T092.json`
 - `docs/implementation/metadata/T803.json`
 - `docs/implementation/metadata/T804.json`
+- `.github/workflows/verify.yml`，仅限项目所有者在 PR #34 final head 接受的 documentation job 超时和依赖安装收敛
 - 删除已归档的完整合同：
   - `docs/implementation/T090_AGENT_PROCESS_REVISION_V2.md`
   - `docs/implementation/T091_AGENT_PROCESS_AUTOMATION.md`
@@ -108,7 +109,7 @@ dependencies:
 ## 6. 明确非范围
 
 - 不改变冻结需求、产品决定、架构、FR、AC、D、ED 或用户可见语义。
-- 不修改产品代码、测试代码、依赖、lockfile、schema、migration、Workflow、Skill、`README.md`、`user/` 或 GitHub 配置。
+- 不修改产品代码、测试代码、依赖、lockfile、schema、migration、Skill、`README.md`、`user/` 或 GitHub 配置；PR #34 final head 已接受的 `.github/workflows/verify.yml` documentation job 窄修正除外。
 - 不删除或合并失败 Evidence、partial Evidence、Escalation Proposal 或现有 S0～S3 归档。
 - 不把 T803 再复制到新的独立归档；T803 继续保留在 S3 归档中。
 - 不自动启动 T041，不执行 Ready、merge、tag 或 release。
@@ -128,7 +129,7 @@ dependencies:
 - [x] T093 当前 `dev` 合入事实的补充证据，不改写候选 Evidence。
 - [x] 历史快照边界说明。
 - [x] 文档链接、格式和治理结构验证结果。
-- [ ] 本任务的验收证据和 Draft PR 交付信息。
+- [x] 本任务的验收证据、final-head CI 和 PR #34 集成交付信息。
 
 ## 9. 验收标准
 
@@ -173,7 +174,7 @@ git diff --check
 - Node：以仓库实际命令输出为准
 - Electron：不适用
 - 数据根：不适用；不访问产品数据库
-- Source revision：完成时填写
+- Source revision：`979fa1cd11da9c0e4a28e6c37e63a3e8e695c95f`
 
 ## 11. Git 与 GitHub 权限
 
@@ -224,8 +225,8 @@ integration:
   base_revision: dev@2b31bc6be50d805f0dcad73a7a64cc3735a05d09
   freshness_required: true
   affected_regression_required: true
-  task_delivery_revision: 2c4d4fdeeb900a6a575a82c4c7e9367d85a72387
-  dev_integration_revision: null
+  task_delivery_revision: 979fa1cd11da9c0e4a28e6c37e63a3e8e695c95f
+  dev_integration_revision: 353a4d42921175374dec178a75ad2748eb184cdf
   stage_final_integration_revision: null
 ```
 
@@ -240,4 +241,10 @@ integration:
 
 ## 14. 完成报告
 
-完成时填写：修改/删除文件、归档摘要、TASK_INDEX/Evidence 变化、验证命令和结果、task delivery revision、Draft PR/CI 标识、残余风险、人工检查状态，以及是否发现需求冲突或范围变化。
+- **Result**：T090～T093、T804 已收敛为治理归档，T803 继续由 S3 归档唯一承载；PR #34 已合入 `dev`，T805 durable 状态与实际集成事实一致。
+- **Task delivery revision**：`979fa1cd11da9c0e4a28e6c37e63a3e8e695c95f`
+- **Dev integration revision**：`353a4d42921175374dec178a75ad2748eb184cdf`
+- **Validation**：PR #34 final-head Verification run `33044265750` 的 Governance checks、Full Windows verification、CI Gate 和 Windows required gate 均为 `success`。
+- **Manual acceptance**：pass；项目所有者于 2026-08-27 明确授权将 T805 更新为实际完成状态。
+- **Scope note**：final head 包含 `.github/workflows/verify.yml` documentation job 的窄收敛；不改变产品 FR、AC、D、ED、依赖、migration 或发布权限。
+- **Known limitations**：T805 不实现 Worktree cleanup，不启动 T041，也不授权 Ready、merge、tag 或 release；历史 `EV-T805-001` partial 记录继续保留，由 `EV-T805-002` 补充最终事实。

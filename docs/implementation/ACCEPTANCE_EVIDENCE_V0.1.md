@@ -163,6 +163,7 @@ Artifact 位于 ignored `.tmp/evidence/`，可由 GitHub Actions 作为短期 ar
 | `EV-T093-001` | T093 / GOV-05 | `189decb664b0ba2147f3ec1931eabd37bda6fc8d` | Profile 与 lifecycle Skills、PR/CI 双 Gate、ruleset context、长任务等待策略 | pass | pass | 本地治理与完整验证、完整 diff/独立 review、精确 head full+milestone hosted CI、ruleset after snapshot 和 owner-approved docs closeout 通过；final-head CI/merge 仍是 PR 集成 Gate |
 | `EV-T093-002` | T093 / GOV-05 | `2b31bc6be50d805f0dcad73a7a64cc3735a05d09` | PR #33 合入 dev 与 post-merge required checks | pass | not-required | 补充当前集成事实；不覆盖 `EV-T093-001` 的候选时间线，不声明产品验收、Ready、tag 或 release |
 | `EV-T805-001` | T805 / GOV-06 | `c5dc68c2601b150becb1959869d2f48e5954539b` | `/docs` 冗余收敛、已完成治理合同归档和历史快照边界 | partial | not-required | Draft PR #34 已创建；hosted checks 正在运行，项目所有者审阅仍待完成 |
+| `EV-T805-002` | T805 / GOV-06 | task `979fa1c` / dev `353a4d4` | PR #34 final-head CI、owner closeout 与 dev 集成 | pass | pass | 补充 `EV-T805-001` 的候选时间线；T805 已完成，不声明产品 FR/AC 或发布权限 |
 | `EV-G3-S1-001` | G3/S1 | `623007dd4269df02771f6a526db269de1fe95a03` | T011～T014 同 revision 核心闭环、Windows package 与发布门禁 | fail | pending | `verify`、AC-01 和 package 构建通过；package smoke 因旧 Preload API 断言在 unpacked 阶段失败，NSIS 安装态未验证 |
 | `EV-G3-S1-002` | G3/S1 | `74ebe346a86cf431d87e02e8a1220b713b33901c` | T011～T014/T801 同 revision 核心闭环、Windows package 与发布门禁 | pass | pass | 验收门禁通过；项目所有者后续另行批准 PR #14 合入 `main@3912e80...` 并发布 `v0.1.0-alpha.2` |
 
@@ -1153,4 +1154,29 @@ Agent 只提供步骤和观察位置，不得替项目所有者签署人工验�
 - **Manual acceptance**：pending；项目所有者应在 Draft PR 中检查归档摘要的长期维护适用性
 - **Known limitations**：本任务 hosted CI 尚未完成，尚未取得独立 review 和最终 docs closeout 证据；本条不能使 T805 进入 `done`
 - **Supersedes / superseded by**：不取代任何既有产品或历史 Evidence；后续提交/CI 记录应补充本条，而不是删除本条的 partial 事实
+- **Recorded at**：2026-08-27
+
+### EV-T805-002
+
+- **Status**：pass；PR #34 final head required CI、项目所有者收口和 `dev` 集成均已完成
+- **Task / Gate**：T805 / GOV-06 final integration；只证明文档归档、治理事实和任务状态收口，不声明产品 FR、AC、阶段门或发布完成
+- **Requirements**：GW-001、GW-003、GW-004、GW-009、GW-010；无 FR/AC/D/ED 变化
+- **Source branch / base**：`task/T805-doc-redundancy` / `dev@2b31bc6be50d805f0dcad73a7a64cc3735a05d09`
+- **Source revision**：`979fa1cd11da9c0e4a28e6c37e63a3e8e695c95f`
+- **Task delivery revision**：`979fa1cd11da9c0e4a28e6c37e63a3e8e695c95f`
+- **Dev integration revision**：`353a4d42921175374dec178a75ad2748eb184cdf`
+- **Stage final integration revision**：`null`
+- **Integration freshness**：`fresh`；PR #34 从当时最新授权 `dev@2b31bc6...` 建立，最终通过 required CI 后 squash merge 到下一 `dev` revision `353a4d4...`
+- **CI classification**：`final-head`；Verification run `33044265750`，PR head `979fa1cd11da9c0e4a28e6c37e63a3e8e695c95f`
+- **Environment**：GitHub Windows runner；本次状态收口使用本地 Windows Git/GitHub CLI 只读核验；不访问产品数据库、真实凭据或 live AI
+- **Command or procedure**：
+  1. `gh pr view 34 --json ...` 核对 PR 状态为 `MERGED`、目标为 `dev`、final head 为 `979fa1cd...`、merge revision 为 `353a4d4...`、mergedAt 为 `2026-08-27T06:04:47Z`。
+  2. `gh run view 33044265750 --json ...` 核对 final-head run 为 `success`；Governance checks、Full Windows verification、CI Gate 和 Windows required gate 均成功。
+  3. `git diff --name-status 2b31bc6... 353a4d4...` 核对归档、合同、Evidence、metadata 和最终 `.github/workflows/verify.yml` documentation job 窄收敛实际进入 `dev`。
+  4. 项目所有者于 2026-08-27 明确授权将 T805 更新为实际完成状态。
+- **Result**：T090～T093、T804 已收敛到治理归档，T803 继续由 S3 归档唯一承载；T805 的 durable 状态、Evidence 和 `dev` 集成事实一致。
+- **Artifacts**：[PR #34](https://github.com/Fyrefly-4/MyTracer/pull/34)；[Verification run `33044265750`](https://github.com/Fyrefly-4/MyTracer/actions/runs/33044265750)；task delivery `979fa1cd...`；dev integration `353a4d4...`
+- **Manual acceptance**：pass；项目所有者明确批准最终状态收口
+- **Known limitations**：T805 不实现 Worktree cleanup，不启动 T041，也不授权 Ready、merge、tag 或 release；final head 的 Workflow 窄修正不改变产品语义、依赖、migration 或任务权限
+- **Supersedes / superseded by**：supplements and supersedes the completion status of `EV-T805-001` while preserving its partial candidate facts
 - **Recorded at**：2026-08-27
