@@ -728,6 +728,29 @@ button:disabled {
   font-size: 14px;
 }
 
+.recovery-panel {
+  min-height: 420px;
+}
+
+.recovery-fact {
+  display: grid;
+  gap: 5px;
+  margin-top: 20px;
+  padding: 17px;
+  border-radius: 14px;
+  color: #2b4b42;
+  background: #edf3ed;
+}
+
+.recovery-fact span,
+.recovery-fact small {
+  color: #71807a;
+}
+
+.recovery-fact strong {
+  font-size: 24px;
+}
+
 .detail-form,
 .current-action-control,
 .lifecycle-actions,

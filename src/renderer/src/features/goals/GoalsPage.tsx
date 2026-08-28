@@ -5,6 +5,7 @@ import type {
   GoalStatusDto,
   GoalSummaryDto
 } from '../../../../contracts/goals'
+import { RecoveryPanel } from './RecoveryPanel'
 
 const goalStatusText: Record<GoalStatusDto, string> = {
   active: '活跃',
@@ -39,6 +40,7 @@ function GoalWorkspace(): ReactNode {
   const [editDescription, setEditDescription] = useState('')
   const [selectedActionId, setSelectedActionId] = useState('')
   const [pendingGoalEnd, setPendingGoalEnd] = useState<PendingGoalEnd | null>(null)
+  const [recoveryGoalId, setRecoveryGoalId] = useState<string | null>(null)
   const goalEndTriggerRef = useRef<HTMLButtonElement | null>(null)
 
   useEffect(() => {
@@ -63,6 +65,7 @@ function GoalWorkspace(): ReactNode {
     setEditDescription(nextDetail.description ?? '')
     setSelectedActionId(nextDetail.currentNextActionId ?? '')
     setPendingGoalEnd(null)
+    setRecoveryGoalId(null)
   }
 
   const selectGoal = async (goalId: string): Promise<void> => {
@@ -266,7 +269,9 @@ function GoalWorkspace(): ReactNode {
         </div>
 
         <div className="goal-column">
-          {detail ? (
+          {detail && recoveryGoalId ? (
+            <RecoveryPanel goalId={recoveryGoalId} onClose={() => setRecoveryGoalId(null)} />
+          ) : detail ? (
             <article className="goal-card goal-detail" aria-label={`${detail.name} 详情`}>
               <div className="detail-title-row">
                 <div>
@@ -282,6 +287,13 @@ function GoalWorkspace(): ReactNode {
                 <strong>{detail.currentNextAction?.title ?? '暂未设置'}</strong>
                 {detail.currentNextAction?.selectedForToday ? <small>今日已选择</small> : null}
               </div>
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={() => setRecoveryGoalId(detail.id)}
+              >
+                查看 Recovery
+              </button>
 
               <form className="detail-form" onSubmit={(event) => void submitUpdate(event)}>
                 <label>

@@ -158,6 +158,12 @@ export interface ProgressQuerySnapshotPersistence {
   readonly routineRecords: readonly RoutineProgressQueryRecordPersistence[]
 }
 
+export interface RecoveryQuerySnapshotPersistence {
+  readonly goal: GoalPersistenceRecord | null
+  readonly actions: readonly ActionPersistenceRecord[]
+  readonly progress: ProgressQuerySnapshotPersistence
+}
+
 export interface CorePersistenceSnapshot {
   readonly goals: readonly GoalPersistenceRecord[]
   readonly actions: readonly ActionPersistenceRecord[]
@@ -245,6 +251,10 @@ export interface ProgressRepositoryPort extends RepositoryPort {
   queryProgressSnapshot(filter: ProgressQueryFilterPersistence): ProgressQuerySnapshotPersistence
 }
 
+export interface RecoveryRepositoryPort extends RepositoryPort {
+  queryRecoverySnapshot(goalId: string): RecoveryQuerySnapshotPersistence
+}
+
 export interface RoutineRepositoryPort extends RepositoryPort {
   findRoutineById(id: string): RoutinePersistenceRecord | null
   listRoutines(status?: RoutineStatus): readonly RoutinePersistenceRecord[]
@@ -313,6 +323,14 @@ export function asProgressRepository(repository: RepositoryPort): ProgressReposi
     throw new TypeError('Repository does not provide the Progress query contract.')
   }
   return repository as ProgressRepositoryPort
+}
+
+export function asRecoveryRepository(repository: RepositoryPort): RecoveryRepositoryPort {
+  const candidate = repository as Partial<RecoveryRepositoryPort>
+  if (typeof candidate.queryRecoverySnapshot !== 'function') {
+    throw new TypeError('Repository does not provide the Recovery query contract.')
+  }
+  return repository as RecoveryRepositoryPort
 }
 
 export function asRoutineRecordRepository(repository: RepositoryPort): RoutineRecordRepositoryPort {

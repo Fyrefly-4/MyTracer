@@ -13,6 +13,7 @@ import type {
   ProgressQueryFilterPersistence,
   ProgressQueryRowPersistenceRecord,
   ProgressQuerySnapshotPersistence,
+  RecoveryQuerySnapshotPersistence,
   ReviewResultPersistenceRecord,
   RoutinePersistenceRecord,
   RoutineRecordPersistenceRecord,
@@ -436,6 +437,20 @@ export class SqliteRepository
         routineRecords: this.queryRoutineProgressRecords(filter)
       })
     )()
+  }
+
+  queryRecoverySnapshot(goalId: string): RecoveryQuerySnapshotPersistence {
+    return this.database.transaction(() => {
+      const goal = this.findGoalById(goalId)
+      return Object.freeze({
+        goal,
+        actions: goal ? this.listActionsByGoalId(goalId) : Object.freeze([]),
+        progress: Object.freeze({
+          actionRows: this.queryActionProgressRows({ goalId, from: null, through: null }),
+          routineRecords: this.queryRoutineProgressRecords({ goalId, from: null, through: null })
+        })
+      })
+    })()
   }
 
   private queryActionProgressRows(
