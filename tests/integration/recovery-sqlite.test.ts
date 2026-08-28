@@ -1,12 +1,13 @@
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { RecoveryService } from '../../src/application/recovery'
-import type {
-  ActionPersistenceRecord,
-  ActionRecordPersistenceRecord,
-  GoalPersistenceRecord,
-  RoutinePersistenceRecord,
-  RoutineRecordPersistenceRecord
+import {
+  asCompleteExportRepository,
+  type ActionPersistenceRecord,
+  type ActionRecordPersistenceRecord,
+  type GoalPersistenceRecord,
+  type RoutinePersistenceRecord,
+  type RoutineRecordPersistenceRecord
 } from '../../src/application/ports/persistence'
 import { SqliteConnection } from '../../src/infrastructure/sqlite/sqlite-connection'
 import { FakeClock } from '../support/fake-clock'
@@ -169,7 +170,8 @@ describe('Recovery SQLite query', () => {
   it('projects one Goal-centred snapshot with five Routine day semantics and remains read-only after reopen', async () => {
     const { path, connection } = await openDatabase()
     seed(connection)
-    const before = connection.repository.readCompleteCoreSnapshot()
+    const completeRepository = asCompleteExportRepository(connection.repository)
+    const before = completeRepository.readCompleteCoreSnapshot()
     const service = new RecoveryService({ repository: connection.repository, clock })
     const result = service.getContext({ goalId })
     expect(result).toMatchObject({
@@ -182,7 +184,7 @@ describe('Recovery SQLite query', () => {
     expect(result.pendingActions.map((item) => item.title)).toEqual(['Run example', 'Read docs'])
     expect(result.confirmedUnderstandings.map((item) => item.text)).toEqual(['State queues work'])
     expect(result.openConfusions.map((item) => item.text)).toEqual(['When is it flushed?'])
-    expect(connection.repository.readCompleteCoreSnapshot()).toEqual(before)
+    expect(completeRepository.readCompleteCoreSnapshot()).toEqual(before)
     expect(service.getContext({ goalId })).toEqual(result)
     clock.setState({
       instant: '2026-09-03T00:05:00.000+08:00',
@@ -196,14 +198,16 @@ describe('Recovery SQLite query', () => {
       daysSinceLastRealAction: 3,
       latestRealRecord: result.latestRealRecord
     })
-    expect(connection.repository.readCompleteCoreSnapshot()).toEqual(before)
+    expect(completeRepository.readCompleteCoreSnapshot()).toEqual(before)
     connection.close()
     const reopened = SqliteConnection.open(path)
     try {
       expect(
         new RecoveryService({ repository: reopened.repository, clock }).getContext({ goalId })
       ).toEqual(advanced)
-      expect(reopened.repository.readCompleteCoreSnapshot()).toEqual(before)
+      expect(asCompleteExportRepository(reopened.repository).readCompleteCoreSnapshot()).toEqual(
+        before
+      )
     } finally {
       reopened.close()
     }
