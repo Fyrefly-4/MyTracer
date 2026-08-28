@@ -2,16 +2,16 @@
 
 > 任务类型：implementation
 >
-> 合同状态：**active**；项目所有者于 2026-08-28 批准并激活 T041，授权合同范围内开发、本地提交、任务分支 push 与到 `dev` 的 Draft PR
+> 合同状态：**done**；task delivery revision、本地完整验证、独立只读复核、PR #39 implementation-candidate required CI、项目所有者人工测试与 owner-approved docs closeout 已完成；Ready、merge、tag 和 release 未授权
 >
-> 执行模式：`standard-task@1`，有效期 30 天，无附加约束；docs closeout、Ready、merge、tag 和 release 仍须另行批准
+> 执行模式：`standard-task@1`，有效期 30 天，无附加约束；docs closeout 已由项目所有者于 2026-08-28 批准，Ready、merge、tag 和 release 仍须另行批准
 
 ## 1. 任务信息
 
 - **Task ID**：T041
 - **Title**：RecoveryContext 查询
 - **Slice / Plan item**：S4 / E4-01
-- **Status**：active
+- **Status**：done
 - **Base branch**：`dev`
 - **Latest verified dev revision**：`dev@22ee97bd9ded88e6e9e025d3afc0c6831d43240c`
 - **Remote-tracking check**：合同编写时本地 `dev` 与 `origin/dev` 均为 `22ee97bd9ded88e6e9e025d3afc0c6831d43240c`，ahead/behind 为 `0/0`
@@ -107,7 +107,7 @@ references:
 - [x] 当前 schemaVersion 仍为 2、exportVersion 仍为 1；T041 不需要 migration 或 export 变化。
 - [x] 现有稳定验证命令和临时数据根/FakeClock 基础设施存在。
 - [x] 项目所有者批准本合同、精确权限和 Automation Profile 选择。
-- [x] 项目所有者明确授权启动 T041，任务状态已变更为 `active`。
+- [x] 项目所有者明确授权启动 T041；任务已按合同从 `active` 执行至 `done`。
 
 ```yaml
 dependencies:
@@ -243,16 +243,16 @@ execution:
 
 ## 8. 交付物
 
-- [ ] pure `RecoveryContextBuilder`、LocalDate 差值和稳定排序。
-- [ ] `RecoveryRepositoryPort.queryRecoverySnapshot(goalId)` 与 SQLite 单事务只读实现。
-- [ ] `GetRecoveryContext` Application Query，使用一次 Main Clock snapshot。
-- [ ] `RecoveryContextDto`、固定 IPC channel、严格输入验证、trusted sender/origin 和安全错误映射。
-- [ ] `window.myTracer.recovery.getContext` 窄 Preload API 与 API shape 回归。
-- [ ] Goals feature 内显式进入/返回的最小只读 Recovery 页面，中性 loading/empty/error 状态。
-- [ ] null、多 Record、五种 Routine 语义、0 分钟、跨日、重开、只读守恒与 IPC 安全的分层测试。
-- [ ] 最小 Electron E2E 证明 AC-05 步骤 1～4；不执行 T042 mutation。
-- [ ] 受影响 AC-01/03/04/07 回归、完整 diff 检查、独立 review 和确定性 Evidence。
-- [ ] 候选 CI 通过后提交 documentation impact matrix，等待项目所有者批准 docs closeout。
+- [x] pure `RecoveryContextBuilder`、LocalDate 差值和稳定排序。
+- [x] `RecoveryRepositoryPort.queryRecoverySnapshot(goalId)` 与 SQLite 单事务只读实现。
+- [x] `GetRecoveryContext` Application Query，使用一次 Main Clock snapshot。
+- [x] `RecoveryContextDto`、固定 IPC channel、严格输入验证、trusted sender/origin 和安全错误映射。
+- [x] `window.myTracer.recovery.getContext` 窄 Preload API 与 API shape 回归。
+- [x] Goals feature 内显式进入/返回的最小只读 Recovery 页面，中性 loading/empty/error 状态。
+- [x] null、多 Record、五种 Routine 语义、0 分钟、跨日、重开、只读守恒与 IPC 安全的分层测试。
+- [x] 最小 Electron E2E 证明 AC-05 步骤 1～4；不执行 T042 mutation。
+- [x] 受影响 AC-01/03/04/07 回归、完整 diff 检查、独立 review 和确定性 Evidence。
+- [x] 候选 CI 通过后提交 documentation impact matrix，并获得项目所有者 docs closeout 授权。
 
 ## 9. 验收标准
 
@@ -272,7 +272,7 @@ execution:
 14. AC-01、AC-03、AC-04、AC-07 受影响回归在同一 candidate revision 通过；T041 不改变既有行为或重新声明这些 AC。
 15. Evidence 只声明 FR-REC01～REC03、D-002 与 AC-05 步骤 1～4贡献；AC-05 步骤 5、完整 AC-05、FR-P05、T042 和 S4 gate 保持 `pending`。
 
-项目所有者的中性文案/可理解性体验检查单独标记 `MANUAL pending`，不得由自动化或 Agent 代签。
+项目所有者于 2026-08-28 报告 T041 人工测试通过；该结果只覆盖本任务只读体验与 AC-05 步骤 1～4，不代签完整 AC-05。
 
 ## 10. 验证计划
 
@@ -308,7 +308,7 @@ git diff --check
 3. 确认页面没有 mutation 操作、自动入口、断签、逾期、失败率、评分、掌握度或人格评价。
 4. 离开并重开后再次查看，确认内容仍来自事实且没有要求补齐空白日。
 
-这些步骤只验收 T041 的只读体验；项目所有者未报告结果前为 `pending`，也不等于完整人工 AC-05。
+这些步骤只验收 T041 的只读体验；项目所有者已于 2026-08-28 报告 `pass`，该结果不等于完整人工 AC-05。
 
 ### 10.4 验证环境
 
@@ -321,19 +321,19 @@ git diff --check
 - 数据根：每 case 唯一临时根；禁止真实 Electron `userData`
 - AI：disabled/not-configured/fake failure；禁止 live Provider
 - Original base revision：`22ee97bd9ded88e6e9e025d3afc0c6831d43240c`
-- Source revision：candidate 形成时填写
+- Source revision：`1e9ab2b80b5b81a8bedd192750281d4042f279d5`
 
 ## 11. Evidence 要求
 
-- **Reserved Evidence ID**：`EV-T041-001`；当前不在 Evidence 账本创建占位条目。
+- **Evidence ID**：`EV-T041-001`；已在 Evidence 账本绑定真实 candidate、命令、hosted CI、人工结果与限制。
 - **Claim boundary**：FR-REC01～REC03、D-002、AC-05 步骤 1～4贡献；不声明完整 AC-05 或 FR-P05。
 - **Required bindings**：合同、需求/设计章节、original base、latest authorized dev、task delivery revision、PR head/test-merge revision、命令、环境、exit code、artifact、人工状态与限制。
 - **Prior regression facts**：`EV-T014-001`、`EV-AC01-001`、`EV-T022-001`、`EV-T031-001`～`EV-T033-001`、`EV-T094-001`、`EV-PRE-S4-FOUNDATION-001`；这些是回归基线，不替代 T041 当前 revision 的测试。
 - **Deterministic artifact**：`.tmp/evidence/T041-task-candidate-*.json`，由显式 argv wrapper 生成；只作事实输入，不自动接受任务。
 - **Hosted CI**：early、candidate、final-head 必须按 revision 分开记录；PR event 的 `ci.headRevision` 与 test-merge `ci.mergeRevision` 不得混用。
 - **Failure retention**：失败/partial artifact 和 exit code 保留；后续成功通过 `supersedes` 关联，不删除失败历史。
-- **Manual status**：项目所有者未执行前保持 `pending`。
-- **Ledger gate**：只有真实结果存在且项目所有者批准 docs closeout scope 后，才允许修改 `ACCEPTANCE_EVIDENCE_V0.1.md`。
+- **Manual status**：项目所有者于 2026-08-28 报告 T041 人工测试 `pass`；不等于完整 AC-05。
+- **Ledger gate**：真实结果与项目所有者 docs closeout 授权均已取得，`EV-T041-001` 按批准范围写入。
 
 ## 12. Git、GitHub 与外部操作权限
 
@@ -382,15 +382,15 @@ integration:
   latest_authorized_dev_revision: dev@22ee97bd9ded88e6e9e025d3afc0c6831d43240c
   freshness_required: true
   affected_regression_required: true
-  freshness_status: null
-  refresh_method: null
-  verified_against_revision: null
-  task_delivery_revision: null
+  freshness_status: fresh
+  refresh_method: not-required
+  verified_against_revision: dev@22ee97bd9ded88e6e9e025d3afc0c6831d43240c
+  task_delivery_revision: 1e9ab2b80b5b81a8bedd192750281d4042f279d5
   dev_integration_revision: null
   stage_final_integration_revision: null
 ```
 
-上述 revision 是合同编写时的真实基线，不预先声明未来 candidate `fresh`。实现开始、candidate、docs closeout 和 merge handoff 前都必须重新核对最新授权 `dev`；发现新 head 或 shared-surface 漂移时按普通 merge refresh 和受影响回归处理，禁止 force-push。
+实现 candidate 与 docs closeout 前均重新核对远端 `dev@22ee97b...`，它仍是 candidate 的直接祖先且 shared surfaces 无漂移，因此 Integration Freshness 为 `fresh`、无需 refresh。PR #39 尚未合入 `dev`，`dev_integration_revision` 与 `stage_final_integration_revision` 保持 `null`。
 
 ## 13. 风险与停止条件
 
@@ -418,6 +418,16 @@ T041 只有在以下事实均由实际结果支持时，才可形成 implementat
 - candidate hosted CI 绑定确切 head/test-merge revision；
 - 只声明 AC-05 步骤 1～4贡献，人工状态如实保留。
 
-随后必须按 Skill 暂停，向项目所有者提交 documentation impact matrix。未获 docs closeout 授权时，不修改任务状态、Evidence 账本或 Draft PR closeout，不创建 docs commit；final-head CI、Ready 和 merge 继续是独立门禁。T041 合入 `dev` 也不自动启动 T042。
+项目所有者已在 implementation-candidate CI 通过后批准精确 docs closeout scope；本合同、TASK_INDEX、Evidence、README 与 Draft PR 正文按批准范围收口。docs closeout push 后的新 head required CI 仍是 PR 集成门禁；Ready 和 merge 未授权，T041 合入 `dev` 也不自动启动 T042。
 
-当前已进入获批的 `standard-task@1` 执行流程。实现候选与 candidate CI 完成后必须在 docs closeout owner gate 停止，提交精确 documentation impact matrix；不得据本合同自动执行 Ready、merge、tag、release 或启动 T042。
+## 15. 完成报告
+
+- **交付结果**：Recovery pure builder、Gregorian LocalDate 差值、Progress facts 复用、Goal 中心单事务 SQLite snapshot、Application Query、固定 IPC、窄 Preload 与 Goals 内显式只读入口均已实现；没有主导航或 mutation。
+- **Task delivery / base**：task delivery revision `1e9ab2b80b5b81a8bedd192750281d4042f279d5`；验证与远端复核的授权 `dev` base 为 `22ee97bd9ded88e6e9e025d3afc0c6831d43240c`，Integration Freshness 为 `fresh`。
+- **本地验证**：targeted Unit 6、Integration 5、Electron E2E 2 项通过；evidence-wrapped `npm.cmd run verify` 通过 format、lint、typecheck、168 unit、92 integration、14 Electron E2E；1 个 opt-in package smoke 按合同 skip。metadata 与 diff integrity 通过。
+- **Hosted CI**：PR #39 implementation-candidate run `33141880180` 在 head `1e9ab2b...`、test-merge `f720ebc...` 上通过 PR quality、Governance、Full Windows verification、CI Gate 与 Windows required gate；artifact 为 `verification-evidence-33141880180-1`。
+- **Review**：完整 branch diff 与独立只读复核无未处理 finding；未发现需求/架构冲突、范围扩大、依赖、migration、schema、export、AI、Review 或 T042 变化。
+- **Evidence**：`EV-T041-001`；失败 candidate artifact 保留并由 `1e9ab2b...` 成功 artifact supersede。
+- **人工状态**：项目所有者于 2026-08-28 报告 T041 人工测试通过；只覆盖本任务与 AC-05 步骤 1～4，不声明完整 AC-05。
+- **PR 集成状态**：PR #39 保持 Draft；docs closeout 新 head required CI 与是否合入 `dev` 由后续 PR Gate/项目所有者决定。Ready、merge、tag 和 release 未授权。
+- **下一入口**：不自动启动 T042；T042 仍需独立合同、基线核对与项目所有者授权。
