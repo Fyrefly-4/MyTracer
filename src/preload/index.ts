@@ -87,6 +87,12 @@ import {
   type UpdateRoutineRecordInputDto
 } from '../contracts/data-control'
 import { EXPORT_CHANNELS, type CompleteExportResult } from '../contracts/exports'
+import {
+  RECOVERY_CHANNELS,
+  type GetRecoveryContextInputDto,
+  type RecoveryContextDto,
+  type RecoveryResult
+} from '../contracts/recovery'
 
 const api: MyTracerApi = Object.freeze({
   shell: Object.freeze({
@@ -161,6 +167,10 @@ const api: MyTracerApi = Object.freeze({
   progress: Object.freeze({
     get: (input: GetProgressInputDto): Promise<ProgressResult<ProgressViewDto>> =>
       ipcRenderer.invoke(PROGRESS_CHANNELS.get, input)
+  }),
+  recovery: Object.freeze({
+    getContext: (input: GetRecoveryContextInputDto): Promise<RecoveryResult<RecoveryContextDto>> =>
+      ipcRenderer.invoke(RECOVERY_CHANNELS.getContext, input)
   }),
   routines: Object.freeze({
     create: (input: CreateRoutineInputDto): Promise<RoutineResult<RoutineDetailDto>> =>

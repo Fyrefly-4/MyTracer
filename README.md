@@ -78,13 +78,6 @@ Electron Main
 - [`docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md`](docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md)：验证和人工验收证据。
 - [`docs/implementation/GITHUB_WORKFLOW_V0.1.md`](docs/implementation/GITHUB_WORKFLOW_V0.1.md)：分支、worktree、PR、CI、合并和发布权限。
 
-### 项目所有者与用户阅读
-
-- [`user/MYTRACER_V0.1_DEVELOPMENT_PROCESS.md`](user/MYTRACER_V0.1_DEVELOPMENT_PROCESS.md)：项目所有者视角的开发流程说明。
-- [`user/MYTRACER_V0.1_USER_GUIDE.md`](user/MYTRACER_V0.1_USER_GUIDE.md)：v0.1 预期使用方式。
-
-`user/` 中的文件是方便人阅读的说明，不是 Agent 或工程实现的规范性依赖。
-
 ## 开发和验证命令
 
 当前工具链使用 Node.js 24.18.0 和 npm 11.16.0。依赖和 Electron 二进制首次还原需要网络访问；核心自动化不访问 live AI Provider。
@@ -140,7 +133,7 @@ task/Txxx-short-name
 
 ## 后续入口
 
-1. 产品任务实时状态以任务索引为准；T041 等后续任务仍须独立合同和项目所有者启动授权。
+1. 产品任务实时状态以任务索引为准；T041 提供从 Goals 显式进入的只读 RecoveryContext，T042 及后续任务仍须独立合同和项目所有者启动授权。
 2. `standard-task@1`、项目生命周期 Skills、PR/CI Gate 与长任务等待策略已经接入；具体任务仍须独立合同和项目所有者授权，Worktree cleanup 仍未实现。
 3. Agent 仍不得从任务完成推定 Ready、merge、tag 或 release 权限。
 

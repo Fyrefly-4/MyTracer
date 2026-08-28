@@ -7,6 +7,7 @@ import { ActionService } from '../application/actions'
 import { TodayService } from '../application/today'
 import { ActionRecordService } from '../application/action-records'
 import { ProgressService } from '../application/progress'
+import { RecoveryService } from '../application/recovery'
 import { RoutineService } from '../application/routines'
 import { RoutineRecordService } from '../application/routine-records'
 import { DataControlService } from '../application/data-control'
@@ -30,6 +31,7 @@ import { registerActionIpc } from './actions-ipc'
 import { registerTodayIpc } from './today-ipc'
 import { registerRecordIpc } from './records-ipc'
 import { registerProgressIpc } from './progress-ipc'
+import { registerRecoveryIpc } from './recovery-ipc'
 import { registerRoutineIpc } from './routines-ipc'
 import { registerRoutineRecordIpc } from './routine-records-ipc'
 import { ActionRecordingContextStore } from './action-recording-contexts'
@@ -208,6 +210,7 @@ app.whenReady().then(async () => {
     generateId: randomUUID
   })
   const progressService = new ProgressService({ repository: sqliteConnection.repository })
+  const recoveryService = new RecoveryService({ repository: sqliteConnection.repository, clock })
   const dataControlService = new DataControlService({
     repository: sqliteConnection.repository,
     unitOfWork: sqliteConnection,
@@ -257,6 +260,11 @@ app.whenReady().then(async () => {
   registerProgressIpc({
     ipc: ipcMain,
     service: progressService,
+    assertSender: (event) => assertTrustedSender(event, mainWindow, getRendererLocation())
+  })
+  registerRecoveryIpc({
+    ipc: ipcMain,
+    service: recoveryService,
     assertSender: (event) => assertTrustedSender(event, mainWindow, getRendererLocation())
   })
   registerDataControlIpc({
