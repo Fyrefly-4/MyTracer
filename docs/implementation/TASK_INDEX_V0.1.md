@@ -1,7 +1,7 @@
 # MyTracer v0.1 任务索引
 
 > 文档状态：v0.1 实施任务基线  
-> 当前阶段：S0～S3 已完成并形成 `v0.1.0-beta.1` 里程碑；T804、T092、T093、T805、T094 均已进入 `dev@2632ff0638fb02533100a1f9d0aea9f1323dbde3`；S4 前工程治理与 UI Foundation 聚合的本地 candidate 已通过，T041 保持 `pending`
+> 当前阶段：S0～S3 已完成并形成 `v0.1.0-beta.1` 里程碑；当前 `dev@22ee97bd9ded88e6e9e025d3afc0c6831d43240c` 已包含 S4 前工程/UI 基线与获批 S4/S5 设计；T041 已由项目所有者激活并进入 `active`
 > 状态来源：本文件是任务执行状态的唯一账本，架构实施计划只定义范围和顺序
 
 ## 1. 使用规则
@@ -61,7 +61,7 @@
 | T031 | E3-01        | 修改、补记、删除影响预览和事务                                                              | FR-L07；FR-R08；FR-D02；ED-008                                       | S1/S2                         | `done`    | `EV-T031-001`                |
 | T032 | E3-02        | UTF-8 JSON 完整导出和引用检查                                                               | FR-D03/D04；D-111；ED-014；AC-07                                     | T031                          | `done`    | `EV-T032-001`                |
 | T033 | E3-03        | AI 关闭/未配置/失败时的数据能力回归                                                         | FR-D05；FR-AI09；D-015                                               | T032                          | `done`    | `EV-T033-001`                |
-| T041 | E4-01        | RecoveryContext 查询                                                                        | FR-REC01～REC03；D-002                                               | S1、T094                      | `pending` | —                            |
+| T041 | E4-01        | RecoveryContext 查询                                                                        | FR-REC01～REC03；D-002                                               | S1、T094                      | `active`  | —                            |
 | T042 | E4-02        | 清理过时内容并重新开始                                                                      | FR-REC04～REC06；FR-P04；D-013；AC-05                                | T041                          | `pending` | —                            |
 | T051 | E5-01        | 周期事实摘要                                                                                | FR-RV01/RV06；D-106；AC-06                                           | S2/S3                         | `pending` | —                            |
 | T052 | E5-02        | ReviewResult 和下一阶段调整                                                                 | FR-RV02～RV05；D-105/110                                             | T051                          | `pending` | —                            |
@@ -106,6 +106,6 @@
 
 - 当前任务状态以本表任务总表为唯一来源，具体验证以 Evidence 账本为准；归档文档只提供历史导航和最小有效事实。
 - S0～S3 均已完成并形成 `v0.1.0-beta.1`；这不表示 G4、AC-02/05/06、自动导入/恢复、AI Provider 或 S4～S7 已完成。
-- T805 已合入 `dev@353a4d42921175374dec178a75ad2748eb184cdf` 并由 `EV-T805-002` 收口；T094 已由 `EV-T094-001` 证明 Structural UI Refactor 完整任务交付并进入 `dev@2632ff0638fb02533100a1f9d0aea9f1323dbde3`。S4 前聚合 candidate 由 `EV-PRE-S4-FOUNDATION-001` 绑定同一产品 source；T041 的结构前置已满足但仍需独立合同与启动授权。
+- T805 已合入 `dev@353a4d42921175374dec178a75ad2748eb184cdf` 并由 `EV-T805-002` 收口；T094 已由 `EV-T094-001` 证明 Structural UI Refactor 完整任务交付并进入 `dev@2632ff0638fb02533100a1f9d0aea9f1323dbde3`。S4 前聚合 candidate 由 `EV-PRE-S4-FOUNDATION-001` 绑定同一产品 source；T041 的结构前置与独立合同已满足，项目所有者已授权其在 `task/T041-recovery-context` 上启动，尚无实现或验收完成声明。
 - T090～T093、T804 的完整合同和 T803 的聚合合同均已按阶段/治理归档，失败、partial 和历史候选 Evidence 继续保留。
 - T094 只完成 Structural UI Refactor；它未实现 T041、S4～S7，也未改变产品语义、依赖、migration、IPC 或发布权限。S4 前聚合验收不等于 G4、AC-02/05/06、tag 或 release 完成，`dev -> main` merge 仍由项目所有者针对确切 PR 决定。
