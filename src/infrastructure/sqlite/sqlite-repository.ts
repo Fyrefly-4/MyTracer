@@ -14,6 +14,7 @@ import type {
   ProgressQueryRowPersistenceRecord,
   ProgressQuerySnapshotPersistence,
   RecoveryQuerySnapshotPersistence,
+  ReviewQuerySnapshotPersistence,
   ReviewResultPersistenceRecord,
   RoutinePersistenceRecord,
   RoutineRecordPersistenceRecord,
@@ -451,6 +452,26 @@ export class SqliteRepository
         })
       })
     })()
+  }
+
+  queryReviewSummarySnapshot(
+    periodStartedOn: string,
+    periodEndedOn: string
+  ): ReviewQuerySnapshotPersistence {
+    return this.database.transaction(() =>
+      Object.freeze({
+        actionRows: this.queryActionProgressRows({
+          goalId: null,
+          from: periodStartedOn,
+          through: periodEndedOn
+        }),
+        routineRecords: this.queryRoutineProgressRecords({
+          goalId: null,
+          from: periodStartedOn,
+          through: periodEndedOn
+        })
+      })
+    )()
   }
 
   private queryActionProgressRows(

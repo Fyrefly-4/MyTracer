@@ -164,6 +164,8 @@ export interface RecoveryQuerySnapshotPersistence {
   readonly progress: ProgressQuerySnapshotPersistence
 }
 
+export type ReviewQuerySnapshotPersistence = ProgressQuerySnapshotPersistence
+
 export interface CorePersistenceSnapshot {
   readonly goals: readonly GoalPersistenceRecord[]
   readonly actions: readonly ActionPersistenceRecord[]
@@ -255,6 +257,13 @@ export interface RecoveryRepositoryPort extends RepositoryPort {
   queryRecoverySnapshot(goalId: string): RecoveryQuerySnapshotPersistence
 }
 
+export interface ReviewRepositoryPort extends RepositoryPort {
+  queryReviewSummarySnapshot(
+    periodStartedOn: string,
+    periodEndedOn: string
+  ): ReviewQuerySnapshotPersistence
+}
+
 export interface RoutineRepositoryPort extends RepositoryPort {
   findRoutineById(id: string): RoutinePersistenceRecord | null
   listRoutines(status?: RoutineStatus): readonly RoutinePersistenceRecord[]
@@ -331,6 +340,14 @@ export function asRecoveryRepository(repository: RepositoryPort): RecoveryReposi
     throw new TypeError('Repository does not provide the Recovery query contract.')
   }
   return repository as RecoveryRepositoryPort
+}
+
+export function asReviewRepository(repository: RepositoryPort): ReviewRepositoryPort {
+  const candidate = repository as Partial<ReviewRepositoryPort>
+  if (typeof candidate.queryReviewSummarySnapshot !== 'function') {
+    throw new TypeError('Repository does not provide the Review summary query contract.')
+  }
+  return repository as ReviewRepositoryPort
 }
 
 export function asRoutineRecordRepository(repository: RepositoryPort): RoutineRecordRepositoryPort {
