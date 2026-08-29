@@ -2,16 +2,16 @@
 
 > 任务类型：implementation
 >
-> 合同状态：**active**；项目所有者已于 2026-08-29 明确批准并激活 T051 与 `standard-task@1`
+> 合同状态：**done**；task delivery candidate、本地完整验证、完整 diff/独立只读 review、PR #41 implementation-candidate required CI、项目所有者人工测试与 owner-approved docs closeout 已完成；Ready、merge、tag 和 release 未授权
 >
-> 当前阶段：项目所有者已明确允许在 S4 acceptance 尚未单独收口的当前状态进入 S5，并批准本合同第 5.2、7～14 节的实现、验证、Evidence artifact 与 Git/GitHub 权限；长期 Evidence ledger 和 docs closeout 仍等待候选 CI 后的单独 owner gate
+> 当前阶段：T051 task delivery 收口；docs closeout 后的新 head required CI 与是否合入 `dev` 仍是 PR Gate，T052 不自动启动
 
 ## 1. 任务信息与基线
 
 - **Task ID**：T051
 - **Title**：周期事实摘要
 - **Slice / Plan item**：S5 / E5-01
-- **Status**：`active`；`TASK_INDEX_V0.1.md` 同步为 `active`
+- **Status**：`done`；`TASK_INDEX_V0.1.md` 同步为 `done`
 - **Base branch**：`dev`
 - **Latest authorized dev revision at activation**：`dev@3f343b8af0216b5e568f2c8f1ed52ac4ef824da3`
 - **Local tracking fact**：合同编写前本地 `dev` 与已记录的 `origin/dev` 均为 `3f343b8af0216b5e568f2c8f1ed52ac4ef824da3`，工作树干净；该 revision 是 T042 经 PR #40 合入 `dev` 的 revision
@@ -258,15 +258,15 @@ execution:
 
 ## 8. 交付物
 
-- [ ] 周一至周日 LocalDate pure boundary 与 ReviewSummary pure builder。
-- [ ] 复用 Progress fact mapping/formula 的 Review Repository consistent snapshot。
-- [ ] sender-bound `ReviewContextStore`、`BeginReview`、`GetReviewSummary` 和 context cancel/cleanup。
-- [ ] 固定 Review DTO、IPC、runtime validation、trusted sender/origin 与窄 Preload API。
-- [ ] Review feature 的周期标题、只读摘要、四种 Routine outcome 分列、空/busy/error 状态。
-- [ ] 周边界、同 filter 一致性、unknown absence、零写入、SQLite snapshot、IPC/API shape 和 Electron E2E 测试。
-- [ ] AC-01、AC-03、AC-04、AC-07 受影响回归与完整 `verify`。
-- [ ] `EV-T051-001` 的 deterministic candidate artifact、独立 review 与准确 manual pending 边界。
-- [ ] candidate CI 后的 documentation impact matrix 与 owner-gated docs closeout 提案。
+- [x] 周一至周日 LocalDate pure boundary 与 ReviewSummary pure builder。
+- [x] 复用 Progress fact mapping/formula 的 Review Repository consistent snapshot。
+- [x] sender-bound `ReviewContextStore`、`BeginReview`、`GetReviewSummary` 和 context cancel/cleanup。
+- [x] 固定 Review DTO、IPC、runtime validation、trusted sender/origin 与窄 Preload API。
+- [x] Review feature 的周期标题、只读摘要、四种 Routine outcome 分列、空/busy/error 状态。
+- [x] 周边界、同 filter 一致性、unknown absence、零写入、SQLite snapshot、IPC/API shape 和 Electron E2E 测试。
+- [x] AC-01、AC-03、AC-04、AC-05、AC-07 受影响回归与完整 `verify`。
+- [x] `EV-T051-001` 的 deterministic candidate artifact、独立 review 与准确人工验收边界。
+- [x] candidate CI 后的 documentation impact matrix、owner-gated docs closeout 授权与独立 docs commit 准备。
 
 ## 9. 验收标准
 
@@ -283,7 +283,7 @@ execution:
 11. 页面和 DTO 不含趋势、比较、score、mastery、completion/failure rate、streak、overdue、提醒、AI 文本或人格评价字段/文案。
 12. 没有新增或改变 schema、migration、`review_results`、export、依赖、Goal/Action/Routine/Today mutation、ReviewResult 或 T052 行为。
 13. AC-01、AC-03、AC-04、AC-07 受影响路径在同一 Implementation Candidate revision 通过；T051 不重新声明这些 AC。
-14. `EV-T051-001` 只从真实结果声明 FR-RV01、FR-RV06、D-106、D-110 的主动进入边界、相关 Progress/Routine 回归与 AC-06 步骤 1 candidate；人工体验保持 `pending`，不声明完整 AC-06、S5 acceptance 或 G4。
+14. `EV-T051-001` 只从真实结果声明 FR-RV01、FR-RV06、D-106、D-110 的主动进入边界、相关 Progress/Routine 回归与 AC-06 步骤 1 candidate；人工体验按项目所有者实际执行结果记录，不声明完整 AC-06、S5 acceptance 或 G4。
 15. Implementation Candidate 相对最新授权 `dev` 的完整 diff、Integration Freshness、affected regression、deterministic evidence 与 independent review 没有未处理 required finding。
 16. T051 完成不自动启动 T052，不授权 migration/export、Ready、merge、main、tag、release、S6 或 S7。
 
@@ -331,7 +331,7 @@ wrapper 使用显式 argv，保留真实 exit code，只写 ignored `.tmp/eviden
 3. 在页面跨周保持打开后确认周期不静默移动；离开并重新进入后才捕获新周。
 4. 确认没有趋势、评分、掌握度、完成率、失败率、streak、提醒或 AI 周计划表达。
 
-项目所有者未执行这些步骤时，manual acceptance 必须保持 `pending`。
+项目所有者于 2026-08-30 报告上述人工步骤全体通过；该结果只覆盖 T051 只读周期事实体验与 AC-06 步骤 1，不声明完整 AC-06、S5 acceptance 或 G4。
 
 ### 10.5 验证环境
 
@@ -345,13 +345,13 @@ wrapper 使用显式 argv，保留真实 exit code，只写 ignored `.tmp/eviden
 
 ## 11. Evidence 要求
 
-- **Proposed Evidence ID**：`EV-T051-001`。
+- **Evidence ID**：`EV-T051-001`。
 - **Claim boundary**：FR-RV01、FR-RV06、D-106、D-110 的主动进入边界、FR-P01～P04/P07/P08 与 Routine 五语义回归、AC-06 步骤 1 candidate；不声明 ReviewResult、完整 AC-06、S5 acceptance、G4、T052、AI 或 S7。
 - **Required bindings**：合同、需求/设计章节、original/latest dev base、Implementation Candidate、task delivery revision、PR head/test-merge revision、命令、Windows 环境、exit code、artifact、manual status、限制与 supersedes。
 - **Deterministic artifact**：`.tmp/evidence/T051-task-candidate-*.json`；只包含 allowlisted facts。
 - **Hosted CI**：early、candidate、docs final-head 与 post-merge 分开记录；PR source head 和 test-merge revision 不得混用。
 - **Failure retention**：失败/partial artifact、CI 与 manual 结果保留，后续成功通过 `supersedes` 关联。
-- **Ledger gate**：实现期不得预写通过 Evidence；只有真实 candidate CI、documentation impact matrix 和项目所有者精确 docs closeout 授权后，才允许更新 `ACCEPTANCE_EVIDENCE_V0.1.md`。
+- **Ledger gate**：真实 candidate CI、documentation impact matrix 与项目所有者精确 docs closeout 授权均已取得，`EV-T051-001` 按批准边界写入。
 
 ## 12. Git、GitHub、外部与数据权限
 
@@ -418,13 +418,13 @@ integration:
   freshness_required: true
   affected_regression_required: true
   status: fresh
-  refresh_method: github-cli-read-only-api-confirmed-remote-dev
-  task_delivery_revision: null
+  refresh_method: not-required
+  task_delivery_revision: eccd00148ac6ca47f3215e03abffb98a732c2558
   dev_integration_revision: null
   stage_final_integration_revision: null
 ```
 
-激活时 SSH fetch 仍失败，但 GitHub CLI 只读 API 已确认远端 `dev` 与本地基线一致，因此当前状态为 `fresh`。从该 revision 创建隔离 worktree；candidate 前必须重新确认并记录 `fresh`、`refreshed-and-passed` 或真实 blocker，不能复用较早绿色结果。
+合同激活、Implementation Candidate 与 docs closeout 前均通过 GitHub API 核对远端 `dev@3f343b8...`；candidate 的 merge-base 与该 revision 相同且 shared surfaces 无漂移，因此 Integration Freshness 为 `fresh`、无需 refresh。PR #41 尚未合入，`dev_integration_revision` 与 `stage_final_integration_revision` 保持 `null`。
 
 ## 13. 风险与停止条件
 
@@ -452,6 +452,8 @@ T051 只有在合同批准并激活后，满足以下事实才形成 implementat
 
 candidate hosted CI 通过后必须暂停并请求项目所有者批准精确 docs closeout scope；Ready、merge、`dev -> main`、tag、release 和 T052 启动始终分别由项目所有者决定。
 
+PR #41 implementation-candidate CI 已通过，documentation impact matrix 与项目所有者 docs closeout 授权已取得。本合同、TASK_INDEX、Evidence、README 与 Draft PR 正文按批准范围收口；metadata 的依赖图、shared surfaces 与有效 Profile 未改变，因此只复验而不制造无事实变更。docs closeout 后的新 head required CI 仍是 PR 集成门禁；Ready 和 merge 未授权，T051 完成或合入 `dev` 不自动启动 T052。
+
 最终或阶段性报告必须列出：
 
 - 新增/修改文件与用户可见结果；
@@ -471,4 +473,16 @@ candidate hosted CI 通过后必须暂停并请求项目所有者批准精确 do
 3. 授权把 `TASK_INDEX` 的 T051 更新为 `active`，创建隔离 worktree、任务分支、reviewable commits、push 和 target `dev` 的 Draft PR；
 4. 指示 Draft PR 推送成功后立即停止，不自主查询或等待 CI。
 
-长期 `ACCEPTANCE_EVIDENCE_V0.1.md`、docs closeout commit、Ready、merge、main、tag、release 与 T052 启动仍需后续精确 owner gate。
+`ACCEPTANCE_EVIDENCE_V0.1.md` 与 docs closeout commit 已获本次精确 owner gate；Ready、merge、main、tag、release 与 T052 启动仍需后续独立授权。
+
+## 16. 完成报告
+
+- **交付结果**：Review 使用 Main Clock 一次捕获进入时当前周，复用 Progress facts 与同一 SQLite 只读 transaction 构建 ReviewSummary；Renderer 只显示时间、真实行动次数、确认理解、开放困惑和四类显式 Routine facts，缺行保持 unknown。
+- **Task delivery / base**：task delivery revision `eccd00148ac6ca47f3215e03abffb98a732c2558`；验证与 docs closeout 前最新授权 `dev` 均为 `3f343b8af0216b5e568f2c8f1ed52ac4ef824da3`，Integration Freshness 为 `fresh`。
+- **本地验证**：targeted Unit 15/15、Integration 10/10 与受影响 Electron E2E 11/11 通过；evidence-wrapped `npm.cmd run verify` 在 task delivery revision 上通过 format、lint、typecheck、181 unit、101 integration、17 Electron E2E，1 个 opt-in package smoke 按配置 skip。metadata 与 diff integrity 通过。
+- **Hosted CI**：PR #41 implementation-candidate run `33261483114` 在 head `eccd001...`、test-merge `1a045050defab972e9364e064bc8b9e96f296518` 上通过 PR quality、Governance、Full Windows verification、CI Gate 与 Windows required gate；artifact 为 `verification-evidence-33261483114-1`。
+- **Review**：完整 branch diff 与独立只读 review 无未处理 finding；未发现需求/架构冲突、范围扩大、依赖、migration、schema、export、AI、ReviewResult 或 T052 变化。
+- **Evidence**：`EV-T051-001`；本地首次 candidate artifact 因 disposable worktree 缺少 Electron native path 失败并保留，由同 revision 的成功完整 verify artifact supersede。
+- **人工状态**：项目所有者于 2026-08-30 报告合同 §10.4 人工测试全体通过；只形成 AC-06 步骤 1 candidate，不声明完整 AC-06 或 S5 acceptance。
+- **PR 集成状态**：PR #41 保持 Draft；docs closeout 新 head required CI 与是否合入 `dev` 由后续 PR Gate/项目所有者决定。Ready、merge、tag 和 release 未授权。
+- **下一入口**：不自动启动 T052；T052 仍需独立合同、基线核对与项目所有者授权。

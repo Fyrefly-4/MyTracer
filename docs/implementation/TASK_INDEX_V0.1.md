@@ -1,7 +1,7 @@
 # MyTracer v0.1 任务索引
 
 > 文档状态：v0.1 实施任务基线  
-> 当前阶段：S0～S3 已完成并形成 `v0.1.0-beta.1` 里程碑；T041/T042 已集成至 `dev@3f343b8af0216b5e568f2c8f1ed52ac4ef824da3`；项目所有者允许在 S4 owner gate 尚未单独决定时进入 S5，并已激活 T051
+> 当前阶段：S0～S3 已完成并形成 `v0.1.0-beta.1` 里程碑；T041/T042 已集成至 `dev@3f343b8af0216b5e568f2c8f1ed52ac4ef824da3`；T051 task delivery、候选 CI 与人工验收已通过并进入 docs closeout，T052 未激活
 > 状态来源：本文件是任务执行状态的唯一账本，架构实施计划只定义范围和顺序
 
 ## 1. 使用规则
@@ -42,6 +42,7 @@
 - T094 实现 Candidate `543180b85960334808563af49d0aa96caab31b00` 已通过本地完整验证、Windows package smoke 和独立复核；PR #35 final-head `e2d75b16c142057ab43e600ae3d010464f9adf13` 的 required CI 通过，并由项目所有者合入 `dev@2632ff0638fb02533100a1f9d0aea9f1323dbde3`。任务结果见 `EV-T094-001`。
 - T041 task delivery revision `1e9ab2b80b5b81a8bedd192750281d4042f279d5` 已通过本地完整验证、独立只读复核、PR #39 implementation-candidate required CI 和项目所有者人工测试；任务结果见 `EV-T041-001`。PR #39 final head `64ac9dddd41413c22b0ec35f99ed9022d1555e25` 已由项目所有者合入为 `dev@695e7bcc25b33279d39e61e28a8730b9cdf16264`，T042 已启动。
 - T042 task delivery revision `b323a9f629699cbec156723700c021151eaf1506` 已通过本地完整验证、完整 diff/独立只读 review、PR #40 implementation-candidate required CI 和项目所有者完整人工 AC-05；任务结果见 `EV-T042-001`。PR #40 已合入 `dev@3f343b8af0216b5e568f2c8f1ed52ac4ef824da3`；S4 owner gate 尚未单独决定，但项目所有者已明确允许进入 S5 并激活 T051。
+- T051 task delivery revision `eccd00148ac6ca47f3215e03abffb98a732c2558` 已通过本地完整验证、完整 diff/独立只读 review、PR #41 implementation-candidate required CI 和项目所有者人工 AC-06 步骤 1；任务结果见 `EV-T051-001`。PR #41 保持 Draft，docs closeout final-head CI、Ready 与 merge 仍是后续 PR Gate；T052 未激活。
 - S4 前工程治理与 UI Foundation 聚合不登记为新任务；固定产品 source `dev@2632ff0638fb02533100a1f9d0aea9f1323dbde3`，范围为 T804、T092、T093、T805、T094。该 revision 的治理 metadata、AC-01/03/04/07 定向回归、完整 `verify`、Windows package/unpacked/隔离 NSIS smoke 与 `main..dev` 独立 review 已通过，候选证据见 `EV-PRE-S4-FOUNDATION-001`；人工视觉对比和聚合文档 PR 的 final-head hosted CI 分别记录，不由本地 candidate 代替。
 - 首个 AI Provider、模型和 SDK 只阻塞 T062，不阻塞 S0～S5 的非 AI 能力。
 
@@ -65,7 +66,7 @@
 | T033 | E3-03        | AI 关闭/未配置/失败时的数据能力回归                                                         | FR-D05；FR-AI09；D-015                                               | T032                          | `done`    | `EV-T033-001`                |
 | T041 | E4-01        | RecoveryContext 查询                                                                        | FR-REC01～REC03；D-002                                               | S1、T094                      | `done`    | `EV-T041-001`                |
 | T042 | E4-02        | 清理过时内容并重新开始                                                                      | FR-REC04～REC06；FR-P04；D-013；AC-05                                | T041                          | `done`    | `EV-T042-001`                |
-| T051 | E5-01        | 周期事实摘要                                                                                | FR-RV01/RV06；D-106；AC-06                                           | S2/S3                         | `active`  | —                            |
+| T051 | E5-01        | 周期事实摘要                                                                                | FR-RV01/RV06；D-106；AC-06                                           | S2/S3                         | `done`    | `EV-T051-001`                |
 | T052 | E5-02        | ReviewResult 和下一阶段调整                                                                 | FR-RV02～RV05；D-105/110                                             | T051                          | `pending` | —                            |
 | T061 | E6-01        | AI 最小上下文选择器和隔离证明                                                               | FR-AI01/03/08/10；D-108；ED-011                                      | S1/S3                         | `pending` | —                            |
 | T062 | E6-02        | 可替换 Provider、超时和失败降级                                                             | FR-AI02～AI04/AI07/AI09；D-012/013/015                               | T061、Provider 批准           | `pending` | —                            |
@@ -108,6 +109,6 @@
 
 - 当前任务状态以本表任务总表为唯一来源，具体验证以 Evidence 账本为准；归档文档只提供历史导航和最小有效事实。
 - S0～S3 均已完成并形成 `v0.1.0-beta.1`；这不表示 G4、AC-02/05/06、自动导入/恢复、AI Provider 或 S4～S7 已完成。
-- T805 已合入 `dev@353a4d42921175374dec178a75ad2748eb184cdf` 并由 `EV-T805-002` 收口；T094 已由 `EV-T094-001` 证明 Structural UI Refactor 完整任务交付并进入 `dev@2632ff0638fb02533100a1f9d0aea9f1323dbde3`。S4 前聚合 candidate 由 `EV-PRE-S4-FOUNDATION-001` 绑定同一产品 source；T041 已由 `EV-T041-001` 证明只读 RecoveryContext 任务交付与人工测试通过并集成至 `dev@695e7bcc25b33279d39e61e28a8730b9cdf16264`。T042 已由 `EV-T042-001` 证明任务交付与完整人工 AC-05 通过并集成至 `dev@3f343b8af0216b5e568f2c8f1ed52ac4ef824da3`；S4 owner gate 尚未单独决定，项目所有者已明确允许 S5 entry 并激活 T051。
+- T805 已合入 `dev@353a4d42921175374dec178a75ad2748eb184cdf` 并由 `EV-T805-002` 收口；T094 已由 `EV-T094-001` 证明 Structural UI Refactor 完整任务交付并进入 `dev@2632ff0638fb02533100a1f9d0aea9f1323dbde3`。S4 前聚合 candidate 由 `EV-PRE-S4-FOUNDATION-001` 绑定同一产品 source；T041 已由 `EV-T041-001` 证明只读 RecoveryContext 任务交付与人工测试通过并集成至 `dev@695e7bcc25b33279d39e61e28a8730b9cdf16264`。T042 已由 `EV-T042-001` 证明任务交付与完整人工 AC-05 通过并集成至 `dev@3f343b8af0216b5e568f2c8f1ed52ac4ef824da3`。T051 已由 `EV-T051-001` 证明周期事实摘要 task delivery candidate、候选 CI 与人工 AC-06 步骤 1 通过；PR #41 尚未合入，T052 未激活。
 - T090～T093、T804 的完整合同和 T803 的聚合合同均已按阶段/治理归档，失败、partial 和历史候选 Evidence 继续保留。
 - T094 只完成 Structural UI Refactor；它未实现 T041、S4～S7，也未改变产品语义、依赖、migration、IPC 或发布权限。S4 前聚合验收不等于 G4、AC-02/05/06、tag 或 release 完成，`dev -> main` merge 仍由项目所有者针对确切 PR 决定。
