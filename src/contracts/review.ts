@@ -6,7 +6,7 @@ export const REVIEW_CHANNELS = Object.freeze({
   cancel: 'review:cancel-context'
 } as const)
 
-export interface BeginReviewInputDto {}
+export type BeginReviewInputDto = Readonly<Record<string, never>>
 export interface ReviewContextInputDto {
   readonly reviewContextId: string
 }

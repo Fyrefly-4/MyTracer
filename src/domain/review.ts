@@ -12,7 +12,7 @@ export interface ReviewUnderstandingFact {
   readonly createdAt: string
 }
 
-export interface ReviewConfusionFact extends ReviewUnderstandingFact {}
+export type ReviewConfusionFact = ReviewUnderstandingFact
 
 export interface ReviewRoutineOutcomeFacts {
   readonly targetMet: readonly RoutineProgressRecordFact[]
