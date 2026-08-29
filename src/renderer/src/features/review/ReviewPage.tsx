@@ -155,11 +155,11 @@ export function ReviewPage(): ReactNode {
             </article>
             <article>
               <span>确认理解</span>
-              <strong>{summary.understandings.length}</strong>
+              <strong>{summary.confirmedUnderstandingCount}</strong>
             </article>
             <article>
               <span>开放困惑</span>
-              <strong>{summary.openConfusions.length}</strong>
+              <strong>{summary.openConfusionCount}</strong>
             </article>
           </div>
 
@@ -174,7 +174,10 @@ export function ReviewPage(): ReactNode {
               {routineColumns.map((column) => {
                 const facts = summary.routineOutcomeFacts[column.key]
                 return (
-                  <article key={column.key} aria-label={`${column.title} ${facts.length} 条`}>
+                  <article
+                    key={column.key}
+                    aria-label={`${column.title} ${summary.routineOutcomeCounts[column.key]} 条`}
+                  >
                     <div className="review-routine-heading">
                       <div>
                         <h3>{column.title}</h3>
@@ -182,7 +185,7 @@ export function ReviewPage(): ReactNode {
                       </div>
                       <strong>{summary.routineOutcomeCounts[column.key]}</strong>
                     </div>
-                    {facts.length ? (
+                    {summary.routineOutcomeCounts[column.key] > 0 ? (
                       <ol>
                         {facts.map((fact) => (
                           <li key={fact.recordId}>
@@ -208,7 +211,7 @@ export function ReviewPage(): ReactNode {
           <div className="review-learning-grid">
             <section aria-label="周期确认理解">
               <h2>确认理解</h2>
-              {summary.understandings.length ? (
+              {summary.confirmedUnderstandingCount > 0 ? (
                 <ol>
                   {summary.understandings.map((fact) => (
                     <li key={fact.id}>
@@ -225,7 +228,7 @@ export function ReviewPage(): ReactNode {
             </section>
             <section aria-label="周期开放困惑">
               <h2>开放困惑</h2>
-              {summary.openConfusions.length ? (
+              {summary.openConfusionCount > 0 ? (
                 <ol>
                   {summary.openConfusions.map((fact) => (
                     <li key={fact.id}>
@@ -242,7 +245,7 @@ export function ReviewPage(): ReactNode {
             </section>
           </div>
 
-          {!summary.actionRecords.length && !summary.routineRecords.length ? (
+          {!summary.hasRecordedFacts ? (
             <div className="review-empty">
               <h2>本周期还没有已记录事实</h2>
               <p>空白只表示没有 ActionRecord 或 RoutineRecord；unknown 不会被转换成未做或失败。</p>

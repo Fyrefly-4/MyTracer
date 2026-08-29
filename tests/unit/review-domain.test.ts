@@ -54,6 +54,9 @@ describe('Review period and pure summary builder', () => {
       periodEndedOn: '2026-08-16',
       totalDurationMinutes: progress.totalDurationMinutes,
       realActionCount: progress.realActionCount,
+      confirmedUnderstandingCount: 1,
+      openConfusionCount: 1,
+      hasRecordedFacts: true,
       routineOutcomeCounts: { targetMet: 1, acted: 1, intentionalRest: 1, notDone: 1 },
       unknownPolicy: REVIEW_UNKNOWN_POLICY
     })

@@ -60,7 +60,10 @@ describe('Review application query', () => {
     const period = service.beginReview()
     expect(service.getReviewSummary(period)).toMatchObject({
       totalDurationMinutes: 0,
-      realActionCount: 0
+      realActionCount: 0,
+      confirmedUnderstandingCount: 0,
+      openConfusionCount: 0,
+      hasRecordedFacts: false
     })
     current = {
       actionRows: [
@@ -99,6 +102,7 @@ describe('Review application query', () => {
     expect(service.getReviewSummary(period)).toMatchObject({
       totalDurationMinutes: 10,
       realActionCount: 2,
+      hasRecordedFacts: true,
       routineOutcomeCounts: { acted: 1 }
     })
     expect(repository.queryReviewSummarySnapshot).toHaveBeenCalledTimes(2)

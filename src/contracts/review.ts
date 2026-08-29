@@ -33,6 +33,9 @@ export interface ReviewSummaryDto {
   readonly periodEndedOn: string
   readonly totalDurationMinutes: number
   readonly realActionCount: number
+  readonly confirmedUnderstandingCount: number
+  readonly openConfusionCount: number
+  readonly hasRecordedFacts: boolean
   readonly actionRecords: readonly ProgressRecordFactDto[]
   readonly routineRecords: readonly RoutineProgressRecordFactDto[]
   readonly understandings: readonly ReviewChildFactDto[]

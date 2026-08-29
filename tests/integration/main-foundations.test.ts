@@ -67,6 +67,9 @@ describe('Main foundations integration', () => {
       expect(review.getReviewSummary(period)).toMatchObject({
         totalDurationMinutes: 0,
         realActionCount: 0,
+        confirmedUnderstandingCount: 0,
+        openConfusionCount: 0,
+        hasRecordedFacts: false,
         routineOutcomeCounts: {
           targetMet: 0,
           acted: 0,

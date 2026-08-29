@@ -26,6 +26,9 @@ export interface ReviewSummary {
   readonly periodEndedOn: LocalDate
   readonly totalDurationMinutes: number
   readonly realActionCount: number
+  readonly confirmedUnderstandingCount: number
+  readonly openConfusionCount: number
+  readonly hasRecordedFacts: boolean
   readonly actionRecords: readonly ProgressRecordFact[]
   readonly routineRecords: readonly RoutineProgressRecordFact[]
   readonly understandings: readonly ReviewUnderstandingFact[]
@@ -86,15 +89,20 @@ export function buildReviewSummary(period: LocalDateWeek, progress: ProgressView
     )
   })
 
+  const understandings = childFacts(progress.records, 'understandings')
+  const openConfusions = childFacts(progress.records, 'openConfusions')
   return Object.freeze({
     periodStartedOn: period.monday,
     periodEndedOn: period.sunday,
     totalDurationMinutes: progress.totalDurationMinutes,
     realActionCount: progress.realActionCount,
+    confirmedUnderstandingCount: understandings.length,
+    openConfusionCount: openConfusions.length,
+    hasRecordedFacts: progress.records.length > 0 || progress.routineRecords.length > 0,
     actionRecords: Object.freeze([...progress.records]),
     routineRecords: Object.freeze([...progress.routineRecords]),
-    understandings: childFacts(progress.records, 'understandings'),
-    openConfusions: childFacts(progress.records, 'openConfusions'),
+    understandings,
+    openConfusions,
     routineOutcomeFacts: outcomeFacts,
     routineOutcomeCounts: Object.freeze({
       targetMet: outcomeFacts.targetMet.length,
