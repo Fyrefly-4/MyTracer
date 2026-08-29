@@ -1278,3 +1278,32 @@ Agent 只提供步骤和观察位置，不得替项目所有者签署人工验�
 - **Known limitations**：完整 AC-05 步骤 5、Recovery mutation、T042、FR-P05、Review、AI、自动入口、停滞阈值、migration、依赖、export、Windows package smoke、Ready、merge、tag 和 release 不在 T041；PR #39 docs closeout 后 final-head CI 与 `dev` 集成仍是后续 PR Gate
 - **Supersedes / superseded by**：成功 candidate artifact supersede 失败 candidate artifact，但失败事实保留；本条复用且不取代 `EV-T014-001`、`EV-AC01-001`、`EV-T022-001`、`EV-T031-001`～`EV-T033-001`、`EV-T094-001` 与 `EV-PRE-S4-FOUNDATION-001`
 - **Recorded at**：2026-08-28
+
+### EV-T042-001
+
+- **Status**：pass；T042 task delivery candidate、本地完整验证、完整 branch diff 与独立只读 review、implementation-candidate hosted CI 和项目所有者完整人工 AC-05 通过。docs closeout 后的新 head CI 与是否合入 `dev` 是 PR 集成事实，不由本条预先声明
+- **Task / Gate**：T042 / S4 E4-02；证明 FR-REC04～FR-REC06、FR-P04、相关 Goal/Action/Routine/Today 行为和完整 AC-05 task candidate，不声明 S4 stage acceptance、T051、Review、AI、FR-P05、G4、Ready、merge、tag 或 release
+- **Requirements**：FR-REC04～FR-REC06、FR-P04；FR-G03～G05、FR-A01/A03/A04/A06、FR-R01、FR-T04/T05；D-002、D-004，D-013 只作温和表达支持；ED-005～ED-008、ED-013；AC-05；AC-01/03/04/07 只作受影响回归
+- **Source branch**：`task/T042-recovery-restart`
+- **Original / verified dev base**：`695e7bcc25b33279d39e61e28a8730b9cdf16264`；Implementation Candidate 与 docs closeout 前 GitHub API 均确认 `dev` 仍为该 revision，且它是 task head 的 merge-base，Integration Freshness 为 `fresh`
+- **Task delivery revision**：`b323a9f629699cbec156723700c021151eaf1506`
+- **Dev / stage integration revision**：pending；PR #40 仍为 Draft 且未获 merge 授权，`dev_integration_revision` 与 `stage_final_integration_revision` 均未产生；S4 owner gate 尚未决定
+- **Environment**：本地 Windows、Node `v24.18.0`、npm `11.16.0`、Electron `43.3.0`、`better-sqlite3@13.0.1`；GitHub-hosted `windows-2025`。自动化使用 FakeClock、每 case 唯一临时 SQLite/Electron `userData` 与 fake/disabled/not-configured AI，不访问真实用户数据库、凭据或 live Provider
+- **Command or procedure**：
+  1. `npm.cmd run governance:metadata:check`：11 个 sidecar、1 个 Profile 通过；合同、sidecar、Task Index 与有效的 `standard-task@1` 声明一致。
+  2. Targeted `tests/unit/goal-application.test.ts` 6/6 通过；`goal-sqlite` 与 `goal-ipc` 11/11 通过；`recovery-restart.e2e.test.ts` 1/1 通过。
+  3. Unit/Integration/IPC 证明同 Goal pending/current-next、inactive/cross-Goal/终态/非法 shape 拒绝、trusted sender/origin、精确 keys/UUID、事务后段失败全回滚、无孤立 Action 且不自动写 Today。
+  4. 连续 AC-05 E2E 在同一临时数据库上使用 FakeClock 前进多日并跨午夜：完全关闭重开、查看旧上下文、取消草稿零写入、暂停关联 Routine 而 Goal 保持 active、创建小 Action、单独加入实际 LocalDate 的 Today、再次重开，并逐字段比较历史 Record/Understanding/Confusion 守恒。
+  5. `node tools/evidence/capture-command.mjs --task T042 --gate task-candidate --base-revision 695e7bc... --output .tmp/evidence -- npm.cmd run verify` 在 `b323a9f...` exit 0：format、lint、typecheck、31 unit files/170 tests、24 integration files/95 tests、15 Electron E2E 通过；1 个 opt-in Windows package smoke 按合同与配置 skip。
+  6. 同一 candidate 的 AC-01、AC-03、AC-04、AC-07 受影响路径在 aggregate E2E 中通过；页面源码扫描与人工检查未出现断签、失败率、大量负面逾期、score、mastery、压力式 streak、阈值或人格评价。
+  7. 完整 `dev...task` diff、diff integrity 和独立只读 review 无未处理 finding；修改只落在合同、metadata/Task Index、获批实现/测试和 owner-approved docs closeout 文件，没有依赖、lockfile、migration、schema、export、AI、Review、S7 或产品权限变化。
+  8. [PR #40 implementation-candidate run `33236887781`](https://github.com/Fyrefly-4/MyTracer/actions/runs/33236887781) 为 `success`：PR head `b323a9f629699cbec156723700c021151eaf1506`、test-merge `8929070679035c0ec62b554c14fd5e2acbc069b9`；PR quality、Governance checks、Full Windows verification、CI Gate 和 Windows required gate 通过，Documentation 与 milestone package 按分类 skip。
+  9. 下载并检查 hosted artifact `verification-evidence-33236887781-1`（artifact id `9710227677`）：aggregate exit 0、capture complete、base `695e7bc...`、PR head 与 test-merge 分字段正确、无 capture error；artifact digest 为 `sha256:cb7275ef625c351010fe52adbcab08b131cf061ff6f79e8cf6260d063c196691`。
+  10. 项目所有者于 2026-08-29 按合同 §10.4 报告人工测试全体通过，并明确批准本合同、Task Index、Evidence、README、Draft PR 标题/正文和独立 docs closeout commit/push。
+- **Result**：用户在 Goals 内对明确 Goal 进入 Recovery；所有 Goal/Routine/Action/current-next/Today 操作先形成 Renderer 本地草稿，只有明确确认才调用普通 Application Command，成功后重新查询事实。通用 `CreateAndSetGoalCurrentNextAction` 在一个事务创建同 Goal pending Action 并设置 active Goal current-next，失败全回滚且 Today 仍是后续独立用户选择。Recovery 不修改、移动、补齐或重新归属历史 Record，不自动联动 Goal/Routine，不增加 Progress 行动次数
+- **Local artifacts**：失败 `.tmp/evidence/T042-task-candidate-b323a9f62969-20260829054059.json` 保留；worktree 内缺少 Electron executable junction，使 Electron native SQLite smoke 在进入产品断言前以 `ENOENT` 失败。按既有 worktree 模式恢复共享依赖 junction 后，同一 source revision 的成功 `.tmp/evidence/T042-task-candidate-b323a9f62969-20260829054218.json` 完整通过并 supersede 该环境失败
+- **Hosted artifact**：`verification-evidence-33236887781-1`（artifact id `9710227677`）；其 JSON 明确区分 PR head `b323a9f...` 与 test-merge `8929070...`，aggregate command exit 0
+- **Manual acceptance**：pass；项目所有者于 2026-08-29 报告 T042 人工测试全体通过，覆盖取消/确认、Goal/Routine 独立、Action transition、existing/create-and-set、Today 独立选择、关闭重开、历史守恒和非评判文案；该结果形成完整 AC-05 candidate，但不等于 S4 stage acceptance
+- **Known limitations**：PR #40 docs closeout 后 final-head CI、Ready 与 merge 仍是后续 PR Gate；Windows package smoke 不在 T042；S4 owner gate、T051/T052、Review、AI、FR-P05、G4、tag 和 release 均未声明或启动
+- **Supersedes / superseded by**：成功本地 candidate artifact supersede 同 revision 的 worktree 环境失败 artifact，但失败事实保留；本条与 `EV-T041-001` 共同覆盖完整 AC-05，不取代 T041 或 AC-01/03/04/07 的既有 Evidence
+- **Recorded at**：2026-08-29

@@ -2,16 +2,16 @@
 
 > 任务类型：implementation
 >
-> 合同状态：**active / owner approved**；项目所有者于 2026-08-29 明确批准并激活本合同与第二阶段开发
+> 合同状态：**done**；task delivery candidate、本地完整验证、完整 diff/独立只读 review、PR #40 implementation-candidate required CI、项目所有者完整人工 AC-05 与 owner-approved docs closeout 已完成；Ready、merge、tag 和 release 未授权
 >
-> 当前阶段：第二阶段实施；允许按本合同的精确范围、结构化权限与 `standard-task@1` Automation Profile 连续执行，推送并创建 Draft PR 后按项目所有者指令立即停止，不自主查询 CI
+> 当前阶段：T042 task delivery 收口；docs closeout 后的新 head required CI 与是否合入 `dev` 仍是 PR Gate，S4 stage acceptance 与 T051 启动仍须项目所有者另行决定
 
 ## 1. 任务信息与基线
 
 - **Task ID**：T042
 - **Title**：清理过时内容并重新开始
 - **Slice / Plan item**：S4 / E4-02
-- **Status**：`active`
+- **Status**：`done`
 - **Base branch**：`dev`
 - **Latest authorized dev revision at draft**：`dev@695e7bcc25b33279d39e61e28a8730b9cdf16264`
 - **Remote-tracking check**：2026-08-29 执行 `git fetch origin dev` 后，本地 `dev`、`origin/dev` 与 `FETCH_HEAD` 均为 `695e7bcc25b33279d39e61e28a8730b9cdf16264`，ahead/behind 为 `0/0`
@@ -45,7 +45,7 @@
 ## 3. 需求与设计依据
 
 - **直接 FR**：FR-REC04、FR-REC05、FR-REC06、FR-P04。
-- **直接 AC**：AC-05 步骤 5，并与 T041 步骤 1～4在同一连续 E2E 中形成完整 AC-05 candidate；项目所有者人工结果未执行前保持 `pending`。
+- **直接 AC**：AC-05 步骤 5，并与 T041 步骤 1～4 在同一连续 E2E 中形成完整 AC-05 candidate；项目所有者已报告完整人工 AC-05 通过，但该结果不代替 S4 stage gate。
 - **相关 Goal/Action/Routine/Today FR**：FR-G03、FR-G04、FR-G05；FR-A01、FR-A03、FR-A04、FR-A06；FR-R01；FR-T04、FR-T05。
 - **直接 D**：D-002、D-004；D-013 只支持温和、非评判式表达，不是停滞阈值依据。
 - **直接 ED**：ED-005、ED-006、ED-007、ED-008、ED-013；ED-013 才是“长期未推进不设自动阈值”的工程依据。
@@ -266,15 +266,15 @@ execution:
 
 ## 8. 交付物
 
-- [ ] Recovery Renderer 对 Goal/Routine/Action 清理操作的 feature-local 草稿、确认、取消、busy、错误与成功刷新。
-- [ ] 复用普通 Goal/Routine/Action/Today Commands；没有 Recovery 专用写 Repository 或重复生命周期实现。
-- [ ] 通用原子 `CreateAndSetGoalCurrentNextAction` Application Command、DTO、固定 IPC、Preload 方法和 API shape 回归。
-- [ ] 选择 existing pending Action 并设置 current-next，以及另行可选加入 Today 的流程。
-- [ ] 原子 rollback、取消零写入、独立 Today 部分成功、历史 Record 逐字段守恒和跨午夜 Today 日期测试。
-- [ ] 一个新的连续 Electron E2E 完整执行 AC-05 步骤 1～5、关闭重开与非压力表达断言。
-- [ ] AC-01、AC-03、AC-04、AC-07 受影响回归、完整 `verify`、metadata、diff integrity 和独立只读 review。
-- [ ] `EV-T042-001` 真实 candidate Evidence 与项目所有者人工 AC-05 程序；人工状态由所有者报告前保持 `pending`。
-- [ ] candidate hosted CI 后的 documentation impact matrix 与 owner-gated docs closeout 提案。
+- [x] Recovery Renderer 对 Goal/Routine/Action 清理操作的 feature-local 草稿、确认、取消、busy、错误与成功刷新。
+- [x] 复用普通 Goal/Routine/Action/Today Commands；没有 Recovery 专用写 Repository 或重复生命周期实现。
+- [x] 通用原子 `CreateAndSetGoalCurrentNextAction` Application Command、DTO、固定 IPC、Preload 方法和 API shape 回归。
+- [x] 选择 existing pending Action 并设置 current-next，以及另行可选加入 Today 的流程。
+- [x] 原子 rollback、取消零写入、独立 Today、历史 Record 逐字段守恒和跨午夜 Today 日期测试。
+- [x] 一个新的连续 Electron E2E 完整执行 AC-05 步骤 1～5、关闭重开与非压力表达断言。
+- [x] AC-01、AC-03、AC-04、AC-07 受影响回归、完整 `verify`、metadata、diff integrity 和独立只读 review。
+- [x] `EV-T042-001` 绑定真实 candidate Evidence 与项目所有者完整人工 AC-05 `pass`。
+- [x] candidate hosted CI 后的 documentation impact matrix、owner-gated docs closeout 授权与独立 docs commit 准备。
 
 ## 9. 验收标准
 
@@ -293,7 +293,7 @@ execution:
 13. 连续 E2E 在同一唯一临时 `userData` 中：准备历史 → 完全关闭 → FakeClock 前进多日 → 重开查看 T041 事实 → 验证空白日零补写 → 取消草稿零写入 → 显式清理过时内容 → 创建/选择小 Action 并设 current-next → 可选加入 Today → 再次关闭重开并逐字段比较历史。
 14. E2E 与人工页面没有断签、失败率、大量负面逾期、score、mastery、streak、阈值或人格评价；D-013 只用于温和表达，ED-013 用于无阈值事实。
 15. AC-01、AC-03、AC-04、AC-07 受影响路径在同一 implementation candidate revision 通过；T042 不改变或重新声明这些 AC。
-16. `EV-T042-001` 只从真实结果声明 FR-REC04～REC06、FR-P04、相关生命周期/current-next/Today 行为和完整 AC-05 candidate；项目所有者未执行人工程序时，人工 AC-05 与 S4 gate 保持 `pending`。
+16. `EV-T042-001` 只从真实结果声明 FR-REC04～REC06、FR-P04、相关生命周期/current-next/Today 行为和完整 AC-05 candidate；项目所有者已报告人工 AC-05 通过，S4 gate 仍保持 `pending`。
 17. Implementation Candidate 相对最新授权 `dev` 的完整 diff、Integration Freshness、affected regression、deterministic evidence 与 independent review 没有未处理 required finding。
 18. T042 不自动启动 T051；即使自动化和人工 AC-05 通过，S4 acceptance decision 与后续任务仍由项目所有者另行授权。
 
@@ -350,7 +350,9 @@ git diff --check
 6. 在一个分支不加入 Today；在另一个分支明确加入 Today，确认 Today 是单独选择而不是默认勾选。
 7. 关闭并重开，确认状态、current-next、Today 日期与历史保持；Recovery 操作没有增加行动次数。
 8. 确认成功、取消、错误与恢复文案温和、非评判，不显示断签、失败率、大量逾期或人格评价。
-9. 项目所有者报告 `pass`、`partial` 或 `fail` 及观察；未报告前，人工 AC-05 与 S4 acceptance 一律为 `pending`。
+9. 项目所有者报告 `pass`、`partial` 或 `fail` 及观察；本次已于 2026-08-29 报告完整人工 AC-05 为 `pass`，S4 acceptance 仍为 `pending`。
+
+项目所有者于 2026-08-29 报告上述 T042 人工测试全体通过。该结果证明完整人工 AC-05，但 T042 按合同只形成 S4 acceptance candidate；S4 stage acceptance 仍需项目所有者另行决定。
 
 ### 10.5 验证环境
 
@@ -363,19 +365,19 @@ git diff --check
 - 数据根：每 case 唯一临时根；人工使用明确专用测试根；禁止真实 Electron `userData`
 - AI：disabled/not-configured/fake failure；禁止 live Provider
 - Original base revision：`695e7bcc25b33279d39e61e28a8730b9cdf16264`
-- Source revision：完成时填写
+- Source revision：`b323a9f629699cbec156723700c021151eaf1506`
 
 ## 11. Evidence 要求
 
-- **Evidence ID**：预留 `EV-T042-001`；只有真实实现、验证、review、CI 与 owner-reported manual 结果才能写入 Evidence 账本。
+- **Evidence ID**：`EV-T042-001`；已在 Evidence 账本绑定真实实现、验证、review、candidate CI、人工结果与限制。
 - **Claim boundary**：FR-REC04～REC06、FR-P04、FR-G03/G04/G05、FR-A01/A03/A04/A06、FR-R01、FR-T04/T05、D-002/D-004、D-013 的表达支持、ED-005～008/013 与完整 AC-05 candidate；不声明 S4 acceptance、T051、Review、AI、FR-P05 或 G4。
 - **T041 prerequisite**：保留 `EV-T041-001` candidate 声明；另行记录 PR #39 final head `64ac9dd...`、`dev_integration_revision 695e7bc...`、final-head run `33155839482` 与 post-merge run `33156238060`，不把 squash integration 冒充 task candidate 的祖先关系。
 - **Required bindings**：合同、需求/设计章节、original/latest dev base、Implementation Candidate、task delivery revision、PR head/test-merge revision、命令、Windows 环境、exit code、artifact、manual status、限制与 supersedes。
 - **Deterministic artifact**：`.tmp/evidence/T042-task-candidate-*.json`；显式 argv、脱敏、只在 ignored `.tmp/evidence/`，不记录 stdout/stderr、绝对用户路径、环境变量、凭据或用户正文。
 - **Hosted CI**：early、candidate、docs final-head 与 post-merge 分开绑定；PR `ci.headRevision` 和 test-merge `ci.mergeRevision` 不得混用。
 - **Failure retention**：失败/partial artifact、CI 与人工结果保留；后续成功用 `supersedes` 关联，不删除历史失败。
-- **Manual status**：项目所有者按 §10.4 报告前为 `pending`；自动化、Agent 说明或测试名称不能代签。
-- **Ledger gate**：候选 CI 通过后先提交 documentation impact matrix；只有项目所有者批准精确 docs closeout scope 后，才修改 Evidence、TASK_INDEX、README 或长期交付记录。
+- **Manual status**：项目所有者于 2026-08-29 报告完整人工 AC-05 `pass`；不等于 S4 stage acceptance。
+- **Ledger gate**：candidate CI、documentation impact matrix 与项目所有者精确 docs closeout 授权均已取得，`EV-T042-001` 按批准边界写入。
 
 ## 12. Git、GitHub、外部与数据权限
 
@@ -439,18 +441,18 @@ integration:
   target_branch: dev
   original_base_revision: dev@695e7bcc25b33279d39e61e28a8730b9cdf16264
   base_revision: dev@695e7bcc25b33279d39e61e28a8730b9cdf16264
-  latest_authorized_dev_revision_at_draft: dev@695e7bcc25b33279d39e61e28a8730b9cdf16264
+  latest_authorized_dev_revision: dev@695e7bcc25b33279d39e61e28a8730b9cdf16264
   freshness_required: true
   affected_regression_required: true
-  freshness_status: null
-  refresh_method: null
-  verified_against_revision: null
-  task_delivery_revision: null
+  freshness_status: fresh
+  refresh_method: not-required
+  verified_against_revision: dev@695e7bcc25b33279d39e61e28a8730b9cdf16264
+  task_delivery_revision: b323a9f629699cbec156723700c021151eaf1506
   dev_integration_revision: null
   stage_final_integration_revision: null
 ```
 
-合同激活、Implementation Candidate、docs closeout 与 merge handoff 前都重新 fetch/核对最新授权 `dev`。只有实际 candidate 基于最新 dev 时可记录 `fresh`；若 stale，必须普通 merge refresh、affected regression、必要重审与 candidate CI 后记录 `refreshed-and-passed`。不得 force-push。
+合同激活、Implementation Candidate 与 docs closeout 前均核对最新授权 `dev@695e7bc...`；candidate 的 merge-base 与该 revision 相同且 GitHub API 在 docs closeout 前仍返回同一 `dev` head，因此 Integration Freshness 为 `fresh`、无需 refresh。PR #40 尚未合入，`dev_integration_revision` 与 `stage_final_integration_revision` 保持 `null`。
 
 ## 13. 风险与停止条件
 
@@ -475,18 +477,18 @@ T042 只有在以下事实均由实际结果支持时，才可形成 implementat
 - Integration Freshness 为 `fresh` 或 `refreshed-and-passed`；
 - 没有未批准依赖、migration、schema、export、AI、Review、S7、范围或权限变化；
 - candidate hosted CI 绑定确切 PR head/test-merge revision；
-- Evidence 只声明合同边界，人工 AC-05 在项目所有者报告前保持 `pending`。
+- Evidence 只声明合同边界；项目所有者完整人工 AC-05 为 `pass`，但不声明 S4 stage acceptance。
 
-candidate CI 通过后必须按 development Skill 先形成 documentation impact matrix，并停在 `docs_closeout_scope` owner gate。docs closeout、final-head CI、Ready、merge 与 S4 acceptance 均是后续独立门禁。T042 完成或合入 `dev` 不自动启动 T051。
+PR #40 implementation-candidate CI 已通过，documentation impact matrix 与项目所有者 docs closeout 授权已取得。本合同、TASK_INDEX、Evidence、README 与 Draft PR 正文按批准范围收口。docs closeout 后的新 head required CI 仍是 PR 集成门禁；Ready、merge 与 S4 acceptance 未授权，T042 完成或合入 `dev` 不自动启动 T051。
 
-## 15. 阶段交接
+## 15. 完成报告
 
-第一阶段合同草案已完成并获批准：
-
-- 本合同与 `metadata/T042.json` 创建；
-- T041 prerequisite、`EV-T041-001` candidate 边界和实际 `dev_integration_revision` 可追踪；
-- D-013/ED-013 追踪纠正、精确范围、验证、Evidence、Automation Profile 提议和 Git/GitHub 权限明确；
-- metadata、格式和 diff integrity 校验通过；
-- 未修改生产代码、测试、TASK_INDEX、Evidence 或外部状态。
-
-T042 当前为 `active`。第二阶段按本合同实施；成功推送 task branch 并创建 Draft PR 后立即停止，不自主查询 hosted CI，等待项目所有者下一步命令。
+- **交付结果**：Recovery Renderer 使用 feature-local 草稿和显式确认复用普通 Goal/Routine/Action/Today Commands；成功 mutation 后重新查询事实。新增通用原子 `CreateAndSetGoalCurrentNextAction`，同事务创建同 Goal pending Action 并设置 current-next，失败全回滚且不自动加入 Today。
+- **Task delivery / base**：task delivery revision `b323a9f629699cbec156723700c021151eaf1506`；验证与 docs closeout 前最新授权 `dev` 均为 `695e7bcc25b33279d39e61e28a8730b9cdf16264`，Integration Freshness 为 `fresh`。
+- **本地验证**：targeted Unit 6/6、Integration 11/11、T042 AC-05 E2E 1/1 通过；evidence-wrapped `npm.cmd run verify` 在 task delivery revision 上通过 format、lint、typecheck、170 unit、95 integration、15 Electron E2E，1 个 opt-in package smoke 按配置 skip。metadata 与 diff integrity 通过。
+- **Hosted CI**：PR #40 implementation-candidate run `33236887781` 在 head `b323a9f...`、test-merge `8929070679035c0ec62b554c14fd5e2acbc069b9` 上通过 PR quality、Governance、Full Windows verification、CI Gate 与 Windows required gate；artifact 为 `verification-evidence-33236887781-1`。
+- **Review**：完整 branch diff 与独立只读 review 无未处理 finding；未发现需求/架构冲突、范围扩大、依赖、migration、schema、export、AI、Review、S7 或历史语义变化。
+- **Evidence**：`EV-T042-001`；本地首次 candidate artifact 因 worktree Electron 路径 ENOENT 失败并保留，由同 revision 的成功完整 verify artifact supersede。
+- **人工状态**：项目所有者于 2026-08-29 报告完整人工 AC-05 全体通过；不声明 S4 stage acceptance。
+- **PR 集成状态**：PR #40 保持 Draft；docs closeout 新 head required CI 与是否合入 `dev` 由后续 PR Gate/项目所有者决定。Ready、merge、tag 和 release 未授权。
+- **下一入口**：T042 只形成 S4 acceptance candidate；必须先完成 S4 owner gate，不自动启动 T051。
