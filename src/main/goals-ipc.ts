@@ -2,6 +2,7 @@ import type { IpcMainInvokeEvent } from 'electron'
 import { GoalApplicationError, type GoalService } from '../application/goals'
 import {
   GOAL_CHANNELS,
+  type CreateAndSetGoalCurrentNextActionInputDto,
   type CreateGoalInputDto,
   type GoalErrorCode,
   type GoalIdInputDto,
@@ -136,6 +137,17 @@ function parseSetCurrent(args: readonly unknown[]): SetGoalCurrentNextActionInpu
   }
 }
 
+function parseCreateAndSetCurrent(
+  args: readonly unknown[]
+): CreateAndSetGoalCurrentNextActionInputDto {
+  const record = objectWithKeys(oneArgument(args), ['goalId', 'title', 'description'])
+  return {
+    goalId: requiredId(record.goalId),
+    title: requiredString(record.title),
+    description: optionalString(record.description)
+  }
+}
+
 function parseList(args: readonly unknown[]): ListGoalsInputDto {
   const record = objectWithKeys(oneArgument(args), ['status'])
   const status = record.status
@@ -183,6 +195,12 @@ export function registerGoalIpc(options: RegisterGoalIpcOptions): void {
     GOAL_CHANNELS.setCurrentNextAction,
     parseSetCurrent,
     (input: SetGoalCurrentNextActionInputDto) => options.service.setGoalCurrentNextAction(input)
+  )
+  register(
+    GOAL_CHANNELS.createAndSetCurrentNextAction,
+    parseCreateAndSetCurrent,
+    (input: CreateAndSetGoalCurrentNextActionInputDto) =>
+      options.service.createAndSetGoalCurrentNextAction(input)
   )
   register(GOAL_CHANNELS.list, parseList, (input: ListGoalsInputDto) =>
     options.service.listGoals(input.status ?? undefined)

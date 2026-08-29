@@ -85,6 +85,21 @@ function GoalWorkspace(): ReactNode {
     setRefreshVersion((version) => version + 1)
   }
 
+  const refreshAfterRecoveryMutation = async (): Promise<void> => {
+    if (!detail) return
+    const result = await window.myTracer.goals.getDetail({ goalId: detail.id })
+    if (result.ok) {
+      setDetail(result.value)
+      setEditName(result.value.name)
+      setEditDescription(result.value.description ?? '')
+      setSelectedActionId(result.value.currentNextActionId ?? '')
+      setRefreshVersion((version) => version + 1)
+      setError(null)
+    } else {
+      setError(goalErrorText[result.error.code])
+    }
+  }
+
   const submitCreate = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault()
     setBusy(true)
@@ -270,7 +285,11 @@ function GoalWorkspace(): ReactNode {
 
         <div className="goal-column">
           {detail && recoveryGoalId ? (
-            <RecoveryPanel goalId={recoveryGoalId} onClose={() => setRecoveryGoalId(null)} />
+            <RecoveryPanel
+              goalId={recoveryGoalId}
+              onClose={() => setRecoveryGoalId(null)}
+              onMutation={refreshAfterRecoveryMutation}
+            />
           ) : detail ? (
             <article className="goal-card goal-detail" aria-label={`${detail.name} 详情`}>
               <div className="detail-title-row">

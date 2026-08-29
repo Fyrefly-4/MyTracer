@@ -79,6 +79,7 @@ test('runs the Electron shell with an isolated userData root', async () => {
       'resume',
       'end',
       'setCurrentNextAction',
+      'createAndSetCurrentNextAction',
       'list',
       'getDetail'
     ])

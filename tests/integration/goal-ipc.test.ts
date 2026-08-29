@@ -41,6 +41,7 @@ function setup() {
     resumeGoal: vi.fn(() => ({ id: 'goal-1', status: 'active' })),
     endGoal: vi.fn(() => ({ id: 'goal-1', status: 'ended' })),
     setGoalCurrentNextAction: vi.fn(() => ({ id: 'goal-1' })),
+    createAndSetGoalCurrentNextAction: vi.fn(() => ({ id: 'goal-1' })),
     listGoals: vi.fn(() => []),
     getGoalDetail: vi.fn(() => ({ id: 'goal-1' }))
   }
@@ -68,9 +69,21 @@ describe('Goal IPC boundary', () => {
       description: null,
       initialNextAction: { title: 'Action', description: null }
     })
+    expect(
+      invoke(GOAL_CHANNELS.createAndSetCurrentNextAction, {
+        goalId,
+        title: 'Small action',
+        description: null
+      })
+    ).toEqual({ ok: true, value: { id: 'goal-1' } })
+    expect(service.createAndSetGoalCurrentNextAction).toHaveBeenCalledWith({
+      goalId,
+      title: 'Small action',
+      description: null
+    })
     expect(invoke(GOAL_CHANNELS.list, { status: 'paused' })).toEqual({ ok: true, value: [] })
     expect(service.listGoals).toHaveBeenCalledWith('paused')
-    expect(assertSender).toHaveBeenCalledTimes(2)
+    expect(assertSender).toHaveBeenCalledTimes(3)
   })
 
   it('rejects missing, blank, wrong-type, invalid-enum, and unknown fields without calling Application', () => {
@@ -82,6 +95,9 @@ describe('Goal IPC boundary', () => {
       [GOAL_CHANNELS.create, { name: 'Goal', initialNextAction: { title: 1 } }],
       [GOAL_CHANNELS.updateDetails, { goalId: 'goal-1', name: 3 }],
       [GOAL_CHANNELS.setCurrentNextAction, { goalId: 'goal-1' }],
+      [GOAL_CHANNELS.createAndSetCurrentNextAction, { goalId, title: ' ' }],
+      [GOAL_CHANNELS.createAndSetCurrentNextAction, { goalId, title: 'Action', extra: true }],
+      [GOAL_CHANNELS.createAndSetCurrentNextAction, { goalId: 'goal-1', title: 'Action' }],
       [GOAL_CHANNELS.list, { status: 'failed' }],
       [GOAL_CHANNELS.getDetail, { goalId: 'goal-1' }],
       [GOAL_CHANNELS.getDetail, { goalId: '', extra: 'x' }]
@@ -96,6 +112,7 @@ describe('Goal IPC boundary', () => {
     expect(service.createGoal).not.toHaveBeenCalled()
     expect(service.updateGoalDetails).not.toHaveBeenCalled()
     expect(service.setGoalCurrentNextAction).not.toHaveBeenCalled()
+    expect(service.createAndSetGoalCurrentNextAction).not.toHaveBeenCalled()
   })
 
   it('maps Application and persistence failures to stable messages without leaking details', () => {
@@ -132,6 +149,21 @@ describe('Goal IPC boundary', () => {
     })
     expect(() => invoke(GOAL_CHANNELS.getDetail, { goalId })).toThrow(/untrusted renderer/)
     expect(service.getGoalDetail).not.toHaveBeenCalled()
+  })
+
+  it('validates the sender before create-and-set parsing or Application execution', () => {
+    const { assertSender, invoke, service } = setup()
+    assertSender.mockImplementationOnce(() => {
+      throw new Error('Rejected IPC request from an untrusted renderer.')
+    })
+    expect(() =>
+      invoke(GOAL_CHANNELS.createAndSetCurrentNextAction, {
+        goalId,
+        title: 'Small action',
+        extra: true
+      })
+    ).toThrow(/untrusted renderer/)
+    expect(service.createAndSetGoalCurrentNextAction).not.toHaveBeenCalled()
   })
 
   it('accepts only the expected webContents and exact trusted production or development URL', () => {

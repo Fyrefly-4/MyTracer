@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import {
   GOAL_CHANNELS,
+  type CreateAndSetGoalCurrentNextActionInputDto,
   type CreateGoalInputDto,
   type GoalDetailDto,
   type GoalIdInputDto,
@@ -113,6 +114,10 @@ const api: MyTracerApi = Object.freeze({
       input: SetGoalCurrentNextActionInputDto
     ): Promise<GoalResult<GoalSummaryDto>> =>
       ipcRenderer.invoke(GOAL_CHANNELS.setCurrentNextAction, input),
+    createAndSetCurrentNextAction: (
+      input: CreateAndSetGoalCurrentNextActionInputDto
+    ): Promise<GoalResult<GoalDetailDto>> =>
+      ipcRenderer.invoke(GOAL_CHANNELS.createAndSetCurrentNextAction, input),
     list: (input: ListGoalsInputDto): Promise<GoalResult<readonly GoalSummaryDto[]>> =>
       ipcRenderer.invoke(GOAL_CHANNELS.list, input),
     getDetail: (input: GoalIdInputDto): Promise<GoalResult<GoalDetailDto>> =>
