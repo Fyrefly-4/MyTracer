@@ -8,6 +8,7 @@ import { TodayService } from '../application/today'
 import { ActionRecordService } from '../application/action-records'
 import { ProgressService } from '../application/progress'
 import { RecoveryService } from '../application/recovery'
+import { ReviewService } from '../application/review'
 import { RoutineService } from '../application/routines'
 import { RoutineRecordService } from '../application/routine-records'
 import { DataControlService } from '../application/data-control'
@@ -32,11 +33,13 @@ import { registerTodayIpc } from './today-ipc'
 import { registerRecordIpc } from './records-ipc'
 import { registerProgressIpc } from './progress-ipc'
 import { registerRecoveryIpc } from './recovery-ipc'
+import { registerReviewIpc } from './review-ipc'
 import { registerRoutineIpc } from './routines-ipc'
 import { registerRoutineRecordIpc } from './routine-records-ipc'
 import { ActionRecordingContextStore } from './action-recording-contexts'
 import { RoutineRecordingContextStore } from './routine-recording-contexts'
 import { DeletePreviewContextStore } from './delete-preview-contexts'
+import { ReviewContextStore } from './review-contexts'
 import { registerDataControlIpc } from './data-control-ipc'
 import { registerExportIpc } from './exports-ipc'
 import { assertTrustedSender, type RendererLocation } from './ipc-security'
@@ -48,6 +51,7 @@ let diagnostics: DiagnosticsPort | null = null
 const actionRecordingContexts = new ActionRecordingContextStore(randomUUID)
 const routineRecordingContexts = new RoutineRecordingContextStore(randomUUID)
 const deletePreviewContexts = new DeletePreviewContextStore(randomUUID)
+const reviewContexts = new ReviewContextStore(randomUUID)
 
 function getRendererLocation(): RendererLocation {
   const rendererFile = join(__dirname, '../renderer/index.html')
@@ -120,17 +124,20 @@ async function createMainWindow(): Promise<void> {
     actionRecordingContexts.clearSender(senderId)
     routineRecordingContexts.clearSender(senderId)
     deletePreviewContexts.clearSender(senderId)
+    reviewContexts.clearSender(senderId)
   })
   mainWindow.webContents.on('destroyed', () => {
     actionRecordingContexts.clearSender(senderId)
     routineRecordingContexts.clearSender(senderId)
     deletePreviewContexts.clearSender(senderId)
+    reviewContexts.clearSender(senderId)
   })
   mainWindow.once('ready-to-show', () => mainWindow?.show())
   mainWindow.on('closed', () => {
     actionRecordingContexts.clearSender(senderId)
     routineRecordingContexts.clearSender(senderId)
     deletePreviewContexts.clearSender(senderId)
+    reviewContexts.clearSender(senderId)
     mainWindow = null
   })
 
@@ -211,6 +218,7 @@ app.whenReady().then(async () => {
   })
   const progressService = new ProgressService({ repository: sqliteConnection.repository })
   const recoveryService = new RecoveryService({ repository: sqliteConnection.repository, clock })
+  const reviewService = new ReviewService({ repository: sqliteConnection.repository, clock })
   const dataControlService = new DataControlService({
     repository: sqliteConnection.repository,
     unitOfWork: sqliteConnection,
@@ -267,6 +275,12 @@ app.whenReady().then(async () => {
     service: recoveryService,
     assertSender: (event) => assertTrustedSender(event, mainWindow, getRendererLocation())
   })
+  registerReviewIpc({
+    ipc: ipcMain,
+    service: reviewService,
+    contexts: reviewContexts,
+    assertSender: (event) => assertTrustedSender(event, mainWindow, getRendererLocation())
+  })
   registerDataControlIpc({
     ipc: ipcMain,
     service: dataControlService,
@@ -296,6 +310,7 @@ app.on('before-quit', () => {
   actionRecordingContexts.clearAll()
   routineRecordingContexts.clearAll()
   deletePreviewContexts.clearAll()
+  reviewContexts.clearAll()
   diagnostics?.record({
     code: 'application-stopping',
     severity: 'info',

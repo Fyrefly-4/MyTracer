@@ -94,6 +94,14 @@ import {
   type RecoveryContextDto,
   type RecoveryResult
 } from '../contracts/recovery'
+import {
+  REVIEW_CHANNELS,
+  type BeginReviewDto,
+  type BeginReviewInputDto,
+  type ReviewContextInputDto,
+  type ReviewResult,
+  type ReviewSummaryDto
+} from '../contracts/review'
 
 const api: MyTracerApi = Object.freeze({
   shell: Object.freeze({
@@ -176,6 +184,14 @@ const api: MyTracerApi = Object.freeze({
   recovery: Object.freeze({
     getContext: (input: GetRecoveryContextInputDto): Promise<RecoveryResult<RecoveryContextDto>> =>
       ipcRenderer.invoke(RECOVERY_CHANNELS.getContext, input)
+  }),
+  review: Object.freeze({
+    begin: (input: BeginReviewInputDto): Promise<ReviewResult<BeginReviewDto>> =>
+      ipcRenderer.invoke(REVIEW_CHANNELS.begin, input),
+    getSummary: (input: ReviewContextInputDto): Promise<ReviewResult<ReviewSummaryDto>> =>
+      ipcRenderer.invoke(REVIEW_CHANNELS.getSummary, input),
+    cancel: (input: ReviewContextInputDto): Promise<ReviewResult<{ readonly cancelled: true }>> =>
+      ipcRenderer.invoke(REVIEW_CHANNELS.cancel, input)
   }),
   routines: Object.freeze({
     create: (input: CreateRoutineInputDto): Promise<RoutineResult<RoutineDetailDto>> =>
