@@ -203,6 +203,35 @@ export class GoalService {
     })
   }
 
+  public createAndSetGoalCurrentNextAction(input: {
+    readonly goalId: string
+    readonly title: string
+    readonly description?: string | null
+  }): GoalDetailView {
+    const now = this.dependencies.clock.nowInstant()
+    const actionId = this.dependencies.generateId()
+    try {
+      this.dependencies.unitOfWork.transaction((repository) => {
+        const goal = toDomain(loadGoal(repository, input.goalId))
+        const action = Object.freeze<ActionPersistenceRecord>({
+          id: actionId,
+          goalId: goal.id,
+          title: normalizeGoalActionText(input.title, 'Action title'),
+          description: normalizeOptionalGoalText(input.description),
+          status: 'pending',
+          createdAt: now,
+          updatedAt: now
+        })
+        const changedGoal = setGoalCurrentNextAction(goal, action, now)
+        repository.saveAction(action)
+        repository.saveGoal(toPersistence(changedGoal))
+      })
+    } catch (error) {
+      mapDomainError(error)
+    }
+    return this.getGoalDetail(input.goalId)
+  }
+
   public listGoals(status?: GoalStatus): readonly GoalSummaryView[] {
     return this.dependencies.repository.listGoals(status).map(toSummary)
   }

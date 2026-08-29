@@ -1,0 +1,135 @@
+{
+  "schemaVersion": 1,
+  "task": "T042",
+  "task_kind": "implementation",
+  "dependencies": {
+    "requires": ["T041"],
+    "blocks": [],
+    "can_parallel": [],
+    "prefer_after": [],
+    "conflicts_with": ["T051", "T052"]
+  },
+  "conflict_basis": {
+    "T051": "The approved S4/S5 design requires serial execution because T042 and T051 overlap Main/Preload API shape, the Goals/Recovery and Review feature boundary, Electron contract tests, and the S4 acceptance gate must complete before T051 activation.",
+    "T052": "The approved S4/S5 design requires serial execution because T042 and T052 both modify Goal current-next behavior, Main/Preload contracts, Renderer confirmation flows, and aggregate AC-05/AC-06 E2E surfaces."
+  },
+  "shared_surfaces": [
+    {
+      "files": [
+        "src/application/goals.ts",
+        "src/contracts/goals.ts",
+        "src/main/goals-ipc.ts",
+        "src/preload/index.ts",
+        "tests/unit/goal-application.test.ts",
+        "tests/integration/goal-sqlite.test.ts",
+        "tests/integration/goal-ipc.test.ts",
+        "tests/integration/main-foundations.test.ts"
+      ],
+      "modules": [
+        "create-and-set-goal-current-next-action-command",
+        "goal-action-current-next-transaction",
+        "goal-ipc-runtime-validation",
+        "main-preload-goal-api-shape"
+      ],
+      "schema_tables": ["goals", "actions"],
+      "ipc_contracts": ["window.myTracer.goals.createAndSetCurrentNextAction"],
+      "domain_invariants": [
+        "current-next-action-is-a-pending-action-linked-to-the-same-active-goal",
+        "create-action-and-set-current-next-are-atomic",
+        "failed-create-and-set-leaves-no-orphan-action-or-partial-goal-update",
+        "setting-current-next-does-not-automatically-select-today",
+        "main-generates-identifiers-and-a-single-command-time-snapshot",
+        "renderer-remains-ui-only"
+      ],
+      "risk": "high",
+      "integration_policy": "serial"
+    },
+    {
+      "files": [
+        "src/renderer/src/features/goals/GoalsPage.tsx",
+        "src/renderer/src/features/goals/RecoveryPanel.tsx",
+        "src/renderer/src/styles.css",
+        "tests/e2e/recovery-restart.e2e.test.ts",
+        "tests/e2e/shell.e2e.test.ts"
+      ],
+      "modules": [
+        "recovery-mutation-drafts-and-confirmations",
+        "ordinary-goal-routine-action-today-command-reuse",
+        "mutation-success-and-partial-success-refresh",
+        "continuous-ac05-restart-flow"
+      ],
+      "schema_tables": [
+        "goals",
+        "actions",
+        "routines",
+        "today_selections",
+        "action_records",
+        "routine_records",
+        "understandings",
+        "confusions"
+      ],
+      "ipc_contracts": [
+        "window.myTracer.goals.pause",
+        "window.myTracer.goals.end",
+        "window.myTracer.goals.setCurrentNextAction",
+        "window.myTracer.actions.complete",
+        "window.myTracer.actions.cancel",
+        "window.myTracer.actions.reschedule",
+        "window.myTracer.routines.pause",
+        "window.myTracer.routines.end",
+        "window.myTracer.today.selectAction",
+        "window.myTracer.recovery.getContext"
+      ],
+      "domain_invariants": [
+        "all-recovery-mutations-require-explicit-user-confirmation",
+        "cancelled-drafts-and-validation-failures-write-no-business-data",
+        "goal-and-routine-lifecycles-do-not-automatically-cascade",
+        "pause-end-and-action-transitions-preserve-historical-records",
+        "today-selection-is-a-separate-user-decision-and-may-fail-after-current-next-success",
+        "mutation-success-refreshes-main-owned-facts",
+        "recovery-does-not-create-records-or-fill-missing-days",
+        "neutral-language-uses-d013-while-no-threshold-semantics-use-ed013",
+        "tests-use-fake-clock-and-unique-temporary-data-roots"
+      ],
+      "risk": "high",
+      "integration_policy": "serial"
+    },
+    {
+      "files": [
+        "docs/implementation/T042_RECOVERY_RESTART.md",
+        "docs/implementation/metadata/T042.json",
+        "docs/implementation/TASK_INDEX_V0.1.md",
+        "docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md"
+      ],
+      "modules": ["task-contract", "task-metadata", "delivery-evidence"],
+      "schema_tables": [],
+      "ipc_contracts": [],
+      "domain_invariants": [
+        "owner-approval-and-activation-are-limited-to-t042",
+        "t041-task-delivery-and-dev-integration-revisions-remain-distinct",
+        "evidence-is-bound-to-real-results-and-exact-revisions",
+        "manual-ac05-remains-owner-reported",
+        "docs-closeout-requires-owner-approval",
+        "t042-does-not-automatically-start-t051"
+      ],
+      "risk": "medium",
+      "integration_policy": "serial"
+    }
+  ],
+  "external": [
+    "github-t042-task-branch",
+    "github-t042-draft-pr-to-dev",
+    "github-actions-t042-validation"
+  ],
+  "execution": {
+    "profile": "standard-task@1",
+    "activated_at": "2026-08-29T13:24:32+08:00",
+    "valid_until": "2026-09-28T13:24:32+08:00",
+    "additional_constraints": [
+      {
+        "type": "pause_before",
+        "phase": "review_handoff"
+      }
+    ]
+  }
+}

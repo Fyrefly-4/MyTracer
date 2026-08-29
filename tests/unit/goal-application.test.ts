@@ -33,6 +33,7 @@ class MemoryPersistence implements RepositoryPort, UnitOfWorkPort {
   confusions: ConfusionPersistenceRecord[] = []
   reviewResults: ReviewResultPersistenceRecord[] = []
   failOnSaveAction = false
+  failOnSaveGoal = false
 
   transaction<T>(work: (repository: RepositoryPort) => T): T {
     const before = structuredClone(this.readSnapshot())
@@ -45,6 +46,7 @@ class MemoryPersistence implements RepositoryPort, UnitOfWorkPort {
   }
 
   saveGoal(record: GoalPersistenceRecord): void {
+    if (this.failOnSaveGoal) throw new Error('injected Goal write failure')
     this.upsert(this.goals, record)
   }
   saveAction(record: ActionPersistenceRecord): void {
@@ -241,5 +243,51 @@ describe('Goal application service', () => {
     expect(() =>
       service.setGoalCurrentNextAction({ goalId: first.id, actionId: firstAction!.id })
     ).toThrowError(expect.objectContaining({ code: 'invariant-violation' }))
+  })
+
+  it('atomically creates a pending Action for the same active Goal and sets it as current next', () => {
+    const { persistence, service } = setup()
+    const goal = service.createGoal({ name: 'Goal' })
+    const before = structuredClone(persistence.readSnapshot())
+
+    const changed = service.createAndSetGoalCurrentNextAction({
+      goalId: goal.id,
+      title: 'Small next step',
+      description: 'Start here'
+    })
+
+    expect(changed).toMatchObject({
+      id: goal.id,
+      currentNextActionId: 'action-1',
+      currentNextAction: {
+        id: 'action-1',
+        title: 'Small next step',
+        status: 'pending',
+        selectedForToday: false
+      }
+    })
+    expect(persistence.actions).toEqual([
+      expect.objectContaining({ id: 'action-1', goalId: goal.id, status: 'pending' })
+    ])
+    expect(persistence.todaySelections).toEqual(before.todaySelections)
+  })
+
+  it('rolls back create-and-set failures and rejects an inactive Goal without an orphan Action', () => {
+    const { persistence, service } = setup()
+    const goal = service.createGoal({ name: 'Goal' })
+    persistence.failOnSaveGoal = true
+    const beforeFailure = structuredClone(persistence.readSnapshot())
+    expect(() =>
+      service.createAndSetGoalCurrentNextAction({ goalId: goal.id, title: 'Will roll back' })
+    ).toThrow(/injected Goal write failure/)
+    expect(persistence.readSnapshot()).toEqual(beforeFailure)
+
+    persistence.failOnSaveGoal = false
+    service.pauseGoal(goal.id)
+    const beforeInactive = structuredClone(persistence.readSnapshot())
+    expect(() =>
+      service.createAndSetGoalCurrentNextAction({ goalId: goal.id, title: 'Not allowed' })
+    ).toThrowError(expect.objectContaining({ code: 'invalid-transition' }))
+    expect(persistence.readSnapshot()).toEqual(beforeInactive)
   })
 })
