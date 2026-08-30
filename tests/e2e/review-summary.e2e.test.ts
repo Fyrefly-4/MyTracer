@@ -21,7 +21,8 @@ async function setMainProcessDate(
   application: ElectronApplication,
   instant: string
 ): Promise<void> {
-  await application.evaluate((_electron, controlledInstant) => {
+  await application.firstWindow()
+  const appliedInstant = await application.evaluate((_electron, controlledInstant) => {
     let realDate = Reflect.get(globalThis, '__myTracerRealDate') as DateConstructor | undefined
     if (!realDate) {
       realDate = Date
@@ -39,7 +40,9 @@ async function setMainProcessDate(
         }
       })
     )
+    return new Date().toISOString()
   }, instant)
+  expect(appliedInstant).toBe(instant)
 }
 
 test('shows the current-week ReviewSummary from Progress facts without turning unknown into not_done', async () => {
