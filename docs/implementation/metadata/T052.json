@@ -53,7 +53,8 @@
         "tests/unit/complete-export.test.ts",
         "tests/integration/complete-export-sqlite.test.ts",
         "tests/integration/system-export-adapter.test.ts",
-        "tests/e2e/complete-export.e2e.test.ts"
+        "tests/e2e/complete-export.e2e.test.ts",
+        "tests/e2e/ai-data-capability.e2e.test.ts"
       ],
       "modules": [
         "strict-discriminated-core-export-v2",
@@ -109,6 +110,7 @@
     {
       "files": [
         "docs/implementation/T052_REVIEW_RESULT.md",
+        "docs/implementation/T052_ESCALATION_AC07_EXPORT_VERSION.md",
         "docs/implementation/metadata/T052.json",
         "docs/implementation/TASK_INDEX_V0.1.md",
         "docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md"

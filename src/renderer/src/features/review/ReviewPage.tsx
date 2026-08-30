@@ -110,12 +110,7 @@ export function ReviewPage(): ReactNode {
   }, [entryKey])
 
   useEffect(() => {
-    setPendingActions([])
-    setExistingActionId('')
-    if (!relatedGoalId) {
-      setNextStepKind('none')
-      return
-    }
+    if (!relatedGoalId) return
     let active = true
     void window.myTracer.goals.getDetail({ goalId: relatedGoalId }).then((result) => {
       if (!active || !result.ok) return
@@ -125,6 +120,13 @@ export function ReviewPage(): ReactNode {
       active = false
     }
   }, [relatedGoalId])
+
+  const selectRelatedGoal = (goalId: string): void => {
+    setRelatedGoalId(goalId)
+    setPendingActions([])
+    setExistingActionId('')
+    setNextStepKind('none')
+  }
 
   const refresh = async (): Promise<void> => {
     if (!contextId) return
@@ -386,7 +388,7 @@ export function ReviewPage(): ReactNode {
               关联活跃目标（可选）
               <select
                 value={relatedGoalId}
-                onChange={(event) => setRelatedGoalId(event.target.value)}
+                onChange={(event) => selectRelatedGoal(event.target.value)}
               >
                 <option value="">不关联目标</option>
                 {goals.map((goal) => (

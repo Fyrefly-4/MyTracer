@@ -221,6 +221,7 @@ T052 与 T042 的 Goal/Action current-next、Main/Preload 和聚合 E2E surfaces
   - `tests/e2e/review-result.e2e.test.ts`（新增 AC-06 连续程序）
   - `tests/e2e/recovery-review-aggregate.e2e.test.ts`（新增 AC-05→AC-06 聚合程序）
   - `tests/e2e/complete-export.e2e.test.ts`
+  - `tests/e2e/ai-data-capability.e2e.test.ts`（项目所有者于 2026-08-30 批准的 AC-07 export v2 单断言机械兼容）
   - `tests/e2e/data-control.e2e.test.ts`
   - `tests/e2e/review-summary.e2e.test.ts`（仅 T051 summary 与 T052 重算衔接回归）
   - `tests/e2e/recovery-restart.e2e.test.ts`（只作为聚合路径受影响回归；优先不修改）
@@ -521,3 +522,5 @@ docs closeout 通过后仍须 latest-head required CI。Ready、merge `dev`、`d
 5. 接受 duplicate period 或 blank/corrupt old text 的 fail-closed transaction rollback，后续真实冲突数据处理必须另行授权，不能由 T052 删除、合并或虚构。
 
 首次激活指令要求暂时只在合同中标注上述事实，该暂停已被项目所有者后续“第二阶段：批准后开发”指令明确解除。第二阶段允许按第 5.2 节修改任务文件，并按第 12.2 节创建独立分支、commit、push 和 Draft PR；项目所有者补充要求只创建独立分支、不创建工作树。PR 推送成功后立即停止，不主动查询 CI。
+
+项目所有者于 2026-08-30 进一步批准 `T052_ESCALATION_AC07_EXPORT_VERSION` 的最小范围扩展：把 `tests/e2e/ai-data-capability.e2e.test.ts` 加入第 5.2 节允许列表，并只将其中既有 complete-export 成功结果的 `exportVersion` 期望从 `1` 机械更新为已批准的 `2`。该批准不扩展 AI、AC-07 流程、生产实现或其他断言语义。
