@@ -561,3 +561,48 @@ describe('task metadata validator', () => {
     expect(result.stderr).toContain('required profile standard-task@1 is missing')
   })
 })
+
+describe('T061 static AI context boundaries', () => {
+  test('keeps the Start Help coordinator Main-only and unexposed', () => {
+    const coordinator = readFileSync(
+      join(repositoryRoot, 'src', 'main', 'ai-start-help-context.ts'),
+      'utf8'
+    )
+    const mainIndex = readFileSync(join(repositoryRoot, 'src', 'main', 'index.ts'), 'utf8')
+    const preload = readFileSync(join(repositoryRoot, 'src', 'preload', 'index.ts'), 'utf8')
+    const renderer = readFileSync(join(repositoryRoot, 'src', 'renderer', 'src', 'App.tsx'), 'utf8')
+
+    ;[mainIndex, preload, renderer].forEach((source) => {
+      expect(source).not.toContain('ai-start-help-context')
+      expect(source).not.toContain('AiStartHelpContextCoordinator')
+    })
+    expect(coordinator.indexOf('.queryStartHelpContext(')).toBeGreaterThan(-1)
+    expect(coordinator.indexOf('this.selector.select(')).toBeGreaterThan(
+      coordinator.indexOf('.queryStartHelpContext(')
+    )
+    expect(coordinator.indexOf('.captureStartHelpRequest(')).toBeGreaterThan(
+      coordinator.indexOf('this.selector.select(')
+    )
+  })
+
+  test('keeps the narrow SQLite query independent from broad snapshots and excluded tables', () => {
+    const source = readFileSync(
+      join(repositoryRoot, 'src', 'infrastructure', 'sqlite', 'sqlite-repository.ts'),
+      'utf8'
+    )
+    const queryStart = source.indexOf('queryStartHelpContext(')
+    const nextQuery = source.indexOf('queryProgressSnapshot(', queryStart)
+    expect(queryStart).toBeGreaterThan(-1)
+    expect(nextQuery).toBeGreaterThan(queryStart)
+    const querySource = source.slice(queryStart, nextQuery)
+
+    ;[
+      'readSnapshot(',
+      'readCompleteCoreSnapshot(',
+      'routine_records',
+      'review_results',
+      'credentials',
+      'diagnostics'
+    ].forEach((forbidden) => expect(querySource).not.toContain(forbidden))
+  })
+})

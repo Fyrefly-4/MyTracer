@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { FakeAiProvider, FakeAiProviderError, type FakeAiScript } from '../support/fake-ai-provider'
+import {
+  FakeAiProvider,
+  FakeAiProviderError,
+  FakeStartHelpRequestCapture,
+  type FakeAiScript
+} from '../support/fake-ai-provider'
 
 interface Request {
   readonly marker: string
@@ -95,5 +100,21 @@ describe('FakeAiProvider', () => {
     })
     expect(first.calls[0]?.request.marker).toBe('a')
     expect(second.calls[0]?.request.marker).toBe('b')
+  })
+})
+
+describe('FakeStartHelpRequestCapture', () => {
+  it('captures clone-safe requests without network or response behavior', () => {
+    const capture = new FakeStartHelpRequestCapture<{ marker: string }>()
+    const request = { marker: 'allowed' }
+
+    expect(capture.calls).toEqual([])
+    capture.captureStartHelpRequest(request)
+    request.marker = 'mutated-after-capture'
+
+    expect(capture.calls).toEqual([{ marker: 'allowed' }])
+    const observed = capture.calls[0] as { marker: string }
+    observed.marker = 'mutated-observation'
+    expect(capture.calls).toEqual([{ marker: 'allowed' }])
   })
 })

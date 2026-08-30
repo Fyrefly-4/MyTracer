@@ -25,6 +25,18 @@ export interface FakeAiCall<TRequest> {
   readonly aborted: boolean
 }
 
+export class FakeStartHelpRequestCapture<TRequest> {
+  private readonly recordedCalls: TRequest[] = []
+
+  public get calls(): readonly TRequest[] {
+    return this.recordedCalls.map((request) => clone(request))
+  }
+
+  public captureStartHelpRequest(request: TRequest): void {
+    this.recordedCalls.push(clone(request))
+  }
+}
+
 interface MutableFakeAiCall<TRequest> {
   readonly request: TRequest
   readonly scriptKind: FakeAiScript<unknown>['kind']
