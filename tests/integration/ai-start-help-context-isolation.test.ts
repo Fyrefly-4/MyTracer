@@ -1,10 +1,18 @@
 import { join } from 'node:path'
-import { afterEach, describe, expect, it } from 'vitest'
-import { AiContextSelector } from '../../src/application/ai-start-help-context'
-import type { StartHelpRequestDto } from '../../src/application/ports/ai-start-help'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import type {
+  ContextBudget,
+  SelectedStartHelpContext
+} from '../../src/application/ai-start-help-context'
+import type {
+  StartHelpRequestCapturePort,
+  StartHelpRequestDto
+} from '../../src/application/ports/ai-start-help'
+import type { ClockPort } from '../../src/application/ports/clock'
 import {
   asCompleteExportRepository,
-  asStartHelpContextQueryRepository
+  asStartHelpContextQueryRepository,
+  type StartHelpContextQueryPort
 } from '../../src/application/ports/persistence'
 import { SqliteConnection } from '../../src/infrastructure/sqlite/sqlite-connection'
 import {
@@ -23,12 +31,31 @@ import {
 
 const roots: TemporaryTestRoot[] = []
 
+interface CoordinatorInput {
+  readonly actionId: string
+  readonly locale: string
+  readonly userInput: string
+  readonly expectedActionUpdatedAt?: string
+  readonly expectedGoalUpdatedAt?: string
+}
+
+type CoordinatorConstructor = new (dependencies: {
+  readonly contextQuery: StartHelpContextQueryPort
+  readonly clock: ClockPort
+  readonly contextBudget: ContextBudget
+  readonly requestCapture: StartHelpRequestCapturePort
+  readonly generateRequestId: () => string
+}) => { start(input: CoordinatorInput): SelectedStartHelpContext }
+
 afterEach(async () => {
   await Promise.all(roots.splice(0).map((root) => removeTemporaryTestRoot(root)))
 })
 
 describe('T061 Start Help request isolation', () => {
   it('captures exactly one allowlisted request only after a valid explicit start', async () => {
+    const { AiStartHelpContextCoordinator } = await vi.importActual<{
+      AiStartHelpContextCoordinator: CoordinatorConstructor
+    }>('../../src/main/ai-start-help-context')
     const root = await createTemporaryTestRoot()
     roots.push(root)
     const connection = SqliteConnection.open(join(root.database, 't061-isolation.sqlite3'))
@@ -41,29 +68,24 @@ describe('T061 Start Help request isolation', () => {
       timeZone: 'Asia/Shanghai'
     })
     let requestSequence = 0
-    const createCoordinator = (totalTextCharacters: number) => ({
-      start: (input: {
-        actionId: string
-        locale: string
-        userInput: string
-        expectedActionUpdatedAt?: string
-        expectedGoalUpdatedAt?: string
-      }) => {
-        const selected = new AiContextSelector({ totalTextCharacters }).select({
-          requestId: `request-${++requestSequence}`,
-          locale: input.locale,
-          userInput: input.userInput,
-          expectedActionUpdatedAt: input.expectedActionUpdatedAt,
-          expectedGoalUpdatedAt: input.expectedGoalUpdatedAt,
-          snapshot: asStartHelpContextQueryRepository(connection.repository).queryStartHelpContext(
-            input.actionId,
-            String(clock.currentLocalDate())
-          )
-        })
-        capture.captureStartHelpRequest(selected.requestDto)
-        return selected
-      }
+    const contextQuery = asStartHelpContextQueryRepository(connection.repository)
+    const adjacentSources = Object.freeze({
+      credential: START_HELP_MARKERS.credential,
+      configuration: START_HELP_MARKERS.configuration,
+      diagnostics: START_HELP_MARKERS.diagnostics,
+      log: START_HELP_MARKERS.log
     })
+    const createCoordinator = (totalTextCharacters: number) => {
+      const compositionFixture = {
+        contextQuery,
+        clock,
+        contextBudget: { totalTextCharacters },
+        requestCapture: capture,
+        generateRequestId: () => `request-${++requestSequence}`,
+        adjacentSources
+      }
+      return new AiStartHelpContextCoordinator(compositionFixture)
+    }
 
     const coordinator = createCoordinator(8_000)
     expect(capture.calls).toHaveLength(0)

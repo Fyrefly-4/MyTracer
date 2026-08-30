@@ -5,10 +5,7 @@ import {
 } from '../application/ai-start-help-context'
 import type { ClockPort } from '../application/ports/clock'
 import type { StartHelpRequestCapturePort } from '../application/ports/ai-start-help'
-import {
-  asStartHelpContextQueryRepository,
-  type RepositoryPort
-} from '../application/ports/persistence'
+import type { StartHelpContextQueryPort } from '../application/ports/persistence'
 
 export interface StartAiStartHelpContextInput {
   readonly actionId: string
@@ -19,7 +16,7 @@ export interface StartAiStartHelpContextInput {
 }
 
 export interface AiStartHelpContextCoordinatorDependencies {
-  readonly repository: RepositoryPort
+  readonly contextQuery: StartHelpContextQueryPort
   readonly clock: ClockPort
   readonly contextBudget: ContextBudget
   readonly requestCapture: StartHelpRequestCapturePort
@@ -36,9 +33,10 @@ export class AiStartHelpContextCoordinator {
 
   public start(input: StartAiStartHelpContextInput): SelectedStartHelpContext {
     const selectedFor = String(this.dependencies.clock.currentLocalDate())
-    const snapshot = asStartHelpContextQueryRepository(
-      this.dependencies.repository
-    ).queryStartHelpContext(input.actionId, selectedFor)
+    const snapshot = this.dependencies.contextQuery.queryStartHelpContext(
+      input.actionId,
+      selectedFor
+    )
     const selected = this.selector.select({
       requestId: this.dependencies.generateRequestId(),
       locale: input.locale,

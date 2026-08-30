@@ -295,7 +295,7 @@ export interface ReviewRepositoryPort extends RepositoryPort {
   ): ReviewQuerySnapshotPersistence
 }
 
-export interface StartHelpContextQueryPort extends RepositoryPort {
+export interface StartHelpContextQueryPort {
   queryStartHelpContext(
     actionId: string,
     selectedFor: string
@@ -388,14 +388,12 @@ export function asReviewRepository(repository: RepositoryPort): ReviewRepository
   return repository as ReviewRepositoryPort
 }
 
-export function asStartHelpContextQueryRepository(
-  repository: RepositoryPort
-): StartHelpContextQueryPort {
-  const candidate = repository as Partial<StartHelpContextQueryPort>
-  if (typeof candidate.queryStartHelpContext !== 'function') {
+export function asStartHelpContextQueryRepository(repository: unknown): StartHelpContextQueryPort {
+  const candidate = repository as Partial<StartHelpContextQueryPort> | null
+  if (!candidate || typeof candidate.queryStartHelpContext !== 'function') {
     throw new TypeError('Repository does not provide the Start Help context query contract.')
   }
-  return repository as StartHelpContextQueryPort
+  return candidate as StartHelpContextQueryPort
 }
 
 export function asRoutineRecordRepository(repository: RepositoryPort): RoutineRecordRepositoryPort {

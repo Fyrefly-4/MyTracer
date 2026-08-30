@@ -31,11 +31,15 @@ export const START_HELP_MARKERS = Object.freeze({
   otherGoal: '__forbidden_other_goal__',
   otherAction: '__forbidden_other_action__',
   otherRecord: '__forbidden_other_record__',
+  otherUnderstanding: '__forbidden_other_understanding__',
+  otherConfusion: '__forbidden_other_confusion__',
   revokedUnderstanding: '__forbidden_revoked_understanding__',
   resolvedConfusion: '__forbidden_resolved_confusion__',
   routineRecord: '__forbidden_routine_record__',
   credential: '__forbidden_credential_marker__',
+  configuration: '__forbidden_configuration_marker__',
   diagnostics: '__forbidden_diagnostics_marker__',
+  log: '__forbidden_log_marker__',
   fullSnapshotExtra: '__forbidden_full_snapshot_extra__'
 })
 
@@ -43,11 +47,15 @@ export const START_HELP_FORBIDDEN_MARKERS = Object.freeze([
   START_HELP_MARKERS.otherGoal,
   START_HELP_MARKERS.otherAction,
   START_HELP_MARKERS.otherRecord,
+  START_HELP_MARKERS.otherUnderstanding,
+  START_HELP_MARKERS.otherConfusion,
   START_HELP_MARKERS.revokedUnderstanding,
   START_HELP_MARKERS.resolvedConfusion,
   START_HELP_MARKERS.routineRecord,
   START_HELP_MARKERS.credential,
+  START_HELP_MARKERS.configuration,
   START_HELP_MARKERS.diagnostics,
+  START_HELP_MARKERS.log,
   START_HELP_MARKERS.fullSnapshotExtra
 ])
 
@@ -198,6 +206,25 @@ export function seedStartHelpIsolationFixture(
     note: START_HELP_MARKERS.diagnostics,
     createdAt: instant(31, 52),
     updatedAt: instant(31, 52)
+  })
+  repository.saveUnderstanding({
+    id: 'understanding-other',
+    actionRecordId: 'record-other',
+    text: START_HELP_MARKERS.otherUnderstanding,
+    source: 'manual',
+    revokedAt: null,
+    createdAt: instant(31, 53),
+    updatedAt: instant(31, 53)
+  })
+  repository.saveConfusion({
+    id: 'confusion-other',
+    actionRecordId: 'record-other',
+    text: START_HELP_MARKERS.otherConfusion,
+    status: 'open',
+    resolvedAt: null,
+    resolution: null,
+    createdAt: instant(31, 54),
+    updatedAt: instant(31, 54)
   })
 
   repository.saveAction({
