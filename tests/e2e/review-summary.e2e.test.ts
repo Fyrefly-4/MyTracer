@@ -21,7 +21,8 @@ async function setMainProcessDate(
   application: ElectronApplication,
   instant: string
 ): Promise<void> {
-  await application.evaluate((_electron, controlledInstant) => {
+  await application.firstWindow()
+  const appliedInstant = await application.evaluate((_electron, controlledInstant) => {
     let realDate = Reflect.get(globalThis, '__myTracerRealDate') as DateConstructor | undefined
     if (!realDate) {
       realDate = Date
@@ -39,7 +40,9 @@ async function setMainProcessDate(
         }
       })
     )
+    return new Date().toISOString()
   }, instant)
+  expect(appliedInstant).toBe(instant)
 }
 
 test('shows the current-week ReviewSummary from Progress facts without turning unknown into not_done', async () => {
@@ -129,7 +132,7 @@ test('shows the current-week ReviewSummary from Progress facts without turning u
       })
       return { begun, first, second, apiKeys: Object.keys(window.myTracer.review) }
     })
-    expect(apiFacts.apiKeys).toEqual(['begin', 'getSummary', 'cancel'])
+    expect(apiFacts.apiKeys).toEqual(['begin', 'getSummary', 'getResult', 'complete', 'cancel'])
     expect(apiFacts.first).toEqual(apiFacts.second)
     expect(apiFacts.first).toMatchObject({
       ok: true,

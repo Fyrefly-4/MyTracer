@@ -2,11 +2,72 @@ import { describe, expect, it } from 'vitest'
 import { buildProgressView, normalizeProgressFilter } from '../../src/domain/progress'
 import {
   buildReviewSummary,
+  createReviewResult,
   currentReviewPeriod,
-  REVIEW_UNKNOWN_POLICY
+  reviewPeriodEndedOn,
+  REVIEW_UNKNOWN_POLICY,
+  updateReviewResult
 } from '../../src/domain/review'
 
 describe('Review period and pure summary builder', () => {
+  it('validates the three confirmed texts and derives period end without persisting it', () => {
+    const result = createReviewResult({
+      id: 'review-1',
+      periodStartedOn: '2026-08-24',
+      confirmedProgress: '  Shipped one slice  ',
+      mainObstacle: '  Context switching  ',
+      nextAdjustment: '  Protect one hour  ',
+      now: '2026-08-30T08:00:00.000Z'
+    })
+    expect(result).toMatchObject({
+      confirmedProgress: 'Shipped one slice',
+      mainObstacle: 'Context switching',
+      nextAdjustment: 'Protect one hour',
+      relatedGoalId: null
+    })
+    expect(reviewPeriodEndedOn(String(result.periodStartedOn))).toBe('2026-08-30')
+    expect(result).not.toHaveProperty('periodEndedOn')
+    for (const field of ['confirmedProgress', 'mainObstacle', 'nextAdjustment'] as const) {
+      expect(() =>
+        createReviewResult({
+          id: 'review-2',
+          periodStartedOn: '2026-08-24',
+          confirmedProgress: 'Progress',
+          mainObstacle: 'Obstacle',
+          nextAdjustment: 'Adjustment',
+          [field]: '   ',
+          now: '2026-08-30T08:00:00.000Z'
+        })
+      ).toThrow(/must not be blank/)
+    }
+  })
+
+  it('edits the same stable result while preserving id, period, and createdAt', () => {
+    const created = createReviewResult({
+      id: 'review-1',
+      periodStartedOn: '2026-08-24',
+      confirmedProgress: 'One',
+      mainObstacle: 'Two',
+      nextAdjustment: 'Three',
+      now: '2026-08-30T08:00:00.000Z'
+    })
+    expect(
+      updateReviewResult(created, {
+        confirmedProgress: 'Changed',
+        mainObstacle: 'Still',
+        nextAdjustment: 'Next',
+        relatedGoalId: 'goal-1',
+        now: '2026-08-30T09:00:00.000Z'
+      })
+    ).toMatchObject({
+      id: created.id,
+      periodStartedOn: created.periodStartedOn,
+      createdAt: created.createdAt,
+      updatedAt: '2026-08-30T09:00:00.000Z',
+      confirmedProgress: 'Changed',
+      relatedGoalId: 'goal-1'
+    })
+  })
   it.each([
     ['2026-08-31', '2026-08-31', '2026-09-06'],
     ['2026-09-06', '2026-08-31', '2026-09-06'],

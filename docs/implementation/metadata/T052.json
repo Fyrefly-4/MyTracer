@@ -1,0 +1,144 @@
+{
+  "schemaVersion": 1,
+  "task": "T052",
+  "task_kind": "implementation",
+  "dependencies": {
+    "requires": ["T051"],
+    "blocks": [],
+    "can_parallel": [],
+    "prefer_after": ["T042"],
+    "conflicts_with": ["T042"]
+  },
+  "conflict_basis": {
+    "T042": "The approved S4/S5 design requires serial integration because T042 and T052 both modify Goal/Action current-next invariants, atomic UnitOfWork behavior, Main/Preload contracts, Renderer confirmation flows, and the aggregate AC-05/AC-06 E2E surface; T052 may start only from a dev revision that already integrates T042 and T051."
+  },
+  "shared_surfaces": [
+    {
+      "files": [
+        "src/domain/review.ts",
+        "src/application/review.ts",
+        "src/application/ports/persistence.ts",
+        "src/contracts/review.ts",
+        "src/infrastructure/sqlite/migrations.ts",
+        "src/infrastructure/sqlite/migrations/003_review_results_v3.sql",
+        "src/infrastructure/sqlite/sqlite-repository.ts"
+      ],
+      "modules": [
+        "review-result-validation-and-stable-period-identity",
+        "complete-review-atomic-unit-of-work",
+        "review-result-read-save-update-reopen",
+        "schema-v2-to-v3-lossless-or-rollback-migration"
+      ],
+      "schema_tables": ["metadata", "review_results", "goals", "actions"],
+      "ipc_contracts": ["review:complete", "review:get-result"],
+      "domain_invariants": [
+        "one-review-result-per-period-start-with-stable-id",
+        "review-result-stores-user-text-not-summary-facts",
+        "review-result-and-optional-next-step-resolution-commit-atomically",
+        "active-goal-current-next-references-a-same-goal-pending-action",
+        "duplicate-period-or-blank-corrupt-v2-data-rolls-back-without-delete-merge-or-invention",
+        "goal-delete-detaches-review-result-without-deleting-history",
+        "unknown-higher-schema-versions-are-rejected-without-write"
+      ],
+      "risk": "high",
+      "integration_policy": "serial"
+    },
+    {
+      "files": [
+        "src/application/complete-export.ts",
+        "src/application/ports/export.ts",
+        "src/contracts/exports.ts",
+        "src/infrastructure/export/system-export-adapter.ts",
+        "src/main/exports-ipc.ts",
+        "tests/unit/complete-export.test.ts",
+        "tests/integration/complete-export-sqlite.test.ts",
+        "tests/integration/system-export-adapter.test.ts",
+        "tests/e2e/complete-export.e2e.test.ts",
+        "tests/e2e/ai-data-capability.e2e.test.ts"
+      ],
+      "modules": [
+        "strict-discriminated-core-export-v2",
+        "preserved-strict-core-export-v1-validator",
+        "complete-core-snapshot-and-sensitive-field-exclusion"
+      ],
+      "schema_tables": ["review_results"],
+      "ipc_contracts": ["exports:generate"],
+      "domain_invariants": [
+        "export-version-and-schema-version-remain-distinct",
+        "v1-and-v2-review-result-shapes-are-not-cross-accepted",
+        "export-remains-complete-atomic-and-not-an-import-feature"
+      ],
+      "risk": "high",
+      "integration_policy": "serial"
+    },
+    {
+      "files": [
+        "src/main/review-contexts.ts",
+        "src/main/review-ipc.ts",
+        "src/main/index.ts",
+        "src/preload/index.ts",
+        "src/renderer/src/features/review/ReviewPage.tsx",
+        "src/renderer/src/styles.css",
+        "tests/unit/review-contexts.test.ts",
+        "tests/integration/review-ipc.test.ts",
+        "tests/e2e/review-result.e2e.test.ts",
+        "tests/e2e/recovery-review-aggregate.e2e.test.ts"
+      ],
+      "modules": [
+        "sender-bound-review-confirmation-context",
+        "review-form-cancel-confirm-edit-and-reopen",
+        "ac06-continuous-electron-e2e",
+        "ac05-to-ac06-same-database-aggregate-e2e"
+      ],
+      "schema_tables": ["review_results", "action_records", "routine_records"],
+      "ipc_contracts": [
+        "window.myTracer.review.begin",
+        "window.myTracer.review.getSummary",
+        "window.myTracer.review.complete",
+        "window.myTracer.review.cancel"
+      ],
+      "domain_invariants": [
+        "renderer-does-not-submit-trusted-period-statistics-or-timestamps",
+        "cancel-stale-cross-sender-and-untrusted-contexts-write-no-business-data",
+        "summary-recomputes-from-current-records-after-reopen",
+        "setting-current-next-does-not-automatically-select-today",
+        "renderer-remains-ui-only-and-review-remains-ai-independent"
+      ],
+      "risk": "high",
+      "integration_policy": "serial"
+    },
+    {
+      "files": [
+        "docs/implementation/T052_REVIEW_RESULT.md",
+        "docs/implementation/T052_ESCALATION_AC07_EXPORT_VERSION.md",
+        "docs/implementation/metadata/T052.json",
+        "docs/implementation/TASK_INDEX_V0.1.md",
+        "docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md"
+      ],
+      "modules": [
+        "task-contract",
+        "task-metadata",
+        "explicit-migration-permission-gate",
+        "delivery-evidence-and-docs-closeout"
+      ],
+      "schema_tables": [],
+      "ipc_contracts": [],
+      "domain_invariants": [
+        "the-draft-does-not-activate-t052",
+        "migration-change-becomes-authorized-only-after-owner-approves-the-exact-contract",
+        "standard-task-profile-is-not-applied-to-a-migration-task",
+        "evidence-is-bound-to-real-results-and-exact-revisions",
+        "manual-ac06-remains-pending-until-owner-performed",
+        "docs-closeout-requires-owner-approval",
+        "t052-does-not-automatically-start-the-next-stage"
+      ],
+      "risk": "high",
+      "integration_policy": "owner-review"
+    }
+  ],
+  "external": [
+    "github-t052-task-branch-after-owner-activation",
+    "github-t052-draft-pr-to-dev-after-owner-activation",
+    "github-actions-t052-validation-after-owner-activation"
+  ]
+}

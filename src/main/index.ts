@@ -218,7 +218,12 @@ app.whenReady().then(async () => {
   })
   const progressService = new ProgressService({ repository: sqliteConnection.repository })
   const recoveryService = new RecoveryService({ repository: sqliteConnection.repository, clock })
-  const reviewService = new ReviewService({ repository: sqliteConnection.repository, clock })
+  const reviewService = new ReviewService({
+    repository: sqliteConnection.repository,
+    unitOfWork: sqliteConnection,
+    clock,
+    generateId: randomUUID
+  })
   const dataControlService = new DataControlService({
     repository: sqliteConnection.repository,
     unitOfWork: sqliteConnection,

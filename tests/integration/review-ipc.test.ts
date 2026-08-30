@@ -29,6 +29,16 @@ const contextIds = [
   '33333333-3333-4333-8333-333333333333'
 ]
 const period = { periodStartedOn: '2026-08-24', periodEndedOn: '2026-08-30' }
+const savedReview = {
+  id: '44444444-4444-4444-8444-444444444444',
+  ...period,
+  confirmedProgress: 'Progress',
+  mainObstacle: 'Obstacle',
+  nextAdjustment: 'Adjustment',
+  relatedGoalId: null,
+  createdAt: '2026-08-30T08:00:00.000Z',
+  updatedAt: '2026-08-30T08:00:00.000Z'
+}
 const summary: ReviewSummaryDto = {
   ...period,
   totalDurationMinutes: 12,
@@ -54,7 +64,12 @@ function setup() {
   const handlers = new Map<string, Handler>()
   const service = {
     beginReview: vi.fn(() => period),
-    getReviewSummary: vi.fn(() => summary)
+    getReviewSummary: vi.fn(() => summary),
+    getReviewResult: vi.fn(() => null),
+    completeReview: vi.fn(() => ({
+      ...savedReview,
+      periodStartedOn: savedReview.periodStartedOn as never
+    }))
   }
   let idIndex = 0
   const contexts = new ReviewContextStore(() => contextIds[idIndex++]!)
@@ -80,6 +95,8 @@ describe('Review IPC boundary', () => {
     expect([...handlers.keys()]).toEqual([
       REVIEW_CHANNELS.begin,
       REVIEW_CHANNELS.getSummary,
+      REVIEW_CHANNELS.getResult,
+      REVIEW_CHANNELS.complete,
       REVIEW_CHANNELS.cancel
     ])
     const begun = invoke(REVIEW_CHANNELS.begin, 7, {})
@@ -154,6 +171,65 @@ describe('Review IPC boundary', () => {
     expect(invoke(REVIEW_CHANNELS.getSummary, 7, { reviewContextId: contextIds[2] })).toMatchObject(
       { ok: false, error: { code: 'context-invalid' } }
     )
+  })
+
+  it('accepts only the three next-step variants and consumes context only after full success', () => {
+    const { invoke, service } = setup()
+    const begun = invoke(REVIEW_CHANNELS.begin, 7, {}) as {
+      readonly value: { readonly reviewContextId: string }
+    }
+    const base = {
+      reviewContextId: begun.value.reviewContextId,
+      confirmedProgress: 'Progress',
+      mainObstacle: 'Obstacle',
+      nextAdjustment: 'Adjustment',
+      relatedGoalId: null
+    }
+    expect(
+      invoke(REVIEW_CHANNELS.complete, 7, { ...base, nextStepChange: { kind: 'none' } })
+    ).toEqual({
+      ok: true,
+      value: savedReview
+    })
+    expect(
+      invoke(REVIEW_CHANNELS.getSummary, 7, {
+        reviewContextId: begun.value.reviewContextId
+      })
+    ).toMatchObject({ ok: false, error: { code: 'context-stale' } })
+
+    const retry = invoke(REVIEW_CHANNELS.begin, 7, {}) as {
+      readonly value: { readonly reviewContextId: string }
+    }
+    for (const nextStepChange of [
+      { kind: 'automatic' },
+      { kind: 'none', extra: true },
+      { kind: 'use-existing', actionId: 'bad' },
+      { kind: 'create-and-use' },
+      { kind: 'create-and-use', title: 'Next', goalId: contextIds[2] }
+    ]) {
+      expect(
+        invoke(REVIEW_CHANNELS.complete, 7, {
+          ...base,
+          reviewContextId: retry.value.reviewContextId,
+          nextStepChange
+        })
+      ).toMatchObject({ ok: false, error: { code: 'validation' } })
+    }
+    service.completeReview.mockImplementationOnce(() => {
+      throw new Error('transaction failed')
+    })
+    expect(
+      invoke(REVIEW_CHANNELS.complete, 7, {
+        ...base,
+        reviewContextId: retry.value.reviewContextId,
+        nextStepChange: { kind: 'none' }
+      })
+    ).toMatchObject({ ok: false, error: { code: 'persistence-failed' } })
+    expect(
+      invoke(REVIEW_CHANNELS.getSummary, 7, {
+        reviewContextId: retry.value.reviewContextId
+      })
+    ).toEqual({ ok: true, value: summary })
   })
 
   it('makes cancelled, superseded, and cleared contexts stale without calling persistence', () => {

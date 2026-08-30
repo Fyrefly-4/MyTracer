@@ -117,9 +117,9 @@ function populate(connection: SqliteConnection): void {
     repository.saveReviewResult({
       id: 'review-1',
       periodStartedOn: '2026-08-17',
-      summary: 'Summary',
-      adjustment: 'Adjustment',
-      nextFocus: 'Next',
+      confirmedProgress: 'Summary',
+      mainObstacle: 'Adjustment',
+      nextAdjustment: 'Next',
       goalId: 'goal-1',
       createdAt: firstInstant,
       updatedAt: firstInstant

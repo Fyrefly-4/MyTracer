@@ -97,9 +97,9 @@ export interface ConfusionPersistenceRecord {
 export interface ReviewResultPersistenceRecord {
   readonly id: string
   readonly periodStartedOn: string
-  readonly summary: string
-  readonly adjustment: string
-  readonly nextFocus: string
+  readonly confirmedProgress: string
+  readonly mainObstacle: string
+  readonly nextAdjustment: string
   readonly goalId: string | null
   readonly createdAt: string
   readonly updatedAt: string
@@ -258,6 +258,7 @@ export interface RecoveryRepositoryPort extends RepositoryPort {
 }
 
 export interface ReviewRepositoryPort extends RepositoryPort {
+  findReviewResultByPeriodStartedOn(periodStartedOn: string): ReviewResultPersistenceRecord | null
   queryReviewSummarySnapshot(
     periodStartedOn: string,
     periodEndedOn: string

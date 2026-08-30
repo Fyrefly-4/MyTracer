@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { ProgressService } from '../../src/application/progress'
 import { ReviewService } from '../../src/application/review'
+import { DataControlService } from '../../src/application/data-control'
 import type {
   ActionPersistenceRecord,
   ActionRecordPersistenceRecord,
@@ -38,6 +39,8 @@ afterEach(async () => {
 function reviewService(connection: SqliteConnection): ReviewService {
   return new ReviewService({
     repository: connection.repository,
+    unitOfWork: connection,
+    generateId: () => crypto.randomUUID(),
     clock: new FakeClock({
       instant: '2026-08-12T08:00:00.000Z',
       localDate: '2026-08-12',
@@ -248,5 +251,127 @@ describe('Review SQLite summary snapshot', () => {
       writer.close()
       connection.close()
     }
+  })
+})
+
+describe('ReviewResult SQLite completion', () => {
+  it('saves, reads, edits one stable period result, and detaches it when its Goal is deleted', async () => {
+    const { connection } = await openDatabase()
+    seed(connection)
+    const service = reviewService(connection)
+    const period = service.beginReview()
+    const created = service.completeReview(period, {
+      confirmedProgress: 'Finished a real slice',
+      mainObstacle: 'Context switching',
+      nextAdjustment: 'Protect one block',
+      relatedGoalId: 'goal-1',
+      nextStepChange: { kind: 'none' }
+    })
+    expect(service.getReviewResult(period)).toEqual(created)
+
+    const later = new ReviewService({
+      repository: connection.repository,
+      unitOfWork: connection,
+      generateId: () => 'must-not-create-a-second-id',
+      clock: new FakeClock({
+        instant: '2026-08-12T10:00:00.000Z',
+        localDate: '2026-08-12',
+        timeZone: 'Asia/Shanghai'
+      })
+    })
+    const updated = later.completeReview(period, {
+      confirmedProgress: 'Updated progress',
+      mainObstacle: 'Updated obstacle',
+      nextAdjustment: 'Updated adjustment',
+      relatedGoalId: 'goal-1',
+      nextStepChange: { kind: 'none' }
+    })
+    expect(updated.id).toBe(created.id)
+    expect(updated.createdAt).toBe(created.createdAt)
+    expect(updated.updatedAt).toBe('2026-08-12T10:00:00.000Z')
+    expect(connection.repository.readSnapshot().reviewResults).toHaveLength(1)
+
+    const dataControl = new DataControlService({
+      repository: connection.repository,
+      unitOfWork: connection,
+      clock: new FakeClock({
+        instant: '2026-08-12T11:00:00.000Z',
+        localDate: '2026-08-12',
+        timeZone: 'Asia/Shanghai'
+      }),
+      generateId: () => 'preview'
+    })
+    const preview = dataControl.previewDelete({ type: 'goal', id: 'goal-1' })
+    dataControl.confirmDelete(preview.target, preview.fingerprint)
+    expect(connection.repository.readSnapshot().reviewResults[0]?.goalId).toBeNull()
+    connection.close()
+  })
+
+  it('atomically uses an existing or newly created pending Action without selecting Today', async () => {
+    const { connection } = await openDatabase()
+    seed(connection)
+    const period = reviewService(connection).beginReview()
+    reviewService(connection).completeReview(period, {
+      confirmedProgress: 'Progress',
+      mainObstacle: 'Obstacle',
+      nextAdjustment: 'Adjustment',
+      relatedGoalId: 'goal-1',
+      nextStepChange: { kind: 'use-existing', actionId: 'action-1' }
+    })
+    expect(connection.repository.findGoalById('goal-1')?.currentNextActionId).toBe('action-1')
+
+    const ids = ['action-created']
+    const createService = new ReviewService({
+      repository: connection.repository,
+      unitOfWork: connection,
+      clock: new FakeClock({
+        instant: '2026-08-12T10:00:00.000Z',
+        localDate: '2026-08-12',
+        timeZone: 'Asia/Shanghai'
+      }),
+      generateId: () => ids.shift()!
+    })
+    createService.completeReview(period, {
+      confirmedProgress: 'Progress again',
+      mainObstacle: 'Obstacle again',
+      nextAdjustment: 'Adjustment again',
+      relatedGoalId: 'goal-1',
+      nextStepChange: { kind: 'create-and-use', title: 'One small next action' }
+    })
+    expect(connection.repository.findGoalById('goal-1')?.currentNextActionId).toBe('action-created')
+    expect(connection.repository.findActionById('action-created')).toMatchObject({
+      goalId: 'goal-1',
+      status: 'pending'
+    })
+    expect(connection.repository.readSnapshot().todaySelections).toEqual([])
+    expect(connection.repository.readSnapshot().reviewResults).toHaveLength(1)
+    connection.close()
+  })
+
+  it('rolls back Goal current-next and ReviewResult when the final persistence step fails', async () => {
+    const { connection } = await openDatabase()
+    seed(connection)
+    const repository = connection.repository
+    const original = repository.saveReviewResult.bind(repository)
+    repository.saveReviewResult = () => {
+      throw new Error('simulated review write failure')
+    }
+    try {
+      const service = reviewService(connection)
+      expect(() =>
+        service.completeReview(service.beginReview(), {
+          confirmedProgress: 'Progress',
+          mainObstacle: 'Obstacle',
+          nextAdjustment: 'Adjustment',
+          relatedGoalId: 'goal-1',
+          nextStepChange: { kind: 'use-existing', actionId: 'action-1' }
+        })
+      ).toThrow(/simulated review write failure/)
+    } finally {
+      repository.saveReviewResult = original
+    }
+    expect(repository.findGoalById('goal-1')?.currentNextActionId).toBeNull()
+    expect(repository.readSnapshot().reviewResults).toEqual([])
+    connection.close()
   })
 })

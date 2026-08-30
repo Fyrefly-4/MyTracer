@@ -1,14 +1,18 @@
 import { type ReactNode, useEffect, useState } from 'react'
 import type {
+  CompleteReviewInputDto,
   ReviewErrorCode,
   ReviewRoutineOutcomeFactsDto,
   ReviewSummaryDto
 } from '../../../../contracts/review'
+import type { GoalActionSummaryDto, GoalSummaryDto } from '../../../../contracts/goals'
 
 const errorText: Record<ReviewErrorCode, string> = {
   validation: '复盘请求无效，请重新进入 Review。',
   'context-invalid': '本次复盘上下文无效，请重新进入。',
   'context-stale': '本次复盘上下文已失效，请重新进入。',
+  'related-goal-invalid': '所选目标已不再处于活跃状态，请重新选择。',
+  'next-step-invalid': '所选行动已不可作为当前下一步，请重新选择。',
   'persistence-failed': '本地周期事实暂时无法读取。'
 }
 
@@ -29,6 +33,18 @@ export function ReviewPage(): ReactNode {
   const [summary, setSummary] = useState<ReviewSummaryDto | null>(null)
   const [busy, setBusy] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
+  const [confirmedProgress, setConfirmedProgress] = useState('')
+  const [mainObstacle, setMainObstacle] = useState('')
+  const [nextAdjustment, setNextAdjustment] = useState('')
+  const [goals, setGoals] = useState<readonly GoalSummaryDto[]>([])
+  const [relatedGoalId, setRelatedGoalId] = useState('')
+  const [pendingActions, setPendingActions] = useState<readonly GoalActionSummaryDto[]>([])
+  const [nextStepKind, setNextStepKind] = useState<'none' | 'use-existing' | 'create-and-use'>(
+    'none'
+  )
+  const [existingActionId, setExistingActionId] = useState('')
+  const [newActionTitle, setNewActionTitle] = useState('')
 
   useEffect(() => {
     let active = true
@@ -50,16 +66,32 @@ export function ReviewPage(): ReactNode {
           return
         }
         setContextId(openedContextId)
-        const summaryResult = await window.myTracer.review.getSummary({
-          reviewContextId: openedContextId
-        })
+        const [summaryResult, reviewResult, goalsResult] = await Promise.all([
+          window.myTracer.review.getSummary({ reviewContextId: openedContextId }),
+          window.myTracer.review.getResult({ reviewContextId: openedContextId }),
+          window.myTracer.goals.list({ status: 'active' })
+        ])
         if (!active) return
         setBusy(false)
-        if (summaryResult.ok) {
+        if (summaryResult.ok && reviewResult.ok && goalsResult.ok) {
           setSummary(summaryResult.value)
+          setGoals(goalsResult.value)
+          if (reviewResult.value) {
+            setConfirmedProgress(reviewResult.value.confirmedProgress)
+            setMainObstacle(reviewResult.value.mainObstacle)
+            setNextAdjustment(reviewResult.value.nextAdjustment)
+            setRelatedGoalId(reviewResult.value.relatedGoalId ?? '')
+          }
           setError(null)
         } else {
-          setError(errorText[summaryResult.error.code])
+          const failed = !summaryResult.ok
+            ? summaryResult
+            : !reviewResult.ok
+              ? reviewResult
+              : goalsResult
+          setError(
+            !failed.ok ? errorText[failed.error.code as ReviewErrorCode] : errorText.validation
+          )
         }
       })
       .catch(() => {
@@ -77,6 +109,25 @@ export function ReviewPage(): ReactNode {
     }
   }, [entryKey])
 
+  useEffect(() => {
+    if (!relatedGoalId) return
+    let active = true
+    void window.myTracer.goals.getDetail({ goalId: relatedGoalId }).then((result) => {
+      if (!active || !result.ok) return
+      setPendingActions(result.value.actions.filter((action) => action.status === 'pending'))
+    })
+    return () => {
+      active = false
+    }
+  }, [relatedGoalId])
+
+  const selectRelatedGoal = (goalId: string): void => {
+    setRelatedGoalId(goalId)
+    setPendingActions([])
+    setExistingActionId('')
+    setNextStepKind('none')
+  }
+
   const refresh = async (): Promise<void> => {
     if (!contextId) return
     setBusy(true)
@@ -93,6 +144,46 @@ export function ReviewPage(): ReactNode {
       setBusy(false)
       setError(errorText['persistence-failed'])
     }
+  }
+
+  const cancelDraft = async (): Promise<void> => {
+    if (contextId) await window.myTracer.review.cancel({ reviewContextId: contextId })
+    setContextId(null)
+    setConfirmedProgress('')
+    setMainObstacle('')
+    setNextAdjustment('')
+    setRelatedGoalId('')
+    setNextStepKind('none')
+    setNotice('已取消，本次填写没有保存。')
+    setEntryKey((value) => value + 1)
+  }
+
+  const save = async (): Promise<void> => {
+    if (!contextId) return
+    const nextStepChange: CompleteReviewInputDto['nextStepChange'] =
+      nextStepKind === 'use-existing'
+        ? { kind: 'use-existing', actionId: existingActionId }
+        : nextStepKind === 'create-and-use'
+          ? { kind: 'create-and-use', title: newActionTitle }
+          : { kind: 'none' }
+    setBusy(true)
+    setError(null)
+    const result = await window.myTracer.review.complete({
+      reviewContextId: contextId,
+      confirmedProgress,
+      mainObstacle,
+      nextAdjustment,
+      relatedGoalId: relatedGoalId || null,
+      nextStepChange
+    })
+    setBusy(false)
+    if (!result.ok) {
+      setError(errorText[result.error.code])
+      return
+    }
+    setNotice('本周期复盘已保存。')
+    setContextId(null)
+    setEntryKey((value) => value + 1)
   }
 
   return (
@@ -134,6 +225,12 @@ export function ReviewPage(): ReactNode {
             重新进入本周复盘
           </button>
         </div>
+      ) : null}
+
+      {notice ? (
+        <p className="review-notice" role="status">
+          {notice}
+        </p>
       ) : null}
 
       {busy && !summary ? (
@@ -251,6 +348,123 @@ export function ReviewPage(): ReactNode {
               <p>空白只表示没有 ActionRecord 或 RoutineRecord；unknown 不会被转换成未做或失败。</p>
             </div>
           ) : null}
+
+          <form
+            className="review-form"
+            onSubmit={(event) => {
+              event.preventDefault()
+              void save()
+            }}
+          >
+            <div className="review-section-heading">
+              <h2>确认本周期复盘</h2>
+              <p>事实摘要会随 Record 重算；下面三段用户确认文本会保持原样保存。</p>
+            </div>
+            <label>
+              一个真实进展
+              <textarea
+                value={confirmedProgress}
+                onChange={(event) => setConfirmedProgress(event.target.value)}
+                required
+              />
+            </label>
+            <label>
+              一个主要阻力
+              <textarea
+                value={mainObstacle}
+                onChange={(event) => setMainObstacle(event.target.value)}
+                required
+              />
+            </label>
+            <label>
+              下一周期的一个调整
+              <textarea
+                value={nextAdjustment}
+                onChange={(event) => setNextAdjustment(event.target.value)}
+                required
+              />
+            </label>
+            <label>
+              关联活跃目标（可选）
+              <select
+                value={relatedGoalId}
+                onChange={(event) => selectRelatedGoal(event.target.value)}
+              >
+                <option value="">不关联目标</option>
+                {goals.map((goal) => (
+                  <option key={goal.id} value={goal.id}>
+                    {goal.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {relatedGoalId ? (
+              <fieldset>
+                <legend>当前下一步（可选、明确更新）</legend>
+                <label>
+                  <input
+                    type="radio"
+                    checked={nextStepKind === 'none'}
+                    onChange={() => setNextStepKind('none')}
+                  />
+                  不修改
+                </label>
+                <label>
+                  <input
+                    type="radio"
+                    checked={nextStepKind === 'use-existing'}
+                    onChange={() => setNextStepKind('use-existing')}
+                  />
+                  使用已有 pending Action
+                </label>
+                {nextStepKind === 'use-existing' ? (
+                  <select
+                    aria-label="选择已有下一步行动"
+                    required
+                    value={existingActionId}
+                    onChange={(event) => setExistingActionId(event.target.value)}
+                  >
+                    <option value="">请选择行动</option>
+                    {pendingActions.map((action) => (
+                      <option key={action.id} value={action.id}>
+                        {action.title}
+                      </option>
+                    ))}
+                  </select>
+                ) : null}
+                <label>
+                  <input
+                    type="radio"
+                    checked={nextStepKind === 'create-and-use'}
+                    onChange={() => setNextStepKind('create-and-use')}
+                  />
+                  创建并使用
+                </label>
+                {nextStepKind === 'create-and-use' ? (
+                  <input
+                    aria-label="新的下一步行动"
+                    required
+                    value={newActionTitle}
+                    onChange={(event) => setNewActionTitle(event.target.value)}
+                    placeholder="新的轻量行动"
+                  />
+                ) : null}
+              </fieldset>
+            ) : null}
+            <div className="review-form-actions">
+              <button
+                className="secondary-button"
+                type="button"
+                disabled={busy || !contextId}
+                onClick={() => void cancelDraft()}
+              >
+                取消
+              </button>
+              <button className="primary-button" type="submit" disabled={busy || !contextId}>
+                保存复盘
+              </button>
+            </div>
+          </form>
         </>
       ) : null}
     </section>

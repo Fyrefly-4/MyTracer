@@ -47,6 +47,11 @@ export class ReviewContextStore {
     this.invalidate(contextId)
   }
 
+  public consume(senderId: number, contextId: string): void {
+    this.get(senderId, contextId)
+    this.invalidate(contextId)
+  }
+
   public clearSender(senderId: number): void {
     for (const context of this.contexts.values()) {
       if (context.senderId === senderId) this.invalidate(context.id)
