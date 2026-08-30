@@ -25,8 +25,8 @@ MyTracer 是一个面向个人本地使用的 Windows 桌面应用，用于帮�
 - T032 已完成十集合一致性快照、`exportVersion=1` UTF-8 JSON、结构/枚举/引用校验、Main-only 目标和原子文件交付；PR #27 已合入 `dev`。
 - T033 已证明 AI disabled、not-configured、failure 时 CRUD、Progress、删除、导出和重开继续可用；PR #28 已合入 `dev`，项目所有者于 2026-08-22 报告完整人工 AC-07 通过。
 - T803 已完成 T031～T033 的同 revision 聚合验收与归档；PR #29 合入 `dev@eec093924ae061876805c657742283097824df2c`，里程碑 PR #30 合入 `main@75e51b4e63f8c9df960cccb444515b9e89be5fbd`，并发布 `v0.1.0-beta.1` prerelease。
-- T041/T042 已形成完整 Recovery 纵向路径：用户从 Goals 显式查看历史事实和中性跨日上下文，对 Goal/Routine/Action/current-next/Today 操作先形成本地草稿并明确确认；原子创建小 Action、历史守恒、关闭重开、FakeClock 跨日和完整人工 AC-05 均已通过。该结果只形成 S4 acceptance candidate，S4 stage gate 尚未决定。
-- T051/T052 已形成完整 Review task candidate：用户主动进入 Review 后看到当前周期的事实摘要，确认并保存一个真实进展、一个主要阻力和一个下一周期调整，并可明确更新一个 active Goal 的当前下一步；同周期编辑稳定 ID，重开保留用户文本，事实摘要继续从当前 Record 重算。schema v3 migration、严格 export v2/v1 兼容、本地/hosted 自动化与项目所有者完整人工 AC-06 均已通过；T052 位于 Draft PR #42，尚未集成至 `dev`，S5 stage acceptance 尚未决定。
+- T041～T052 已进入 `dev@84b596e12e54db098857004497a4d1964dcdc23c`，形成完整 Recovery/Review 纵向路径：Recovery 只读解释事实，所有恢复操作经用户确认且不改写历史；Review 只汇总事实并保存三项用户输入，五种 Routine 语义保持分离。schema v3、严格 export v2/v1、重开、原子更新及项目所有者完整人工 AC-05/06 均已验证。
+- T806 正在 PR #43 完成 S4/S5 聚合证据与合同归档；固定产品 source 不因后续测试/文档 revision 改变。final-head hosted CI、Ready、合入 `dev` 和 main 晋升仍需独立 Gate。
 
 不要把架构完成理解为产品已经实现。
 

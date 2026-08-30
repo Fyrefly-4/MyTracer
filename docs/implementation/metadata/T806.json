@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "task": "T806",
+  "task_kind": "aggregate",
+  "dependencies": {
+    "requires": ["T041", "T042", "T051", "T052"],
+    "blocks": [],
+    "can_parallel": [],
+    "prefer_after": [],
+    "conflicts_with": []
+  },
+  "conflict_basis": {},
+  "shared_surfaces": [
+    {
+      "files": [
+        "docs/implementation/T806_S4_S5_FINAL_ACCEPTANCE.md",
+        "docs/implementation/metadata/T806.json",
+        "docs/implementation/TASK_INDEX_V0.1.md",
+        "docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md",
+        "docs/implementation/archive/S4_S5_T041_T052_ARCHIVE.md",
+        "README.md"
+      ],
+      "modules": [
+        "s4-s5-aggregate-acceptance",
+        "revision-bound-evidence",
+        "task-contract-archive",
+        "milestone-release-handoff"
+      ],
+      "schema_tables": [],
+      "ipc_contracts": [],
+      "domain_invariants": [
+        "stage-final-integration-revision-is-fixed-product-content",
+        "recovery-does-not-rewrite-history",
+        "review-preserves-five-routine-semantics",
+        "review-does-not-infer-failure-or-score-the-user",
+        "manual-acceptance-is-owner-reported",
+        "aggregate-evidence-preserves-task-history",
+        "documentation-closeout-does-not-change-product-semantics"
+      ],
+      "risk": "high",
+      "integration_policy": "serial"
+    },
+    {
+      "files": [
+        "docs/implementation/metadata/T041.json",
+        "docs/implementation/metadata/T042.json",
+        "docs/implementation/metadata/T051.json",
+        "docs/implementation/metadata/T052.json"
+      ],
+      "modules": ["archived-task-metadata-navigation"],
+      "schema_tables": [],
+      "ipc_contracts": [],
+      "domain_invariants": [
+        "archived-contracts-remain-recoverable-from-fixed-git-history",
+        "escalation-and-failed-evidence-remain-preserved"
+      ],
+      "risk": "medium",
+      "integration_policy": "serial"
+    },
+    {
+      "files": [
+        "tests/e2e/windows-package-smoke.e2e.test.ts",
+        "tests/integration/sqlite-persistence.test.ts"
+      ],
+      "modules": ["packaged-s4-s5-api-contract", "hosted-v1-v3-migration-timeout"],
+      "schema_tables": ["metadata", "review_results", "routine_records"],
+      "ipc_contracts": [
+        "goals.createAndSetCurrentNextAction",
+        "recovery.getContext",
+        "review.begin/getSummary/getResult/complete/cancel"
+      ],
+      "domain_invariants": [
+        "test-only-fixes-do-not-change-product-or-migration-semantics",
+        "packaged-api-allowlists-remain-exact",
+        "only-the-hosted-slow-migration-case-receives-a-bounded-timeout"
+      ],
+      "risk": "low",
+      "integration_policy": "serial"
+    }
+  ],
+  "external": [
+    "github-t806-docs-branch",
+    "github-draft-pr-to-dev-after-contract-activation",
+    "github-actions-redacted-evidence-artifact",
+    "github-dev-to-main-pr-requires-separate-owner-authorization"
+  ]
+}

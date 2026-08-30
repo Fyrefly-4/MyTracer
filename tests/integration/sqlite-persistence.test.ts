@@ -397,7 +397,7 @@ describe('SQLite persistence', () => {
     } finally {
       inspected.close()
     }
-  })
+  }, 30_000)
 
   it('migrates an S1-only v1 database without inventing any S2 fact', async () => {
     const { path, database } = await createV1Database()
