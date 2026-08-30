@@ -44,7 +44,7 @@
 - T042 task delivery revision `b323a9f629699cbec156723700c021151eaf1506` 已通过本地完整验证、完整 diff/独立只读 review、PR #40 implementation-candidate required CI 和项目所有者完整人工 AC-05；任务结果见 `EV-T042-001`。PR #40 已合入 `dev@3f343b8af0216b5e568f2c8f1ed52ac4ef824da3`；S4 owner gate 尚未单独决定，但项目所有者已明确允许进入 S5 并激活 T051。
 - T051 task delivery revision `eccd00148ac6ca47f3215e03abffb98a732c2558` 已通过本地完整验证、完整 diff/独立只读 review、PR #41 required CI 和项目所有者人工 AC-06 步骤 1，并已集成至 `dev@3e5a14f1b5f90894e1e15a4b208aa5db254e7825`；任务结果见 `EV-T051-001`。T052 task delivery revision `7aced4fa3146ebb5d0bcf28b7dbc81e5b40e2cb2` 的本地/hosted 自动化、完整 diff/独立 review、完整人工 AC-06 与 owner-approved docs closeout 已通过，结果见 `EV-T052-001`；PR #42 仍为 Draft 且未获 merge 授权。
 - S4 前工程治理与 UI Foundation 聚合不登记为新任务；固定产品 source `dev@2632ff0638fb02533100a1f9d0aea9f1323dbde3`，范围为 T804、T092、T093、T805、T094。该 revision 的治理 metadata、AC-01/03/04/07 定向回归、完整 `verify`、Windows package/unpacked/隔离 NSIS smoke 与 `main..dev` 独立 review 已通过，候选证据见 `EV-PRE-S4-FOUNDATION-001`；人工视觉对比和聚合文档 PR 的 final-head hosted CI 分别记录，不由本地 candidate 代替。
-- T806 是项目所有者于 2026-08-30 另行指定并批准激活的 S4/S5 聚合验收任务，固定初始产品 source 为 `dev@84b596e12e54db098857004497a4d1964dcdc23c`；Unit、Integration、Electron E2E、完整 `verify` 与 package 已通过，但 package smoke 发现 `windows-package-smoke` 仍断言 S3 旧 Preload API shape。T806 当前 `blocked`，等待独立 test-only 窄修复授权；未执行文档归档或发布。
+- T806 是项目所有者于 2026-08-30 另行指定并批准激活的 S4/S5 聚合验收任务，固定初始产品 source 为 `dev@84b596e12e54db098857004497a4d1964dcdc23c`；Unit、Integration、Electron E2E、完整 `verify` 与 package 已通过，package smoke 发现的 S3 旧 API/schema 测试契约已获项目所有者授权在 T806 内作 test-only 窄修复。T806 已恢复 `active`；未执行文档归档或发布。
 - 首个 AI Provider、模型和 SDK 只阻塞 T062，不阻塞 S0～S5 的非 AI 能力。
 
 ## 4. 任务总表
@@ -84,7 +84,7 @@
 | T803 | S3 aggregate | 聚合验收 T031～T033、AC-07、package/重开/导出/AI 三态并归档 S3 合同                         | AC-07；FR-D01～D05；GW-008/010；不改变生产语义                       | T031～T033、T090、T091        | `done`    | `EV-G3-S3-001`               |
 | T804 | GOV-03       | 统一收口长期文档中的任务、里程碑、tag/release 与 GitHub 配置事实                            | GW-001/002/004/008～010；不改变 FR/AC/D/ED                           | T803、T091                    | `done`    | `EV-T804-001`                |
 | T805 | GOV-06       | 收敛 `/docs` 文档冗余、归档已完成治理合同并限定历史快照边界                                 | GW-001/003/004/009/010；不改变 FR/AC/D/ED                            | T090～T093、T804；dev@2b31bc6 | `done`    | `EV-T805-001`、`EV-T805-002` |
-| T806 | S4/S5 aggregate | 聚合验收 T041～T052、AC-05/06、package、migration/export、证据与合同归档                  | FR-REC01～REC06；FR-RV01～RV06；AC-05/06；AC-01/03/04/07 回归       | T041、T042、T051、T052        | `blocked` | T806 §16 package-smoke escalation |
+| T806 | S4/S5 aggregate | 聚合验收 T041～T052、AC-05/06、package、migration/export、证据与合同归档                  | FR-REC01～REC06；FR-RV01～RV06；AC-05/06；AC-01/03/04/07 回归       | T041、T042、T051、T052        | `active`  | T806 §16 test-only narrow fix      |
 
 ## 5. 阶段门与主线合并
 

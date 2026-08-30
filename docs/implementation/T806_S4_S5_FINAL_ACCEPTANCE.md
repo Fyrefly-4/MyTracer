@@ -2,7 +2,7 @@
 
 > 任务类型：S4/S5 aggregate acceptance / documentation closeout / milestone preparation
 >
-> 合同状态：**blocked；项目所有者已批准并激活，等待独立窄修复授权**
+> 合同状态：**active；项目所有者已批准在 T806 内执行 package-smoke test-only 窄修复**
 >
 > 合同草案日期：2026-08-30
 >
@@ -17,7 +17,7 @@
 - **Task ID**：T806
 - **Title**：S4/S5 Recovery and Review aggregate acceptance
 - **Slice / Plan item**：S4/S5 final gate
-- **Status**：`blocked`；项目所有者已明确批准合同全文并授权开始聚合验收，但必需 package smoke 暴露测试契约漂移，T806 不得在本合同内修复
+- **Status**：`active`；项目所有者已明确批准合同全文，并于 2026-08-30 授权在 T806 内修复 package-smoke 的已批准 S4/S5 API/schema 测试契约漂移
 - **Base branch**：`dev`
 - **Target branch**：`dev`
 - **Expected branch**：`codex/T806-s4-s5-final-acceptance`
@@ -113,6 +113,7 @@ dependencies:
 - `docs/implementation/metadata/T042.json`
 - `docs/implementation/metadata/T051.json`
 - `docs/implementation/metadata/T052.json`
+- `tests/e2e/windows-package-smoke.e2e.test.ts`（仅允许同步已批准并已集成的 root、Goals、Recovery、Review API allowlist/method assertions 与 schemaVersion `3`；不得改变生产语义或降低 smoke 强度）
 - 到 `dev` 的 T806 Draft PR 正文
 
 只有在自动化、package、完整 diff 和独立 review 通过，且项目所有者批准精确 documentation impact matrix 后，才允许删除下列已完成合同：
@@ -126,7 +127,7 @@ dependencies:
 
 ## 6. 明确非范围
 
-- 任何 `src/**`、`tests/**`、`.github/**`、工具、配置、依赖、lockfile、schema、migration 或 export 实现变化。
+- 任何 `src/**`、除第 5 节精确列出的 package-smoke 测试外的 `tests/**`、`.github/**`、工具、配置、依赖、lockfile、schema、migration 或 export 实现变化。
 - 在 T806 内修复产品、测试、migration、CI 或 package 缺陷。
 - 修改冻结 FR/AC/D/ED、S4/S5 设计决定、Goal/Action/Routine/Record、五种 Routine 语义、LocalDate、删除、AI 或历史守恒语义。
 - AI Provider、AI 总结、评分、掌握度、压力式 streak、推断失败、提醒、自动规划、自动导入恢复、S6、S7 或延期能力。
@@ -400,10 +401,7 @@ safe_work_completed:
   - Windows x64 package 成功并记录 installer、blockmap、unpacked executable hashes；两份 executable 均未数字签名
 
 minimum_owner_decision:
-  - approve-separate-test-only-fix-task
-  - reject
-  - defer
-  - provide-alternative
+  - resolved: owner approved the test-only narrow fix inside T806 on 2026-08-30
 
 recommended_resume_point: >-
   独立窄修复合入最新 dev 后，T806 重新 fetch，执行 freshness gate、完整范围审计、
@@ -417,3 +415,13 @@ recommended_resume_point: >-
 - `T806-package-smoke-6849957505f0-20260830102741.json`：package smoke exit `1`，为当前阻断证据。
 
 当前未执行 documentation impact matrix、Evidence/README 收口、合同归档删除、T806 Draft PR、Ready、merge、`dev → main` PR、tag 或 Release。
+
+### 16.1 Owner resolution and resume
+
+项目所有者于 2026-08-30 明确要求“仅在当前任务 T806 下执行窄修复”，随后确认无需重复既有审查并直接实施。该授权只解除下列阻断：
+
+- 更新 `tests/e2e/windows-package-smoke.e2e.test.ts`，使 packaged API allowlist 覆盖已批准并已进入 `dev` 的 `goals.createAndSetCurrentNextAction`、`recovery`、`review`；
+- 将 packaged SQLite schema 断言从历史 v2 同步到 T052 已批准并集成的 v3；
+- 保留精确键集合、冻结对象、隔离 unpacked/NSIS installed 双路径与数据库安全断言，不得用宽松包含或删除断言规避失败。
+
+修复后必须从最新 `origin/dev` 重新执行 freshness gate、完整 `verify`、package、package smoke 和完整 diff review。原失败 artifact 保留；后续成功只能通过 `supersedes` 关系收口。

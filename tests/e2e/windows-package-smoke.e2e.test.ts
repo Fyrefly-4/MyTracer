@@ -49,6 +49,8 @@ async function verifyPackagedApplication(
       'today',
       'records',
       'progress',
+      'recovery',
+      'review',
       'routines',
       'dataControl',
       'exports'
@@ -61,6 +63,7 @@ async function verifyPackagedApplication(
       'resume',
       'end',
       'setCurrentNextAction',
+      'createAndSetCurrentNextAction',
       'list',
       'getDetail'
     ])
@@ -102,6 +105,14 @@ async function verifyPackagedApplication(
       'getDetail'
     ])
     expect(await page.evaluate(() => Object.keys(window.myTracer.progress))).toEqual(['get'])
+    expect(await page.evaluate(() => Object.keys(window.myTracer.recovery))).toEqual(['getContext'])
+    expect(await page.evaluate(() => Object.keys(window.myTracer.review))).toEqual([
+      'begin',
+      'getSummary',
+      'getResult',
+      'complete',
+      'cancel'
+    ])
     expect(await page.evaluate(() => Object.keys(window.myTracer.exports))).toEqual(['generate'])
     expect(
       await page.evaluate(() =>
@@ -114,6 +125,8 @@ async function verifyPackagedApplication(
           window.myTracer.today,
           window.myTracer.records,
           window.myTracer.progress,
+          window.myTracer.recovery,
+          window.myTracer.review,
           window.myTracer.dataControl,
           window.myTracer.exports
         ].every((value) => Object.isFrozen(value))
@@ -134,7 +147,7 @@ async function verifyPackagedApplication(
     expect(
       database.prepare("SELECT value FROM metadata WHERE key = 'schemaVersion'").get()
     ).toEqual({
-      value: '2'
+      value: '3'
     })
     expect(database.pragma('foreign_keys', { simple: true })).toBe(1)
   } finally {
