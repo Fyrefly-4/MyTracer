@@ -28,9 +28,28 @@ export const COMPLETE_EXPORT_ENUM_VALUES = Object.freeze({
   confusionStatus: Object.freeze(['open', 'resolved'])
 })
 
-export interface MyTracerCoreExportV1 extends CompleteExportDocumentPort {
+interface ReviewResultExportV1 {
+  readonly id: string
+  readonly periodStartedOn: string
+  readonly summary: string
+  readonly adjustment: string
+  readonly nextFocus: string
+  readonly goalId: string | null
+  readonly createdAt: string
+  readonly updatedAt: string
+}
+
+interface CorePersistenceSnapshotV1 extends Omit<CorePersistenceSnapshot, 'reviewResults'> {
+  readonly reviewResults: readonly ReviewResultExportV1[]
+}
+
+export interface MyTracerCoreExportV1 extends Omit<
+  CompleteExportDocumentPort,
+  'exportVersion' | 'data'
+> {
   readonly exportVersion: 1
   readonly enumValues: typeof COMPLETE_EXPORT_ENUM_VALUES
+  readonly data: CorePersistenceSnapshotV1
 }
 
 export interface MyTracerCoreExportV2 extends CompleteExportDocumentPort {

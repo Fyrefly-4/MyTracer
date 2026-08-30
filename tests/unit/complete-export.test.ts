@@ -57,6 +57,9 @@ describe('complete export application', () => {
       }
     }
     expect(() => validateCompleteExportV1(v1)).not.toThrow()
+    const parsed: unknown = v1
+    validateCompleteExportV1(parsed)
+    expect(parsed.data.reviewResults[0]?.summary).toBe('Progress')
     expect(() => validateCompleteExport(v1)).not.toThrow()
     expect(() => validateCompleteExport({ ...v1, exportVersion: 2 })).toThrow()
     expect(() => validateCompleteExport({ ...v2, exportVersion: 1 })).not.toThrow()
