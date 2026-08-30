@@ -29,7 +29,7 @@
 
 在一个固定的最新 `origin/dev` 产品 revision 上聚合证明 T041、T042、T051、T052 的 Recovery 与 Review 能力、AC-05/AC-06 连续路径、受影响既有 AC、Windows package、migration/export 和安全边界。全部门禁通过后，按另行批准的精确文档范围收口 Evidence、Task Index、README、metadata 和统一归档，并创建一个到 `dev` 的 Draft 收口 PR。
 
-本任务不实现功能或修复。收口 PR 合入 `dev` 后，只准备 `dev → main` 里程碑 PR 所需事实和正文；创建该 PR、Ready、任何 merge、tag 和 Release 均须项目所有者另行批准。
+本任务不实现产品功能或产品修复；唯一例外是第 16.1 节由项目所有者追加批准的 package-smoke test-only 契约同步。收口 PR 合入 `dev` 后，只准备 `dev → main` 里程碑 PR 所需事实和正文；创建该 PR、Ready、任何 merge、tag 和 Release 均须项目所有者另行批准。
 
 ## 3. 依据与追踪
 
@@ -128,7 +128,7 @@ dependencies:
 ## 6. 明确非范围
 
 - 任何 `src/**`、除第 5 节精确列出的 package-smoke 测试外的 `tests/**`、`.github/**`、工具、配置、依赖、lockfile、schema、migration 或 export 实现变化。
-- 在 T806 内修复产品、测试、migration、CI 或 package 缺陷。
+- 除第 5 节与第 16.1 节精确授权的 package-smoke test-only 契约同步外，在 T806 内修复产品、测试、migration、CI 或 package 缺陷。
 - 修改冻结 FR/AC/D/ED、S4/S5 设计决定、Goal/Action/Routine/Record、五种 Routine 语义、LocalDate、删除、AI 或历史守恒语义。
 - AI Provider、AI 总结、评分、掌握度、压力式 streak、推断失败、提醒、自动规划、自动导入恢复、S6、S7 或延期能力。
 - Agent 标记 PR Ready、合并 `dev`/`main`、创建 `dev → main` PR、tag、Release、资产上传、ruleset 或 Secrets 变化。
