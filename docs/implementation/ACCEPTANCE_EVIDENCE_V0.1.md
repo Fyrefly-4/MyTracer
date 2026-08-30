@@ -166,6 +166,7 @@ Artifact 位于 ignored `.tmp/evidence/`，可由 GitHub Actions 作为短期 ar
 | `EV-T805-002`              | T805 / GOV-06                 | task `979fa1c` / dev `353a4d4`                                      | PR #34 final-head CI、owner closeout 与 dev 集成                                                   | pass    | pass         | 补充 `EV-T805-001` 的候选时间线；T805 已完成，不声明产品 FR/AC 或发布权限                                                                                                         |
 | `EV-T094-001`              | T094 / G4 enabling            | task `543180b...` / dev `2632ff0...`                                | Renderer ownership、AppShell/feature 拆分与 AC-01/03/04/07 行为保持                                | pass    | pending      | 本地完整验证、package smoke、独立复核、PR #35 candidate/final-head CI、owner closeout 与 dev 集成通过；同环境视觉对比仍待完成                                                     |
 | `EV-T041-001`              | T041 / E4-01                  | task `1e9ab2b80b5b81a8bedd192750281d4042f279d5`                     | RecoveryContext 只读事实、LocalDate、单事务 snapshot、窄 IPC/Preload、Goals 入口与 AC-05 步骤 1～4 | pass    | pass         | 本地完整验证、独立复核、PR #39 implementation-candidate CI 与项目所有者人工测试通过；不声明完整 AC-05、FR-P05、T042、Ready 或 merge                                               |
+| `EV-S4-S5-001`             | T806 / S4-S5 aggregate        | product `84b596e` / docs final head pending                         | T041～T052、AC-05/06、migration/export、package、证据与合同归档                                    | partial | pass         | 固定产品 source 的本地聚合与人工绑定通过；PR #43 candidate CI 因单 migration 用例默认超时失败，test-only 窄修复及 docs closeout 已完成，final-head hosted CI pending              |
 | `EV-PRE-S4-FOUNDATION-001` | S4 前工程/UI 基线（无新任务） | product/dev `2632ff0638fb02533100a1f9d0aea9f1323dbde3`              | T804/T092/T093/T805/T094 同 revision 治理、流程、UI Foundation 与 AC-01/03/04/07 回归              | pass    | pending      | 本地完整门禁、package smoke、完整 `main..dev` 独立 review 与 exact-dev post-merge CI 通过；视觉对比和聚合文档 final-head CI 分开记录                                              |
 | `EV-G3-S1-001`             | G3/S1                         | `623007dd4269df02771f6a526db269de1fe95a03`                          | T011～T014 同 revision 核心闭环、Windows package 与发布门禁                                        | fail    | pending      | `verify`、AC-01 和 package 构建通过；package smoke 因旧 Preload API 断言在 unpacked 阶段失败，NSIS 安装态未验证                                                                   |
 | `EV-G3-S1-002`             | G3/S1                         | `74ebe346a86cf431d87e02e8a1220b713b33901c`                          | T011～T014/T801 同 revision 核心闭环、Windows package 与发布门禁                                   | pass    | pass         | 验收门禁通过；项目所有者后续另行批准 PR #14 合入 `main@3912e80...` 并发布 `v0.1.0-alpha.2`                                                                                        |
@@ -1260,7 +1261,7 @@ Agent 只提供步骤和观察位置，不得替项目所有者签署人工验�
 - **Source branch**：`task/T041-recovery-context`
 - **Original / verified dev base**：`22ee97bd9ded88e6e9e025d3afc0c6831d43240c`；candidate 与 docs closeout 前远端复核仍为同一 revision，是 task head 的直接祖先，Integration Freshness 为 `fresh`
 - **Task delivery revision**：`1e9ab2b80b5b81a8bedd192750281d4042f279d5`
-- **Dev / stage integration revision**：pending；PR #39 仍为 Draft 且未获 merge 授权，`dev_integration_revision` 与 `stage_final_integration_revision` 均未产生
+- **Dev / stage integration revision**：PR #39 final head `64ac9dddd41413c22b0ec35f99ed9022d1555e25` 已集成为 `dev_integration_revision=695e7bcc25b33279d39e61e28a8730b9cdf16264`；T806 固定 `stage_final_integration_revision=84b596e12e54db098857004497a4d1964dcdc23c`，不改写原 candidate 时间线
 - **Environment**：本地 Windows、Node `v24.18.0`、npm `11.16.0`、Electron `43.3.0`、`better-sqlite3@13.0.1`；GitHub-hosted `windows-2025`。自动化使用 FakeClock、每 case 唯一临时 SQLite/Electron `userData` 与 fake/disabled/not-configured AI，不访问真实用户数据库、凭据或 live Provider
 - **Command or procedure**：
   1. `npm.cmd run governance:metadata:check`：10 个 sidecar、1 个 Profile 通过。
@@ -1287,7 +1288,7 @@ Agent 只提供步骤和观察位置，不得替项目所有者签署人工验�
 - **Source branch**：`task/T042-recovery-restart`
 - **Original / verified dev base**：`695e7bcc25b33279d39e61e28a8730b9cdf16264`；Implementation Candidate 与 docs closeout 前 GitHub API 均确认 `dev` 仍为该 revision，且它是 task head 的 merge-base，Integration Freshness 为 `fresh`
 - **Task delivery revision**：`b323a9f629699cbec156723700c021151eaf1506`
-- **Dev / stage integration revision**：pending；PR #40 仍为 Draft 且未获 merge 授权，`dev_integration_revision` 与 `stage_final_integration_revision` 均未产生；S4 owner gate 尚未决定
+- **Dev / stage integration revision**：PR #40 final head `cc4c21c0559fcfc36d2b48b1649ce909225a632d` 已集成为 `dev_integration_revision=3f343b8af0216b5e568f2c8f1ed52ac4ef824da3`；T806 固定 `stage_final_integration_revision=84b596e12e54db098857004497a4d1964dcdc23c`，不改写原 candidate 时间线
 - **Environment**：本地 Windows、Node `v24.18.0`、npm `11.16.0`、Electron `43.3.0`、`better-sqlite3@13.0.1`；GitHub-hosted `windows-2025`。自动化使用 FakeClock、每 case 唯一临时 SQLite/Electron `userData` 与 fake/disabled/not-configured AI，不访问真实用户数据库、凭据或 live Provider
 - **Command or procedure**：
   1. `npm.cmd run governance:metadata:check`：11 个 sidecar、1 个 Profile 通过；合同、sidecar、Task Index 与有效的 `standard-task@1` 声明一致。
@@ -1316,7 +1317,7 @@ Agent 只提供步骤和观察位置，不得替项目所有者签署人工验�
 - **Source branch**：`task/T051-review-summary`
 - **Original / verified dev base**：`3f343b8af0216b5e568f2c8f1ed52ac4ef824da3`；Implementation Candidate 与 docs closeout 前 GitHub API 均确认 `dev` 仍为该 revision，且它是 task head 的 merge-base，Integration Freshness 为 `fresh`
 - **Task delivery revision**：`eccd00148ac6ca47f3215e03abffb98a732c2558`
-- **Dev / stage integration revision**：pending；PR #41 仍为 Draft 且未获 merge 授权，`dev_integration_revision` 与 `stage_final_integration_revision` 均未产生
+- **Dev / stage integration revision**：PR #41 final head `87b8654c5f33b1bb62452143ba7712c7a41324ac` 已集成为 `dev_integration_revision=3e5a14f1b5f90894e1e15a4b208aa5db254e7825`；T806 固定 `stage_final_integration_revision=84b596e12e54db098857004497a4d1964dcdc23c`，不改写原 candidate 时间线
 - **Environment**：本地 Windows 11 x64、Node `v24.18.0`、npm `11.16.0`、Electron `43.3.0`、`better-sqlite3@13.0.1`；GitHub-hosted `windows-2025`。自动化使用 FakeClock、每 case 唯一临时 SQLite/Electron `userData` 与 fake/disabled/not-configured AI，不访问真实用户数据库、凭据或 live Provider
 - **Command or procedure**：
   1. `npm.cmd run governance:metadata:check`：12 个 sidecar、1 个 Profile 通过；合同、sidecar、Task Index 与有效的 `standard-task@1` 声明一致。
@@ -1343,7 +1344,7 @@ Agent 只提供步骤和观察位置，不得替项目所有者签署人工验�
 - **Source branch**：`task/T052-review-result`
 - **Original / verified dev base**：`3e5a14f1b5f90894e1e15a4b208aa5db254e7825`；Implementation Candidate 与 docs closeout 前均确认该 revision 是最新授权 `dev` 和 task head merge-base，Integration Freshness 为 `fresh`，无需 refresh
 - **Task delivery revision**：`7aced4fa3146ebb5d0bcf28b7dbc81e5b40e2cb2`
-- **Dev / stage integration revision**：pending；PR #42 仍为 Draft 且未获 Ready/merge 授权，`dev_integration_revision` 与 `stage_final_integration_revision` 均未产生
+- **Dev / stage integration revision**：PR #42 final head `202983cef9c942e61b7a9d5e44db82ac59ec528d` 已集成为 `dev_integration_revision=84b596e12e54db098857004497a4d1964dcdc23c`，同时是 T806 固定 `stage_final_integration_revision`；不改写原 candidate 时间线
 - **Environment**：本地 Windows 11 x64、Node `v24.18.0`、npm `11.16.0`、Electron `43.3.0`、`better-sqlite3@13.0.1`；GitHub-hosted `windows-2025`。自动化使用 FakeClock、每 case 唯一临时 SQLite/Electron `userData` 与 fake/disabled/not-configured AI，不访问真实用户数据库、凭据或 live Provider
 - **Command or procedure**：
   1. `npm.cmd run governance:metadata:check`：13 个 sidecar、1 个 Profile 通过；T052 合同、sidecar、Task Index 和显式 migration 权限一致，T052 未误用 `standard-task@1`。
@@ -1362,3 +1363,21 @@ Agent 只提供步骤和观察位置，不得替项目所有者签署人工验�
 - **Known limitations**：docs closeout push 后 final-head CI、Ready、merge、`dev` integration 和 S4/S5 final gate 仍是后续 owner/PR Gate；Windows package smoke 不在 T052 且 aggregate 中按配置 skip；没有对真实用户数据库执行 migration，真实 duplicate/blank/corrupt 旧数据按批准决定 fail closed，不自动修复；多结果历史、阻力分类、评分、提醒、AI 总结、自动周计划、S7 比较和 import recovery 不在范围
 - **Supersedes / superseded by**：成功 run `33302157222` supersede 失败 run `33301604518`，失败事实保留；本条复用且不取代 `EV-T051-001`、`EV-T041-001`、`EV-T042-001` 和 AC-01/03/04/05/07 既有 Evidence
 - **Recorded at**：2026-08-30
+
+### EV-S4-S5-001
+
+- **Status**：partial；固定产品 source 的本地聚合、package、人工 AC-05/06 绑定和文档收口已完成。PR #43 candidate hosted CI 的 cloud-only timeout 已作 test-only 窄修复；精确 final docs head 的 hosted milestone CI 尚待实际结果，因此不声明 T806 `done` 或 S4/S5 已合入 `dev`
+- **Task / Gate**：T806 / S4-S5 aggregate；聚合 T041～T052、FR-REC01～REC06、FR-RV01～RV06、AC-05/06，并回归 AC-01/03/04/07；不声明 AC-02、G4、AI、S6、S7、自动导入/恢复、Ready、merge、tag 或 Release
+- **Stage final integration revision**：`84b596e12e54db098857004497a4d1964dcdc23c`。该固定产品 source 包含 T041 `695e7bc...`、T042 `3f343b8...`、T051 `3e5a14f...`、T052 `84b596e...`；T806 后续测试/文档 revision 不替代它
+- **Task delivery / integration map**：T041 `1e9ab2b...` / `695e7bc...`；T042 `b323a9f...` / `3f343b8...`；T051 `eccd001...` / `3e5a14f...`；T052 `7aced4f...` / `84b596e...`。各 final task head 与对应 squash integration tree 相同
+- **Local automated evidence**：在 T806 实现 revision `27990d092bb76f9bc733078aff3a6b6ee4a427bf`，定向 Unit 35/35、Integration 63/63、Electron E2E 10/10；完整 `verify` 为 Unit 186、Integration 109、E2E 19 pass / package-only 1 skip；package 与 unpacked/隔离 NSIS smoke 通过。成功 artifacts 为 `T806-stage-candidate-rerun-27990d092bb7-20260830132333.json`、`T806-package-rerun-27990d092bb7-20260830132538.json`、`T806-package-smoke-rerun-27990d092bb7-20260830132704.json`
+- **Preserved local failure**：`T806-package-smoke-6849957505f0-20260830102741.json` exit 1，原因是旧 packaged API/schema allowlist；经项目所有者授权的 test-only 更新后，上述 27990d0 成功 smoke supersede 该失败，失败记录保留
+- **Package artifacts**：installer SHA-256 `76E1AA7B88BE7DF653BC4BF18B704EE5DF78BC6E954CBBEBE8D0340029BB8C21`；blockmap `E1384FAEC2143D19DFA555F34DA1655569FD7E90579AF0302CFEBDBD65C729EF`；unpacked executable `7515088E2BEFA2EB084865B3AFAAC3F79117B62822DF6C7CD29BE636B6323ABF`；installer 与 executable 均 `NotSigned`
+- **Historical task CI**：T041 final/post-merge `33155839482` / `33156238060`；T042 `33240012962` / `33240471959`；T051 `33262841245` / `33289953789`；T052 `33303792484` / `33304210856`。这些只证明各任务与集成历史，不冒充 T806 final-head CI
+- **T806 candidate hosted CI**：[run `33314322219`](https://github.com/Fyrefly-4/MyTracer/actions/runs/33314322219) 在 PR head `058897f0fca675354eccabdfb4e7e4cbce140528`、test-merge `4caeae04a527b13feb3e81ad1fed1698d31e2b36` 为 failure；Full Windows verification job `99264904233` 中，单个 populated v1→v3 migration 守恒测试实际约 11 秒，超过默认 5 秒，产品断言未报告失败。artifact `verification-evidence-33314322219-1` 与失败事实保留
+- **Cloud-only narrow fix**：项目所有者于 2026-08-31 批准仅将该单用例 timeout 设为 30 秒，并要求直接 docs closeout、一并推送且不再本地测试；没有修改产品、migration、fixture、断言、依赖、schema 或全局测试配置。新 head CI 只有实际通过后才 supersede run `33314322219`
+- **Manual acceptance**：pass（owner-reported）。项目所有者于 2026-08-29 报告完整 AC-05 通过；T042 后只有 Review 专用产品变化和 T806 测试/文档变化，没有 Recovery UI/IPC/数据语义变化。项目所有者于 2026-08-30 报告完整 AC-06 通过；T052 final tree 与 integration tree 相同，之后只有 T806 测试/文档变化。此绑定是 revision 审计推论，Agent 不代签
+- **Result / invariants**：RecoveryContext 只读且可解释，用户确认后才执行普通 Application Command，历史 Record/Understanding/Confusion/LocalDate 守恒；Review 只汇总当前事实并保存三项用户输入，`unknown`、`not_done`、`intentional_rest`、`acted`、`target_met` 分离，取消零写入，可选下一步原子执行，重开/migration/export 一致，无评分、掌握度、推断失败、压力 streak 或 AI 总结
+- **Documentation closeout**：统一归档 `archive/S4_S5_T041_T052_ARCHIVE.md`，四任务 metadata 指向归档，原四份合同按项目所有者批准删除并可从固定 Git source 恢复；T052 Escalation Proposal、所有失败 Evidence 与 supersede 历史保留
+- **Known limitations / owner gates**：final-head hosted CI pending；PR #43 仍为 Draft。Ready、合入 `dev`、创建或合入 `dev → main`、tag 和 Release 均未授权。真实 `userData` 未迁移；包未签名且使用默认图标；AC-02、S6、S7、G4 未完成，`v0.1.0-beta.1` 仍是最近发布版本
+- **Recorded at**：2026-08-31

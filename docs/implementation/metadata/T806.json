@@ -56,6 +56,26 @@
       ],
       "risk": "medium",
       "integration_policy": "serial"
+    },
+    {
+      "files": [
+        "tests/e2e/windows-package-smoke.e2e.test.ts",
+        "tests/integration/sqlite-persistence.test.ts"
+      ],
+      "modules": ["packaged-s4-s5-api-contract", "hosted-v1-v3-migration-timeout"],
+      "schema_tables": ["metadata", "review_results", "routine_records"],
+      "ipc_contracts": [
+        "goals.createAndSetCurrentNextAction",
+        "recovery.getContext",
+        "review.begin/getSummary/getResult/complete/cancel"
+      ],
+      "domain_invariants": [
+        "test-only-fixes-do-not-change-product-or-migration-semantics",
+        "packaged-api-allowlists-remain-exact",
+        "only-the-hosted-slow-migration-case-receives-a-bounded-timeout"
+      ],
+      "risk": "low",
+      "integration_policy": "serial"
     }
   ],
   "external": [

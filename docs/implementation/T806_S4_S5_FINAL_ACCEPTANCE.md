@@ -2,7 +2,7 @@
 
 > 任务类型：S4/S5 aggregate acceptance / documentation closeout / milestone preparation
 >
-> 合同状态：**active；项目所有者已批准在 T806 内执行 package-smoke test-only 窄修复**
+> 合同状态：**review；聚合文档已获收口授权，等待 final-head hosted CI 与项目所有者 PR Gate**
 >
 > 合同草案日期：2026-08-30
 >
@@ -17,7 +17,7 @@
 - **Task ID**：T806
 - **Title**：S4/S5 Recovery and Review aggregate acceptance
 - **Slice / Plan item**：S4/S5 final gate
-- **Status**：`active`；项目所有者已明确批准合同全文，并于 2026-08-30 授权在 T806 内修复 package-smoke 的已批准 S4/S5 API/schema 测试契约漂移
+- **Status**：`review`；项目所有者已批准 test-only 窄修复与文档收口，final-head hosted CI、Ready 和 merge 仍待后续 Gate
 - **Base branch**：`dev`
 - **Target branch**：`dev`
 - **Expected branch**：`codex/T806-s4-s5-final-acceptance`
@@ -114,6 +114,7 @@ dependencies:
 - `docs/implementation/metadata/T051.json`
 - `docs/implementation/metadata/T052.json`
 - `tests/e2e/windows-package-smoke.e2e.test.ts`（仅允许同步已批准并已集成的 root、Goals、Recovery、Review API allowlist/method assertions 与 schemaVersion `3`；不得改变生产语义或降低 smoke 强度）
+- `tests/integration/sqlite-persistence.test.ts`（仅允许为 hosted Windows 已证实超出 Vitest 默认 5 秒的单个 v1→v3 守恒用例设置有界 30 秒超时；不得修改 migration、fixture、断言或全局测试配置）
 - 到 `dev` 的 T806 Draft PR 正文
 
 只有在自动化、package、完整 diff 和独立 review 通过，且项目所有者批准精确 documentation impact matrix 后，才允许删除下列已完成合同：
@@ -223,7 +224,7 @@ git diff --check
 
 ## 10. 文档 closeout 与归档门
 
-自动化、package、完整范围 diff 和独立只读 review 全部通过后，先向项目所有者提交精确 documentation impact matrix。只有获得针对第 5 节文件和四份合同删除的确认后才执行：
+自动化、package、完整范围 diff 和独立只读 review 全部通过后，先向项目所有者提交精确 documentation impact matrix。项目所有者已于 2026-08-31 批准第 5 节文档收口和四份合同删除，允许执行：
 
 1. 新增 `EV-S4-S5-001`，绑定固定产品 source、四任务 revision、命令、artifact、CI、人工推论和限制。
 2. 为 `EV-T041-001`～`EV-T052-001` 增补真实 integration timeline，不删除原 candidate、失败、pending 或 superseded 事实。
@@ -231,9 +232,9 @@ git diff --check
 4. 创建 `archive/S4_S5_T041_T052_ARCHIVE.md`，保留最终范围、兼容契约、证据、限制及固定 Git 恢复命令。
 5. 更新四份 metadata 的合同路径为统一归档。
 6. 删除四份已归档合同，保留 T052 Escalation Proposal。
-7. 在 final docs head 重新运行 metadata、完整 verify、package、package smoke、diff review 和 milestone hosted CI。
+7. 对 final docs head 执行 metadata/格式/diff 静态检查并触发 milestone hosted CI。按项目所有者 2026-08-31 的明确指令，本次 cloud-only timeout 窄修复后不再本地运行 Unit、Integration、E2E、`verify`、package 或 package smoke；最终动态结论由精确 head 的 hosted CI 给出。
 
-归档和合同删除未获项目所有者精确批准时保持 pending，不以本合同的未来范围预先执行。
+归档和合同删除的项目所有者 Gate 已满足；Ready、merge、main PR、tag 和 Release Gate 未满足。
 
 ## 11. Git、GitHub 与外部权限
 
@@ -424,4 +425,14 @@ recommended_resume_point: >-
 - 将 packaged SQLite schema 断言从历史 v2 同步到 T052 已批准并集成的 v3；
 - 保留精确键集合、冻结对象、隔离 unpacked/NSIS installed 双路径与数据库安全断言，不得用宽松包含或删除断言规避失败。
 
-修复后必须从最新 `origin/dev` 重新执行 freshness gate、完整 `verify`、package、package smoke 和完整 diff review。原失败 artifact 保留；后续成功只能通过 `supersedes` 关系收口。
+该 2026-08-30 要求已在 revision `27990d092bb76f9bc733078aff3a6b6ee4a427bf` 完成；原失败 artifact 保留，成功结果通过 `supersedes` 关系收口。后续 cloud-only timeout 的验证方式由第 16.2 节项目所有者新授权取代。
+
+### 16.2 Hosted timeout 与文档收口授权
+
+PR #43 candidate run `33314322219` 在 head `058897f0fca675354eccabdfb4e7e4cbce140528`、test-merge `4caeae04a527b13feb3e81ad1fed1698d31e2b36` 上只有 `tests/integration/sqlite-persistence.test.ts` 的“populated v1 → v3 facts preserved”用例失败：hosted Windows 实际耗时约 11 秒，超过默认 5 秒；其产品断言没有失败。项目所有者于 2026-08-31 授权：
+
+- 在 T806 内仅为该用例设置 30 秒有界超时，不修改产品、migration、fixture、断言或全局 timeout；
+- 直接完成 Evidence、Task Index、README、metadata、统一归档和四份合同删除；
+- 将窄修复与 docs closeout 一并推送 PR #43，且修改后不再运行本地测试。
+
+run `33314322219` 及 artifact `verification-evidence-33314322219-1` 保留为失败历史；新 head CI 只有实际通过后才可 supersede 该失败。此授权不包含 Ready、merge、`dev → main` PR、tag 或 Release。
