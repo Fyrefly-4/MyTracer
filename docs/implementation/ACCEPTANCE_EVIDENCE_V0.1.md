@@ -1,6 +1,6 @@
 # MyTracer v0.1 验收证据
 
-> 文档状态：证据账本已建立；已记录 T001～T004、T011～T014、T021～T023、T031～T033、T801～T805、AC-01、AC-03、AC-04、AC-07、G2、G3/S1、S2 及 G3/S3 聚合证据
+> 文档状态：证据账本已建立；已记录 T001～T004、T011～T014、T021～T023、T031～T033、T041/T042、T051/T052、T801～T805、AC-01、AC-03、AC-04、AC-06、AC-07、G2、G3/S1、S2 及 G3/S3 聚合证据
 > 作用：记录可复核的命令、版本、环境、产物和人工观察  
 > 禁止：用任务状态、测试名称、关键词存在或 Agent 自述替代实际结果
 
@@ -824,7 +824,7 @@ G1 的设计结论不是代码、CI、Windows 打包或产品验收证据。
 | AC-03 | `EV-T021-001`（步骤 1～2）；`EV-T022-001`（四显式结果、缺行 unknown、非计划日、Today/Progress、跨午夜与重开完整闭环）                           | 项目所有者于 2026-08-14 通过 T021 人工清单，并于 2026-08-15 明确报告“T022 人工验收：通过” | pass    |
 | AC-04 | `EV-T023-001`（通用 Action intention、显式转换、未发生零事实、跨日不滚动、普通 ActionRecord 复用与真实重开）                                    | 项目所有者于 2026-08-16 按 T023 人工步骤测试并明确确认通过                                | pass    |
 | AC-05 | —                                                                                                                                               | —                                                                                         | pending |
-| AC-06 | —                                                                                                                                               | —                                                                                         | pending |
+| AC-06 | `EV-T051-001`、`EV-T052-001`                                                                                                                     | 项目所有者于 2026-08-30 报告 T051 步骤 1 和 T052 完整人工程序全体通过                     | pass    |
 | AC-07 | `EV-T031-001`（修改/补记/删除）；`EV-T032-001`（完整导出）；`EV-T033-001` / `EV-G3-S3-001`（AI 三态与同 revision 聚合）                         | 项目所有者于 2026-08-22 报告完整人工 AC-07 `pass`；T031 专用清单未单独执行的历史仍保留    | pass    |
 
 ## 7. CI 证据要求
@@ -1333,4 +1333,32 @@ Agent 只提供步骤和观察位置，不得替项目所有者签署人工验�
 - **Manual acceptance**：pass；项目所有者于 2026-08-30 报告 T051 人工测试全体通过，覆盖周期标题、事实汇总、四类 Routine 分列、unknown 中性语义、跨周固定/重新进入与无评分/AI/T052 表达；该结果只形成 AC-06 步骤 1 candidate，不等于完整 AC-06 或 S5 acceptance
 - **Known limitations**：PR #41 docs closeout 后 final-head CI、Ready 与 merge 仍是后续 PR Gate；Windows package smoke 不在 T051；ReviewResult、三个复盘输入、Goal 下一步调整、T052、完整 AC-06、S5 acceptance、AI、趋势比较、评分、掌握度、完成率、提醒、tag 和 release 均不在范围
 - **Supersedes / superseded by**：成功本地 candidate artifact supersede 同 revision 的 worktree 环境失败 artifact，但失败事实保留；本条复用且不取代 `EV-T014-001`、`EV-T022-001`、`EV-T031-001`～`EV-T033-001`、`EV-T041-001`、`EV-T042-001` 与 AC-01/03/04/05/07 既有 Evidence
+- **Recorded at**：2026-08-30
+
+### EV-T052-001
+
+- **Status**：pass；T052 task delivery candidate、本地/hosted 自动验证、完整 branch diff 与独立只读 review、项目所有者完整人工 AC-06 和 owner-approved docs closeout 均已通过。docs closeout 后 final-head CI、Ready 与是否合入 `dev` 是后续 PR 集成事实
+- **Task / Gate**：T052 / S5 E5-02；与 `EV-T051-001` 共同证明 FR-RV02～FR-RV05、D-105、D-110 和完整 AC-06 candidate，并覆盖 ReviewResult、可选 Goal 当前下一步、schema v3/export v2；不声明 S4/S5 final gate、G4、AI、Ready、merge、tag 或 release
+- **Requirements**：FR-RV02～FR-RV05、D-105、D-110、AC-06，以及 FR-G05、D-004、ED-005、ED-006 和批准的数据兼容决定；FR-RV01/RV06、AC-05、AC-07 只作聚合/受影响回归
+- **Source branch**：`task/T052-review-result`
+- **Original / verified dev base**：`3e5a14f1b5f90894e1e15a4b208aa5db254e7825`；Implementation Candidate 与 docs closeout 前均确认该 revision 是最新授权 `dev` 和 task head merge-base，Integration Freshness 为 `fresh`，无需 refresh
+- **Task delivery revision**：`7aced4fa3146ebb5d0bcf28b7dbc81e5b40e2cb2`
+- **Dev / stage integration revision**：pending；PR #42 仍为 Draft 且未获 Ready/merge 授权，`dev_integration_revision` 与 `stage_final_integration_revision` 均未产生
+- **Environment**：本地 Windows 11 x64、Node `v24.18.0`、npm `11.16.0`、Electron `43.3.0`、`better-sqlite3@13.0.1`；GitHub-hosted `windows-2025`。自动化使用 FakeClock、每 case 唯一临时 SQLite/Electron `userData` 与 fake/disabled/not-configured AI，不访问真实用户数据库、凭据或 live Provider
+- **Command or procedure**：
+  1. `npm.cmd run governance:metadata:check`：13 个 sidecar、1 个 Profile 通过；T052 合同、sidecar、Task Index 和显式 migration 权限一致，T052 未误用 `standard-task@1`。
+  2. Targeted Unit 28/28、Integration 48/48、Electron E2E 7/7 通过；补充 AC-07 export version E2E 1/1、ReviewResult focused E2E 1/1 通过。覆盖 Domain/Application validation、context、原子 next-step resolution、SQLite migration/repository、strict export v1/v2、取消/保存/编辑/重开、Goal detach 和 AC-05→AC-06 同库聚合。
+  3. `node tools/evidence/capture-command.mjs --task T052 --gate task-candidate --base-revision 3e5a14f... --output .tmp/evidence -- npm.cmd run verify` 在实现候选 `075dec31e9abfcb9ff94655a680b6fe6e04417e3` exit 0：format、lint、typecheck、186 unit、109 integration、19 Electron E2E 通过；1 个 opt-in Windows package smoke 按合同与配置 skip。
+  4. Compatibility fixtures 证明合法 v2 旧行逐字段无损迁移至 schema v3；duplicate period、null/blank/corrupt text、unknown high version 和注入 migration failure 均整事务回滚，旧 metadata/schema/行保持；没有删除、合并、虚构或重编号旧数据。Goal hard delete 只 detach ReviewResult；strict export v2 覆盖新集合，保留 strict v1 validator，并拒绝交叉版本 shape、未知版本、额外字段、非法关联和敏感字段。
+  5. 完整 `dev...task` diff、diff integrity 与独立只读 review 无未处理 finding；review 发现的 v1 export TypeScript narrowing 问题已在候选前修正。修改保持在批准文件和 AC-07 精确扩展内，没有依赖、live AI、import、自动计划、评分、提醒、S7 比较或产品权限扩张。
+  6. PR #42 run [`33301604518`](https://github.com/Fyrefly-4/MyTracer/actions/runs/33301604518) 在 head `075dec31...` 失败：`review-summary.e2e` 的日期注入使用未等待的 `electronApplication.evaluate`，Promise 在断言前被回收。失败记录保留；后续 `7aced4f...` 只采用仓库既有 `firstWindow()` 等待模式修复该测试竞态。按项目所有者明确指令，本步不在本地重跑测试。
+  7. PR #42 implementation-candidate run [`33302157222`](https://github.com/Fyrefly-4/MyTracer/actions/runs/33302157222) 为 `success`：PR head `7aced4fa3146ebb5d0bcf28b7dbc81e5b40e2cb2`、test-merge `8a644df9a60d06e081ec76b92002cb187196e5b1`；PR quality、Governance checks、Full Windows verification、CI Gate 和 Windows required gate 通过，Documentation 与 milestone package 按分类 skip。该 run supersede run `33301604518` 的 CI 失败。
+  8. 下载并检查 hosted artifact `verification-evidence-33302157222-1`（artifact id `9729337881`）：aggregate exit 0、capture complete、base `3e5a14f...`、`ci.headRevision=7aced4f...`、`ci.mergeRevision=8a644df...`，无 capture error；artifact digest 为 `sha256:b3c54d2acb32a229a7198cb19b6ff9d7c67fac1d20e8cfeb9aec99d89cf687a5`。
+  9. 项目所有者于 2026-08-30 按合同 §10.4 执行隔离人工程序并报告“人工测试全体通过”，随后明确批准合同、Task Index、Evidence、README、Draft PR 正文的 docs closeout 和最后一次 push。
+- **Result**：用户可在同一周期确认并保存一个真实进展、一个主要阻力和一个下一周期调整，并可不调整、选择 existing Action 或 create-and-use Action 明确更新一个 active Goal 的当前下一步。取消零写入；同周期编辑保留稳定 ReviewResult ID/`createdAt`，重开保留用户文本；事实摘要始终从当前 Record 重算。ReviewResult 与可选 next-step resolution 同事务全有或全无，不自动加入 Today
+- **Local artifacts**：`.tmp/evidence/T052-task-candidate-final-075dec31e9ab-20260830082312.json` 记录实现候选完整 `verify` exit 0。`7aced4f...` 的测试修复按项目所有者“无需本地测试”指令没有本地重跑，由精确 head 的完整 hosted required CI 补足
+- **Hosted artifact**：`verification-evidence-33302157222-1`（artifact id `9729337881`）；JSON `unscoped-aggregate-8a644df9a60d-20260830084235.json` 明确区分 PR head `7aced4f...` 与 test-merge `8a644df...`，aggregate command exit 0
+- **Manual acceptance**：pass；项目所有者于 2026-08-30 报告人工测试全体通过，覆盖事实/unknown、取消零写入、保存/编辑/重开 stable result、existing/create-and-use next step、无 Today 自动加入、Record 重算与文本稳定、Goal detach、export v2 和无 deferred concepts
+- **Known limitations**：docs closeout push 后 final-head CI、Ready、merge、`dev` integration 和 S4/S5 final gate 仍是后续 owner/PR Gate；Windows package smoke 不在 T052 且 aggregate 中按配置 skip；没有对真实用户数据库执行 migration，真实 duplicate/blank/corrupt 旧数据按批准决定 fail closed，不自动修复；多结果历史、阻力分类、评分、提醒、AI 总结、自动周计划、S7 比较和 import recovery 不在范围
+- **Supersedes / superseded by**：成功 run `33302157222` supersede 失败 run `33301604518`，失败事实保留；本条复用且不取代 `EV-T051-001`、`EV-T041-001`、`EV-T042-001` 和 AC-01/03/04/05/07 既有 Evidence
 - **Recorded at**：2026-08-30

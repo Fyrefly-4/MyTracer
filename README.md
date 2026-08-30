@@ -26,7 +26,7 @@ MyTracer 是一个面向个人本地使用的 Windows 桌面应用，用于帮�
 - T033 已证明 AI disabled、not-configured、failure 时 CRUD、Progress、删除、导出和重开继续可用；PR #28 已合入 `dev`，项目所有者于 2026-08-22 报告完整人工 AC-07 通过。
 - T803 已完成 T031～T033 的同 revision 聚合验收与归档；PR #29 合入 `dev@eec093924ae061876805c657742283097824df2c`，里程碑 PR #30 合入 `main@75e51b4e63f8c9df960cccb444515b9e89be5fbd`，并发布 `v0.1.0-beta.1` prerelease。
 - T041/T042 已形成完整 Recovery 纵向路径：用户从 Goals 显式查看历史事实和中性跨日上下文，对 Goal/Routine/Action/current-next/Today 操作先形成本地草稿并明确确认；原子创建小 Action、历史守恒、关闭重开、FakeClock 跨日和完整人工 AC-05 均已通过。该结果只形成 S4 acceptance candidate，S4 stage gate 尚未决定。
-- T051 已形成只读周期事实摘要：用户主动进入 Review 后看到进入时当前周周一至周日的投入时间、真实行动次数、确认理解、开放困惑和四类显式 Routine 事实；缺行保持 unknown，同周期与 Progress 一致，跨周页面不静默移动。PR #41 task candidate 的本地/hosted 验证和项目所有者人工 AC-06 步骤 1 均已通过；T052、完整 AC-06 与 S5 acceptance 尚未启动或声明。
+- T051/T052 已形成完整 Review task candidate：用户主动进入 Review 后看到当前周期的事实摘要，确认并保存一个真实进展、一个主要阻力和一个下一周期调整，并可明确更新一个 active Goal 的当前下一步；同周期编辑稳定 ID，重开保留用户文本，事实摘要继续从当前 Record 重算。schema v3 migration、严格 export v2/v1 兼容、本地/hosted 自动化与项目所有者完整人工 AC-06 均已通过；T052 位于 Draft PR #42，尚未集成至 `dev`，S5 stage acceptance 尚未决定。
 
 不要把架构完成理解为产品已经实现。
 
@@ -135,8 +135,8 @@ task/Txxx-short-name
 
 ## 后续入口
 
-1. 产品任务实时状态以任务索引为准；T041/T042 已提供完整 Recovery 路径，T051 已提供 Review 的只读周期事实摘要。T051 不自动启动 T052，后者仍需独立合同、基线核对和项目所有者授权。
+1. 产品任务实时状态以任务索引为准；T041/T042 已提供完整 Recovery candidate，T051/T052 已提供完整 Review candidate。任务完成不自动授权 S4/S5 stage gate、PR Ready/merge 或下一任务。
 2. `standard-task@1`、项目生命周期 Skills、PR/CI Gate 与长任务等待策略已经接入；具体任务仍须独立合同和项目所有者授权，Worktree cleanup 仍未实现。
 3. Agent 仍不得从任务完成推定 Ready、merge、tag 或 release 权限。
 
-T011～T014 已覆盖 S1 与完整 AC-01；T021～T023 已覆盖 S2 与完整 AC-03/AC-04；T031～T033/T803 已覆盖 S3 数据控制、版本化完整导出、AI 三态数据独立性和完整人工 AC-07；T041/T042 已形成完整 AC-05 与 S4 acceptance candidate。当前已发布 beta 仍不包含自动导入/恢复、Provider、S4 stage acceptance、S5～S7、AC-02/06 或 G4 Demo。
+T011～T014 已覆盖 S1 与完整 AC-01；T021～T023 已覆盖 S2 与完整 AC-03/AC-04；T031～T033/T803 已覆盖 S3 数据控制、版本化完整导出、AI 三态数据独立性和完整人工 AC-07；T041/T042 已形成完整 AC-05 与 S4 acceptance candidate；T051/T052 已形成完整人工 AC-06 与 S5 acceptance candidate。当前已发布 beta 仍不包含这些尚未合入/发布的 S4/S5 candidate，也不包含自动导入/恢复、Provider、S4/S5 stage acceptance、S6～S7、AC-02 或 G4 Demo。

@@ -2,16 +2,16 @@
 
 > 任务类型：implementation（包含 schema/export migration owner gate）
 >
-> 合同状态：**approved / active；项目所有者于 2026-08-30T13:17:23+08:00 明确批准并激活**
+> 合同状态：**approved / task delivery complete；项目所有者于 2026-08-30T13:17:23+08:00 明确批准并激活，2026-08-30 批准 documentation closeout**
 >
-> 执行状态：项目所有者已于 2026-08-30 明确启动第二阶段开发；本合同、任务账本、生产代码、migration、测试、export 与已授权 Git/GitHub 操作现按精确范围执行
+> 执行状态：Implementation Candidate、项目所有者人工 AC-06 与 owner-approved docs closeout 已完成；PR #42 final-head CI、Ready 和 `dev` 集成仍是独立 PR gate
 
 ## 1. 任务信息与基线
 
 - **Task ID**：T052
 - **Title**：ReviewResult 和下一阶段调整
 - **Slice / Plan item**：S5 / E5-02
-- **Status**：`active`；项目所有者已明确启动第二阶段开发，`TASK_INDEX_V0.1.md` 同步为 `active`
+- **Status**：`done`；task delivery revision `7aced4fa3146ebb5d0bcf28b7dbc81e5b40e2cb2` 的自动化、独立 review、人工 AC-06 和文档收口证据完整，PR #42 尚未获 Ready 或 merge 授权
 - **Owner approval / activation**：项目所有者于 `2026-08-30T13:17:23+08:00` 明确批准并激活本合同、第 5.2 节精确范围和第 12.2 节执行权限
 - **Base branch**：`dev`
 - **Latest authorized dev revision at draft**：`dev@3e5a14f1b5f90894e1e15a4b208aa5db254e7825`
@@ -301,16 +301,16 @@ T052 与 T042 的 Goal/Action current-next、Main/Preload 和聚合 E2E surfaces
 
 ## 8. 交付物
 
-- [ ] ReviewResult domain/application validation、save/update/read。
-- [ ] `CompleteReview`、`GetReviewResult`（或由 `BeginReview` 精确合并返回）和 sender-bound 确认 context。
-- [ ] ReviewResult 与可选 existing/create-and-use next-step 的单事务原子命令。
-- [ ] Review 表单、取消、确认、错误、编辑和重开流程。
-- [ ] `003` v2→v3 migration、周期 UNIQUE 索引、Repository 与完整失败回滚。
-- [ ] 严格 export v2 generator/validator 和保留的严格 export v1 validator。
-- [ ] 合法旧行、duplicate period、blank/corrupt text、Goal detach、unknown high version、migration failure 的数据兼容测试。
-- [ ] AC-06 连续 E2E、AC-05→AC-06 同数据库聚合 E2E 和受影响 AC 回归。
-- [ ] 项目所有者人工 AC-06 程序；未执行前状态为 `pending`。
-- [ ] `EV-T052-001` 所需 deterministic artifact、真实 CI/revision 绑定和 owner-approved docs closeout。
+- [x] ReviewResult domain/application validation、save/update/read。
+- [x] `CompleteReview`、`GetReviewResult`（由 `BeginReview` 精确合并返回）和 sender-bound 确认 context。
+- [x] ReviewResult 与可选 existing/create-and-use next-step 的单事务原子命令。
+- [x] Review 表单、取消、确认、错误、编辑和重开流程。
+- [x] `003` v2→v3 migration、周期 UNIQUE 索引、Repository 与完整失败回滚。
+- [x] 严格 export v2 generator/validator 和保留的严格 export v1 validator。
+- [x] 合法旧行、duplicate period、blank/corrupt text、Goal detach、unknown high version、migration failure 的数据兼容测试。
+- [x] AC-06 连续 E2E、AC-05→AC-06 同数据库聚合 E2E 和受影响 AC 回归。
+- [x] 项目所有者人工 AC-06 程序；2026-08-30 报告全体通过。
+- [x] `EV-T052-001` 所需 deterministic artifact、真实 CI/revision 绑定和 owner-approved docs closeout。
 
 ## 9. 验收标准
 
@@ -331,7 +331,7 @@ T052 与 T042 的 Goal/Action current-next、Main/Preload 和聚合 E2E surfaces
 15. AC-01、AC-03、AC-04、AC-05、AC-07 受影响回归通过；AI unavailable 不阻塞 Review/export。
 16. `npm.cmd run verify`、migration/export compatibility、metadata、完整 diff、Integration Freshness、deterministic evidence 与独立 review 无未处理 required finding。
 17. **MANUAL**：项目所有者确认三个输入负担合理、事实摘要无需重录、取消/编辑/重开清楚、可选下一步由用户明确决定且没有评分/提醒/AI/导入暗示。
-18. 未获得项目所有者人工结果前，AC-06 manual 和 S4/S5 final gate 保持 `pending`；T052 不自动授权下一阶段或发布。
+18. 项目所有者人工 AC-06 已于 2026-08-30 报告通过；S4/S5 final gate、下一阶段和发布仍需独立授权。
 
 ## 10. 验证计划
 
@@ -391,7 +391,7 @@ wrapper 使用显式 argv，保留真实 exit code，只写 ignored `.tmp/eviden
 - **Electron**：43.3.0（以锁定 `package-lock.json` 为最终事实）
 - **数据根**：每 case 唯一临时 SQLite / Electron `userData`；人工使用明确隔离目录
 - **AI**：fake、disabled 或 not-configured；不使用 live Provider
-- **Source revision**：Implementation Candidate 时填写
+- **Source revision**：task delivery `7aced4fa3146ebb5d0bcf28b7dbc81e5b40e2cb2`；本地完整 aggregate 绑定其直接前序实现候选 `075dec31e9abfcb9ff94655a680b6fe6e04417e3`，当前 head 由 hosted required CI 完整验证
 
 ## 11. Evidence 要求
 
@@ -426,7 +426,7 @@ permissions_current_draft:
   external_write: false
 ```
 
-该权限块只记录审批前草案阶段的历史边界，现已由第 12.2 节权限取代；本次激活标注仍受项目所有者“只修改合同”的当前步骤限制。
+该权限块只记录审批前草案阶段的历史边界，现已由第 12.2 节权限取代；“只修改合同”的首次激活暂停已由后续第二阶段指令解除。
 
 ### 12.2 已批准并激活的精确执行权限
 
@@ -458,7 +458,7 @@ permissions_active_execution:
 - **Evidence**：允许创建 ignored deterministic artifacts；长期 Evidence ledger 和 docs closeout commit 仍需候选 CI 后的精确 owner gate。
 - **Automation Profile**：无；上述权限不应被解释为 `standard-task@1` 激活或自动跨越 owner gates。
 
-项目所有者已于 `2026-08-30T13:17:23+08:00` 明确批准并激活本合同，因此第 12.2 节生效。当前步骤仍明确暂停在“只更新合同”之后：本次不得据此创建 worktree/branch/commit/PR，不得修改实现或执行 migration；后续恢复时从任务账本同步和完整 preflight 开始。
+项目所有者已于 `2026-08-30T13:17:23+08:00` 明确批准并激活本合同，因此第 12.2 节生效。首次激活的“只更新合同”暂停已由第二阶段开发指令解除；实施按所有者补充要求使用独立分支而未创建工作树。
 
 ### 12.3 Integration
 
@@ -467,17 +467,17 @@ integration:
   target_branch: dev
   original_base_revision: dev@3e5a14f1b5f90894e1e15a4b208aa5db254e7825
   latest_authorized_dev_revision: dev@3e5a14f1b5f90894e1e15a4b208aa5db254e7825
-  verified_against_revision: null
+  verified_against_revision: dev@3e5a14f1b5f90894e1e15a4b208aa5db254e7825
   freshness_required: true
   affected_regression_required: true
-  status: null
-  refresh_method: null
-  task_delivery_revision: null
+  status: fresh
+  refresh_method: none-base-already-current
+  task_delivery_revision: 7aced4fa3146ebb5d0bcf28b7dbc81e5b40e2cb2
   dev_integration_revision: null
   stage_final_integration_revision: null
 ```
 
-开始实现、Implementation Candidate 和 docs closeout 前都要重新核对最新授权 `dev`。若 base 变旧，使用普通 merge 刷新并重跑 affected regression；禁止 force-push。当前激活标注没有执行实现验证，不预先声称 `fresh`。
+开始实现、Implementation Candidate 和 docs closeout 前均已核对最新授权 `dev`；task delivery 基于并验证于 `dev@3e5a14f...`，Integration Freshness 为 `fresh`，无需 refresh。`dev_integration_revision` 与 `stage_final_integration_revision` 在项目所有者实际合并或阶段收口前保持 `null`。
 
 ## 13. 风险与停止条件
 
@@ -498,7 +498,7 @@ integration:
 
 ## 14. 完成、owner gates 与报告
 
-本合同已获批准并激活。T052 仍须满足全部自动验收标准、本地 affected regression、完整 diff/独立 review、Integration Freshness 和 exact-revision candidate CI，才形成 Implementation Candidate。随后必须暂停并请求项目所有者批准精确 documentation closeout scope。
+本合同已获批准并激活。T052 已满足自动验收、本地 affected regression、完整 diff/独立 review、Integration Freshness、task-head hosted CI 和项目所有者人工 AC-06；项目所有者随后明确批准并完成 documentation closeout。
 
 docs closeout 通过后仍须 latest-head required CI。Ready、merge `dev`、`dev -> main`、tag、release、G4、S6、S7 和下一任务始终需要独立项目所有者决定。T052 不自动开始任何后续工作。
 
@@ -524,3 +524,12 @@ docs closeout 通过后仍须 latest-head required CI。Ready、merge `dev`、`d
 首次激活指令要求暂时只在合同中标注上述事实，该暂停已被项目所有者后续“第二阶段：批准后开发”指令明确解除。第二阶段允许按第 5.2 节修改任务文件，并按第 12.2 节创建独立分支、commit、push 和 Draft PR；项目所有者补充要求只创建独立分支、不创建工作树。PR 推送成功后立即停止，不主动查询 CI。
 
 项目所有者于 2026-08-30 进一步批准 `T052_ESCALATION_AC07_EXPORT_VERSION` 的最小范围扩展：把 `tests/e2e/ai-data-capability.e2e.test.ts` 加入第 5.2 节允许列表，并只将其中既有 complete-export 成功结果的 `exportVersion` 期望从 `1` 机械更新为已批准的 `2`。该批准不扩展 AI、AC-07 流程、生产实现或其他断言语义。
+
+## 16. Implementation Candidate、人工验收与 docs closeout 事实
+
+- task delivery revision 为 `7aced4fa3146ebb5d0bcf28b7dbc81e5b40e2cb2`；它在实现候选 `075dec31e9abfcb9ff94655a680b6fe6e04417e3` 上只修复 ReviewSummary E2E 的日期注入等待方式，没有改变产品语义。
+- `075dec31...` 的本地 `npm.cmd run verify` 完整通过：186 unit、109 integration、19 Electron E2E 通过，1 个 opt-in package smoke 按配置跳过。按项目所有者对该 CI 修复步骤的明确指令，没有在 `7aced4f...` 本地重跑测试。
+- PR #42 run `33301604518` 在 `075dec31...` 因 `review-summary.e2e` 的 `electronApplication.evaluate` Promise 被回收而失败；该失败保留。后续 run [`33302157222`](https://github.com/Fyrefly-4/MyTracer/actions/runs/33302157222) 在精确 PR head `7aced4f...`、test-merge `8a644df9a60d06e081ec76b92002cb187196e5b1` 上 required CI 全部通过并 supersede 该失败。
+- Hosted artifact `verification-evidence-33302157222-1`（artifact id `9729337881`，digest `sha256:b3c54d2acb32a229a7198cb19b6ff9d7c67fac1d20e8cfeb9aec99d89cf687a5`）记录 aggregate exit 0、capture complete，并正确区分 source head 与 test-merge revision。
+- 项目所有者于 2026-08-30 报告人工测试全体通过，随后明确批准合同、Task Index、Evidence、README 和 Draft PR 正文的 docs closeout 与最后一次 push。
+- `EV-T052-001` 记录上述自动化、CI、兼容性、review 与人工结果。docs closeout push 后的 final-head CI 只作为 PR 集成事实确认；Ready、merge、`dev_integration_revision`、S4/S5 final gate、G4、下一任务、tag 和 release 均未获授权或发生。
