@@ -2,7 +2,7 @@
 
 > 任务类型：S4/S5 aggregate acceptance / documentation closeout / milestone preparation
 >
-> 合同状态：**active；项目所有者已批准并激活**
+> 合同状态：**blocked；项目所有者已批准并激活，等待独立窄修复授权**
 >
 > 合同草案日期：2026-08-30
 >
@@ -17,7 +17,7 @@
 - **Task ID**：T806
 - **Title**：S4/S5 Recovery and Review aggregate acceptance
 - **Slice / Plan item**：S4/S5 final gate
-- **Status**：`active`；项目所有者已明确批准合同全文并授权开始聚合验收
+- **Status**：`blocked`；项目所有者已明确批准合同全文并授权开始聚合验收，但必需 package smoke 暴露测试契约漂移，T806 不得在本合同内修复
 - **Base branch**：`dev`
 - **Target branch**：`dev`
 - **Expected branch**：`codex/T806-s4-s5-final-acceptance`
@@ -323,3 +323,97 @@ T806 全部门禁及收口 PR 合入 `dev` 后，建议项目所有者单独授�
 
 - 自动验证通过后的精确 documentation impact matrix 与四份合同删除；
 - Ready、任何 merge、创建 `dev → main` PR、tag 和 Release。
+
+## 16. 执行阻断与 Escalation Proposal
+
+2026-08-30 在 `codex/T806-s4-s5-final-acceptance@6849957505f00e85476288de7012bf8d8d380ad5` 执行聚合验证后，T806 命中第 13 节停止条件。下列提案只记录事实和最小恢复选项，不构成修复任务授权。
+
+```yaml
+type: testability_problem
+task: T806
+blocking: true
+
+problem:
+  summary: Windows package smoke 仍断言 S3 时期的 Preload API 键集合，未纳入 S4/S5 已批准接口。
+  observed_behavior: >-
+    package 构建成功；test:package-smoke 在 unpacked application 的首个 API shape
+    断言失败。实际根 API 比期望多 recovery、review；同一测试随后仍使用未包含
+    createAndSetCurrentNextAction 的旧 goals 键集合，且没有 recovery/review 窄接口断言。
+
+observed_at:
+  branch: codex/T806-s4-s5-final-acceptance
+  revision: 6849957505f00e85476288de7012bf8d8d380ad5
+  working_tree_state: clean
+
+current_authority:
+  contract: docs/implementation/T806_S4_S5_FINAL_ACCEPTANCE.md
+  stage_design: docs/architecture/S4_S5_RECOVERY_REVIEW_DESIGN_V0.1.md
+  architecture:
+    - docs/architecture/TEST_STRATEGY_V0.1.md
+  requirements:
+    - docs/PRODUCT_REQUIREMENTS_V0.1.md
+  decisions:
+    - docs/DECISIONS.md
+
+conflict:
+  current_rule_or_assumption: >-
+    T806 必须通过 package smoke，但禁止修改 tests/**、产品、配置、依赖、schema
+    或 migration；任何必需失败都阻断聚合结论。
+  incompatible_condition: >-
+    tests/e2e/windows-package-smoke.e2e.test.ts 的 allowlist 落后于已进入 dev 的
+    Recovery/Review API，现有断言无法通过，也未覆盖新增打包接口。
+  evidence: .tmp/evidence/T806-package-smoke-6849957505f0-20260830102741.json (exit 1)
+
+proposed_change:
+  summary: >-
+    推荐另建独立、仅测试的窄修复任务（建议 ID T807），基于最新 origin/dev 更新
+    windows-package-smoke 的精确 API allowlist 与 recovery/review 方法断言；不修改生产代码。
+  alternatives:
+    - alternative: 批准独立 T807 测试窄修复并合入 dev，然后从最新 dev 重新执行 T806 全部门禁。
+      tradeoff: 推荐；保持 package gate 强度和接口覆盖，需要一次额外任务、PR 与 freshness 重验。
+    - alternative: 针对 T806 豁免或放宽 package smoke。
+      tradeoff: 不推荐；会失去 packaged Preload API 契约和 NSIS installed 路径的聚合证明。
+    - alternative: 延期 S4/S5 聚合验收。
+      tradeoff: 不改变仓库，但 T806、dev 到 main 晋升和发布准备保持阻断。
+
+affected:
+  tasks: [T806]
+  files:
+    - tests/e2e/windows-package-smoke.e2e.test.ts
+  interfaces:
+    - packaged window.myTracer root API
+    - goals.createAndSetCurrentNextAction
+    - recovery.getContext
+    - review.begin/getSummary/getResult/complete/cancel
+
+risk:
+  product_semantics: none; 只同步已批准并已集成的接口测试契约
+  data_safety: none; package smoke 使用隔离临时根
+  integration: 若直接在 T806 修改会违反当前合同；独立任务合入后必须重新执行 freshness gate
+  evidence: 失败 artifact 必须保留，后续成功以 supersedes 关系关联
+
+safe_work_completed:
+  - origin/dev 与 origin/main freshness 核验，固定产品 source 仍为 84b596e12e54db098857004497a4d1964dcdc23c
+  - main...dev 73 文件、PR #38～#42、依赖、migration、四任务 tree 和历史 CI 审计
+  - 定向 Unit 35/35、Integration 63/63、Electron E2E 10/10 通过
+  - 完整 verify 通过：Unit 186、Integration 109、E2E 19 pass/1 package-only skip
+  - Windows x64 package 成功并记录 installer、blockmap、unpacked executable hashes；两份 executable 均未数字签名
+
+minimum_owner_decision:
+  - approve-separate-test-only-fix-task
+  - reject
+  - defer
+  - provide-alternative
+
+recommended_resume_point: >-
+  独立窄修复合入最新 dev 后，T806 重新 fetch，执行 freshness gate、完整范围审计、
+  定向验证、verify、package、package smoke 和独立 review；不得只重跑失败断言。
+```
+
+本次失败前后的证据 artifact：
+
+- `T806-stage-candidate-6849957505f0-20260830102525.json`：`verify` exit `0`。
+- `T806-package-6849957505f0-20260830102635.json`：package exit `0`。
+- `T806-package-smoke-6849957505f0-20260830102741.json`：package smoke exit `1`，为当前阻断证据。
+
+当前未执行 documentation impact matrix、Evidence/README 收口、合同归档删除、T806 Draft PR、Ready、merge、`dev → main` PR、tag 或 Release。
