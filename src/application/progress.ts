@@ -9,6 +9,7 @@ import {
 import {
   asProgressRepository,
   type ProgressQueryRowPersistenceRecord,
+  type ProgressQuerySnapshotPersistence,
   type RepositoryPort
 } from './ports/persistence'
 
@@ -87,6 +88,27 @@ function recordsFromRows(rows: readonly ProgressQueryRowPersistenceRecord[]): Pr
   )
 }
 
+export function buildProgressViewFromSnapshot(
+  filter: ProgressView['filter'],
+  snapshot: ProgressQuerySnapshotPersistence
+): ProgressView {
+  const routineRecords: RoutineProgressRecordFact[] = snapshot.routineRecords.map((record) =>
+    Object.freeze({
+      recordId: record.recordId,
+      routineId: record.routineId,
+      goalId: record.goalId,
+      routineName: record.routineName,
+      occurredOn: record.occurredOn,
+      outcome: record.outcome,
+      plannedForDate: record.plannedForDate,
+      durationMinutes: record.durationMinutes,
+      note: record.note,
+      createdAt: record.recordCreatedAt
+    })
+  )
+  return buildProgressView(filter, recordsFromRows(snapshot.actionRows), routineRecords)
+}
+
 export class ProgressService {
   public constructor(private readonly dependencies: ProgressServiceDependencies) {}
 
@@ -103,21 +125,7 @@ export class ProgressService {
       const snapshot = asProgressRepository(this.dependencies.repository).queryProgressSnapshot(
         filter
       )
-      const routineRecords: RoutineProgressRecordFact[] = snapshot.routineRecords.map((record) =>
-        Object.freeze({
-          recordId: record.recordId,
-          routineId: record.routineId,
-          goalId: record.goalId,
-          routineName: record.routineName,
-          occurredOn: record.occurredOn,
-          outcome: record.outcome,
-          plannedForDate: record.plannedForDate,
-          durationMinutes: record.durationMinutes,
-          note: record.note,
-          createdAt: record.recordCreatedAt
-        })
-      )
-      return buildProgressView(filter, recordsFromRows(snapshot.actionRows), routineRecords)
+      return buildProgressViewFromSnapshot(filter, snapshot)
     } catch (error) {
       if (error instanceof ProgressDomainError) {
         throw new ProgressApplicationError(error.code, error.message)

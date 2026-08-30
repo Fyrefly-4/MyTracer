@@ -1307,3 +1307,30 @@ Agent 只提供步骤和观察位置，不得替项目所有者签署人工验�
 - **Known limitations**：PR #40 docs closeout 后 final-head CI、Ready 与 merge 仍是后续 PR Gate；Windows package smoke 不在 T042；S4 owner gate、T051/T052、Review、AI、FR-P05、G4、tag 和 release 均未声明或启动
 - **Supersedes / superseded by**：成功本地 candidate artifact supersede 同 revision 的 worktree 环境失败 artifact，但失败事实保留；本条与 `EV-T041-001` 共同覆盖完整 AC-05，不取代 T041 或 AC-01/03/04/07 的既有 Evidence
 - **Recorded at**：2026-08-29
+
+### EV-T051-001
+
+- **Status**：pass；T051 task delivery candidate、本地完整验证、完整 branch diff 与独立只读 review、implementation-candidate hosted CI 和项目所有者人工测试通过。docs closeout 后的新 head CI 与是否合入 `dev` 是 PR 集成事实，不由本条预先声明
+- **Task / Gate**：T051 / S5 E5-01；证明 FR-RV01、FR-RV06、D-106、D-110 的主动进入边界、相关 Progress/Routine 事实回归与 AC-06 步骤 1 candidate；不声明 ReviewResult、完整 AC-06、S5 acceptance、G4、T052、AI、Ready、merge、tag 或 release
+- **Requirements**：FR-RV01、FR-RV06、D-106、D-110 主动进入边界；复用 FR-P01～P04/P07/P08、Routine 五语义与相关 D-007～D-010/D-107；AC-01/03/04/05/07 只作受影响回归
+- **Source branch**：`task/T051-review-summary`
+- **Original / verified dev base**：`3f343b8af0216b5e568f2c8f1ed52ac4ef824da3`；Implementation Candidate 与 docs closeout 前 GitHub API 均确认 `dev` 仍为该 revision，且它是 task head 的 merge-base，Integration Freshness 为 `fresh`
+- **Task delivery revision**：`eccd00148ac6ca47f3215e03abffb98a732c2558`
+- **Dev / stage integration revision**：pending；PR #41 仍为 Draft 且未获 merge 授权，`dev_integration_revision` 与 `stage_final_integration_revision` 均未产生
+- **Environment**：本地 Windows 11 x64、Node `v24.18.0`、npm `11.16.0`、Electron `43.3.0`、`better-sqlite3@13.0.1`；GitHub-hosted `windows-2025`。自动化使用 FakeClock、每 case 唯一临时 SQLite/Electron `userData` 与 fake/disabled/not-configured AI，不访问真实用户数据库、凭据或 live Provider
+- **Command or procedure**：
+  1. `npm.cmd run governance:metadata:check`：12 个 sidecar、1 个 Profile 通过；合同、sidecar、Task Index 与有效的 `standard-task@1` 声明一致。
+  2. Targeted Review Unit 15/15、SQLite/IPC Integration 10/10、受影响 Electron E2E 11/11 通过；覆盖周一/周日、跨月/年/闰年、同 filter Progress 交叉一致、四类显式 Routine outcome、一个缺行观察日、零业务写入、重开与 Sunday→Monday context。
+  3. `node tools/evidence/capture-command.mjs --task T051 --gate task-candidate --base-revision 3f343b8... --output .tmp/evidence -- npm.cmd run verify` 在 `eccd001...` exit 0：format、lint、typecheck、34 unit files/181 tests、26 integration files/101 tests、17 Electron E2E 通过；1 个 opt-in Windows package smoke 按合同与配置 skip。
+  4. Unit/Integration/IPC/E2E 证明 Main Clock 只在 BeginReview 捕获一次；sender-bound context 拒绝额外字段、伪造日期/统计、跨 sender、cancelled/stale 与 untrusted sender；单个 SQLite 只读 transaction 复用 Progress mapping/formula，查询、重复查询、reload/navigation 与重开不写业务数据、不保存 summary/context/unknown/ReviewResult。
+  5. 完整 `dev...task` diff、diff integrity 与独立只读 review 无未处理 finding；修改只落在批准的合同、metadata/TASK_INDEX、实现/测试和 owner-approved docs closeout 文件，没有依赖、lockfile、migration、schema、export、AI、ReviewResult、T052 或产品权限变化。
+  6. [PR #41 implementation-candidate run `33261483114`](https://github.com/Fyrefly-4/MyTracer/actions/runs/33261483114) 为 `success`：PR head `eccd00148ac6ca47f3215e03abffb98a732c2558`、test-merge `1a045050defab972e9364e064bc8b9e96f296518`；PR quality、Governance checks、Full Windows verification、CI Gate 和 Windows required gate 通过，Documentation 与 milestone package 按分类 skip。
+  7. 下载并检查 hosted artifact `verification-evidence-33261483114-1`（artifact id `9717426523`）：aggregate exit 0、capture complete、base `3f343b8...`、PR head 与 test-merge 分字段正确、无 capture error；artifact digest 为 `sha256:9210f218021f46e619af675421ef3524fd7aaacdc52d813bb0fdff5568ced164`。
+  8. 项目所有者于 2026-08-30 按合同 §10.4 报告人工测试全体通过，并明确批准本合同、Task Index、Evidence、README、Draft PR 正文和独立 docs closeout commit/push。
+- **Result**：用户主动进入 Review 后看到进入时当前周的周一至周日标题、投入时间、真实行动次数、确认理解、开放困惑和 `target_met`、`acted`、`intentional_rest`、`not_done` 四列事实。同一 context 跨周保持固定，新进入捕获新周；缺行不生成 Record、不进入 `not_done` 或失败，Summary 与同 filter Progress 一致且所有 query/context 路径零业务写入
+- **Local artifacts**：失败 `.tmp/evidence/T051-task-candidate-eccd00148ac6-20260829154622.json` 保留；worktree 内缺少 Electron executable 使 native SQLite smoke 在产品断言前以 `ENOENT` 失败。恢复环境-only dependency junction 后，同一 source revision 的成功 `.tmp/evidence/T051-task-candidate-eccd00148ac6-20260829154736.json` 完整通过并 supersede 该环境失败
+- **Hosted artifact**：`verification-evidence-33261483114-1`（artifact id `9717426523`）；其 JSON 明确区分 PR head `eccd001...` 与 test-merge `1a04505...`，aggregate command exit 0
+- **Manual acceptance**：pass；项目所有者于 2026-08-30 报告 T051 人工测试全体通过，覆盖周期标题、事实汇总、四类 Routine 分列、unknown 中性语义、跨周固定/重新进入与无评分/AI/T052 表达；该结果只形成 AC-06 步骤 1 candidate，不等于完整 AC-06 或 S5 acceptance
+- **Known limitations**：PR #41 docs closeout 后 final-head CI、Ready 与 merge 仍是后续 PR Gate；Windows package smoke 不在 T051；ReviewResult、三个复盘输入、Goal 下一步调整、T052、完整 AC-06、S5 acceptance、AI、趋势比较、评分、掌握度、完成率、提醒、tag 和 release 均不在范围
+- **Supersedes / superseded by**：成功本地 candidate artifact supersede 同 revision 的 worktree 环境失败 artifact，但失败事实保留；本条复用且不取代 `EV-T014-001`、`EV-T022-001`、`EV-T031-001`～`EV-T033-001`、`EV-T041-001`、`EV-T042-001` 与 AC-01/03/04/05/07 既有 Evidence
+- **Recorded at**：2026-08-30

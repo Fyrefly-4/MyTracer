@@ -1,6 +1,7 @@
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { EmptyAiConfiguration } from '../../src/infrastructure/configuration/empty-ai-configuration'
+import { ReviewService } from '../../src/application/review'
 import { EmptySafeStorageCredentialAdapter } from '../../src/infrastructure/credentials/safe-storage-credential-adapter'
 import { SafeDiagnostics } from '../../src/infrastructure/diagnostics/safe-diagnostics'
 import { SqliteConnection } from '../../src/infrastructure/sqlite/sqlite-connection'
@@ -25,14 +26,14 @@ describe('Main foundations integration', () => {
     const databasePath = join(root.database, 'main-foundations.sqlite3')
     const connection = SqliteConnection.open(databasePath)
     const events: unknown[] = []
-    const diagnostics = new SafeDiagnostics(
-      new FakeClock({
-        instant: '2026-08-09T08:30:00.000Z',
-        localDate: '2026-08-09',
-        timeZone: 'Asia/Shanghai'
-      }),
-      { write: (event) => events.push(event) }
-    )
+    const diagnosticsClock = new FakeClock({
+      instant: '2026-08-09T08:30:00.000Z',
+      localDate: '2026-08-09',
+      timeZone: 'Asia/Shanghai'
+    })
+    const diagnostics = new SafeDiagnostics(diagnosticsClock, {
+      write: (event) => events.push(event)
+    })
     const capabilityCheck = vi.fn(() => false)
     const credentialStore = new EmptySafeStorageCredentialAdapter({
       isEncryptionAvailable: capabilityCheck
@@ -53,6 +54,30 @@ describe('Main foundations integration', () => {
         confusions: [],
         reviewResults: []
       })
+      const beforeReview = connection.repository.readSnapshot()
+      const review = new ReviewService({
+        repository: connection.repository,
+        clock: diagnosticsClock
+      })
+      const period = review.beginReview()
+      expect(period).toEqual({
+        periodStartedOn: '2026-08-03',
+        periodEndedOn: '2026-08-09'
+      })
+      expect(review.getReviewSummary(period)).toMatchObject({
+        totalDurationMinutes: 0,
+        realActionCount: 0,
+        confirmedUnderstandingCount: 0,
+        openConfusionCount: 0,
+        hasRecordedFacts: false,
+        routineOutcomeCounts: {
+          targetMet: 0,
+          acted: 0,
+          intentionalRest: 0,
+          notDone: 0
+        }
+      })
+      expect(connection.repository.readSnapshot()).toEqual(beforeReview)
       expect(new EmptyAiConfiguration(credentialStore).readState()).toEqual({
         configured: false,
         availability: 'not-configured',
