@@ -1,12 +1,12 @@
 # MyTracer v0.1 S6 AI 启动帮助整体设计
 
-> 文档状态：**提案版，等待项目所有者批准；不构成 T061～T063 实现授权。**
+> 文档状态：**已批准；项目所有者于 2026-08-31 批准完整设计及 S6-Q01～Q05 推荐方案。设计批准本身不自动授权 T062/T063。**
 >
 > 设计范围：S6 / E6-01～E6-03 / T061～T063
 >
 > 核心验收：AC-02 难以开始时获得帮助
 >
-> 设计权限：项目所有者已授权编写本提案；Provider、模型、SDK、依赖、凭据入口、文本预算、超时、真实 Provider 测试、任务合同、任务启动和任何 Git/GitHub 写操作仍未批准。
+> 设计权限：S6-Q01 A、Q02 A、Q03 B、Q04 A、Q05 A 已批准；T061 合同、任务启动及其限定 Git/GitHub 权限另行获批。Q01/Q02 的确切 Provider 三元组和展开后的环境变量名、T062/T063、真实 Provider 调用、Ready、merge、tag 和 release 仍需各自 Gate。
 
 ## 0. 文档用途与权限边界
 
@@ -31,14 +31,14 @@
 |---|---|
 | **冻结/已批准** | 直接来自 FR、AC、D、ED 或现行最终架构基线，后续任务不得自行改变 |
 | **当前实现事实** | 在本文基线 revision 上实际存在的接口、schema、UI ownership 或测试基础设施 |
-| **提案设计** | 本文等待项目所有者审批的 S6 设计；未批准前不能进入任务合同作为既定结论 |
-| **待审批选择** | 第 15 节的 S6-Q01～Q05；推荐不等于批准 |
+| **批准的 S6 设计** | 本文已由项目所有者批准，可作为独立 T061～T063 合同的设计依据，但不替代任务授权 |
+| **已批准选择** | 第 15 节的 S6-Q01～Q05 已选择推荐方案；T062 仍须固定 Q01/Q02 的确切值 |
 | **延期/非范围** | 不进入 S6，不得成为接口、表、依赖、测试前置或完成条件 |
 
 本文不授权：
 
 - 修改代码、依赖、配置、schema、migration、任务合同、metadata、任务索引、验收证据、需求或决定；
-- 创建、激活或执行 T061～T063；
+- 仅凭本文创建、激活或执行 T061～T063；T061 的现行权限来自其独立批准合同，T062/T063 仍未授权；
 - 创建 branch/worktree/commit，执行 push、Draft PR、Ready、merge、tag 或 release；
 - 写入或迁移真实用户数据库，配置真实密钥，调用真实或付费 Provider；
 - 建设通用 Agent 平台、长期记忆、自动计划、主动监督、跨 Goal 分析或任何延期能力。
@@ -47,16 +47,16 @@
 
 - **Stage**：S6
 - **Title**：AI 启动帮助（AI Start Help）
-- **Status**：`draft`
-- **Owner approval**：项目所有者已授权编写提案；完整设计尚未批准
+- **Status**：`approved`；T061 `active`
+- **Owner approval**：2026-08-31，完整 S6 设计及 S6-Q01 A、Q02 A、Q03 B、Q04 A、Q05 A
 - **Target branch**：`dev`
-- **Current design source**：`dev@1d02fd7a0a7b0bf29a5e39720d5818c9d68fdbc2`
+- **Current design source**：`dev@1342cd7d8819ad269791c1834fcbd0c7596b0959`
 - **Prior behavior revision**：`dev@84b596e12e54db098857004497a4d1964dcdc23c`
 - **Current schema version**：3
 - **Current export version**：2
-- **Current S6 task state**：T061/T062/T063 均为 `pending`
+- **Current S6 task state**：T061 `active`；T062/T063 `pending`
 
-`1d02fd7...` 是当前文档和治理基线；最近改变产品运行行为的 revision 是 T052 集成后的 `84b596e...`。若设计审批或任何任务合同基于不同 revision，必须重新核对代码、schema、export、任务状态、依赖和共享面，不能只替换本文 SHA。
+`1342cd7...` 是设计批准和 T061 合同绑定的当前 `dev` 基线；最近改变产品运行行为的 revision 仍是 T052 集成后的 `84b596e...`。若任何后续任务合同基于不同 revision，必须重新核对代码、schema、export、任务状态、依赖和共享面，不能只替换本文 SHA。
 
 ## 2. Baseline manifest 与冲突核对
 
@@ -88,7 +88,7 @@ baseline:
     - docs/implementation/TASK_INDEX_V0.1.md
     - docs/implementation/TASK_TEMPLATE.md
     - docs/implementation/GITHUB_WORKFLOW_V0.1.md
-  current_design_source: dev@1d02fd7a0a7b0bf29a5e39720d5818c9d68fdbc2
+  current_design_source: dev@1342cd7d8819ad269791c1834fcbd0c7596b0959
   prior_behavior_revision: dev@84b596e12e54db098857004497a4d1964dcdc23c
   schema_version: 3
   export_version: 2
@@ -324,7 +324,7 @@ occurredOn DESC
 
 ### 5.5 字符预算和确定性截断
 
-生产总预算属于 S6-Q03 待审批项。T061 使用注入的 `ContextBudget` 并在测试中覆盖不同预算；不得把 Provider token window 直接写入 Domain。
+生产总预算已按 S6-Q03 B 批准为 8,000 Unicode code points。T061 仍使用注入的 `ContextBudget` 并在测试中覆盖不同预算；不得把 Provider token window 直接写入 Domain。
 
 字符计数规则：
 
@@ -499,7 +499,7 @@ Electron security 继续使用 ED-019：`nodeIntegration: false`、`contextIsola
 
 ### 6.6 配置、safeStorage 与核心数据隔离
 
-提案配置模型：
+批准的配置模型：
 
 ```text
 AiConfigurationState
@@ -618,7 +618,7 @@ StartHelpSession
 
 Understanding 只能作为自然语言候选。Provider 不提供可信目标 Record ID，Main 也不从时间、对话或模型输出自动选择归属。
 
-提案确认流程：
+批准的确认流程：
 
 1. Main 从本次 manifest 的 `eligibleUnderstandingTargetRecordIds` 生成仅供 UI 选择的本地目标摘要，包括 opaque target ref、Action title、occurredOn；数据库 ID 不发送给 Provider。
 2. 用户对每个候选分别编辑最终文本、选择一个本地目标并点击确认。
@@ -720,7 +720,7 @@ AddConfirmedUnderstandingToActionRecord
 
 ## 9. IPC、Preload 与 Renderer API
 
-### 9.1 提案 API
+### 9.1 批准的 API 设计
 
 ```text
 window.myTracer.aiStartHelp
@@ -848,7 +848,7 @@ tasks:
 
 三个任务虽然可以概念上分层，但会重复修改 contracts、Main、Preload、Today 和 fake provider。当前单业务任务 active 规则下必须严格串行；不建议通过独立 worktree 并行产生相互猜测的 API。
 
-### 11.3 提案实施和审批顺序
+### 11.3 批准的实施和审批顺序
 
 ```text
 项目所有者批准本设计及 S6-Q01～Q05
@@ -1131,62 +1131,62 @@ npm.cmd run verify
 | ED-015 | T061 | LocalDate/createdAt/ID 显式稳定排序 | U、I |
 | ED-019 | T062/T063 | sandbox/context isolation/CSP/sender origin/narrow preload | IPC、E2E、package/bundle scan |
 
-## 15. 待项目所有者审批的工程决定
+## 15. 已批准的工程决定
 
-本节所有推荐均为提案，不是批准结论。项目所有者应对每项选择一个方案或提供替代方案，并把确切值写入设计批准记录和 T062 合同。未批准时不得由实现 Agent 选择默认值。
+项目所有者于 2026-08-31 选择推荐方案 Q01 A、Q02 A、Q03 B、Q04 A、Q05 A。Q01 的确切 vendor/model/package/version 和 Q02 展开的 `MYTRACER_<PROVIDER>_API_KEY` 名称仍由 T062 独立合同固定；这两项未决精确值不得由 T061 实现 Agent 推断，也不授权依赖、网络、凭据或真实 Provider 调用。
 
 ### 15.1 S6-Q01：首个 Provider、模型和 SDK
 
 | 选项 | 内容 | 影响 | 风险 | 可逆性 |
 |---|---|---|---|---|
-| A（推荐） | 选择一个云 Provider、其官方 JavaScript SDK，以及一个低延迟/低成本/支持结构化输出的文本模型；确切 vendor/model/package/version 在 T062 合同固定 | 最容易使用官方取消、认证和结构化响应；新增一个批准依赖和网络域 | SDK 体积、版本/模型下线、厂商锁定、付费与隐私 | Provider Port 隔离后可替换；已发布配置需兼容 provider/model 标识 |
+| A（已批准） | 选择一个云 Provider、其官方 JavaScript SDK，以及一个低延迟/低成本/支持结构化输出的文本模型；确切 vendor/model/package/version 在 T062 合同固定 | 最容易使用官方取消、认证和结构化响应；新增一个批准依赖和网络域 | SDK 体积、版本/模型下线、厂商锁定、付费与隐私 | Provider Port 隔离后可替换；已发布配置需兼容 provider/model 标识 |
 | B | 选择一个云 Provider，使用 Node 内置 HTTPS/fetch 直接调用，无 SDK | 少一个依赖，request/response/error mapping 全部自维护 | API 变化、流式/取消/错误细节易漂移，安全 review 面更大 | adapter 可替换；自写协议债需删除 |
 | C | 首阶段只保留 fake，不接真实 Provider | T061/T063 边界可验证，但无法完成真实 S6 日常使用和 T062 生产交付 | AC-02 只能证明 fake 产品流程，无法证明真实配置/网络 | 易升级，但 S6 final gate 必须保持 pending |
 | D | 本地模型/runtime | 无云请求 | 新 runtime、模型分发、硬件、打包、更新和大依赖，超出当前轻量边界 | 难回撤，安装/配置兼容成本高 |
 
-**推荐理由**：A 用一个具体、窄适配器完成 v0.1 Start Help，不建设通用兼容层。推荐不指定厂商或模型 ID；项目所有者必须在批准时记录完整三元组和版本范围。若所选模型不能稳定满足结构化输出、取消和预算，重新评估而非放宽验证或上下文。
+**批准结论**：采用 A 的单一窄适配器方向，不建设通用兼容层。确切厂商、模型 ID、package 和版本范围推迟到 T062 合同一并批准；在此之前不得安装依赖或发起网络请求。若所选模型不能稳定满足结构化输出、取消和预算，重新评估而非放宽验证或上下文。
 
 ### 15.2 S6-Q02：环境变量名与凭据配置入口
 
 | 选项 | 内容 | 影响 | 风险 | 可逆性 |
 |---|---|---|---|---|
-| A（推荐） | 环境变量使用 `MYTRACER_<PROVIDER>_API_KEY`；Main-only 读取。打包首次配置由用户在外部设置一次环境变量，Renderer 只发送“导入并持久化”无密钥意图，Main 读取后 safeStorage 加密并原子保存配置 | 严格满足 Renderer/Preload 不接触明文 key；复用已批准 safeStorage | 首次配置 UX 较技术化；环境继承/清除说明必须准确，Main 不得记录值 | 未来可换成更友好 Main-owned入口；旧密文可继续读取或显式迁移 |
+| A（已批准） | 环境变量使用 `MYTRACER_<PROVIDER>_API_KEY`；Main-only 读取。打包首次配置由用户在外部设置一次环境变量，Renderer 只发送“导入并持久化”无密钥意图，Main 读取后 safeStorage 加密并原子保存配置 | 严格满足 Renderer/Preload 不接触明文 key；复用已批准 safeStorage | 首次配置 UX 较技术化；环境继承/清除说明必须准确，Main 不得记录值 | 未来可换成更友好 Main-owned入口；旧密文可继续读取或显式迁移 |
 | B | Renderer 专用 password input，经固定单向 IPC 立即交 Main 加密，永不回读 | 日常体验最直接 | Renderer/Preload 短暂接触明文，违背本文严格隔离解释；DevTools/内存/错误处理面扩大 | 可移除 UI，但已存在的用户预期和安全说明需调整 |
 | C | 独立 Main/helper 或 OS credential manager 配置工具 | Renderer 完全不接触 key，UX 可优化 | 新进程/工具/依赖、打包和权限面扩大，不属于当前批准架构 | helper 移除和配置迁移成本高 |
 | D | 只支持每次运行环境变量，不持久化 safeStorage | 实现最小 | 打包日常使用差，未完成 ED-010 的批准打包配置路径 | 易升级，但不能作为完整 T062 |
 
-**推荐理由**：A 是满足“Main-only key”与 safeStorage 的最小方案。批准时必须把 `<PROVIDER>` 展开为确切名称，固定环境覆盖/密文优先级、导入成功后提示和删除凭据流程。不得在日志或 evidence 中显示变量值。
+**批准结论**：采用 A。T062 合同必须在 Provider 确定后把 `<PROVIDER>` 展开为确切名称，并固定环境覆盖/密文优先级、导入成功后提示和删除凭据流程。不得在日志或 evidence 中显示变量值。
 
 ### 15.3 S6-Q03：总文本预算
 
 | 选项 | 内容 | 影响 | 风险 | 可逆性 |
 |---|---|---|---|---|
 | A | 4,000 Unicode code points | 最小泄露面和成本 | 较长中英文上下文更易截断，建议相关性可能下降 | 纯配置可提高，manifest 算法兼容 |
-| B（推荐） | 8,000 Unicode code points | 可容纳 Goal/Action/最多 5 Record 的有限文本，同时保持明确上限 | 仍需 Provider token 二次校验；长字段可能截断 | 纯配置可调，既有核心数据不变 |
+| B（已批准） | 8,000 Unicode code points | 可容纳 Goal/Action/最多 5 Record 的有限文本，同时保持明确上限 | 仍需 Provider token 二次校验；长字段可能截断 | 纯配置可调，既有核心数据不变 |
 | C | 12,000 Unicode code points | 截断较少 | 数据暴露和付费成本更高，可能超过小模型经济窗口 | 可下调，但用户可能感知建议变化 |
 
-**推荐理由**：B 是当前最多 5 条 Record 设计的保守中间值。批准值只约束文本内容，Provider adapter 仍必须检查实际请求 token/byte 上限；不得以模型窗口更大为由突破批准预算。
+**批准结论**：总文本预算为 8,000 Unicode code points。该值只约束文本内容，Provider adapter 仍必须检查实际请求 token/byte 上限；不得以模型窗口更大为由突破批准预算。
 
 ### 15.4 S6-Q04：超时和重试
 
 | 选项 | 内容 | 影响 | 风险 | 可逆性 |
 |---|---|---|---|---|
-| A（推荐） | Main deadline 20 秒；无自动重试；失败后保留本次输入，由用户明确点击 retry | 每次付费调用都由用户触发，状态清晰 | 短时网络抖动需要多一次点击 | timeout 配置易调，核心数据无迁移 |
+| A（已批准） | Main deadline 20 秒；无自动重试；失败后保留本次输入，由用户明确点击 retry | 每次付费调用都由用户触发，状态清晰 | 短时网络抖动需要多一次点击 | timeout 配置易调，核心数据无迁移 |
 | B | 10 秒；无自动重试 | 快速降级 | 慢响应更常失败，可能降低可用性 | 易调 |
 | C | 20～30 秒；对 network/5xx 自动重试一次 | 抖动下成功率可能更高 | 重复付费、取消/幂等/迟到响应更复杂，违反“一次明确触发对应一次请求”的直觉 | 可关闭，但证据和成本预期需更新 |
 
-**推荐理由**：A 最符合主动触发和可控成本。authentication、quota、invalid response 不得自动重试；任何 retry 都重新读取当前上下文并生成新 generation。
+**批准结论**：Main deadline 为 20 秒且不自动重试。authentication、quota、invalid response 不得自动重试；任何 retry 都由用户明确触发、重新读取当前上下文并生成新 generation。
 
 ### 15.5 S6-Q05：真实 Provider 契约测试
 
 | 选项 | 内容 | 影响 | 风险 | 可逆性 |
 |---|---|---|---|---|
-| A（推荐） | 建立独立、显式、非默认 `test:ai-contract`；只在人工授权环境运行，不进入 `verify`/普通 CI|required check | 可发现真实 API/模型/SDK 漂移，同时保持核心测试离线 | 需要专用 key、费用、网络和脱敏证据纪律 | 可暂停/替换，不影响 fake suite |
+| A（已批准） | 建立独立、显式、非默认 `test:ai-contract`；只在人工授权环境运行，不进入 `verify`/普通 CI|required check | 可发现真实 API/模型/SDK 漂移，同时保持核心测试离线 | 需要专用 key、费用、网络和脱敏证据纪律 | 可暂停/替换，不影响 fake suite |
 | B | 不建自动 live contract，只做项目所有者手工 smoke | 最小工程面 | 漂移发现晚、结果可重复性弱 | 以后可增加 |
 | C | 完全不测试真实 Provider | 无 key/费用 | 生产适配器行为没有真实证据，T062/S6 不能完整声称通过 | 易增加，但当前 gate 保持 pending |
 | D | 把 live contract 加入普通 CI | 持续反馈 | key 暴露、付费、外部不稳定导致核心 gate 阻塞，违反现行测试策略 | 移除容易，但历史 CI 和 secret 风险不可忽略 |
 
-**推荐理由**：A 将外部不确定性与核心离线验证隔离。测试必须使用合成文本、专用 credential、固定低调用量、无真实用户数据，并只记录脱敏 metadata；失败不允许被改写为核心测试成功。
+**批准结论**：采用独立、显式、非默认的 live contract 路径，不进入 `verify`、普通 CI 或 required check。实际建立或运行仍须 T062 精确合同、专用 credential 和网络授权；测试必须使用合成文本、固定低调用量、无真实用户数据，并只记录脱敏 metadata，失败不允许被改写为核心测试成功。
 
 ## 16. 风险、停止条件与授权
 
@@ -1226,14 +1226,14 @@ npm.cmd run verify
 
 | Gate | 控制者 | 当前状态 |
 |---|---|---|
-| 完整 S6 设计及 S6-Q01～Q05 | 项目所有者 | `pending` |
-| T061 合同和启动 | 项目所有者 | 未授权 |
-| Provider/model/SDK/依赖/network | 项目所有者 + T062 精确合同 | 未授权 |
-| credential/env/config file/文本预算/timeout | 项目所有者 + T062 精确合同 | 未授权 |
-| optional live Provider contract test | 项目所有者 | 未授权 |
+| 完整 S6 设计及 S6-Q01～Q05 | 项目所有者 | `approved`（2026-08-31；A/A/B/A/A） |
+| T061 合同和启动 | 项目所有者 | `active`；仅 T061 合同范围 |
+| Provider/model/SDK/依赖/network | 项目所有者 + T062 精确合同 | Q01 A 方向已批准；确切三元组、依赖和网络未授权 |
+| credential/env/config file/文本预算/timeout | 项目所有者 + T062 精确合同 | Q02 A、Q03 8,000、Q04 20 秒/无自动重试已批准；确切 env/config 实现未授权 |
+| optional live Provider contract test | 项目所有者 + T062 精确合同 | Q05 A 方向已批准；建立和运行未授权 |
 | T062/T063 合同和启动 | 项目所有者 | 未授权 |
 | schema/export change | 项目所有者 | 本设计不需要；若出现则停止 |
-| branch/worktree/commit/push/Draft PR | 各 Txxx 合同与项目所有者 | 未授权 |
+| branch/worktree/commit/push/Draft PR | 各 Txxx 合同与项目所有者 | T061 已按独立合同授权；T062/T063 未授权 |
 | Ready/merge dev/main/tag/release | 项目所有者针对确切目标 | 未授权 |
 | AC-02 人工验收和 S6 final gate | 项目所有者 | `pending` |
 | S7/下一阶段 | 项目所有者独立决定 | 未授权 |
@@ -1280,9 +1280,9 @@ npm.cmd run verify
 
 阶段通过不会自动授权发布或下一阶段。较早 T061/T062/T063 绿色 revision 不能替代最终 aggregate revision。
 
-## 18. 提案交付核对
+## 18. 设计批准与交付核对
 
-- [x] 文档状态明确为提案，等待项目所有者批准，不构成 T061～T063 实现授权；
+- [x] 文档状态已记录 2026-08-31 项目所有者批准；设计批准不自动授权 T062/T063；
 - [x] 基线绑定 current design source、prior behavior revision、schema v3 和 export v2；
 - [x] 完整流程覆盖主动触发、最小上下文、Provider、临时建议、接受/修改/拒绝和普通命令确认；
 - [x] T061 的允许字段、相关性、排序、5 条上限、预算、manifest、唯一标记和零调用明确；
@@ -1295,9 +1295,9 @@ npm.cmd run verify
 - [x] unit、contract、integration、IPC、E2E、package、安全和人工验收矩阵覆盖 AC-02 及 AC-01/03/04/05/06/07 回归；
 - [x] 自动测试默认 fake provider，不调用真实付费服务；
 - [x] FR-AI01～AI10、FR-C02/C03、AC-02 和相关 D/ED 均映射到 Txxx 与测试层级；
-- [x] Provider/model/SDK、环境变量/凭据入口、预算、timeout/retry 和 live contract test 均有选项、推荐、影响、风险和可逆性，未写成批准事实；
+- [x] Provider/model/SDK、环境变量/凭据入口、预算、timeout/retry 和 live contract test 均保留选项、影响、风险和可逆性，并明确记录 A/A/B/A/A 批准结论及 T062 精确值 Gate；
 - [x] 通用 Agent、长期记忆、自动计划、主动监督、跨 Goal 分析和延期能力保持非范围；
 - [x] 未发现 MUST、批准决定或现有不变量冲突；凭据入口和 Understanding 归属张力已显式报告；
 - [x] 设计批准、任务合同、依赖、Git/GitHub、人工验收、merge/tag/release 和下一阶段门保持由项目所有者控制。
 
-本提案等待项目所有者决定 S6-Q01～Q05 并批准完整设计。即使获得批准，它也只可作为后续 T061～T063 独立任务合同的设计依据，不会自动创建合同、激活任务、安装依赖、配置 Provider、执行实现或推进发布。
+本设计已获项目所有者批准，只可作为 T061～T063 独立任务合同的设计依据。T061 已由独立合同激活；本批准不会自动创建或激活 T062/T063，不授权安装依赖、配置或调用 Provider、执行 live contract、Ready、merge、tag、release 或推进下一阶段。
