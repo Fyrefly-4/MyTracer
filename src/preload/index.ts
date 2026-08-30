@@ -98,8 +98,10 @@ import {
   REVIEW_CHANNELS,
   type BeginReviewDto,
   type BeginReviewInputDto,
+  type CompleteReviewInputDto,
   type ReviewContextInputDto,
   type ReviewResult,
+  type ReviewResultDto,
   type ReviewSummaryDto
 } from '../contracts/review'
 
@@ -190,6 +192,10 @@ const api: MyTracerApi = Object.freeze({
       ipcRenderer.invoke(REVIEW_CHANNELS.begin, input),
     getSummary: (input: ReviewContextInputDto): Promise<ReviewResult<ReviewSummaryDto>> =>
       ipcRenderer.invoke(REVIEW_CHANNELS.getSummary, input),
+    getResult: (input: ReviewContextInputDto): Promise<ReviewResult<ReviewResultDto | null>> =>
+      ipcRenderer.invoke(REVIEW_CHANNELS.getResult, input),
+    complete: (input: CompleteReviewInputDto): Promise<ReviewResult<ReviewResultDto>> =>
+      ipcRenderer.invoke(REVIEW_CHANNELS.complete, input),
     cancel: (input: ReviewContextInputDto): Promise<ReviewResult<{ readonly cancelled: true }>> =>
       ipcRenderer.invoke(REVIEW_CHANNELS.cancel, input)
   }),

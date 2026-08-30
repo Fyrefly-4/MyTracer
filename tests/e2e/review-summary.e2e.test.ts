@@ -129,7 +129,7 @@ test('shows the current-week ReviewSummary from Progress facts without turning u
       })
       return { begun, first, second, apiKeys: Object.keys(window.myTracer.review) }
     })
-    expect(apiFacts.apiKeys).toEqual(['begin', 'getSummary', 'cancel'])
+    expect(apiFacts.apiKeys).toEqual(['begin', 'getSummary', 'getResult', 'complete', 'cancel'])
     expect(apiFacts.first).toEqual(apiFacts.second)
     expect(apiFacts.first).toMatchObject({
       ok: true,

@@ -3,6 +3,8 @@ import type { ProgressRecordFactDto, RoutineProgressRecordFactDto } from './prog
 export const REVIEW_CHANNELS = Object.freeze({
   begin: 'review:begin',
   getSummary: 'review:get-summary',
+  getResult: 'review:get-result',
+  complete: 'review:complete',
   cancel: 'review:cancel-context'
 } as const)
 
@@ -13,6 +15,32 @@ export interface ReviewContextInputDto {
 export interface BeginReviewDto extends ReviewContextInputDto {
   readonly periodStartedOn: string
   readonly periodEndedOn: string
+}
+export interface ReviewResultDto {
+  readonly id: string
+  readonly periodStartedOn: string
+  readonly periodEndedOn: string
+  readonly confirmedProgress: string
+  readonly mainObstacle: string
+  readonly nextAdjustment: string
+  readonly relatedGoalId: string | null
+  readonly createdAt: string
+  readonly updatedAt: string
+}
+export type ReviewNextStepChangeDto =
+  | { readonly kind: 'none' }
+  | { readonly kind: 'use-existing'; readonly actionId: string }
+  | {
+      readonly kind: 'create-and-use'
+      readonly title: string
+      readonly description?: string | null
+    }
+export interface CompleteReviewInputDto extends ReviewContextInputDto {
+  readonly confirmedProgress: string
+  readonly mainObstacle: string
+  readonly nextAdjustment: string
+  readonly relatedGoalId: string | null
+  readonly nextStepChange: ReviewNextStepChangeDto
 }
 export interface ReviewChildFactDto {
   readonly id: string
@@ -50,7 +78,12 @@ export interface ReviewSummaryDto {
   readonly unknownPolicy: 'absence-is-unknown-not-counted-as-not-done'
 }
 export type ReviewErrorCode =
-  'validation' | 'context-invalid' | 'context-stale' | 'persistence-failed'
+  | 'validation'
+  | 'context-invalid'
+  | 'context-stale'
+  | 'related-goal-invalid'
+  | 'next-step-invalid'
+  | 'persistence-failed'
 export type ReviewResult<T> =
   | { readonly ok: true; readonly value: T }
   | {
@@ -60,6 +93,10 @@ export type ReviewResult<T> =
 export interface ReviewApi {
   readonly begin: (input: BeginReviewInputDto) => Promise<ReviewResult<BeginReviewDto>>
   readonly getSummary: (input: ReviewContextInputDto) => Promise<ReviewResult<ReviewSummaryDto>>
+  readonly getResult: (
+    input: ReviewContextInputDto
+  ) => Promise<ReviewResult<ReviewResultDto | null>>
+  readonly complete: (input: CompleteReviewInputDto) => Promise<ReviewResult<ReviewResultDto>>
   readonly cancel: (
     input: ReviewContextInputDto
   ) => Promise<ReviewResult<{ readonly cancelled: true }>>
