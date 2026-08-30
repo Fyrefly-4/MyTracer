@@ -106,9 +106,9 @@ function populate(connection: SqliteConnection): void {
     repository.saveReviewResult({
       id: 'review',
       periodStartedOn: '2026-08-17',
-      summary: 'Summary',
-      adjustment: 'Adjust',
-      nextFocus: 'Focus',
+      confirmedProgress: 'Summary',
+      mainObstacle: 'Adjust',
+      nextAdjustment: 'Focus',
       goalId: 'goal',
       createdAt: instant,
       updatedAt: instant
@@ -123,7 +123,7 @@ describe('complete export SQLite snapshot', () => {
     const connection = await openConnection()
     populate(connection)
     const snapshot = asCompleteExportRepository(connection.repository).readCompleteCoreSnapshot()
-    expect(snapshot.sourceDataVersion).toBe(2)
+    expect(snapshot.sourceDataVersion).toBe(3)
     expect(Object.values(snapshot.coreSnapshot).map((rows) => rows.length)).toEqual([
       1, 1, 1, 1, 1, 1, 1, 1, 1, 1
     ])

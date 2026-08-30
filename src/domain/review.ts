@@ -1,7 +1,88 @@
-import { createLocalDate, weekContaining, type LocalDate, type LocalDateWeek } from './local-date'
+import {
+  addLocalDateDays,
+  createLocalDate,
+  weekContaining,
+  type LocalDate,
+  type LocalDateWeek
+} from './local-date'
 import type { ProgressRecordFact, ProgressView, RoutineProgressRecordFact } from './progress'
 
 export const REVIEW_UNKNOWN_POLICY = 'absence-is-unknown-not-counted-as-not-done' as const
+
+export interface ReviewResult {
+  readonly id: string
+  readonly periodStartedOn: LocalDate
+  readonly confirmedProgress: string
+  readonly mainObstacle: string
+  readonly nextAdjustment: string
+  readonly relatedGoalId: string | null
+  readonly createdAt: string
+  readonly updatedAt: string
+}
+
+export class ReviewDomainError extends Error {
+  public constructor(message: string) {
+    super(message)
+    this.name = 'ReviewDomainError'
+  }
+}
+
+function requiredReviewText(value: string, field: string): string {
+  const normalized = value.trim()
+  if (!normalized) throw new ReviewDomainError(`${field} must not be blank.`)
+  return normalized
+}
+
+export function reviewPeriodEndedOn(periodStartedOn: string): LocalDate {
+  const startedOn = createLocalDate(periodStartedOn)
+  const week = weekContaining(startedOn)
+  if (week.monday !== startedOn) {
+    throw new ReviewDomainError('Review period must start on Monday.')
+  }
+  return addLocalDateDays(startedOn, 6)
+}
+
+export function createReviewResult(input: {
+  readonly id: string
+  readonly periodStartedOn: string
+  readonly confirmedProgress: string
+  readonly mainObstacle: string
+  readonly nextAdjustment: string
+  readonly relatedGoalId?: string | null
+  readonly now: string
+}): ReviewResult {
+  reviewPeriodEndedOn(input.periodStartedOn)
+  return Object.freeze({
+    id: requiredReviewText(input.id, 'ReviewResult id'),
+    periodStartedOn: createLocalDate(input.periodStartedOn),
+    confirmedProgress: requiredReviewText(input.confirmedProgress, 'Confirmed progress'),
+    mainObstacle: requiredReviewText(input.mainObstacle, 'Main obstacle'),
+    nextAdjustment: requiredReviewText(input.nextAdjustment, 'Next adjustment'),
+    relatedGoalId: input.relatedGoalId ?? null,
+    createdAt: input.now,
+    updatedAt: input.now
+  })
+}
+
+export function updateReviewResult(
+  current: ReviewResult,
+  input: {
+    readonly confirmedProgress: string
+    readonly mainObstacle: string
+    readonly nextAdjustment: string
+    readonly relatedGoalId?: string | null
+    readonly now: string
+  }
+): ReviewResult {
+  return Object.freeze({
+    ...current,
+    confirmedProgress: requiredReviewText(input.confirmedProgress, 'Confirmed progress'),
+    mainObstacle: requiredReviewText(input.mainObstacle, 'Main obstacle'),
+    nextAdjustment: requiredReviewText(input.nextAdjustment, 'Next adjustment'),
+    relatedGoalId: input.relatedGoalId ?? null,
+    updatedAt: input.now
+  })
+}
 
 export interface ReviewUnderstandingFact {
   readonly id: string

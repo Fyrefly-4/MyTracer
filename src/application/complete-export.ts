@@ -13,7 +13,8 @@ import {
 import { createLocalDate } from '../domain/local-date'
 
 export const COMPLETE_EXPORT_FORMAT = 'mytracer-core-export' as const
-export const COMPLETE_EXPORT_VERSION = 1 as const
+export const COMPLETE_EXPORT_VERSION_V1 = 1 as const
+export const COMPLETE_EXPORT_VERSION = 2 as const
 
 export const COMPLETE_EXPORT_ENUM_VALUES = Object.freeze({
   goalStatus: Object.freeze(['active', 'paused', 'ended']),
@@ -28,6 +29,12 @@ export const COMPLETE_EXPORT_ENUM_VALUES = Object.freeze({
 })
 
 export interface MyTracerCoreExportV1 extends CompleteExportDocumentPort {
+  readonly exportVersion: 1
+  readonly enumValues: typeof COMPLETE_EXPORT_ENUM_VALUES
+}
+
+export interface MyTracerCoreExportV2 extends CompleteExportDocumentPort {
+  readonly exportVersion: 2
   readonly enumValues: typeof COMPLETE_EXPORT_ENUM_VALUES
   readonly data: CorePersistenceSnapshot
 }
@@ -161,7 +168,7 @@ const byId = (left: Record<string, unknown>, right: Record<string, unknown>) =>
 const byOccurrence = (left: Record<string, unknown>, right: Record<string, unknown>) =>
   String(left.occurredOn).localeCompare(String(right.occurredOn)) || byId(left, right)
 
-export function validateCompleteExport(value: unknown): asserts value is MyTracerCoreExportV1 {
+function validateCompleteExportVersion(value: unknown, expectedVersion: 1 | 2): void {
   const document = record(value, 'Export document')
   assertKeys(
     document,
@@ -178,7 +185,7 @@ export function validateCompleteExport(value: unknown): asserts value is MyTrace
     ['appVersion']
   )
   assert(document.format === COMPLETE_EXPORT_FORMAT, 'Export format is invalid.')
-  assert(document.exportVersion === COMPLETE_EXPORT_VERSION, 'Export version is invalid.')
+  assert(document.exportVersion === expectedVersion, 'Export version is invalid.')
   assert(
     Number.isInteger(document.sourceDataVersion) && Number(document.sourceDataVersion) > 0,
     'Source data version is invalid.'
@@ -250,6 +257,13 @@ export function validateCompleteExport(value: unknown): asserts value is MyTrace
       scheduleDays.length,
     'Routine schedule days contain duplicates.'
   )
+  if (expectedVersion === 2) {
+    assert(
+      new Set(reviews.map((item) => item.periodStartedOn)).size === reviews.length,
+      'Review results contain duplicate periods.'
+    )
+    assert(Number(document.sourceDataVersion) >= 3, 'Export v2 requires source data version 3.')
+  }
   assert(
     new Set(selections.map((item) => `${item.actionId}|${item.selectedFor}`)).size ===
       selections.length,
@@ -456,20 +470,36 @@ export function validateCompleteExport(value: unknown): asserts value is MyTrace
   for (const review of reviews) {
     assertKeys(
       review,
-      [
-        'id',
-        'periodStartedOn',
-        'summary',
-        'adjustment',
-        'nextFocus',
-        'goalId',
-        'createdAt',
-        'updatedAt'
-      ],
+      expectedVersion === 1
+        ? [
+            'id',
+            'periodStartedOn',
+            'summary',
+            'adjustment',
+            'nextFocus',
+            'goalId',
+            'createdAt',
+            'updatedAt'
+          ]
+        : [
+            'id',
+            'periodStartedOn',
+            'confirmedProgress',
+            'mainObstacle',
+            'nextAdjustment',
+            'goalId',
+            'createdAt',
+            'updatedAt'
+          ],
       'Review result'
     )
+    const textFields =
+      expectedVersion === 1
+        ? [review.summary, review.adjustment, review.nextFocus]
+        : [review.confirmedProgress, review.mainObstacle, review.nextAdjustment]
     assert(
       validLocalDate(review.periodStartedOn) &&
+        textFields.every((text) => typeof text === 'string' && text.trim().length > 0) &&
         (review.goalId === null || goalIds.has(String(review.goalId))) &&
         validInstant(review.createdAt) &&
         validInstant(review.updatedAt),
@@ -478,12 +508,31 @@ export function validateCompleteExport(value: unknown): asserts value is MyTrace
   }
 }
 
+export function validateCompleteExportV1(value: unknown): asserts value is MyTracerCoreExportV1 {
+  validateCompleteExportVersion(value, COMPLETE_EXPORT_VERSION_V1)
+}
+
+export function validateCompleteExport(
+  value: unknown
+): asserts value is MyTracerCoreExportV1 | MyTracerCoreExportV2 {
+  const document = record(value, 'Export document')
+  if (document.exportVersion === COMPLETE_EXPORT_VERSION_V1) {
+    validateCompleteExportV1(value)
+    return
+  }
+  if (document.exportVersion === COMPLETE_EXPORT_VERSION) {
+    validateCompleteExportVersion(value, COMPLETE_EXPORT_VERSION)
+    return
+  }
+  throw new CompleteExportApplicationError('export-validation-failed', 'Export version is invalid.')
+}
+
 export function buildCompleteExport(
   snapshot: CompleteCorePersistenceSnapshot,
   clock: Pick<ClockPort, 'snapshot'>
-): MyTracerCoreExportV1 {
+): MyTracerCoreExportV2 {
   const now = clock.snapshot()
-  const document: MyTracerCoreExportV1 = Object.freeze({
+  const document: MyTracerCoreExportV2 = Object.freeze({
     format: COMPLETE_EXPORT_FORMAT,
     exportVersion: COMPLETE_EXPORT_VERSION,
     sourceDataVersion: snapshot.sourceDataVersion,
@@ -511,11 +560,11 @@ export class CompleteExportService {
         readonly kind: 'exported'
         readonly fileName: string
         readonly byteLength: number
-        readonly exportVersion: 1
+        readonly exportVersion: 2
         readonly exportedAt: string
       }
   > {
-    let document: MyTracerCoreExportV1
+    let document: MyTracerCoreExportV2
     const clockSnapshot = this.dependencies.clock.snapshot()
     try {
       document = buildCompleteExport(
@@ -529,7 +578,7 @@ export class CompleteExportService {
         'Could not read a complete export snapshot.'
       )
     }
-    const suggestedName = `mytracer-export-${String(clockSnapshot.localDate)}-v1.json`
+    const suggestedName = `mytracer-export-${String(clockSnapshot.localDate)}-v2.json`
     try {
       const result = await this.dependencies.exportPort.deliverCompleteExport(
         document,
