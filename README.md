@@ -25,6 +25,8 @@ MyTracer 是一个面向个人本地使用的 Windows 桌面应用，用于帮�
 - T032 已完成十集合一致性快照、`exportVersion=1` UTF-8 JSON、结构/枚举/引用校验、Main-only 目标和原子文件交付；PR #27 已合入 `dev`。
 - T033 已证明 AI disabled、not-configured、failure 时 CRUD、Progress、删除、导出和重开继续可用；PR #28 已合入 `dev`，项目所有者于 2026-08-22 报告完整人工 AC-07 通过。
 - T803 已完成 T031～T033 的同 revision 聚合验收与归档；PR #29 合入 `dev@eec093924ae061876805c657742283097824df2c`，里程碑 PR #30 合入 `main@75e51b4e63f8c9df960cccb444515b9e89be5fbd`，并发布 `v0.1.0-beta.1` prerelease。
+- T041～T052 已进入 `dev@84b596e12e54db098857004497a4d1964dcdc23c`，形成完整 Recovery/Review 纵向路径：Recovery 只读解释事实，所有恢复操作经用户确认且不改写历史；Review 只汇总事实并保存三项用户输入，五种 Routine 语义保持分离。schema v3、严格 export v2/v1、重开、原子更新及项目所有者完整人工 AC-05/06 均已验证。
+- T806 正在 PR #43 完成 S4/S5 聚合证据与合同归档；固定产品 source 不因后续测试/文档 revision 改变。final-head hosted CI、Ready、合入 `dev` 和 main 晋升仍需独立 Gate。
 
 不要把架构完成理解为产品已经实现。
 
@@ -77,13 +79,6 @@ Electron Main
 - [`docs/implementation/TASK_TEMPLATE.md`](docs/implementation/TASK_TEMPLATE.md)：单个任务合同模板。
 - [`docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md`](docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md)：验证和人工验收证据。
 - [`docs/implementation/GITHUB_WORKFLOW_V0.1.md`](docs/implementation/GITHUB_WORKFLOW_V0.1.md)：分支、worktree、PR、CI、合并和发布权限。
-
-### 项目所有者与用户阅读
-
-- [`user/MYTRACER_V0.1_DEVELOPMENT_PROCESS.md`](user/MYTRACER_V0.1_DEVELOPMENT_PROCESS.md)：项目所有者视角的开发流程说明。
-- [`user/MYTRACER_V0.1_USER_GUIDE.md`](user/MYTRACER_V0.1_USER_GUIDE.md)：v0.1 预期使用方式。
-
-`user/` 中的文件是方便人阅读的说明，不是 Agent 或工程实现的规范性依赖。
 
 ## 开发和验证命令
 
@@ -140,8 +135,8 @@ task/Txxx-short-name
 
 ## 后续入口
 
-1. 产品任务实时状态以任务索引为准；T041 等后续任务仍须独立合同和项目所有者启动授权。
+1. 产品任务实时状态以任务索引为准；T041/T042 已提供完整 Recovery candidate，T051/T052 已提供完整 Review candidate。任务完成不自动授权 S4/S5 stage gate、PR Ready/merge 或下一任务。
 2. `standard-task@1`、项目生命周期 Skills、PR/CI Gate 与长任务等待策略已经接入；具体任务仍须独立合同和项目所有者授权，Worktree cleanup 仍未实现。
 3. Agent 仍不得从任务完成推定 Ready、merge、tag 或 release 权限。
 
-T011～T014 已覆盖 S1 与完整 AC-01；T021～T023 已覆盖 S2 与完整 AC-03/AC-04；T031～T033/T803 已覆盖 S3 数据控制、版本化完整导出、AI 三态数据独立性和完整人工 AC-07。当前 beta 不实现自动导入/恢复、Provider、S4～S7、AC-02/05/06 或 G4 Demo。
+T011～T014 已覆盖 S1 与完整 AC-01；T021～T023 已覆盖 S2 与完整 AC-03/AC-04；T031～T033/T803 已覆盖 S3 数据控制、版本化完整导出、AI 三态数据独立性和完整人工 AC-07；T041/T042 已形成完整 AC-05 与 S4 acceptance candidate；T051/T052 已形成完整人工 AC-06 与 S5 acceptance candidate。当前已发布 beta 仍不包含这些尚未合入/发布的 S4/S5 candidate，也不包含自动导入/恢复、Provider、S4/S5 stage acceptance、S6～S7、AC-02 或 G4 Demo。

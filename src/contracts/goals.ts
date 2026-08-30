@@ -5,6 +5,7 @@ export const GOAL_CHANNELS = Object.freeze({
   resume: 'goals:resume',
   end: 'goals:end',
   setCurrentNextAction: 'goals:set-current-next-action',
+  createAndSetCurrentNextAction: 'goals:create-and-set-current-next-action',
   list: 'goals:list',
   getDetail: 'goals:get-detail'
 } as const)
@@ -73,6 +74,12 @@ export interface SetGoalCurrentNextActionInputDto {
   readonly actionId: string | null
 }
 
+export interface CreateAndSetGoalCurrentNextActionInputDto {
+  readonly goalId: string
+  readonly title: string
+  readonly description?: string | null
+}
+
 export interface ListGoalsInputDto {
   readonly status?: GoalStatusDto | null
 }
@@ -96,6 +103,9 @@ export interface GoalApi {
   readonly setCurrentNextAction: (
     input: SetGoalCurrentNextActionInputDto
   ) => Promise<GoalResult<GoalSummaryDto>>
+  readonly createAndSetCurrentNextAction: (
+    input: CreateAndSetGoalCurrentNextActionInputDto
+  ) => Promise<GoalResult<GoalDetailDto>>
   readonly list: (input: ListGoalsInputDto) => Promise<GoalResult<readonly GoalSummaryDto[]>>
   readonly getDetail: (input: GoalIdInputDto) => Promise<GoalResult<GoalDetailDto>>
 }

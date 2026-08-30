@@ -1,6 +1,6 @@
 ## Task
 
-<!-- Required before Ready: Txxx -->
+<!-- Required before Ready: Txxx for a task PR, or explicit stage/milestone context otherwise. -->
 
 ## Summary
 

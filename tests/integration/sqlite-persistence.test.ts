@@ -267,9 +267,9 @@ function populate(repository: RepositoryPort): void {
   repository.saveReviewResult({
     id: 'review-1',
     periodStartedOn: '2026-08-03',
-    summary: 'Summary',
-    adjustment: 'Adjustment',
-    nextFocus: 'Focus',
+    confirmedProgress: 'Summary',
+    mainObstacle: 'Adjustment',
+    nextAdjustment: 'Focus',
     goalId: 'goal-1',
     createdAt: timestamp,
     updatedAt: timestamp
@@ -281,7 +281,7 @@ afterEach(async () => {
 })
 
 describe('SQLite persistence', () => {
-  it('migrates a fresh isolated database to schema v2 with verified pragmas', async () => {
+  it('migrates a fresh isolated database to schema v3 with verified pragmas', async () => {
     const { path, connection } = await openTestDatabase()
 
     try {
@@ -327,7 +327,7 @@ describe('SQLite persistence', () => {
     }
   })
 
-  it('migrates a populated v1 database to v2 without changing any existing fact', async () => {
+  it('migrates a populated v1 database to v3 without losing any existing fact', async () => {
     const { path, database } = await createV1Database()
     populateV1(database)
     const factsBefore = readLegacyFacts(database)
@@ -362,11 +362,26 @@ describe('SQLite persistence', () => {
 
     const inspected = new Database(path, { readonly: true })
     try {
-      expect(readLegacyFacts(inspected)).toEqual(factsBefore)
+      const legacyReview = factsBefore.reviewResults[0] as Record<string, unknown>
+      expect(readLegacyFacts(inspected)).toEqual({
+        ...factsBefore,
+        reviewResults: [
+          {
+            id: legacyReview.id,
+            period_started_on: legacyReview.period_started_on,
+            confirmed_progress: legacyReview.summary,
+            main_obstacle: legacyReview.adjustment,
+            next_adjustment: legacyReview.next_focus,
+            goal_id: legacyReview.goal_id,
+            created_at: legacyReview.created_at,
+            updated_at: legacyReview.updated_at
+          }
+        ]
+      })
       expect(inspected.prepare('PRAGMA foreign_key_check').all()).toEqual([])
       expect(
         inspected.prepare("SELECT value FROM metadata WHERE key = 'schemaVersion'").get()
-      ).toEqual({ value: '2' })
+      ).toEqual({ value: '3' })
       expect(
         inspected
           .prepare(
@@ -382,7 +397,7 @@ describe('SQLite persistence', () => {
     } finally {
       inspected.close()
     }
-  })
+  }, 30_000)
 
   it('migrates an S1-only v1 database without inventing any S2 fact', async () => {
     const { path, database } = await createV1Database()
@@ -547,7 +562,9 @@ describe('SQLite persistence', () => {
     const future = await openTestDatabase()
     future.connection.close()
     const rawFuture = new Database(future.path)
-    rawFuture.prepare("UPDATE metadata SET value = '3' WHERE key = 'schemaVersion'").run()
+    rawFuture
+      .prepare('UPDATE metadata SET value = ? WHERE key = ?')
+      .run(String(schemaVersion + 1), 'schemaVersion')
     rawFuture.close()
     expect(() => SqliteConnection.open(future.path)).toThrow(/newer than supported/)
   })

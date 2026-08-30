@@ -5,6 +5,7 @@ import type {
   GoalStatusDto,
   GoalSummaryDto
 } from '../../../../contracts/goals'
+import { RecoveryPanel } from './RecoveryPanel'
 
 const goalStatusText: Record<GoalStatusDto, string> = {
   active: '活跃',
@@ -39,6 +40,7 @@ function GoalWorkspace(): ReactNode {
   const [editDescription, setEditDescription] = useState('')
   const [selectedActionId, setSelectedActionId] = useState('')
   const [pendingGoalEnd, setPendingGoalEnd] = useState<PendingGoalEnd | null>(null)
+  const [recoveryGoalId, setRecoveryGoalId] = useState<string | null>(null)
   const goalEndTriggerRef = useRef<HTMLButtonElement | null>(null)
 
   useEffect(() => {
@@ -63,6 +65,7 @@ function GoalWorkspace(): ReactNode {
     setEditDescription(nextDetail.description ?? '')
     setSelectedActionId(nextDetail.currentNextActionId ?? '')
     setPendingGoalEnd(null)
+    setRecoveryGoalId(null)
   }
 
   const selectGoal = async (goalId: string): Promise<void> => {
@@ -80,6 +83,21 @@ function GoalWorkspace(): ReactNode {
   const reloadDetail = async (goalId: string): Promise<void> => {
     await selectGoal(goalId)
     setRefreshVersion((version) => version + 1)
+  }
+
+  const refreshAfterRecoveryMutation = async (): Promise<void> => {
+    if (!detail) return
+    const result = await window.myTracer.goals.getDetail({ goalId: detail.id })
+    if (result.ok) {
+      setDetail(result.value)
+      setEditName(result.value.name)
+      setEditDescription(result.value.description ?? '')
+      setSelectedActionId(result.value.currentNextActionId ?? '')
+      setRefreshVersion((version) => version + 1)
+      setError(null)
+    } else {
+      setError(goalErrorText[result.error.code])
+    }
   }
 
   const submitCreate = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
@@ -266,7 +284,13 @@ function GoalWorkspace(): ReactNode {
         </div>
 
         <div className="goal-column">
-          {detail ? (
+          {detail && recoveryGoalId ? (
+            <RecoveryPanel
+              goalId={recoveryGoalId}
+              onClose={() => setRecoveryGoalId(null)}
+              onMutation={refreshAfterRecoveryMutation}
+            />
+          ) : detail ? (
             <article className="goal-card goal-detail" aria-label={`${detail.name} 详情`}>
               <div className="detail-title-row">
                 <div>
@@ -282,6 +306,13 @@ function GoalWorkspace(): ReactNode {
                 <strong>{detail.currentNextAction?.title ?? '暂未设置'}</strong>
                 {detail.currentNextAction?.selectedForToday ? <small>今日已选择</small> : null}
               </div>
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={() => setRecoveryGoalId(detail.id)}
+              >
+                查看 Recovery
+              </button>
 
               <form className="detail-form" onSubmit={(event) => void submitUpdate(event)}>
                 <label>

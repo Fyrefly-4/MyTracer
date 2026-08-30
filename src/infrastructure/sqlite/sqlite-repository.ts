@@ -13,6 +13,8 @@ import type {
   ProgressQueryFilterPersistence,
   ProgressQueryRowPersistenceRecord,
   ProgressQuerySnapshotPersistence,
+  RecoveryQuerySnapshotPersistence,
+  ReviewQuerySnapshotPersistence,
   ReviewResultPersistenceRecord,
   RoutinePersistenceRecord,
   RoutineRecordPersistenceRecord,
@@ -196,13 +198,21 @@ export class SqliteRepository
   saveReviewResult(record: ReviewResultPersistenceRecord): void {
     this.database
       .prepare(
-        `INSERT INTO review_results (id, period_started_on, summary, adjustment, next_focus, goal_id, created_at, updated_at)
-         VALUES (@id, @periodStartedOn, @summary, @adjustment, @nextFocus, @goalId, @createdAt, @updatedAt)
-         ON CONFLICT(id) DO UPDATE SET period_started_on = excluded.period_started_on,
-           summary = excluded.summary, adjustment = excluded.adjustment, next_focus = excluded.next_focus,
+        `INSERT INTO review_results (id, period_started_on, confirmed_progress, main_obstacle, next_adjustment, goal_id, created_at, updated_at)
+         VALUES (@id, @periodStartedOn, @confirmedProgress, @mainObstacle, @nextAdjustment, @goalId, @createdAt, @updatedAt)
+         ON CONFLICT(period_started_on) DO UPDATE SET
+           confirmed_progress = excluded.confirmed_progress, main_obstacle = excluded.main_obstacle,
+           next_adjustment = excluded.next_adjustment,
            goal_id = excluded.goal_id, updated_at = excluded.updated_at`
       )
       .run(record)
+  }
+
+  findReviewResultByPeriodStartedOn(periodStartedOn: string): ReviewResultPersistenceRecord | null {
+    const row = this.database
+      .prepare('SELECT * FROM review_results WHERE period_started_on = ?')
+      .get(periodStartedOn) as Row | undefined
+    return row ? this.reviewResultFromRow(row) : null
   }
 
   findGoalById(id: string): GoalPersistenceRecord | null {
@@ -434,6 +444,40 @@ export class SqliteRepository
       Object.freeze({
         actionRows: this.queryActionProgressRows(filter),
         routineRecords: this.queryRoutineProgressRecords(filter)
+      })
+    )()
+  }
+
+  queryRecoverySnapshot(goalId: string): RecoveryQuerySnapshotPersistence {
+    return this.database.transaction(() => {
+      const goal = this.findGoalById(goalId)
+      return Object.freeze({
+        goal,
+        actions: goal ? this.listActionsByGoalId(goalId) : Object.freeze([]),
+        progress: Object.freeze({
+          actionRows: this.queryActionProgressRows({ goalId, from: null, through: null }),
+          routineRecords: this.queryRoutineProgressRecords({ goalId, from: null, through: null })
+        })
+      })
+    })()
+  }
+
+  queryReviewSummarySnapshot(
+    periodStartedOn: string,
+    periodEndedOn: string
+  ): ReviewQuerySnapshotPersistence {
+    return this.database.transaction(() =>
+      Object.freeze({
+        actionRows: this.queryActionProgressRows({
+          goalId: null,
+          from: periodStartedOn,
+          through: periodEndedOn
+        }),
+        routineRecords: this.queryRoutineProgressRecords({
+          goalId: null,
+          from: periodStartedOn,
+          through: periodEndedOn
+        })
       })
     )()
   }
@@ -767,16 +811,7 @@ export class SqliteRepository
         updatedAt: asString(row, 'updated_at')
       })),
       reviewResults: this.rows('SELECT * FROM review_results ORDER BY period_started_on, id').map(
-        (row) => ({
-          id: asString(row, 'id'),
-          periodStartedOn: asString(row, 'period_started_on'),
-          summary: asString(row, 'summary'),
-          adjustment: asString(row, 'adjustment'),
-          nextFocus: asString(row, 'next_focus'),
-          goalId: asNullableString(row, 'goal_id'),
-          createdAt: asString(row, 'created_at'),
-          updatedAt: asString(row, 'updated_at')
-        })
+        (row) => this.reviewResultFromRow(row)
       )
     }
   }
@@ -828,6 +863,19 @@ export class SqliteRepository
       status: asString(row, 'status') as ConfusionPersistenceRecord['status'],
       resolvedAt: asNullableString(row, 'resolved_at'),
       resolution: asNullableString(row, 'resolution'),
+      createdAt: asString(row, 'created_at'),
+      updatedAt: asString(row, 'updated_at')
+    }
+  }
+
+  private reviewResultFromRow(row: Row): ReviewResultPersistenceRecord {
+    return {
+      id: asString(row, 'id'),
+      periodStartedOn: asString(row, 'period_started_on'),
+      confirmedProgress: asString(row, 'confirmed_progress'),
+      mainObstacle: asString(row, 'main_obstacle'),
+      nextAdjustment: asString(row, 'next_adjustment'),
+      goalId: asNullableString(row, 'goal_id'),
       createdAt: asString(row, 'created_at'),
       updatedAt: asString(row, 'updated_at')
     }

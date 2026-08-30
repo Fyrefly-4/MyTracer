@@ -207,4 +207,61 @@ describe('Goal SQLite integration', () => {
     ).toThrowError(expect.objectContaining({ code: 'invariant-violation' }))
     connection.close()
   })
+
+  it('commits create-and-set as one SQLite transaction without selecting Today and survives reopen', async () => {
+    const { path, connection } = await openDatabase()
+    const service = serviceFor(connection, ['goal-1', 'action-1'])
+    const goal = service.createGoal({ name: 'Restart Goal' })
+
+    expect(
+      service.createAndSetGoalCurrentNextAction({ goalId: goal.id, title: 'One small action' })
+    ).toMatchObject({
+      currentNextActionId: 'action-1',
+      currentNextAction: { id: 'action-1', status: 'pending', selectedForToday: false }
+    })
+    expect(connection.repository.readSnapshot().todaySelections).toEqual([])
+    connection.close()
+
+    const reopened = SqliteConnection.open(path)
+    try {
+      expect(serviceFor(reopened, []).getGoalDetail(goal.id)).toMatchObject({
+        currentNextActionId: 'action-1',
+        currentNextAction: { id: 'action-1', status: 'pending' }
+      })
+      expect(reopened.repository.readSnapshot().todaySelections).toEqual([])
+    } finally {
+      reopened.close()
+    }
+  })
+
+  it('rolls back the new Action when the Goal current-next write fails', async () => {
+    const { connection } = await openDatabase()
+    const setupService = serviceFor(connection, ['goal-1'])
+    const goal = setupService.createGoal({ name: 'Rollback Goal' })
+    const before = structuredClone(connection.repository.readSnapshot())
+    const failingUnitOfWork: UnitOfWorkPort = {
+      transaction: <T>(work: (repository: RepositoryPort) => T): T =>
+        connection.transaction((repository) => {
+          const failingRepository = new Proxy(repository, {
+            get(target, property, receiver) {
+              if (property === 'saveGoal') {
+                return () => {
+                  throw new Error('injected current-next write failure')
+                }
+              }
+              const value = Reflect.get(target, property, receiver) as unknown
+              return typeof value === 'function' ? value.bind(target) : value
+            }
+          })
+          return work(failingRepository)
+        })
+    }
+    const service = serviceFor(connection, ['action-failed'], failingUnitOfWork)
+
+    expect(() =>
+      service.createAndSetGoalCurrentNextAction({ goalId: goal.id, title: 'Rollback Action' })
+    ).toThrow(/injected current-next write failure/)
+    expect(connection.repository.readSnapshot()).toEqual(before)
+    connection.close()
+  })
 })

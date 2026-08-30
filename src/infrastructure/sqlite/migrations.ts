@@ -1,8 +1,9 @@
 import type Database from 'better-sqlite3'
 import initialSchema from './migrations/001_initial.sql?raw'
 import routineRecordPlannedForDateBasis from './migrations/002_add_routine_record_planned_for_date_basis.sql?raw'
+import reviewResultsV3 from './migrations/003_review_results_v3.sql?raw'
 
-export const schemaVersion = 2
+export const schemaVersion = 3
 
 interface Migration {
   readonly version: number
@@ -16,8 +17,31 @@ const migrations: readonly Migration[] = [
     version: 2,
     name: '002_add_routine_record_planned_for_date_basis',
     sql: routineRecordPlannedForDateBasis
-  }
+  },
+  { version: 3, name: '003_review_results_v3', sql: reviewResultsV3 }
 ]
+
+function assertReviewResultsV2CanMigrate(database: Database.Database): void {
+  const duplicate = database
+    .prepare(
+      `SELECT period_started_on FROM review_results
+       GROUP BY period_started_on HAVING COUNT(*) > 1 LIMIT 1`
+    )
+    .get()
+  if (duplicate) {
+    throw new Error('SQLite review_results migration stopped because a period is duplicated.')
+  }
+  const blank = database
+    .prepare(
+      `SELECT 1 FROM review_results
+       WHERE length(trim(summary)) = 0 OR length(trim(adjustment)) = 0 OR length(trim(next_focus)) = 0
+       LIMIT 1`
+    )
+    .get()
+  if (blank) {
+    throw new Error('SQLite review_results migration stopped because legacy text is blank.')
+  }
+}
 
 function assertMigrationManifest(): void {
   for (const [index, migration] of migrations.entries()) {
@@ -82,6 +106,7 @@ export function migrateToCurrentSchema(database: Database.Database): void {
     }
 
     database.transaction(() => {
+      if (migration.version === 3) assertReviewResultsV2CanMigrate(database)
       database.exec(migration.sql)
       database
         .prepare(

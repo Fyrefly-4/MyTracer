@@ -97,9 +97,9 @@ export interface ConfusionPersistenceRecord {
 export interface ReviewResultPersistenceRecord {
   readonly id: string
   readonly periodStartedOn: string
-  readonly summary: string
-  readonly adjustment: string
-  readonly nextFocus: string
+  readonly confirmedProgress: string
+  readonly mainObstacle: string
+  readonly nextAdjustment: string
   readonly goalId: string | null
   readonly createdAt: string
   readonly updatedAt: string
@@ -157,6 +157,14 @@ export interface ProgressQuerySnapshotPersistence {
   readonly actionRows: readonly ProgressQueryRowPersistenceRecord[]
   readonly routineRecords: readonly RoutineProgressQueryRecordPersistence[]
 }
+
+export interface RecoveryQuerySnapshotPersistence {
+  readonly goal: GoalPersistenceRecord | null
+  readonly actions: readonly ActionPersistenceRecord[]
+  readonly progress: ProgressQuerySnapshotPersistence
+}
+
+export type ReviewQuerySnapshotPersistence = ProgressQuerySnapshotPersistence
 
 export interface CorePersistenceSnapshot {
   readonly goals: readonly GoalPersistenceRecord[]
@@ -245,6 +253,18 @@ export interface ProgressRepositoryPort extends RepositoryPort {
   queryProgressSnapshot(filter: ProgressQueryFilterPersistence): ProgressQuerySnapshotPersistence
 }
 
+export interface RecoveryRepositoryPort extends RepositoryPort {
+  queryRecoverySnapshot(goalId: string): RecoveryQuerySnapshotPersistence
+}
+
+export interface ReviewRepositoryPort extends RepositoryPort {
+  findReviewResultByPeriodStartedOn(periodStartedOn: string): ReviewResultPersistenceRecord | null
+  queryReviewSummarySnapshot(
+    periodStartedOn: string,
+    periodEndedOn: string
+  ): ReviewQuerySnapshotPersistence
+}
+
 export interface RoutineRepositoryPort extends RepositoryPort {
   findRoutineById(id: string): RoutinePersistenceRecord | null
   listRoutines(status?: RoutineStatus): readonly RoutinePersistenceRecord[]
@@ -313,6 +333,22 @@ export function asProgressRepository(repository: RepositoryPort): ProgressReposi
     throw new TypeError('Repository does not provide the Progress query contract.')
   }
   return repository as ProgressRepositoryPort
+}
+
+export function asRecoveryRepository(repository: RepositoryPort): RecoveryRepositoryPort {
+  const candidate = repository as Partial<RecoveryRepositoryPort>
+  if (typeof candidate.queryRecoverySnapshot !== 'function') {
+    throw new TypeError('Repository does not provide the Recovery query contract.')
+  }
+  return repository as RecoveryRepositoryPort
+}
+
+export function asReviewRepository(repository: RepositoryPort): ReviewRepositoryPort {
+  const candidate = repository as Partial<ReviewRepositoryPort>
+  if (typeof candidate.queryReviewSummarySnapshot !== 'function') {
+    throw new TypeError('Repository does not provide the Review summary query contract.')
+  }
+  return repository as ReviewRepositoryPort
 }
 
 export function asRoutineRecordRepository(repository: RepositoryPort): RoutineRecordRepositoryPort {

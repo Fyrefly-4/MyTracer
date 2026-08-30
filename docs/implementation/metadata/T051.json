@@ -1,0 +1,132 @@
+{
+  "schemaVersion": 1,
+  "task": "T051",
+  "task_kind": "implementation",
+  "dependencies": {
+    "requires": ["T014", "T022", "T033"],
+    "blocks": ["T052"],
+    "can_parallel": [],
+    "prefer_after": ["T042"],
+    "conflicts_with": ["T041", "T042"]
+  },
+  "conflict_basis": {
+    "T041": "The approved S4/S5 design requires serial integration because T041 and T051 both extend repository snapshot ports, SQLite fact selection, Main composition, Preload API shape, and Electron security tests; T051 may start only from a dev revision that already integrates T041.",
+    "T042": "The approved S4/S5 design places the S4 owner gate before T051 and both tasks overlap Main/Preload API shape, Renderer feature boundaries, shell tests, and the aggregate AC-05/AC-06 path; T051 may start only after the owner explicitly permits S5 entry from the integrated T042 baseline."
+  },
+  "shared_surfaces": [
+    {
+      "files": [
+        "src/domain/review.ts",
+        "src/application/review.ts",
+        "src/application/progress.ts",
+        "src/application/ports/persistence.ts",
+        "src/contracts/review.ts",
+        "src/contracts/shell.ts",
+        "src/infrastructure/sqlite/sqlite-repository.ts",
+        "src/main/review-contexts.ts",
+        "src/main/review-ipc.ts",
+        "src/main/index.ts",
+        "src/preload/index.ts"
+      ],
+      "modules": [
+        "monday-through-sunday-local-date-boundary",
+        "review-summary-pure-builder",
+        "progress-fact-mapping-and-formula-reuse",
+        "review-consistent-read-only-snapshot",
+        "sender-bound-review-context",
+        "main-preload-review-api-shape"
+      ],
+      "schema_tables": ["action_records", "routine_records", "understandings", "confusions"],
+      "ipc_contracts": [
+        "window.myTracer.review.begin",
+        "window.myTracer.review.getSummary",
+        "window.myTracer.review.cancel"
+      ],
+      "domain_invariants": [
+        "review-period-is-the-main-clock-current-week-from-monday-through-sunday-with-inclusive-local-date-endpoints",
+        "review-summary-uses-the-same-fact-formulas-as-progress-for-the-same-filter",
+        "target-met-acted-intentional-rest-and-not-done-remain-separate",
+        "missing-routine-records-remain-unknown-and-are-not-persisted-or-counted-as-not-done",
+        "review-query-and-context-lifecycle-write-no-business-data-or-statistics",
+        "review-snapshot-is-read-consistently-in-one-sqlite-transaction",
+        "renderer-does-not-submit-trusted-periods-statistics-or-routine-outcomes",
+        "renderer-remains-ui-only"
+      ],
+      "risk": "high",
+      "integration_policy": "serial"
+    },
+    {
+      "files": [
+        "src/renderer/src/features/review/ReviewPage.tsx",
+        "src/renderer/src/styles.css",
+        "tests/unit/review-domain.test.ts",
+        "tests/unit/review-application.test.ts",
+        "tests/unit/review-contexts.test.ts",
+        "tests/unit/progress-application.test.ts",
+        "tests/integration/review-sqlite.test.ts",
+        "tests/integration/review-ipc.test.ts",
+        "tests/integration/main-foundations.test.ts",
+        "tests/e2e/review-summary.e2e.test.ts",
+        "tests/e2e/progress-core-loop.e2e.test.ts",
+        "tests/e2e/shell.e2e.test.ts"
+      ],
+      "modules": [
+        "review-read-only-summary-feature",
+        "review-period-title-and-neutral-empty-error-states",
+        "progress-review-same-filter-cross-assertion",
+        "ac06-step-one-electron-e2e",
+        "electron-api-shape-and-sender-security"
+      ],
+      "schema_tables": [],
+      "ipc_contracts": ["review:begin", "review:get-summary", "review:cancel-context"],
+      "domain_invariants": [
+        "review-is-entered-explicitly-and-does-not-add-reminders",
+        "the-captured-period-does-not-move-silently-across-a-week-boundary",
+        "empty-state-does-not-infer-failure-from-missing-records",
+        "review-does-not-display-trends-scores-mastery-completion-rates-streaks-or-ai-plans",
+        "tests-use-fake-clock-and-unique-temporary-data-roots",
+        "t051-proves-only-ac06-step-one-and-does-not-implement-review-result-inputs"
+      ],
+      "risk": "medium",
+      "integration_policy": "serial"
+    },
+    {
+      "files": [
+        "docs/implementation/archive/S4_S5_T041_T052_ARCHIVE.md",
+        "docs/implementation/metadata/T051.json",
+        "docs/implementation/TASK_INDEX_V0.1.md",
+        "docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md"
+      ],
+      "modules": [
+        "task-contract",
+        "task-metadata",
+        "automation-profile-activation",
+        "delivery-evidence"
+      ],
+      "schema_tables": [],
+      "ipc_contracts": [],
+      "domain_invariants": [
+        "the-owner-approved-contract-activates-only-t051",
+        "owner-authorized-s5-entry-does-not-replace-task-contract-approval",
+        "profile-activation-must-match-the-contract-sidecar-and-task-index",
+        "evidence-is-bound-to-real-results-and-exact-revisions",
+        "manual-ac06-remains-pending-until-owner-performed",
+        "docs-closeout-requires-owner-approval",
+        "t051-does-not-automatically-start-t052"
+      ],
+      "risk": "medium",
+      "integration_policy": "serial"
+    }
+  ],
+  "external": [
+    "github-t051-task-branch",
+    "github-t051-draft-pr-to-dev",
+    "github-actions-t051-validation"
+  ],
+  "execution": {
+    "profile": "standard-task@1",
+    "activated_at": "2026-08-29T23:16:42+08:00",
+    "valid_until": "2026-09-28T23:16:42+08:00",
+    "additional_constraints": []
+  }
+}

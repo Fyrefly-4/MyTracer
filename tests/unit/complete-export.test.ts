@@ -6,7 +6,8 @@ import {
   CompleteExportApplicationError,
   CompleteExportService,
   buildCompleteExport,
-  validateCompleteExport
+  validateCompleteExport,
+  validateCompleteExportV1
 } from '../../src/application/complete-export'
 import type { CompleteCorePersistenceSnapshot } from '../../src/application/ports/persistence'
 import { createLocalDate } from '../../src/domain/local-date'
@@ -14,7 +15,7 @@ import { FakeClock } from '../support/fake-clock'
 
 const instant = '2026-08-20T08:00:00.000Z'
 const emptySnapshot: CompleteCorePersistenceSnapshot = {
-  sourceDataVersion: 2,
+  sourceDataVersion: 3,
   coreSnapshot: {
     goals: [],
     actions: [],
@@ -30,13 +31,47 @@ const emptySnapshot: CompleteCorePersistenceSnapshot = {
 }
 
 describe('complete export application', () => {
-  it('builds the approved v1 envelope from one versioned snapshot and stable enums', () => {
+  it('strictly discriminates export v1 and v2 while preserving the historical v1 ReviewResult shape', () => {
+    const v2 = buildCompleteExport(
+      emptySnapshot,
+      new FakeClock({ instant, localDate: '2026-08-20', timeZone: 'Asia/Shanghai' })
+    )
+    const v1 = {
+      ...v2,
+      exportVersion: 1,
+      sourceDataVersion: 2,
+      data: {
+        ...v2.data,
+        reviewResults: [
+          {
+            id: 'legacy-review',
+            periodStartedOn: '2026-08-17',
+            summary: 'Progress',
+            adjustment: 'Obstacle',
+            nextFocus: 'Adjustment',
+            goalId: null,
+            createdAt: instant,
+            updatedAt: instant
+          }
+        ]
+      }
+    }
+    expect(() => validateCompleteExportV1(v1)).not.toThrow()
+    const parsed: unknown = v1
+    validateCompleteExportV1(parsed)
+    expect(parsed.data.reviewResults[0]?.summary).toBe('Progress')
+    expect(() => validateCompleteExport(v1)).not.toThrow()
+    expect(() => validateCompleteExport({ ...v1, exportVersion: 2 })).toThrow()
+    expect(() => validateCompleteExport({ ...v2, exportVersion: 1 })).not.toThrow()
+    expect(() => validateCompleteExport({ ...v2, exportVersion: 9 })).toThrow()
+  })
+  it('builds the approved v2 envelope from one versioned snapshot and stable enums', () => {
     const clock = new FakeClock({ instant, localDate: '2026-08-20', timeZone: 'Asia/Shanghai' })
     const document = buildCompleteExport(emptySnapshot, clock)
     expect(document).toMatchObject({
       format: COMPLETE_EXPORT_FORMAT,
       exportVersion: COMPLETE_EXPORT_VERSION,
-      sourceDataVersion: 2,
+      sourceDataVersion: 3,
       exportedAt: instant,
       localTimeZone: 'Asia/Shanghai',
       enumValues: COMPLETE_EXPORT_ENUM_VALUES
@@ -68,7 +103,7 @@ describe('complete export application', () => {
 
   it('accepts every persisted status and enum value without serializing unknown as a Routine record', () => {
     const snapshot: CompleteCorePersistenceSnapshot = {
-      sourceDataVersion: 2,
+      sourceDataVersion: 3,
       coreSnapshot: {
         goals: ['active', 'ended', 'paused'].map((status) => ({
           id: `goal-${status}`,
@@ -191,9 +226,9 @@ describe('complete export application', () => {
           {
             id: 'review-goal',
             periodStartedOn: '2026-08-17',
-            summary: 'Summary',
-            adjustment: 'Adjustment',
-            nextFocus: 'Focus',
+            confirmedProgress: 'Summary',
+            mainObstacle: 'Adjustment',
+            nextAdjustment: 'Focus',
             goalId: 'goal-active',
             createdAt: instant,
             updatedAt: instant
@@ -201,9 +236,9 @@ describe('complete export application', () => {
           {
             id: 'review-global',
             periodStartedOn: '2026-08-18',
-            summary: 'Summary',
-            adjustment: 'Adjustment',
-            nextFocus: 'Focus',
+            confirmedProgress: 'Summary',
+            mainObstacle: 'Adjustment',
+            nextAdjustment: 'Focus',
             goalId: null,
             createdAt: instant,
             updatedAt: instant

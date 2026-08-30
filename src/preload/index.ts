@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import {
   GOAL_CHANNELS,
+  type CreateAndSetGoalCurrentNextActionInputDto,
   type CreateGoalInputDto,
   type GoalDetailDto,
   type GoalIdInputDto,
@@ -87,6 +88,22 @@ import {
   type UpdateRoutineRecordInputDto
 } from '../contracts/data-control'
 import { EXPORT_CHANNELS, type CompleteExportResult } from '../contracts/exports'
+import {
+  RECOVERY_CHANNELS,
+  type GetRecoveryContextInputDto,
+  type RecoveryContextDto,
+  type RecoveryResult
+} from '../contracts/recovery'
+import {
+  REVIEW_CHANNELS,
+  type BeginReviewDto,
+  type BeginReviewInputDto,
+  type CompleteReviewInputDto,
+  type ReviewContextInputDto,
+  type ReviewResult,
+  type ReviewResultDto,
+  type ReviewSummaryDto
+} from '../contracts/review'
 
 const api: MyTracerApi = Object.freeze({
   shell: Object.freeze({
@@ -107,6 +124,10 @@ const api: MyTracerApi = Object.freeze({
       input: SetGoalCurrentNextActionInputDto
     ): Promise<GoalResult<GoalSummaryDto>> =>
       ipcRenderer.invoke(GOAL_CHANNELS.setCurrentNextAction, input),
+    createAndSetCurrentNextAction: (
+      input: CreateAndSetGoalCurrentNextActionInputDto
+    ): Promise<GoalResult<GoalDetailDto>> =>
+      ipcRenderer.invoke(GOAL_CHANNELS.createAndSetCurrentNextAction, input),
     list: (input: ListGoalsInputDto): Promise<GoalResult<readonly GoalSummaryDto[]>> =>
       ipcRenderer.invoke(GOAL_CHANNELS.list, input),
     getDetail: (input: GoalIdInputDto): Promise<GoalResult<GoalDetailDto>> =>
@@ -161,6 +182,22 @@ const api: MyTracerApi = Object.freeze({
   progress: Object.freeze({
     get: (input: GetProgressInputDto): Promise<ProgressResult<ProgressViewDto>> =>
       ipcRenderer.invoke(PROGRESS_CHANNELS.get, input)
+  }),
+  recovery: Object.freeze({
+    getContext: (input: GetRecoveryContextInputDto): Promise<RecoveryResult<RecoveryContextDto>> =>
+      ipcRenderer.invoke(RECOVERY_CHANNELS.getContext, input)
+  }),
+  review: Object.freeze({
+    begin: (input: BeginReviewInputDto): Promise<ReviewResult<BeginReviewDto>> =>
+      ipcRenderer.invoke(REVIEW_CHANNELS.begin, input),
+    getSummary: (input: ReviewContextInputDto): Promise<ReviewResult<ReviewSummaryDto>> =>
+      ipcRenderer.invoke(REVIEW_CHANNELS.getSummary, input),
+    getResult: (input: ReviewContextInputDto): Promise<ReviewResult<ReviewResultDto | null>> =>
+      ipcRenderer.invoke(REVIEW_CHANNELS.getResult, input),
+    complete: (input: CompleteReviewInputDto): Promise<ReviewResult<ReviewResultDto>> =>
+      ipcRenderer.invoke(REVIEW_CHANNELS.complete, input),
+    cancel: (input: ReviewContextInputDto): Promise<ReviewResult<{ readonly cancelled: true }>> =>
+      ipcRenderer.invoke(REVIEW_CHANNELS.cancel, input)
   }),
   routines: Object.freeze({
     create: (input: CreateRoutineInputDto): Promise<RoutineResult<RoutineDetailDto>> =>

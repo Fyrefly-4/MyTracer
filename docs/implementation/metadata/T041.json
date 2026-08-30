@@ -1,0 +1,116 @@
+{
+  "schemaVersion": 1,
+  "task": "T041",
+  "task_kind": "implementation",
+  "dependencies": {
+    "requires": ["T094"],
+    "blocks": ["T042"],
+    "can_parallel": [],
+    "prefer_after": [],
+    "conflicts_with": ["T051"]
+  },
+  "conflict_basis": {
+    "T051": "The approved S4/S5 design requires serial execution because T041 and T051 both extend Repository snapshot ports, SQLite fact selection, Main composition, Preload API, and Electron contract tests."
+  },
+  "shared_surfaces": [
+    {
+      "files": [
+        "src/domain/recovery.ts",
+        "src/application/recovery.ts",
+        "src/application/ports/persistence.ts",
+        "src/contracts/recovery.ts",
+        "src/contracts/shell.ts",
+        "src/infrastructure/sqlite/sqlite-repository.ts",
+        "src/main/recovery-ipc.ts",
+        "src/main/index.ts",
+        "src/preload/index.ts"
+      ],
+      "modules": [
+        "recovery-context-builder",
+        "get-recovery-context-query",
+        "goal-centered-consistent-snapshot",
+        "main-preload-recovery-api"
+      ],
+      "schema_tables": [
+        "goals",
+        "actions",
+        "routines",
+        "action_records",
+        "routine_records",
+        "understandings",
+        "confusions"
+      ],
+      "ipc_contracts": ["window.myTracer.recovery.getContext"],
+      "domain_invariants": [
+        "action-record-and-target-met-or-acted-routine-record-are-real-actions-even-at-zero-minutes",
+        "intentional-rest-not-done-and-unknown-do-not-refresh-last-real-action",
+        "missing-real-action-remains-null-without-entity-timestamp-fallback",
+        "recovery-query-is-read-only-and-does-not-create-missing-records",
+        "main-clock-and-local-date-own-days-since-calculation",
+        "renderer-remains-ui-only"
+      ],
+      "risk": "high",
+      "integration_policy": "serial"
+    },
+    {
+      "files": [
+        "src/renderer/src/features/goals/GoalsPage.tsx",
+        "src/renderer/src/features/goals/RecoveryPanel.tsx",
+        "src/renderer/src/styles.css",
+        "tests/unit/recovery-domain.test.ts",
+        "tests/unit/recovery-application.test.ts",
+        "tests/integration/recovery-sqlite.test.ts",
+        "tests/integration/recovery-ipc.test.ts",
+        "tests/integration/main-foundations.test.ts",
+        "tests/e2e/recovery-context.e2e.test.ts",
+        "tests/e2e/shell.e2e.test.ts"
+      ],
+      "modules": [
+        "goals-recovery-read-only-entry",
+        "recovery-layered-validation",
+        "electron-api-shape-and-security",
+        "ac05-steps-one-through-four"
+      ],
+      "schema_tables": [],
+      "ipc_contracts": ["recovery:get-context"],
+      "domain_invariants": [
+        "recovery-is-explicitly-entered-from-goals",
+        "recovery-ui-shows-neutral-facts-without-thresholds-or-pressure",
+        "t041-does-not-claim-complete-ac05-or-fr-p05",
+        "tests-use-fake-clock-and-unique-temporary-data-roots"
+      ],
+      "risk": "medium",
+      "integration_policy": "serial"
+    },
+    {
+      "files": [
+        "docs/implementation/archive/S4_S5_T041_T052_ARCHIVE.md",
+        "docs/implementation/metadata/T041.json",
+        "docs/implementation/TASK_INDEX_V0.1.md",
+        "docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md"
+      ],
+      "modules": ["task-contract", "task-metadata", "delivery-evidence"],
+      "schema_tables": [],
+      "ipc_contracts": [],
+      "domain_invariants": [
+        "owner-approved-activation-is-limited-to-t041",
+        "evidence-is-bound-to-real-results-and-exact-revisions",
+        "manual-acceptance-remains-owner-reported",
+        "docs-closeout-requires-owner-approval"
+      ],
+      "risk": "medium",
+      "integration_policy": "serial"
+    }
+  ],
+  "external": [
+    "github-t041-task-branch",
+    "github-t041-draft-pr-to-dev",
+    "github-actions-t041-validation"
+  ],
+  "execution": {
+    "profile": "standard-task@1",
+    "activated_at": "2026-08-28T12:05:32+08:00",
+    "valid_until": "2026-09-27T12:05:32+08:00",
+    "additional_constraints": []
+  }
+}

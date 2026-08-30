@@ -66,6 +66,8 @@ test('runs the Electron shell with an isolated userData root', async () => {
       'today',
       'records',
       'progress',
+      'recovery',
+      'review',
       'routines',
       'dataControl',
       'exports'
@@ -78,6 +80,7 @@ test('runs the Electron shell with an isolated userData root', async () => {
       'resume',
       'end',
       'setCurrentNextAction',
+      'createAndSetCurrentNextAction',
       'list',
       'getDetail'
     ])
@@ -119,6 +122,14 @@ test('runs the Electron shell with an isolated userData root', async () => {
       'getDetail'
     ])
     expect(await page.evaluate(() => Object.keys(window.myTracer.progress))).toEqual(['get'])
+    expect(await page.evaluate(() => Object.keys(window.myTracer.recovery))).toEqual(['getContext'])
+    expect(await page.evaluate(() => Object.keys(window.myTracer.review))).toEqual([
+      'begin',
+      'getSummary',
+      'getResult',
+      'complete',
+      'cancel'
+    ])
     expect(await page.evaluate(() => Object.keys(window.myTracer.exports))).toEqual(['generate'])
     expect(await page.evaluate(() => typeof Reflect.get(window, 'node'))).toBe('undefined')
     expect(await page.evaluate(() => typeof Reflect.get(window, 'require'))).toBe('undefined')
@@ -129,6 +140,8 @@ test('runs the Electron shell with an isolated userData root', async () => {
     await expect(page.getByRole('heading', { name: '进展会来自已经记录的事实' })).toBeVisible()
     await page.getByRole('button', { name: 'Review' }).click()
     await expect(page.getByRole('heading', { name: '复盘将帮助你选择下一次调整' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: '本周期还没有已记录事实' })).toBeVisible()
+    await expect(page.getByText(/unknown 不会被转换成未做或失败/)).toBeVisible()
     await page.getByRole('button', { name: 'Today' }).click()
     await expect(page.getByRole('heading', { name: '今天，从一个真实动作开始' })).toBeVisible()
   } finally {
@@ -140,7 +153,7 @@ test('runs the Electron shell with an isolated userData root', async () => {
           expect(
             database.prepare("SELECT value FROM metadata WHERE key = 'schemaVersion'").get()
           ).toEqual({
-            value: '2'
+            value: '3'
           })
         } finally {
           database.close()
