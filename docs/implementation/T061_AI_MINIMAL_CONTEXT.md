@@ -2,7 +2,7 @@
 
 > 任务类型：implementation / S6 E6-01
 >
-> 合同状态：**done；Implementation Candidate、本地与 hosted 自动验证、独立 review、Integration Freshness 和项目所有者人工测试/文档收口均已通过。closeout push 后的 exact final-head CI、Ready 与 merge 仍是 PR 集成门。**
+> 合同状态：**review；Implementation Candidate、本地与 candidate hosted 自动验证、独立 review、Integration Freshness 和项目所有者人工测试/文档收口均已通过；closeout final-head run `33354175786` 因既有 Review migration 单例超出默认 5 秒失败，项目所有者已授权最小修复并推送。**
 >
 > 草案日期：2026-08-31
 >
@@ -15,7 +15,7 @@
 - **Task ID**：T061
 - **Title**：AI 最小上下文选择器和隔离证明
 - **Slice / Plan item**：S6 / E6-01
-- **Status**：`done`
+- **Status**：`review`
 - **Base branch**：`dev`
 - **Authorized draft base**：`dev@1342cd7d8819ad269791c1834fcbd0c7596b0959`
 - **Expected branch**：`task/T061-ai-minimal-context`
@@ -128,6 +128,7 @@ dependencies:
 - `tests/unit/fake-ai-provider.test.ts`：仅覆盖上述 capture 扩展和既有行为回归。
 - `tests/integration/ai-data-capability.test.ts`：仅在 T061 接口影响现有 disabled/not-configured/failure 零调用证明时增加回归断言，不扩大为 T062 降级实现。
 - `tests/unit/process-governance.test.ts`：仅当需要以静态扫描证明 T061 未引入 Renderer/Preload/网络/credential/migration/import 越界时允许增加窄断言。
+- `tests/integration/review-migration.test.ts`：仅按项目所有者 2026-08-31 的 final-head CI 修复授权，为 `maps every legal legacy field losslessly and persists after reopen` 单例增加 `30_000` ms timeout；不得修改 fixture、断言、migration、全局测试配置或产品代码。
 
 合同与后续 owner-approved closeout 候选文件：
 
@@ -311,7 +312,7 @@ permissions:
 
 任务状态权限：
 
-- 当前为 `done`；Implementation Candidate、独立 review、targeted/affected/verify、candidate CI、Integration Freshness、项目所有者人工测试和 owner-approved docs closeout 均已有真实证据。
+- 当前为 `review`；Implementation Candidate、独立 review、targeted/affected/verify、candidate CI、Integration Freshness、项目所有者人工测试和 owner-approved docs closeout 均已有真实证据，但 closeout final-head run `33354175786` 的既有 Review migration 单例超出默认 5 秒，required gate 失败。
 - docs closeout commit 可以按现行 Repository Skill §10.4 写入 `done`；其 push 后的 documentation-updated final-head CI 是 PR 集成门。若该门失败且使完成证据失效，任务必须恢复为 `review` 并在授权范围内修复。
 - `done` 不表示 Ready、merge、AC-02、S6、T062 或 T063 完成，也不自动授权下一任务。
 
@@ -405,4 +406,4 @@ integration_freshness:
 2. 是否批准并激活本 T061 合同，包括第 5 节精确文件范围、第 11 节 Git/GitHub 权限和无 Profile 的显式执行模式。
 3. 若批准时 `dev` 已前进，是否授权先做只读基线复核并把合同/metadata 的 exact base SHA 更新后再次确认，而不是直接实现。
 
-上述 Gate 已完成。T061 task delivery revision 为 `5f98b2f61026721f22fe6cd627c3b402678e9a93`，项目所有者已报告人工测试通过并批准 docs closeout 和最后一次任务分支 push。T062/T063、Ready、merge、tag 和 release 仍未授权；closeout push 后的 exact final-head CI 仍由 PR 集成门验证。
+上述 Gate 已完成。T061 task delivery revision 为 `5f98b2f61026721f22fe6cd627c3b402678e9a93`，项目所有者已报告人工测试通过并批准 docs closeout。closeout final-head run `33354175786` 因既有 Review migration 单例超出默认 5 秒失败；项目所有者随后明确授权查看 CI、实施最小修复并推送同一 PR。T062/T063、Ready、merge、tag 和 release 仍未授权；修复后的 exact final-head CI 仍由 PR 集成门验证。
