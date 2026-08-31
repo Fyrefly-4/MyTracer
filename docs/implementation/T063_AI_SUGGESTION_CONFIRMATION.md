@@ -169,7 +169,7 @@ npm.cmd run governance:metadata:check
 - `tests/integration/progress-sqlite.test.ts`、`tests/integration/recovery-sqlite.test.ts`、`tests/integration/review-sqlite.test.ts`：只在确认后自然读取新 current next/Understanding，公式、历史和事实语义不变。
 - `tests/support/fake-ai-provider.ts`、`tests/support/ai-start-help-context-fixture.ts`：只扩展 T063 deterministic candidate/Understanding/late/failure 脚本和 existing-target fixtures；不访问网络、真实 key 或真实用户正文。
 - `tests/e2e/ai-start-help-ac02.e2e.test.ts`（新增）：第 10.5 节 continuous E2E-AC-02；同一临时 DB、同一 revision、不重置核心状态。
-- `tests/e2e/ai-start-help-degradation.e2e.test.ts`、`tests/e2e/ai-data-capability.e2e.test.ts`、`tests/e2e/action-today.e2e.test.ts`、`tests/e2e/action-record.e2e.test.ts`、`tests/e2e/progress-core-loop.e2e.test.ts`、`tests/e2e/recovery-review-aggregate.e2e.test.ts`、`tests/e2e/complete-export.e2e.test.ts`、`tests/e2e/windows-package-smoke.e2e.test.ts`：仅增加 T063 受影响回归或 package surface 断言，不重写既有 AC 语义。
+- `tests/e2e/ai-start-help-degradation.e2e.test.ts`、`tests/e2e/ai-data-capability.e2e.test.ts`、`tests/e2e/action-today.e2e.test.ts`、`tests/e2e/action-record.e2e.test.ts`、`tests/e2e/progress-core-loop.e2e.test.ts`、`tests/e2e/recovery-review-aggregate.e2e.test.ts`、`tests/e2e/complete-export.e2e.test.ts`、`tests/e2e/shell.e2e.test.ts`、`tests/e2e/windows-package-smoke.e2e.test.ts`：仅增加 T063 受影响回归、固定 Preload allowlist 或 package surface 断言，不重写既有 AC 语义。
 
 ### 5.5 合同和后续条件性收口文件
 
