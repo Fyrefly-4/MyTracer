@@ -14,12 +14,21 @@ import { RoutineRecordService } from '../application/routine-records'
 import { DataControlService } from '../application/data-control'
 import { CompleteExportService } from '../application/complete-export'
 import { queryShellStatus } from '../application/query-shell-status'
-import type { AiConfigurationPort } from '../application/ports/configuration'
+import { AiStartHelpService } from '../application/ai-start-help'
+import {
+  AiProviderError,
+  type AiStartHelpProvider,
+  type ProviderRequestOptions,
+  type StartHelpRequestDto
+} from '../application/ports/ai-start-help'
+import type { MutableAiConfigurationPort } from '../application/ports/configuration'
 import type { DiagnosticsPort } from '../application/ports/diagnostics'
+import { asStartHelpContextQueryRepository } from '../application/ports/persistence'
 import { SHELL_STATUS_CHANNEL } from '../contracts/shell'
 import { SystemClock } from '../infrastructure/clock/system-clock'
-import { EmptyAiConfiguration } from '../infrastructure/configuration/empty-ai-configuration'
-import { EmptySafeStorageCredentialAdapter } from '../infrastructure/credentials/safe-storage-credential-adapter'
+import { FileAiConfiguration } from '../infrastructure/configuration/file-ai-configuration'
+import { SafeStorageCredentialAdapter } from '../infrastructure/credentials/safe-storage-credential-adapter'
+import { LiteLlmStartHelpProvider } from '../infrastructure/ai/litellm-start-help-provider'
 import {
   SafeDiagnostics,
   StderrDiagnosticWriter
@@ -43,15 +52,76 @@ import { ReviewContextStore } from './review-contexts'
 import { registerDataControlIpc } from './data-control-ipc'
 import { registerExportIpc } from './exports-ipc'
 import { assertTrustedSender, type RendererLocation } from './ipc-security'
+import { AiStartHelpContextCoordinator } from './ai-start-help-context'
+import { AiStartHelpSessionStore } from './ai-start-help-session'
+import { registerAiStartHelpIpc } from './ai-start-help-ipc'
 
 let mainWindow: BrowserWindow | null = null
 let sqliteConnection: SqliteConnection | null = null
-let aiConfiguration: AiConfigurationPort | null = null
+let aiConfiguration: MutableAiConfigurationPort | null = null
 let diagnostics: DiagnosticsPort | null = null
+let aiStartHelpSessions: AiStartHelpSessionStore | null = null
 const actionRecordingContexts = new ActionRecordingContextStore(randomUUID)
 const routineRecordingContexts = new RoutineRecordingContextStore(randomUUID)
 const deletePreviewContexts = new DeletePreviewContextStore(randomUUID)
 const reviewContexts = new ReviewContextStore(randomUUID)
+
+type TestAiScenario =
+  | 'success'
+  | 'timeout'
+  | 'authentication'
+  | 'quota'
+  | 'rate-limited'
+  | 'network'
+  | 'invalid-response'
+  | 'late-response'
+  | 'internal'
+
+function createOfflineTestProvider(): AiStartHelpProvider | null {
+  if (process.env.NODE_ENV !== 'test') return null
+  const scenario = process.env.MYTRACER_E2E_AI_SCENARIO as TestAiScenario | undefined
+  if (
+    !scenario ||
+    ![
+      'success', 'timeout', 'authentication', 'quota', 'rate-limited', 'network',
+      'invalid-response', 'late-response', 'internal'
+    ].includes(scenario)
+  ) return null
+
+  return Object.freeze({
+    capabilities: () => ({ configured: true, available: true }),
+    requestStartHelp: async (
+      _request: StartHelpRequestDto,
+      options: ProviderRequestOptions
+    ) => {
+      if (scenario === 'success' || scenario === 'late-response') {
+        if (scenario === 'late-response') {
+          await new Promise((resolve) => setTimeout(resolve, 60))
+        }
+        return {
+          acknowledgement: '现在难开始也没关系，我们只找一个很小的起点。',
+          suggestions: [{ text: '先打开行动需要的资料，只看一眼标题。' }],
+          safetyNotes: ['如果现在需要休息，也可以先休息。']
+        }
+      }
+      if (scenario === 'invalid-response') return { acknowledgement: 'invalid', suggestions: [] }
+      if (scenario === 'timeout') {
+        return new Promise((_resolve, reject) => {
+          options.signal.addEventListener(
+            'abort',
+            () => reject(new DOMException('cancelled', 'AbortError')),
+            { once: true }
+          )
+        })
+      }
+      if (scenario === 'authentication') throw new AiProviderError('authentication')
+      if (scenario === 'quota') throw new AiProviderError('quota')
+      if (scenario === 'rate-limited') throw new AiProviderError('rate-limited')
+      if (scenario === 'network') throw new AiProviderError('network')
+      throw new AiProviderError('internal')
+    }
+  })
+}
 
 function getRendererLocation(): RendererLocation {
   const rendererFile = join(__dirname, '../renderer/index.html')
@@ -125,12 +195,14 @@ async function createMainWindow(): Promise<void> {
     routineRecordingContexts.clearSender(senderId)
     deletePreviewContexts.clearSender(senderId)
     reviewContexts.clearSender(senderId)
+    aiStartHelpSessions?.clearSender(senderId)
   })
   mainWindow.webContents.on('destroyed', () => {
     actionRecordingContexts.clearSender(senderId)
     routineRecordingContexts.clearSender(senderId)
     deletePreviewContexts.clearSender(senderId)
     reviewContexts.clearSender(senderId)
+    aiStartHelpSessions?.clearSender(senderId)
   })
   mainWindow.once('ready-to-show', () => mainWindow?.show())
   mainWindow.on('closed', () => {
@@ -138,6 +210,7 @@ async function createMainWindow(): Promise<void> {
     routineRecordingContexts.clearSender(senderId)
     deletePreviewContexts.clearSender(senderId)
     reviewContexts.clearSender(senderId)
+    aiStartHelpSessions?.clearSender(senderId)
     mainWindow = null
   })
 
@@ -147,8 +220,11 @@ async function createMainWindow(): Promise<void> {
 app.whenReady().then(async () => {
   const clock = new SystemClock()
   diagnostics = new SafeDiagnostics(clock, new StderrDiagnosticWriter())
-  const credentialStore = new EmptySafeStorageCredentialAdapter(safeStorage)
-  aiConfiguration = new EmptyAiConfiguration(credentialStore)
+  const credentialStore = new SafeStorageCredentialAdapter(safeStorage)
+  aiConfiguration = new FileAiConfiguration({
+    userDataPath: app.getPath('userData'),
+    credentialProtection: credentialStore
+  })
 
   try {
     sqliteConnection = SqliteConnection.open(resolveProductionDatabasePath(app.getPath('userData')))
@@ -238,6 +314,37 @@ app.whenReady().then(async () => {
       generateToken: randomUUID
     })
   })
+  const contextCoordinator = new AiStartHelpContextCoordinator({
+    contextQuery: asStartHelpContextQueryRepository(sqliteConnection.repository),
+    clock,
+    contextBudget: { totalTextCharacters: 8_000 },
+    requestCapture: { captureStartHelpRequest: () => undefined },
+    generateRequestId: randomUUID
+  })
+  aiStartHelpSessions = new AiStartHelpSessionStore({
+    selectRequest: (input) => contextCoordinator.start(input).requestDto,
+    readConfiguration: () => aiConfiguration!.readState(),
+    execute: (request, signal) => {
+      const offlineTestProvider = createOfflineTestProvider()
+      if (offlineTestProvider) {
+        return new AiStartHelpService({
+          provider: offlineTestProvider,
+          generateCandidateId: randomUUID
+        }).execute(request, signal)
+      }
+      const credential = aiConfiguration!.readProviderCredential()
+      if (!credential) {
+        return Promise.resolve({
+          ok: false,
+          error: { code: 'credential-unavailable', retryable: false }
+        })
+      }
+      return new AiStartHelpService({
+        provider: new LiteLlmStartHelpProvider({ apiKey: credential }),
+        generateCandidateId: randomUUID
+      }).execute(request, signal)
+    }
+  })
   registerGoalIpc({
     ipc: ipcMain,
     service: goalService,
@@ -298,6 +405,12 @@ app.whenReady().then(async () => {
     service: completeExportService,
     assertSender: (event) => assertTrustedSender(event, mainWindow, getRendererLocation())
   })
+  registerAiStartHelpIpc({
+    ipc: ipcMain,
+    sessions: aiStartHelpSessions,
+    configuration: aiConfiguration,
+    assertSender: (event) => assertTrustedSender(event, mainWindow, getRendererLocation())
+  })
   await createMainWindow()
 })
 
@@ -316,6 +429,7 @@ app.on('before-quit', () => {
   routineRecordingContexts.clearAll()
   deletePreviewContexts.clearAll()
   reviewContexts.clearAll()
+  aiStartHelpSessions?.clearAll()
   diagnostics?.record({
     code: 'application-stopping',
     severity: 'info',
@@ -324,5 +438,6 @@ app.on('before-quit', () => {
   sqliteConnection?.close()
   sqliteConnection = null
   aiConfiguration = null
+  aiStartHelpSessions = null
   diagnostics = null
 })

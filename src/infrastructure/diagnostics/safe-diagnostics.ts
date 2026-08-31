@@ -21,6 +21,14 @@ export class SafeDiagnostics implements DiagnosticsPort {
     if (!CORRELATION_ID_PATTERN.test(input.correlationId)) {
       return
     }
+    if (
+      input.durationMs !== undefined &&
+      (!Number.isSafeInteger(input.durationMs) ||
+        input.durationMs < 0 ||
+        input.durationMs > 120_000)
+    ) {
+      return
+    }
 
     try {
       const event = Object.freeze({ ...input, occurredAt: this.clock.nowInstant() })

@@ -104,6 +104,13 @@ import {
   type ReviewResultDto,
   type ReviewSummaryDto
 } from '../contracts/review'
+import {
+  AI_CONFIGURATION_CHANNELS,
+  AI_START_HELP_CHANNELS,
+  type AiConfigurationStatusDto,
+  type AiStartHelpSessionDto,
+  type StartAiStartHelpInputDto
+} from '../contracts/ai-start-help'
 
 const api: MyTracerApi = Object.freeze({
   shell: Object.freeze({
@@ -287,6 +294,26 @@ const api: MyTracerApi = Object.freeze({
   }),
   exports: Object.freeze({
     generate: (): Promise<CompleteExportResult> => ipcRenderer.invoke(EXPORT_CHANNELS.generate)
+  }),
+  aiStartHelp: Object.freeze({
+    status: (): Promise<AiStartHelpSessionDto> => ipcRenderer.invoke(AI_START_HELP_CHANNELS.status),
+    start: (input: StartAiStartHelpInputDto): Promise<AiStartHelpSessionDto> =>
+      ipcRenderer.invoke(AI_START_HELP_CHANNELS.start, input),
+    cancel: (): Promise<AiStartHelpSessionDto> => ipcRenderer.invoke(AI_START_HELP_CHANNELS.cancel),
+    retry: (): Promise<AiStartHelpSessionDto> => ipcRenderer.invoke(AI_START_HELP_CHANNELS.retry),
+    close: (): Promise<AiStartHelpSessionDto> => ipcRenderer.invoke(AI_START_HELP_CHANNELS.close)
+  }),
+  aiConfiguration: Object.freeze({
+    status: (): Promise<AiConfigurationStatusDto> =>
+      ipcRenderer.invoke(AI_CONFIGURATION_CHANNELS.status),
+    importFromEnvironment: (): Promise<AiConfigurationStatusDto> =>
+      ipcRenderer.invoke(AI_CONFIGURATION_CHANNELS.importFromEnvironment),
+    enable: (): Promise<AiConfigurationStatusDto> =>
+      ipcRenderer.invoke(AI_CONFIGURATION_CHANNELS.enable),
+    disable: (): Promise<AiConfigurationStatusDto> =>
+      ipcRenderer.invoke(AI_CONFIGURATION_CHANNELS.disable),
+    deleteCredential: (): Promise<AiConfigurationStatusDto> =>
+      ipcRenderer.invoke(AI_CONFIGURATION_CHANNELS.deleteCredential)
   })
 })
 

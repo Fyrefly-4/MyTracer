@@ -90,6 +90,25 @@ describe('FakeAiProvider', () => {
     expect(fake.calls).toHaveLength(1)
   })
 
+  it('keeps a reasonable-rest suggestion as explicit temporary test data', async () => {
+    const fake = provider([
+      { kind: 'rest-suggestion', draft: { suggestion: '如果现在需要，可以先休息。' } }
+    ])
+    await expect(fake.requestStartHelp({ marker: 'goal-a' })).resolves.toEqual({
+      suggestion: '如果现在需要，可以先休息。'
+    })
+  })
+
+  it.each([
+    'quota-failure',
+    'rate-limit-failure',
+    'network-failure',
+    'provider-unavailable',
+    'internal-failure'
+  ] as const)('provides the offline %s script', async (kind) => {
+    await expect(provider([{ kind }]).requestStartHelp({ marker: 'goal-a' })).rejects.toBeDefined()
+  })
+
   it('keeps provider instances and scripts isolated', async () => {
     const first = provider([{ kind: 'success', draft: { suggestion: 'First.' } }])
     const second = provider([{ kind: 'success', draft: { suggestion: 'Second.' } }])
