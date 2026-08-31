@@ -2,7 +2,7 @@
 
 > 任务类型：implementation / S6 E6-01
 >
-> 合同状态：**active；项目所有者已于 2026-08-31 批准完整 S6 设计、推荐的 S6-Q01～Q05、合同及 T061 激活。**
+> 合同状态：**done；Implementation Candidate、本地与 hosted 自动验证、独立 review、Integration Freshness 和项目所有者人工测试/文档收口均已通过。closeout push 后的 exact final-head CI、Ready 与 merge 仍是 PR 集成门。**
 >
 > 草案日期：2026-08-31
 >
@@ -15,7 +15,7 @@
 - **Task ID**：T061
 - **Title**：AI 最小上下文选择器和隔离证明
 - **Slice / Plan item**：S6 / E6-01
-- **Status**：`active`
+- **Status**：`done`
 - **Base branch**：`dev`
 - **Authorized draft base**：`dev@1342cd7d8819ad269791c1834fcbd0c7596b0959`
 - **Expected branch**：`task/T061-ai-minimal-context`
@@ -184,17 +184,17 @@ dependencies:
 
 ## 8. 交付物
 
-- [ ] 窄 `StartHelpContextQueryPort` 和 SQLite read-only query snapshot。
-- [ ] 纯 `AiContextSelector` 与注入式 `ContextBudget`。
-- [ ] 冻结字段集合的 Provider-facing `StartHelpRequestDto`。
-- [ ] Main-only `SelectedStartHelpContext` manifest；不跨边界、不持久化。
-- [ ] ActionRecord 直接相关性、稳定排序、最多 5 条、预算与 code-point 截断实现。
-- [ ] 明确 trigger/local-failure request gate，未触发或非法时 fake call count 为 0。
-- [ ] clone-safe fake request capture 和唯一标记 fixture。
-- [ ] unit、SQLite/query integration、Main/Application isolation 和现有 AI data capability 回归证据。
-- [ ] Implementation Candidate 的完整 diff 自查和独立只读 review，无未处理 material finding。
-- [ ] targeted tests、affected regression、`verify`、candidate/final-head hosted CI 和 Integration Freshness 证据。
-- [ ] 项目所有者批准后的最小文档收口、task delivery revision 和 merge handoff；不自动进入 T062。
+- [x] 窄 `StartHelpContextQueryPort` 和 SQLite read-only query snapshot。
+- [x] 纯 `AiContextSelector` 与注入式 `ContextBudget`。
+- [x] 冻结字段集合的 Provider-facing `StartHelpRequestDto`。
+- [x] Main-only `SelectedStartHelpContext` manifest；不跨边界、不持久化。
+- [x] ActionRecord 直接相关性、稳定排序、最多 5 条、预算与 code-point 截断实现。
+- [x] 明确 trigger/local-failure request gate，未触发或非法时 fake call count 为 0。
+- [x] clone-safe fake request capture 和唯一标记 fixture。
+- [x] unit、SQLite/query integration、Main/Application isolation 和现有 AI data capability 回归证据。
+- [x] Implementation Candidate 的完整 diff 自查和独立只读 review，无未处理 material finding。
+- [x] targeted tests、affected regression、`verify`、candidate hosted CI 和 Integration Freshness 证据；closeout push 后的 final-head CI 作为 PR 集成门继续执行。
+- [x] 项目所有者批准后的最小文档收口、task delivery revision 和 merge handoff；不自动进入 T062。
 
 ## 9. 验收标准
 
@@ -209,7 +209,7 @@ dependencies:
 9. request DTO 与 manifest 的 included request paths、record IDs、excluded counts、字符数和预算完全一致；manifest 不进入序列化 Provider request、Renderer、持久化、export 或日志。
 10. SQLite query 与 selector 不调用 `readSnapshot()`/`readCompleteCoreSnapshot()`，不进行第二次 Repository/config/diagnostic 读取，不写数据库或更新时间戳。
 11. application startup/status/Today/query/navigation/Action switch/no-click/close-before-start 的 T061 可达路径均保持 call count 0；本任务不新增用户可见 UI 或 IPC。
-12. 指定 targeted tests、affected regression、`npm.cmd run verify`、完整 diff review、独立 review、candidate/final-head hosted CI 和 Integration Freshness 均有绑定 exact revision 的真实证据。
+12. 指定 targeted tests、affected regression、`npm.cmd run verify`、完整 diff review、独立 review、candidate hosted CI 和 Integration Freshness 均有绑定 exact revision 的真实证据；closeout push 后的 final-head CI 必须继续绑定到 exact PR head，失败时撤销 `done` 结论。
 13. 依赖、lockfile、migration、网络、credential、真实 Provider、Preload、Renderer 和 T062/T063 范围没有变化。
 14. T061 仅可声明最小上下文/隔离子能力完成；AC-02、S6、人工体验和 Provider 可用性继续为 `pending`。
 
@@ -311,9 +311,9 @@ permissions:
 
 任务状态权限：
 
-- 当前为 `active`；实现、review、candidate CI、docs closeout 尚未完成。
-- 实现、review、candidate CI、docs closeout 尚未完成时保持 `active` 或 `review`；不得提前标记 `done`。
-- `done` 只能在 Implementation Candidate、独立 review、targeted/affected/verify、candidate CI、owner-approved docs closeout 和 documentation-updated final-head CI 全部由真实证据支持后写入。
+- 当前为 `done`；Implementation Candidate、独立 review、targeted/affected/verify、candidate CI、Integration Freshness、项目所有者人工测试和 owner-approved docs closeout 均已有真实证据。
+- docs closeout commit 可以按现行 Repository Skill §10.4 写入 `done`；其 push 后的 documentation-updated final-head CI 是 PR 集成门。若该门失败且使完成证据失效，任务必须恢复为 `review` 并在授权范围内修复。
+- `done` 不表示 Ready、merge、AC-02、S6、T062 或 T063 完成，也不自动授权下一任务。
 
 文档收口权限：
 
@@ -339,7 +339,7 @@ integration:
   base_revalidation_at_activation: required
   freshness_required: true
   affected_regression_required: true
-  task_delivery_revision: null
+  task_delivery_revision: 5f98b2f61026721f22fe6cd627c3b402678e9a93
   dev_integration_revision: null
   stage_final_integration_revision: null
 ```
@@ -353,6 +353,17 @@ integration_freshness:
   verified_against_revision: <actual-verified-dev-sha>
   status: fresh | refreshed-and-passed | blocked
   refresh_method: not-needed | merge-dev-into-task-branch | blocked
+```
+
+实际记录：
+
+```yaml
+integration_freshness:
+  original_base_revision: 1342cd7d8819ad269791c1834fcbd0c7596b0959
+  latest_authorized_dev_revision: 1342cd7d8819ad269791c1834fcbd0c7596b0959
+  verified_against_revision: 1342cd7d8819ad269791c1834fcbd0c7596b0959
+  status: fresh
+  refresh_method: not-needed
 ```
 
 若任务 base 不再是最新授权 `dev`，只能用普通 traceable merge 刷新，不得 force-push/rebase 改写已发布历史；刷新后必须重跑 affected regression、candidate validation，并在 review surface 改变时重新独立 review。T061 只有 `fresh` 或 `refreshed-and-passed` 可进入 merge handoff；`task_delivery_revision`、`dev_integration_revision`、`stage_final_integration_revision` 不得混同，且 T061 完成不自动激活 T062。
@@ -394,4 +405,4 @@ integration_freshness:
 2. 是否批准并激活本 T061 合同，包括第 5 节精确文件范围、第 11 节 Git/GitHub 权限和无 Profile 的显式执行模式。
 3. 若批准时 `dev` 已前进，是否授权先做只读基线复核并把合同/metadata 的 exact base SHA 更新后再次确认，而不是直接实现。
 
-上述 Gate 已完成。T061 已在 `task/T061-ai-minimal-context` 上进入实现；T062/T063、docs closeout、Ready、merge、tag 和 release 仍未授权。
+上述 Gate 已完成。T061 task delivery revision 为 `5f98b2f61026721f22fe6cd627c3b402678e9a93`，项目所有者已报告人工测试通过并批准 docs closeout 和最后一次任务分支 push。T062/T063、Ready、merge、tag 和 release 仍未授权；closeout push 后的 exact final-head CI 仍由 PR 集成门验证。
