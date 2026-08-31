@@ -393,7 +393,8 @@ export function asStartHelpContextQueryRepository(repository: unknown): StartHel
   if (!candidate || typeof candidate.queryStartHelpContext !== 'function') {
     throw new TypeError('Repository does not provide the Start Help context query contract.')
   }
-  return candidate as StartHelpContextQueryPort
+  const queryStartHelpContext = candidate.queryStartHelpContext.bind(repository)
+  return Object.freeze({ queryStartHelpContext })
 }
 
 export function asRoutineRecordRepository(repository: RepositoryPort): RoutineRecordRepositoryPort {

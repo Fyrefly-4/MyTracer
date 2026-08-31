@@ -129,6 +129,9 @@ describe('AiContextSelector', () => {
       result.manifest.fieldEntries.reduce((total, entry) => total + entry.sentCharacters, 0)
     ).toBe(result.manifest.totalTextCharacters)
     expect(result.manifest.totalTextCharacters).toBeLessThanOrEqual(result.manifest.budget)
+    expect(
+      result.manifest.fieldEntries.find((entry) => entry.requestPath === 'locale')
+    ).toMatchObject({ originalCharacters: 5, sentCharacters: 5, truncated: false })
 
     const serializedRequest = JSON.stringify(result.requestDto)
     for (const id of [
@@ -147,8 +150,9 @@ describe('AiContextSelector', () => {
     const compactGoal = { ...goal, title: 'G', description: 'lower' }
     const compactAction = { ...action, title: 'A', description: 'lower' }
     const compactCurrent = { ...currentNextAction, title: '🙂XYZ', description: 'lower' }
-    const result = new AiContextSelector({ totalTextCharacters: 6 }).select(
+    const result = new AiContextSelector({ totalTextCharacters: 7 }).select(
       input({
+        locale: 'z',
         userInput: '🙂',
         expectedGoalUpdatedAt: compactGoal.updatedAt,
         expectedActionUpdatedAt: compactAction.updatedAt,
@@ -164,7 +168,7 @@ describe('AiContextSelector', () => {
     expect(result.requestDto.currentNextAction).toEqual({ title: '🙂XY' })
     expect(result.requestDto.goal).toEqual({ name: 'G' })
     expect(result.requestDto.action).toEqual({ title: 'A' })
-    expect(result.manifest.totalTextCharacters).toBe(6)
+    expect(result.manifest.totalTextCharacters).toBe(7)
     expect(
       result.manifest.fieldEntries.find((entry) => entry.requestPath === 'currentNextAction.title')
     ).toMatchObject({ originalCharacters: 4, sentCharacters: 3, truncated: true })
@@ -182,7 +186,7 @@ describe('AiContextSelector', () => {
       confusions: [],
       nextStep: null
     }))
-    const result = new AiContextSelector({ totalTextCharacters: 43 }).select(
+    const result = new AiContextSelector({ totalTextCharacters: 48 }).select(
       input({
         userInput: 'I',
         expectedGoalUpdatedAt: minimalGoal.updatedAt,

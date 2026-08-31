@@ -69,6 +69,7 @@ describe('T061 Start Help request isolation', () => {
     })
     let requestSequence = 0
     const contextQuery = asStartHelpContextQueryRepository(connection.repository)
+    expect(Object.keys(contextQuery)).toEqual(['queryStartHelpContext'])
     const adjacentSources = Object.freeze({
       credential: START_HELP_MARKERS.credential,
       configuration: START_HELP_MARKERS.configuration,
@@ -126,6 +127,13 @@ describe('T061 Start Help request isolation', () => {
       createCoordinator(1).start({
         actionId: START_HELP_IDS.action,
         locale: 'zh-CN',
+        userInput: 'Help'
+      })
+    ).toThrowError(/exceeds/i)
+    expect(() =>
+      coordinator.start({
+        actionId: START_HELP_IDS.action,
+        locale: 'x'.repeat(8_000),
         userInput: 'Help'
       })
     ).toThrowError(/exceeds/i)

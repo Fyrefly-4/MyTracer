@@ -14,6 +14,7 @@ export interface ContextBudget {
 
 export type AiContextSourceType =
   | 'user-input'
+  | 'locale'
   | 'goal'
   | 'action'
   | 'current-next-action'
@@ -209,7 +210,10 @@ export class AiContextSelector {
     }
 
     const mandatoryCharacters =
-      characterCount(userInput) + characterCount(goalName) + characterCount(actionTitle)
+      characterCount(userInput) +
+      characterCount(locale) +
+      characterCount(goalName) +
+      characterCount(actionTitle)
     if (mandatoryCharacters > remaining) {
       throw new AiStartHelpContextError(
         'context-too-large',
@@ -221,6 +225,11 @@ export class AiContextSelector {
       sourceType: 'user-input',
       sourceId: requestId,
       requestPath: 'userInput'
+    })
+    addMandatory(locale, {
+      sourceType: 'locale',
+      sourceId: requestId,
+      requestPath: 'locale'
     })
     addMandatory(goalName, {
       sourceType: 'goal',
