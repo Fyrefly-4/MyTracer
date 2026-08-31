@@ -1,6 +1,6 @@
 # MyTracer v0.1 验收证据
 
-> 文档状态：证据账本已建立；已记录 T001～T004、T011～T014、T021～T023、T031～T033、T041/T042、T051/T052、T061、T801～T805、AC-01、AC-03、AC-04、AC-06、AC-07、G2、G3/S1、S2 及 G3/S3 聚合证据
+> 文档状态：证据账本已建立；已记录 T001～T004、T011～T014、T021～T023、T031～T033、T041/T042、T051/T052、T061/T062、T801～T805、AC-01、AC-03、AC-04、AC-06、AC-07、G2、G3/S1、S2 及 G3/S3 聚合证据
 > 作用：记录可复核的命令、版本、环境、产物和人工观察  
 > 禁止：用任务状态、测试名称、关键词存在或 Agent 自述替代实际结果
 
@@ -166,6 +166,7 @@ Artifact 位于 ignored `.tmp/evidence/`，可由 GitHub Actions 作为短期 ar
 | `EV-T805-002`              | T805 / GOV-06                 | task `979fa1c` / dev `353a4d4`                                      | PR #34 final-head CI、owner closeout 与 dev 集成                                                   | pass    | pass         | 补充 `EV-T805-001` 的候选时间线；T805 已完成，不声明产品 FR/AC 或发布权限                                                                                                         |
 | `EV-T094-001`              | T094 / G4 enabling            | task `543180b...` / dev `2632ff0...`                                | Renderer ownership、AppShell/feature 拆分与 AC-01/03/04/07 行为保持                                | pass    | pending      | 本地完整验证、package smoke、独立复核、PR #35 candidate/final-head CI、owner closeout 与 dev 集成通过；同环境视觉对比仍待完成                                                     |
 | `EV-T061-001`              | T061 / S6 E6-01               | task `5f98b2f...` / dev `4630878...`                                | 窄 AI 上下文 Query、纯 selector、Main-only manifest、fake capture 与零调用/隔离证明                 | pass    | pass         | candidate、人工测试、owner-approved closeout、修复后的 final-head CI、PR #46 merge 与 post-merge CI 均通过；不声明 T062/T063、AC-02 或 S6 final gate                            |
+| `EV-T062-001`              | T062 / S6 E6-02               | task `bc5461e3...`                                                   | 可替换 Provider、严格响应验证、deadline/cancel/generation、Main-only 配置与失败降级                 | pass    | not-required | 本地完整验证/package smoke、独立 review、PR #47 candidate required CI 与 owner-approved closeout 通过；owner 未要求另行执行 manual procedure；不声明 T063、完整 AC-02 或 S6 final gate                          |
 | `EV-T041-001`              | T041 / E4-01                  | task `1e9ab2b80b5b81a8bedd192750281d4042f279d5`                     | RecoveryContext 只读事实、LocalDate、单事务 snapshot、窄 IPC/Preload、Goals 入口与 AC-05 步骤 1～4 | pass    | pass         | 本地完整验证、独立复核、PR #39 implementation-candidate CI 与项目所有者人工测试通过；不声明完整 AC-05、FR-P05、T042、Ready 或 merge                                               |
 | `EV-S4-S5-001`             | T806 / S4-S5 aggregate        | product `84b596e` / docs final head pending                         | T041～T052、AC-05/06、migration/export、package、证据与合同归档                                    | partial | pass         | 固定产品 source 的本地聚合与人工绑定通过；PR #43 candidate CI 因单 migration 用例默认超时失败，test-only 窄修复及 docs closeout 已完成，final-head hosted CI pending              |
 | `EV-PRE-S4-FOUNDATION-001` | S4 前工程/UI 基线（无新任务） | product/dev `2632ff0638fb02533100a1f9d0aea9f1323dbde3`              | T804/T092/T093/T805/T094 同 revision 治理、流程、UI Foundation 与 AC-01/03/04/07 回归              | pass    | pending      | 本地完整门禁、package smoke、完整 `main..dev` 独立 review 与 exact-dev post-merge CI 通过；视觉对比和聚合文档 final-head CI 分开记录                                              |
@@ -1381,6 +1382,35 @@ Agent 只提供步骤和观察位置，不得替项目所有者签署人工验�
 - **Result / invariants**：RecoveryContext 只读且可解释，用户确认后才执行普通 Application Command，历史 Record/Understanding/Confusion/LocalDate 守恒；Review 只汇总当前事实并保存三项用户输入，`unknown`、`not_done`、`intentional_rest`、`acted`、`target_met` 分离，取消零写入，可选下一步原子执行，重开/migration/export 一致，无评分、掌握度、推断失败、压力 streak 或 AI 总结
 - **Documentation closeout**：统一归档 `archive/S4_S5_T041_T052_ARCHIVE.md`，四任务 metadata 指向归档，原四份合同按项目所有者批准删除并可从固定 Git source 恢复；T052 Escalation Proposal、所有失败 Evidence 与 supersede 历史保留
 - **Known limitations / owner gates**：final-head hosted CI pending；PR #43 仍为 Draft。Ready、合入 `dev`、创建或合入 `dev → main`、tag 和 Release 均未授权。真实 `userData` 未迁移；包未签名且使用默认图标；AC-02、S6、S7、G4 未完成，`v0.1.0-beta.1` 仍是最近发布版本
+- **Recorded at**：2026-08-31
+
+### EV-T062-001
+
+- **Status**：pass；T062 task delivery candidate、本地 targeted/affected/aggregate 自动验证、Windows package smoke、完整 branch diff 与独立只读 review、implementation-candidate hosted CI、Integration Freshness 和 owner-approved docs closeout 均已通过；项目所有者于 2026-08-31 明确决定本次收口将 T062 标记为完成
+- **Task / Gate**：T062 / S6 E6-02；证明 Electron Main 通过单用途可替换 Provider Port 请求 Start Help、把返回值保持为 `unknown` 直至严格 runtime validation、管理 deadline/cancel/generation/Main-memory session，并在 AI disabled/not-configured/credential unavailable/timeout/cancel/provider failure/invalid response 时零核心写入且基础应用继续工作；不声明 T063、建议确认写入、完整 AC-02 或 S6 final gate
+- **Requirements**：FR-AI02～FR-AI04、FR-AI07、FR-AI09；D-012、D-013、D-015；ED-004、ED-010、ED-011、ED-014、ED-019；GW-001、GW-002、GW-004、GW-008～GW-010
+- **Source branch**：`task/T062-provider-degradation`
+- **Original / verified dev base**：`4630878dacd0a15dbe8446cb26d9cea790d3ed6e`；合同激活、Implementation Candidate、发布前和 docs closeout 前均确认该 revision 为最新授权 `dev` 且为 task head 祖先；Integration Freshness 为 `fresh`，`refresh_method=not-needed`
+- **Task delivery revision**：`bc5461e3bcc4e0ca94abbffe9ef2f898c7bbc4a9`
+- **Environment**：本地 Windows 11 x64、Node `v24.18.0`、npm `11.16.0`、Electron `43.3.0`、`better-sqlite3@13.0.1`；GitHub-hosted `windows-2025`。普通自动化只使用 fake Provider、合成文本、临时 SQLite/userData 和固定批准配置，不读取真实 credential、真实用户数据或调用 live Gateway
+- **Command or procedure**：
+  1. `npm.cmd run governance:metadata:check`：16 个 task sidecar、1 个 Profile 通过；T062 未声明 Automation Profile，合同、sidecar 和 Task Index 的依赖/shared-surface 声明一致。
+  2. 合同定向 Unit 命令：7 个文件、76/76 通过；覆盖 Provider Port/runtime validator、1～3 suggestion/allowlist/长度、Main deadline、忽略 abort 的 Provider、session generation/close late response、safeStorage/configuration、diagnostics、fake 场景和 process boundary。
+  3. 合同定向 Integration 命令：6 个文件、25/25 通过；1 个显式 live-only contract 按批准策略 skip。覆盖 fake/production adapter shared contract、SDK timeout 分类、IPC sender-first/DTO 校验、AI failure core snapshot、Main foundation 和 export 隔离。
+  4. `node tools/evidence/capture-command.mjs --task T062 --gate task-candidate --base-revision 4630878dacd0a15dbe8446cb26d9cea790d3ed6e --output .tmp/evidence -- npm.cmd run verify` 在 exact candidate `bc5461e3...` exit 0：format、lint、typecheck、Unit 239/239、Integration 122/122（另 1 个 live-only skip）、Electron E2E 21 pass；1 个显式 package smoke case 按配置 skip。
+  5. `npm.cmd run package` 成功构建 Windows x64 unpacked 与 NSIS artifacts；`npm.cmd run test:package-smoke` 1/1 通过，验证临时 userData、无配置启动、SQLite、固定且冻结的 Preload surface、Renderer 无 Node/require/process/safeStorage，以及 unpacked/隔离 NSIS 安装后基础应用可用。
+  6. package/security 检查确认 direct dependency 只有精确 `openai@7.8.0`；Renderer/Preload bundle 不含 SDK、批准 Gateway domain、credential 环境变量、safeStorage 或 Provider fetch；没有 schema migration、AI table、export version、postinstall 或额外 Provider/domain 变化。
+  7. 完整 `dev...task` diff、`git diff --check` 和独立只读 review 完成。Review 发现 Main deadline 原先只发 abort、close/configuration 后迟到响应仍可能覆盖 closed session，以及 SDK timeout 会落入 generic network；修复为 Main-owned Promise race、controller identity gate、明确 `timeout` 分类并补回归测试，复核后无未处理 material finding。
+  8. [PR #47 implementation-candidate run `33379861872`](https://github.com/Fyrefly-4/MyTracer/actions/runs/33379861872) 为 `success`：PR head `bc5461e3bcc4e0ca94abbffe9ef2f898c7bbc4a9`、test-merge `66c26e1eef18d63827925f43ecacdff5b6710e33`；PR quality、Governance checks、Full Windows verification、CI Gate 和 Windows required gate 全部通过，Documentation 与 milestone package 按分类 skip。
+  9. 下载并检查 hosted artifact `verification-evidence-33379861872-1`（artifact id `9753439951`）：aggregate exit 0、capture complete、base `4630878...`、`ci.headRevision=bc5461e3...`、`ci.mergeRevision=66c26e1...`、无 capture error；artifact digest 为 `sha256:db246dea65dcb78170fe253c0e419b5517b8ece373bf9c0bfa2f84d1ada36997`。
+  10. 项目所有者于 2026-08-31 确认云端 CI 通过，批准 T062 docs closeout、任务完成标记和最后一次任务分支推送。项目所有者未另行报告真实 Provider live/manual procedure；该程序不伪造为已执行，T062 完成状态来自本条明确 owner closeout 决定与上述自动化/审查证据。
+- **Result**：Main 独占固定 LiteLLM Gateway adapter、`gemini-3.7-flash`、`openai@7.8.0`、批准 origin、环境变量读取、safeStorage 和独立 userData 配置文件；Provider 只收到 T061 最小 DTO 和 `AbortSignal`，无法访问 Repository/UnitOfWork/Application Command/SQLite。Main 严格校验 allowlist、类型、文本/数组/总量，生成 candidate IDs，并用 20 秒 deadline、sender-bound request/generation/controller identity 阻止取消或迟到结果进入当前 session。Renderer 只获得固定 IPC/Preload 方法、中性错误码、retryable 状态和临时只读 draft；所有失败分支不写核心数据，手工 CRUD、Progress、Recovery、Review、delete、export 和 restart 保持可用
+- **Approved engineering decisions**：唯一 Provider `litellm-gateway`；模型 `gemini-3.7-flash`；SDK 精确 `openai@7.8.0`；base URL `https://litellm-gateway-811499828950.us-central1.run.app/v1` 且禁止跨 origin redirect；环境变量 `MYTRACER_LITELLM_API_KEY`；配置 `userData/configuration/ai-provider.v1.json`；输入预算 8,000 code points、serialized request 49,152 bytes、`max_completion_tokens=1,200`、SDK timeout 18 秒、Main deadline 20 秒、`maxRetries=0`、仅用户显式 retry
+- **Local artifact**：`.tmp/evidence/T062-task-candidate-bc5461e3bcc4-20260831094300.json`；source/base revision、原始 argv、Windows/Node/Electron、exit 0 和 complete capture 已核对，artifact 不含 stdout/stderr、Provider request/response、credential、环境变量、用户正文或绝对用户路径
+- **Hosted artifact**：`verification-evidence-33379861872-1`（artifact id `9753439951`）；JSON `unscoped-aggregate-66c26e1eef18-20260831095536.json` 明确区分 PR head `bc5461e3...` 与 test-merge `66c26e1...`，aggregate command exit 0
+- **Manual / owner status**：separate manual procedure `not-required`；owner closeout decision `pass`。项目所有者明确要求本次收口将 T062 视为完成；未执行或报告真实 Provider live/manual contract，不把该未执行程序记为 pass
+- **Known limitations**：真实 Gateway/live contract 按合同禁止且未运行，未读取真实 credential；T062 只交付临时只读 Start Help draft，不包含 T063 确认写入、完整 AC-02 或 S6 final gate
+- **Requirement / scope changes**：无产品需求、schema、export、核心写入或 Provider 权限扩张；仅在独立 review 内修复合同范围内的 deadline/late-response/timeout 分类缺陷
 - **Recorded at**：2026-08-31
 
 ### EV-T061-001

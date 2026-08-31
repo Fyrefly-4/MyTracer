@@ -2,7 +2,7 @@
 
 > 任务类型：implementation / S6 E6-02
 >
-> 合同状态：**active；项目所有者已于 2026-08-31 批准精确 LiteLLM Gateway profile、模型、SDK、domain、credential/configuration、限制值和实施/Git/GitHub 权限，并在合同更新后明确指令执行 T062 开发。不授权真实 Gateway 调用、真实凭据访问、Ready、merge、tag 或 release。**
+> 合同状态：**done；Implementation Candidate `bc5461e3bcc4e0ca94abbffe9ef2f898c7bbc4a9` 已通过本地 targeted/affected/aggregate 验证、Windows package smoke、完整 diff 与独立 review，以及 PR #47 candidate run `33379861872` 的 required CI。项目所有者于 2026-08-31 批准 docs closeout 并明确决定本次收口将 T062 标记为完成。**
 >
 > 草案日期：2026-08-31
 >
@@ -15,7 +15,7 @@
 - **Task ID**：T062
 - **Title**：可替换 Provider、超时和失败降级
 - **Slice / Plan item**：S6 / E6-02
-- **Status**：`active`
+- **Status**：`done`
 - **Base branch**：`dev`
 - **Authorized draft base**：`dev@4630878dacd0a15dbe8446cb26d9cea790d3ed6e`
 - **Expected branch**：`task/T062-provider-degradation`
@@ -277,19 +277,19 @@ Renderer 不得获得 exception stack、SDK body、raw Provider response、crede
 
 ## 8. 交付物
 
-- [ ] 单用途 `AiStartHelpProvider` Port、Provider capabilities 和批准的 production adapter。
-- [ ] 严格 runtime validator、规范化 `StartHelpDraft`、1～3 suggestions 和固定 response limits。
-- [ ] 封闭 error taxonomy、20 秒 deadline、cancel/retry/close、generation 和 late-response ignore。
-- [ ] sender-bound Main 内存 session、window/navigation/app cleanup。
-- [ ] Main-only configuration、批准的 userData 配置文件、safeStorage credential store 和无 key IPC。
-- [ ] status/start/cancel/retry/close/configuration IPC 与 Preload 窄 API。
-- [ ] Today Action 内最小 disabled/not-configured/requesting/cancelled/failed/read-only draft UI；无核心确认写入。
-- [ ] expanded fake、shared adapter contract、unit/integration/IPC/E2E/package/security 测试。
-- [ ] AI unavailable 下核心 CRUD/Progress/Recovery/Review/delete/export/restart 回归。
-- [ ] dependency/lockfile/network/config/credential/export/log/bundle 隔离审计。
-- [ ] complete diff 自查和独立只读 review，无未处理 material finding。
-- [ ] targeted、adapter contract、integration、IPC、E2E、package/security、affected regression、`verify`、candidate/final-head CI 和 Integration Freshness 证据。
-- [ ] owner-approved docs closeout、task delivery revision 和 merge handoff；不自动进入 T063。
+- [x] 单用途 `AiStartHelpProvider` Port、Provider capabilities 和批准的 production adapter。
+- [x] 严格 runtime validator、规范化 `StartHelpDraft`、1～3 suggestions 和固定 response limits。
+- [x] 封闭 error taxonomy、20 秒 deadline、cancel/retry/close、generation 和 late-response ignore。
+- [x] sender-bound Main 内存 session、window/navigation/app cleanup。
+- [x] Main-only configuration、批准的 userData 配置文件、safeStorage credential store 和无 key IPC。
+- [x] status/start/cancel/retry/close/configuration IPC 与 Preload 窄 API。
+- [x] Today Action 内最小 disabled/not-configured/requesting/cancelled/failed/read-only draft UI；无核心确认写入。
+- [x] expanded fake、shared adapter contract、unit/integration/IPC/E2E/package/security 测试。
+- [x] AI unavailable 下核心 CRUD/Progress/Recovery/Review/delete/export/restart 回归。
+- [x] dependency/lockfile/network/config/credential/export/log/bundle 隔离审计。
+- [x] complete diff 自查和独立只读 review，无未处理 material finding。
+- [x] targeted、adapter contract、integration、IPC、E2E、package/security、affected regression、`verify`、candidate hosted CI 和 Integration Freshness 证据。docs-only closeout head 的 CI 属于后续 PR integration gate，不改变本任务 `done` 记录。
+- [x] owner-approved docs closeout 和 task delivery revision；不自动进入 T063。
 
 ## 9. 验收标准
 
@@ -305,9 +305,9 @@ Renderer 不得获得 exception stack、SDK body、raw Provider response、crede
 10. disabled/not-configured/credential unavailable/timeout/cancel/network/auth/quota/rate-limit/provider unavailable/invalid/internal 前后 complete core snapshot 相等；CRUD、Progress、Recovery、Review、delete、export 和 restart 继续。
 11. Windows unpacked/package/NSIS smoke 在 safeStorage unavailable 和无配置环境仍可启动；Renderer 安全与 CSP/IPC sender/origin/bundle scan 无退化。
 12. package/lockfile 只包含获批 exact package/version；无额外依赖、postinstall、网络域、环境变量或配置位置。
-13. targeted tests、shared adapter contract、integration、IPC、E2E、package/security、affected regression、完整 `verify`、candidate/final-head hosted CI、complete diff 和独立 review 均绑定 exact revision。
+13. targeted tests、shared adapter contract、integration、IPC、E2E、package/security、affected regression、完整 `verify`、candidate hosted CI、complete diff 和独立 review 均绑定 exact task delivery revision；docs-only closeout head 的 hosted CI 继续作为 PR integration gate。
 14. 无 schema/migration/export version/core write 变化；T062 不声明建议确认、Understanding、完整 AC-02、S6 final gate、T063、Ready、merge、tag 或 release 完成。
-15. **MANUAL**：项目所有者在隔离 Windows 数据根用 fake 和获批 Provider 各检查一次温和、具体、足够小、休息非拖延的 1～3 条建议，以及 disabled/not-configured/timeout/cancel/error 后立即回到手工路径；结果必须真实记录为 pass/fail/partial/pending。
+15. **OWNER CLOSEOUT DECISION**：项目所有者于 2026-08-31 明确批准 docs closeout，并决定本次收口将 T062 视为完成；未另行报告真实 Provider live/manual procedure，Agent 不将该未执行程序伪造为 pass。真实 Provider 体验仍可在后续单独授权的验收中检查。
 
 ## 10. 验证计划
 
@@ -461,10 +461,9 @@ active_permissions:
 
 任务状态和 docs closeout：
 
-- T062 在 `TASK_INDEX_V0.1.md` 为 `active`；实现、验证、独立 review 和 Draft PR 交付期间保持该状态。
-- 候选 CI 首次针对 exact Implementation Candidate 成功后必须暂停，提交 task contract、TASK_INDEX、Evidence、Draft PR body 及条件文档的 impact matrix，等待项目所有者批准精确 closeout scope。
-- 未经该 Gate，不得写 `done`、task delivery revision、完成 Evidence 或最终 PR 正文。
-- docs closeout push 后必须取得 exact new-head required CI；Ready 和 merge 始终另批。
+- Implementation Candidate `bc5461e3bcc4e0ca94abbffe9ef2f898c7bbc4a9` 的 candidate CI run `33379861872` 成功后，项目所有者批准合同、TASK_INDEX、Evidence 和 Draft PR body 的精确 docs closeout。
+- T062 在 `TASK_INDEX_V0.1.md` 标记为 `done`；docs-only closeout head 的 required CI 是 PR integration gate，不改变已完成的 task delivery 记录。
+- 本次收口不自动进入 T063，也不扩大 Ready、merge、main、tag 或 release 权限。
 
 ## 12. Provider、依赖、网络、credential 与配置审批表
 
@@ -538,7 +537,7 @@ integration:
   prerequisite_t061_dev_integration_revision: 4630878dacd0a15dbe8446cb26d9cea790d3ed6e
   freshness_required: true
   affected_regression_required: true
-  task_delivery_revision: null
+  task_delivery_revision: bc5461e3bcc4e0ca94abbffe9ef2f898c7bbc4a9
   dev_integration_revision: null
   stage_final_integration_revision: null
 ```
@@ -552,7 +551,7 @@ integration_freshness:
   verified_against_revision: 4630878dacd0a15dbe8446cb26d9cea790d3ed6e
   status: fresh
   refresh_method: not-needed
-  scope: contract-draft-only
+  scope: implementation-candidate-and-owner-approved-docs-closeout
 ```
 
 若激活时 `dev` 已前进，先只读核对 T061 DTO、Main/Preload/Renderer、configuration/safeStorage、schema/export 和 shared surfaces，再把合同/metadata exact base 更新后交项目所有者重新确认。实现分支 stale 时只能普通 traceable merge 最新授权 `dev`；不得 rebase/force-push 改写已发布历史。刷新后重跑 affected regression/candidate validation，并在 review surface 改变时重新独立 review。
@@ -592,7 +591,18 @@ integration_freshness:
 
 1. 只读核对最新授权远端 `dev`。若已前进，检查 T061 DTO、Main/Preload/Renderer、configuration/safeStorage、schema/export 和 shared surfaces，更新 exact base/integration freshness 后重新确认。
 2. 确认 §12 的 LiteLLM Gateway origin、`gemini-3.7-flash`、`openai@7.8.0`、环境变量、配置路径、限制值和权限未改变。
-3. 项目所有者已明确要求基于更新后合同执行 T062 开发；`TASK_INDEX_V0.1.md` 已从 `pending` 改为 `active`。
+3. 项目所有者已明确要求基于更新后合同执行 T062 开发；激活时 `TASK_INDEX_V0.1.md` 已从 `pending` 改为 `active`，最终完成状态见 §17。
 4. 激活不授权真实 Gateway 调用或真实 credential 访问；`test:ai-contract` 只可建立不可运行。Ready、merge、main、tag 和 release继续分别审批。
 
 激活后仍不调用真实 Provider、不运行 live contract、不读取或保存真实 credential；Ready、merge、main、tag 和 release 继续分别审批。
+
+## 17. 完成记录
+
+- **Task delivery revision**：`bc5461e3bcc4e0ca94abbffe9ef2f898c7bbc4a9`。
+- **Local validation**：合同 targeted Unit 76/76；targeted Integration 25/25，1 个 live-only case 按批准策略 skip；证据化完整 `verify` 为 Unit 239/239、Integration 122/122（另 1 skip）、Electron E2E 21 pass；Windows x64 package 与 unpacked/隔离 NSIS package smoke 1/1 通过。
+- **Hosted candidate CI**：PR #47 run `33379861872` success；head `bc5461e3bcc4e0ca94abbffe9ef2f898c7bbc4a9`，test-merge `66c26e1eef18d63827925f43ecacdff5b6710e33`；PR quality、Governance、Full Windows verification、CI Gate 和 Windows required gate 通过。
+- **Hosted artifact**：`verification-evidence-33379861872-1`，artifact id `9753439951`，digest `sha256:db246dea65dcb78170fe253c0e419b5517b8ece373bf9c0bfa2f84d1ada36997`；aggregate exit 0、capture complete、head/test-merge 字段正确且无 capture error。
+- **Independent review**：修复 Main-owned deadline、closed/configuration late-response suppression 和 SDK timeout 分类后复核无未处理 material finding。
+- **Owner closeout**：项目所有者于 2026-08-31 确认云端 CI 通过，批准 docs closeout、`done` 标记和最后一次任务分支推送；未另行报告真实 Provider live/manual procedure，该未执行程序不伪造为 pass。
+- **Evidence**：`EV-T062-001`。
+- **Boundary**：无 schema migration、export version 或核心业务写入；T063、建议确认写入、完整 AC-02 和 S6 final gate 继续独立受控。
