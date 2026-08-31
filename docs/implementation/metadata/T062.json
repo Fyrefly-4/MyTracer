@@ -1,0 +1,179 @@
+{
+  "schemaVersion": 1,
+  "task": "T062",
+  "task_kind": "implementation",
+  "dependencies": {
+    "requires": ["T061"],
+    "blocks": ["T063"],
+    "can_parallel": [],
+    "prefer_after": [],
+    "conflicts_with": ["T061", "T063"]
+  },
+  "conflict_basis": {
+    "T061": "The approved S6 design requires serial integration because T062 must consume the exact T061 Provider-facing request DTO, Main-only manifest boundary, explicit trigger gate, context budget, fake request capture, and isolation proof without reopening the context read surface.",
+    "T063": "The approved S6 design requires serial integration because T063 must consume T062 contracts, Main session lifecycle, configuration state, IPC and Preload surface, Today Renderer state, provider error taxonomy, and fake-provider harness without guessing an unintegrated API."
+  },
+  "shared_surfaces": [
+    {
+      "files": [
+        "src/application/ports/ai-start-help.ts",
+        "src/application/ai-start-help.ts",
+        "src/contracts/ai-start-help.ts",
+        "src/main/ai-start-help-context.ts"
+      ],
+      "modules": [
+        "single-purpose-ai-start-help-provider-port",
+        "t061-provider-facing-request-dto",
+        "unknown-provider-response-runtime-validator",
+        "sealed-start-help-draft-and-error-taxonomy"
+      ],
+      "schema_tables": [],
+      "ipc_contracts": [],
+      "domain_invariants": [
+        "provider-request-fields-must-not-expand-the-integrated-t061-context-boundary",
+        "provider-output-is-untrusted-until-main-runtime-validation-passes",
+        "suggestions-must-be-between-one-and-three-without-silent-truncation",
+        "provider-has-no-repository-command-configuration-enumeration-or-core-write-capability"
+      ],
+      "risk": "high",
+      "integration_policy": "serial"
+    },
+    {
+      "files": [
+        "src/application/ports/configuration.ts",
+        "src/application/ports/diagnostics.ts",
+        "src/infrastructure/configuration/file-ai-configuration.ts",
+        "src/infrastructure/configuration/empty-ai-configuration.ts",
+        "src/infrastructure/credentials/safe-storage-credential-adapter.ts",
+        "src/infrastructure/diagnostics/safe-diagnostics.ts",
+        "src/infrastructure/index.ts"
+      ],
+      "modules": [
+        "main-only-ai-configuration-state",
+        "safe-storage-credential-import-read-write-delete",
+        "versioned-atomic-userdata-configuration-file",
+        "redacted-ai-diagnostics"
+      ],
+      "schema_tables": [],
+      "ipc_contracts": ["ai-configuration-status-import-enable-disable-delete"],
+      "domain_invariants": [
+        "credential-and-encrypted-configuration-never-enter-sqlite-export-logs-evidence-or-renderer",
+        "configuration-or-safe-storage-failure-never-blocks-core-application-startup",
+        "renderer-and-preload-never-read-plain-or-encrypted-credentials",
+        "configuration-writes-are-validated-and-atomically-replaced-outside-core-storage"
+      ],
+      "risk": "high",
+      "integration_policy": "serial"
+    },
+    {
+      "files": [
+        "src/main/ai-start-help-session.ts",
+        "src/main/ai-start-help-ipc.ts",
+        "src/main/index.ts",
+        "src/preload/index.ts",
+        "src/renderer/src/env.d.ts",
+        "src/renderer/src/features/today/AiStartHelpPanel.tsx",
+        "src/renderer/src/features/today/TodayPage.tsx",
+        "src/renderer/src/styles.css"
+      ],
+      "modules": [
+        "sender-bound-main-memory-session",
+        "twenty-second-main-deadline-and-abort",
+        "generation-and-late-response-ignore",
+        "narrow-ipc-preload-and-minimal-today-renderer-state"
+      ],
+      "schema_tables": [],
+      "ipc_contracts": [
+        "ai-start-help-status-start-cancel-retry-close",
+        "ai-configuration-status-import-enable-disable-delete"
+      ],
+      "domain_invariants": [
+        "start-and-retry-are-only-explicit-user-triggered-actions",
+        "no-automatic-retry-and-each-manual-retry-builds-a-new-context-request-and-generation",
+        "cancel-close-navigation-window-destroy-disable-and-new-generation-abort-the-old-request",
+        "late-responses-never-replace-a-new-session-or-write-core-data",
+        "t062-renderer-has-no-confirmation-or-understanding-core-write-flow"
+      ],
+      "risk": "high",
+      "integration_policy": "serial"
+    },
+    {
+      "files": [
+        "tests/support/fake-ai-provider.ts",
+        "tests/support/ai-start-help-context-fixture.ts",
+        "tests/support/ai-data-capability-harness.ts",
+        "tests/unit/ai-start-help-provider.test.ts",
+        "tests/unit/ai-start-help-response.test.ts",
+        "tests/unit/ai-start-help-session.test.ts",
+        "tests/integration/ai-start-help-provider-contract.test.ts",
+        "tests/integration/ai-start-help-ipc.test.ts",
+        "tests/integration/ai-data-capability.test.ts",
+        "tests/e2e/ai-start-help-degradation.e2e.test.ts",
+        "tests/e2e/ai-data-capability.e2e.test.ts",
+        "tests/e2e/windows-package-smoke.e2e.test.ts",
+        "package.json",
+        "package-lock.json"
+      ],
+      "modules": [
+        "fake-and-approved-adapter-shared-contract",
+        "timeout-cancel-late-error-and-invalid-response-matrix",
+        "disabled-not-configured-failure-core-capability-regression",
+        "package-safe-storage-export-log-and-bundle-isolation",
+        "optional-explicit-non-default-live-provider-contract"
+      ],
+      "schema_tables": [
+        "goals",
+        "actions",
+        "today_selections",
+        "action_records",
+        "routine_records",
+        "understandings",
+        "confusions",
+        "review_results"
+      ],
+      "ipc_contracts": [
+        "ai-start-help-status-start-cancel-retry-close",
+        "ai-configuration-status-import-enable-disable-delete"
+      ],
+      "domain_invariants": [
+        "all-normal-automated-validation-is-offline-and-uses-fake-provider-and-temporary-data-roots",
+        "all-ai-unavailable-and-failure-branches-have-zero-core-writes",
+        "crud-progress-recovery-review-delete-export-and-restart-remain-available-without-ai",
+        "live-provider-contract-is-explicit-opt-in-and-never-part-of-verify-or-required-ci",
+        "schema-version-three-and-export-version-two-remain-unchanged"
+      ],
+      "risk": "high",
+      "integration_policy": "serial"
+    },
+    {
+      "files": [
+        "docs/implementation/T062_AI_PROVIDER_DEGRADATION.md",
+        "docs/implementation/metadata/T062.json",
+        "docs/implementation/TASK_INDEX_V0.1.md",
+        "docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md"
+      ],
+      "modules": [
+        "task-contract-and-machine-readable-metadata",
+        "owner-controlled-provider-dependency-permission-and-task-activation-gates",
+        "revision-bound-delivery-evidence-and-docs-closeout"
+      ],
+      "schema_tables": [],
+      "ipc_contracts": [],
+      "domain_invariants": [
+        "active-contract-authorizes-only-the-exact-provider-dependency-runtime-network-and-main-only-configuration-capabilities-listed-in-the-contract",
+        "exact-provider-model-package-domain-environment-configuration-and-response-limits-are-owner-approved-and-frozen-for-t062",
+        "evidence-is-bound-to-real-results-and-exact-revisions",
+        "t062-does-not-claim-t063-full-ac02-s6-final-gate-ready-merge-tag-or-release"
+      ],
+      "risk": "high",
+      "integration_policy": "owner-review"
+    }
+  ],
+  "external": [
+    "github-t062-task-branch-after-owner-contract-activation",
+    "github-t062-draft-pr-to-dev-after-owner-contract-activation",
+    "github-actions-t062-validation-after-owner-contract-activation",
+    "owner-approved-production-provider-network-after-exact-contract-decision",
+    "owner-approved-opt-in-live-provider-contract-after-exact-contract-decision"
+  ]
+}
