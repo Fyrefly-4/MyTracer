@@ -514,7 +514,8 @@ export class SqliteRepository
 
       const recordRows = this.database
         .prepare(
-          `SELECT records.id, records.action_id, records.occurred_on,
+          `SELECT records.id, records.action_id, actions.title AS action_title,
+             records.occurred_on,
              records.duration_minutes, records.outcome, records.next_step,
              records.created_at
            FROM action_records AS records
@@ -548,6 +549,7 @@ export class SqliteRepository
         return Object.freeze({
           id: recordId,
           actionId: asString(row, 'action_id'),
+          actionTitle: asString(row, 'action_title'),
           occurredOn: asString(row, 'occurred_on'),
           durationMinutes: Number(row.duration_minutes),
           outcome: asString(row, 'outcome') as ActionRecordPersistenceRecord['outcome'],

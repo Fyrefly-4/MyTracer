@@ -223,14 +223,17 @@ npm.cmd run governance:metadata:check
 主状态固定为：
 
 ```text
-closed
-  -> requesting       user start/retry
+idle
+  -> building-context user start/retry
+  -> requesting       context valid
   -> draft-ready      validated success
   -> failed           local/provider/validation failure
   -> cancelled        explicit cancel
   -> rejected         explicit reject
   -> confirmed        Action suggestion confirmed
 ```
+
+`building-context` 是 Main 重新读取当前 Goal/Action/Record snapshot 并生成新 request ID 的显式内存状态；本地上下文失败直接进入 `failed`，不得调用 Provider。`retry` 必须从当前核心数据重新进入该状态，不能复用旧 manifest、draft、response 或 target map。
 
 `draft-ready` 内每个 Understanding candidate 的子状态固定为 `unconfirmed | editing | confirming | confirmed | failed`。确认 Understanding 后 session 仍为 `draft-ready`；接受 Action 后进入 `confirmed`，未确认 Understanding 被丢弃，UI 在存在未处理候选时必须先给出明确提示。reject 和 close 均清除未确认内容；reject 是用户明确拒绝结果，close 是退出流程，两者都零核心写入。
 

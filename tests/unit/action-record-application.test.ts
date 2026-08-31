@@ -280,4 +280,79 @@ describe('ActionRecord application', () => {
     expect(service.getActionRecordDetail('record-2').understandings).toHaveLength(1)
     expect(context.repository.readSnapshot()).toEqual(before)
   })
+
+  it('adds one fixed-source confirmed Understanding to an existing same-Goal record', () => {
+    const context = memoryContext()
+    context.records.set('record-1', {
+      id: 'record-1',
+      actionId: 'action-1',
+      occurredOn: '2026-08-12',
+      durationMinutes: 5,
+      outcome: 'partial',
+      nextStep: null,
+      note: null,
+      createdAt: instant,
+      updatedAt: instant
+    })
+    const service = serviceFor(context, fakeClock(), ['understanding-ai-1'])
+
+    expect(
+      service.addConfirmedUnderstandingToActionRecord({
+        actionRecordId: 'record-1',
+        expectedGoalId: 'goal-1',
+        text: '  State updates use the queued snapshot  '
+      })
+    ).toEqual({
+      id: 'understanding-ai-1',
+      text: 'State updates use the queued snapshot',
+      source: 'ai_candidate_confirmed',
+      createdAt: instant
+    })
+    expect(service.getActionRecordDetail('record-1').understandings).toEqual([
+      expect.objectContaining({ source: 'ai_candidate_confirmed' })
+    ])
+  })
+
+  it('rejects missing, cross-Goal and inactive Understanding targets with zero writes', () => {
+    const context = memoryContext()
+    context.records.set('record-1', {
+      id: 'record-1',
+      actionId: 'action-1',
+      occurredOn: '2026-08-12',
+      durationMinutes: 5,
+      outcome: 'partial',
+      nextStep: null,
+      note: null,
+      createdAt: instant,
+      updatedAt: instant
+    })
+    const service = serviceFor(context, fakeClock(), ['understanding-ai-1'])
+    const before = structuredClone(context.repository.readSnapshot())
+
+    expect(() =>
+      service.addConfirmedUnderstandingToActionRecord({
+        actionRecordId: 'missing',
+        expectedGoalId: 'goal-1',
+        text: 'No target'
+      })
+    ).toThrowError(expect.objectContaining({ code: 'not-found' }))
+    expect(() =>
+      service.addConfirmedUnderstandingToActionRecord({
+        actionRecordId: 'record-1',
+        expectedGoalId: 'goal-other',
+        text: 'Wrong Goal'
+      })
+    ).toThrowError(expect.objectContaining({ code: 'invariant-violation' }))
+    context.repository.saveGoal(goal('paused'))
+    const beforePaused = structuredClone(context.repository.readSnapshot())
+    expect(() =>
+      service.addConfirmedUnderstandingToActionRecord({
+        actionRecordId: 'record-1',
+        expectedGoalId: 'goal-1',
+        text: 'Inactive Goal'
+      })
+    ).toThrowError(expect.objectContaining({ code: 'invalid-transition' }))
+    expect(context.repository.readSnapshot()).toEqual(beforePaused)
+    expect(before.understandings).toEqual([])
+  })
 })

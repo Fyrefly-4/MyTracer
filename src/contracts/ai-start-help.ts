@@ -3,6 +3,9 @@ export const AI_START_HELP_CHANNELS = Object.freeze({
   start: 'ai-start-help:start',
   cancel: 'ai-start-help:cancel',
   retry: 'ai-start-help:retry',
+  reject: 'ai-start-help:reject',
+  confirmSuggestion: 'ai-start-help:confirm-suggestion',
+  confirmUnderstanding: 'ai-start-help:confirm-understanding',
   close: 'ai-start-help:close'
 } as const)
 
@@ -34,6 +37,16 @@ export type AiStartHelpErrorCode =
 export interface StartHelpSuggestionDto {
   readonly candidateId: string
   readonly text: string
+  readonly status?: AiStartHelpCandidateState
+}
+
+export type AiStartHelpCandidateState =
+  'unconfirmed' | 'editing' | 'confirming' | 'confirmed' | 'failed'
+
+export interface StartHelpUnderstandingTargetDto {
+  readonly targetRef: string
+  readonly actionTitle: string
+  readonly occurredOn: string
 }
 
 export interface StartHelpDraftDto {
@@ -42,15 +55,25 @@ export interface StartHelpDraftDto {
   readonly clarifyingQuestion?: string
   readonly suggestions: readonly StartHelpSuggestionDto[]
   readonly understandingCandidates?: readonly StartHelpSuggestionDto[]
+  readonly understandingTargets?: readonly StartHelpUnderstandingTargetDto[]
   readonly safetyNotes?: readonly string[]
   readonly providerRequestId?: string
 }
 
 export type AiStartHelpSessionState =
-  'requesting' | 'draft-ready' | 'failed' | 'cancelled' | 'closed'
+  | 'idle'
+  | 'building-context'
+  | 'requesting'
+  | 'draft-ready'
+  | 'failed'
+  | 'cancelled'
+  | 'confirmed'
+  | 'rejected'
+  | 'closed'
 
 export interface AiStartHelpSessionDto {
   readonly state: AiStartHelpSessionState
+  readonly sessionId?: string
   readonly generation: number
   readonly requestId?: string
   readonly draft?: StartHelpDraftDto
@@ -77,12 +100,32 @@ export interface StartAiStartHelpInputDto {
   readonly expectedGoalUpdatedAt?: string
 }
 
+export interface AiStartHelpSessionInputDto {
+  readonly sessionId: string
+}
+
+export interface ConfirmAiStartHelpSuggestionInputDto extends AiStartHelpSessionInputDto {
+  readonly candidateId: string
+  readonly finalText: string
+}
+
+export interface ConfirmAiStartHelpUnderstandingInputDto extends ConfirmAiStartHelpSuggestionInputDto {
+  readonly targetRef: string
+}
+
 export interface AiStartHelpApi {
   readonly status: () => Promise<AiStartHelpSessionDto>
   readonly start: (input: StartAiStartHelpInputDto) => Promise<AiStartHelpSessionDto>
-  readonly cancel: () => Promise<AiStartHelpSessionDto>
-  readonly retry: () => Promise<AiStartHelpSessionDto>
-  readonly close: () => Promise<AiStartHelpSessionDto>
+  readonly cancel: (input: AiStartHelpSessionInputDto) => Promise<AiStartHelpSessionDto>
+  readonly retry: (input: AiStartHelpSessionInputDto) => Promise<AiStartHelpSessionDto>
+  readonly reject: (input: AiStartHelpSessionInputDto) => Promise<AiStartHelpSessionDto>
+  readonly confirmSuggestion: (
+    input: ConfirmAiStartHelpSuggestionInputDto
+  ) => Promise<AiStartHelpSessionDto>
+  readonly confirmUnderstanding: (
+    input: ConfirmAiStartHelpUnderstandingInputDto
+  ) => Promise<AiStartHelpSessionDto>
+  readonly close: (input: AiStartHelpSessionInputDto) => Promise<AiStartHelpSessionDto>
 }
 
 export interface AiConfigurationApi {

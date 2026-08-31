@@ -4,7 +4,10 @@ import type { AiConfigurationState } from '../application/ports/configuration'
 import {
   AI_CONFIGURATION_CHANNELS,
   AI_START_HELP_CHANNELS,
+  type AiStartHelpSessionInputDto,
   type AiConfigurationStatusDto,
+  type ConfirmAiStartHelpSuggestionInputDto,
+  type ConfirmAiStartHelpUnderstandingInputDto,
   type StartAiStartHelpInputDto
 } from '../contracts/ai-start-help'
 import type { AiStartHelpSessionDto } from '../contracts/ai-start-help'
@@ -20,10 +23,25 @@ export interface RegisterAiStartHelpIpcOptions {
   readonly ipc: AiStartHelpIpcMain
   readonly sessions: {
     status(senderId: number): AiStartHelpSessionDto
-    start(senderId: number, input: StartAiStartHelpInputDto): Promise<AiStartHelpSessionDto>
-    cancel(senderId: number): AiStartHelpSessionDto
-    retry(senderId: number): Promise<AiStartHelpSessionDto>
-    close(senderId: number): AiStartHelpSessionDto
+    start(
+      senderId: number,
+      input: StartAiStartHelpInputDto
+    ): AiStartHelpSessionDto | Promise<AiStartHelpSessionDto>
+    cancel(senderId: number, sessionId: string): AiStartHelpSessionDto
+    retry(
+      senderId: number,
+      sessionId: string
+    ): AiStartHelpSessionDto | Promise<AiStartHelpSessionDto>
+    reject(senderId: number, sessionId: string): AiStartHelpSessionDto
+    confirmSuggestion(
+      senderId: number,
+      input: ConfirmAiStartHelpSuggestionInputDto
+    ): AiStartHelpSessionDto
+    confirmUnderstanding(
+      senderId: number,
+      input: ConfirmAiStartHelpUnderstandingInputDto
+    ): AiStartHelpSessionDto
+    close(senderId: number, sessionId: string): AiStartHelpSessionDto
     configurationChanged(senderId?: number): void
   }
   readonly configuration: MutableAiConfigurationPort
@@ -87,6 +105,32 @@ function parseStart(args: readonly unknown[]): StartAiStartHelpInputDto {
   })
 }
 
+function parseSession(args: readonly unknown[]): AiStartHelpSessionInputDto {
+  const value = oneObject(args, ['sessionId'])
+  return Object.freeze({ sessionId: string(value.sessionId, 128) })
+}
+
+function parseConfirmSuggestion(args: readonly unknown[]): ConfirmAiStartHelpSuggestionInputDto {
+  const value = oneObject(args, ['sessionId', 'candidateId', 'finalText'])
+  return Object.freeze({
+    sessionId: string(value.sessionId, 128),
+    candidateId: string(value.candidateId, 128),
+    finalText: string(value.finalText, 500)
+  })
+}
+
+function parseConfirmUnderstanding(
+  args: readonly unknown[]
+): ConfirmAiStartHelpUnderstandingInputDto {
+  const value = oneObject(args, ['sessionId', 'candidateId', 'targetRef', 'finalText'])
+  return Object.freeze({
+    sessionId: string(value.sessionId, 128),
+    candidateId: string(value.candidateId, 128),
+    targetRef: string(value.targetRef, 128),
+    finalText: string(value.finalText, 500)
+  })
+}
+
 function configurationStatusFromState(state: AiConfigurationState): AiConfigurationStatusDto {
   return Object.freeze({
     availability: state.availability,
@@ -116,16 +160,26 @@ export function registerAiStartHelpIpc(options: RegisterAiStartHelpIpcOptions): 
     options.sessions.start(event.sender.id, parseStart(args))
   )
   register(AI_START_HELP_CHANNELS.cancel, (event, ...args) => {
-    noInput(args)
-    return options.sessions.cancel(event.sender.id)
+    const input = parseSession(args)
+    return options.sessions.cancel(event.sender.id, input.sessionId)
   })
   register(AI_START_HELP_CHANNELS.retry, (event, ...args) => {
-    noInput(args)
-    return options.sessions.retry(event.sender.id)
+    const input = parseSession(args)
+    return options.sessions.retry(event.sender.id, input.sessionId)
+  })
+  register(AI_START_HELP_CHANNELS.reject, (event, ...args) => {
+    const input = parseSession(args)
+    return options.sessions.reject(event.sender.id, input.sessionId)
+  })
+  register(AI_START_HELP_CHANNELS.confirmSuggestion, (event, ...args) => {
+    return options.sessions.confirmSuggestion(event.sender.id, parseConfirmSuggestion(args))
+  })
+  register(AI_START_HELP_CHANNELS.confirmUnderstanding, (event, ...args) => {
+    return options.sessions.confirmUnderstanding(event.sender.id, parseConfirmUnderstanding(args))
   })
   register(AI_START_HELP_CHANNELS.close, (event, ...args) => {
-    noInput(args)
-    return options.sessions.close(event.sender.id)
+    const input = parseSession(args)
+    return options.sessions.close(event.sender.id, input.sessionId)
   })
 
   register(AI_CONFIGURATION_CHANNELS.status, (_event, ...args) => {

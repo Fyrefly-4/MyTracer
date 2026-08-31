@@ -30,7 +30,7 @@ describe('AI Start Help IPC boundary', () => {
     const ipc = new FakeIpc()
     const order: string[] = []
     const sessions = {
-      status: vi.fn(() => ({ state: 'closed', generation: 0 })),
+      status: vi.fn(() => ({ state: 'idle', generation: 0 })),
       start: vi.fn(async () => ({
         state: 'failed',
         generation: 1,
@@ -38,6 +38,9 @@ describe('AI Start Help IPC boundary', () => {
       })),
       cancel: vi.fn(),
       retry: vi.fn(),
+      reject: vi.fn(),
+      confirmSuggestion: vi.fn(),
+      confirmUnderstanding: vi.fn(),
       close: vi.fn(),
       configurationChanged: vi.fn()
     }
@@ -92,6 +95,9 @@ describe('AI Start Help IPC boundary', () => {
         start: vi.fn(),
         cancel: vi.fn(),
         retry: vi.fn(),
+        reject: vi.fn(),
+        confirmSuggestion: vi.fn(),
+        confirmUnderstanding: vi.fn(),
         close: vi.fn(),
         configurationChanged: vi.fn()
       } as never,
@@ -113,5 +119,64 @@ describe('AI Start Help IPC boundary', () => {
       })
     ).toThrow()
     expect(() => ipc.invoke(AI_START_HELP_CHANNELS.status, 1, {})).toThrow()
+    expect(() =>
+      ipc.invoke(AI_START_HELP_CHANNELS.confirmSuggestion, 1, {
+        sessionId: 'session-1',
+        candidateId: 'candidate-1',
+        finalText: 'x',
+        goalId: 'forbidden'
+      })
+    ).toThrow()
+  })
+
+  it('passes only sealed session, candidate, target and final-text confirmation inputs', () => {
+    const ipc = new FakeIpc()
+    const sessions = {
+      status: vi.fn(),
+      start: vi.fn(),
+      cancel: vi.fn(),
+      retry: vi.fn(),
+      reject: vi.fn(),
+      confirmSuggestion: vi.fn(() => ({ state: 'confirmed', generation: 1 })),
+      confirmUnderstanding: vi.fn(() => ({ state: 'draft-ready', generation: 1 })),
+      close: vi.fn(),
+      configurationChanged: vi.fn()
+    }
+    registerAiStartHelpIpc({
+      ipc,
+      sessions: sessions as never,
+      configuration: {
+        readState: () => ({
+          configured: true,
+          availability: 'configured-available',
+          credentialProtection: 'available'
+        })
+      } as never,
+      assertSender: vi.fn()
+    })
+
+    ipc.invoke(AI_START_HELP_CHANNELS.confirmSuggestion, 21, {
+      sessionId: 'session-1',
+      candidateId: 'candidate-1',
+      finalText: '  final action  '
+    })
+    ipc.invoke(AI_START_HELP_CHANNELS.confirmUnderstanding, 21, {
+      sessionId: 'session-1',
+      candidateId: 'understanding-1',
+      targetRef: 'target-1',
+      finalText: '  final understanding  '
+    })
+
+    expect(sessions.confirmSuggestion).toHaveBeenCalledWith(21, {
+      sessionId: 'session-1',
+      candidateId: 'candidate-1',
+      finalText: 'final action'
+    })
+    expect(sessions.confirmUnderstanding).toHaveBeenCalledWith(21, {
+      sessionId: 'session-1',
+      candidateId: 'understanding-1',
+      targetRef: 'target-1',
+      finalText: 'final understanding'
+    })
   })
 })

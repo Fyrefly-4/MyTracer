@@ -73,7 +73,7 @@ export interface ActionRecordDetailDto extends ActionRecordSummaryDto {
   readonly understandings: readonly {
     readonly id: string
     readonly text: string
-    readonly source: 'manual'
+    readonly source: 'manual' | 'ai_candidate_confirmed'
     readonly createdAt: string
   }[]
   readonly confusions: readonly {

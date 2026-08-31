@@ -48,6 +48,7 @@ function record(
   return {
     id,
     actionId: action.id,
+    actionTitle: action.title,
     occurredOn,
     durationMinutes: 10,
     outcome: 'partial',

@@ -290,4 +290,34 @@ describe('Goal application service', () => {
     ).toThrowError(expect.objectContaining({ code: 'invalid-transition' }))
     expect(persistence.readSnapshot()).toEqual(beforeInactive)
   })
+
+  it('checks Action and Goal stale preconditions inside create-and-set transaction', () => {
+    const { persistence, service } = setup()
+    const goal = service.createGoal({ name: 'Goal', initialNextAction: { title: 'Opened' } })
+    const before = structuredClone(persistence.readSnapshot())
+
+    expect(() =>
+      service.createAndSetGoalCurrentNextAction({
+        goalId: goal.id,
+        title: 'Must not persist',
+        expectedCurrentNextActionId: null,
+        expectedGoalUpdatedAt: goal.updatedAt,
+        expectedContextActionId: 'action-1',
+        expectedContextActionUpdatedAt: instant
+      })
+    ).toThrowError(expect.objectContaining({ code: 'invariant-violation' }))
+    expect(persistence.readSnapshot()).toEqual(before)
+
+    expect(() =>
+      service.createAndSetGoalCurrentNextAction({
+        goalId: goal.id,
+        title: 'Must not persist',
+        expectedCurrentNextActionId: goal.currentNextActionId,
+        expectedGoalUpdatedAt: 'stale-goal-version',
+        expectedContextActionId: 'action-1',
+        expectedContextActionUpdatedAt: instant
+      })
+    ).toThrowError(expect.objectContaining({ code: 'invariant-violation' }))
+    expect(persistence.readSnapshot()).toEqual(before)
+  })
 })

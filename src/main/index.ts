@@ -101,6 +101,10 @@ function createOfflineTestProvider(): AiStartHelpProvider | null {
         return {
           acknowledgement: '现在难开始也没关系，我们只找一个很小的起点。',
           suggestions: [{ text: '先打开行动需要的资料，只看一眼标题。' }],
+          understandingCandidates: [
+            { text: '这次阻力可能来自下一步还不够具体。' },
+            { text: '把起点缩小后更容易开始。' }
+          ],
           safetyNotes: ['如果现在需要休息，也可以先休息。']
         }
       }
@@ -322,7 +326,7 @@ app.whenReady().then(async () => {
     generateRequestId: randomUUID
   })
   aiStartHelpSessions = new AiStartHelpSessionStore({
-    selectRequest: (input) => contextCoordinator.start(input).requestDto,
+    selectContext: (input) => contextCoordinator.start(input),
     readConfiguration: () => aiConfiguration!.readState(),
     execute: (request, signal) => {
       const offlineTestProvider = createOfflineTestProvider()
@@ -343,7 +347,26 @@ app.whenReady().then(async () => {
         provider: new LiteLlmStartHelpProvider({ apiKey: credential }),
         generateCandidateId: randomUUID
       }).execute(request, signal)
-    }
+    },
+    confirmSuggestion: (command) => {
+      goalService.createAndSetGoalCurrentNextAction({
+        goalId: command.goalId,
+        title: command.finalText,
+        expectedCurrentNextActionId: command.expectedCurrentNextActionId,
+        expectedGoalUpdatedAt: command.expectedGoalUpdatedAt,
+        expectedContextActionId: command.contextActionId,
+        expectedContextActionUpdatedAt: command.expectedActionUpdatedAt
+      })
+    },
+    confirmUnderstanding: (command) => {
+      actionRecordService.addConfirmedUnderstandingToActionRecord({
+        actionRecordId: command.actionRecordId,
+        expectedGoalId: command.expectedGoalId,
+        text: command.finalText
+      })
+    },
+    generateSessionId: randomUUID,
+    generateTargetRef: randomUUID
   })
   registerGoalIpc({
     ipc: ipcMain,

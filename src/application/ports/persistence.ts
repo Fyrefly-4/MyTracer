@@ -179,6 +179,7 @@ export interface StartHelpConfusionFactPersistence {
 export interface StartHelpActionRecordFactPersistence {
   readonly id: string
   readonly actionId: string
+  readonly actionTitle: string
   readonly occurredOn: string
   readonly durationMinutes: number
   readonly outcome: ActionRecordPersistenceRecord['outcome']
