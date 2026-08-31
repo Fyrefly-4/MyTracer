@@ -2,7 +2,7 @@
 
 > 任务类型：implementation / S6 E6-01
 >
-> 合同状态：**review；Implementation Candidate、本地与 candidate hosted 自动验证、独立 review、Integration Freshness 和项目所有者人工测试/文档收口均已通过；closeout final-head run `33354175786` 因既有 Review migration 单例超出默认 5 秒失败，项目所有者已授权最小修复并推送。**
+> 合同状态：**done；Implementation Candidate、本地与 hosted 自动验证、独立 review、Integration Freshness、项目所有者人工测试、文档收口、修复后的 final-head CI 和 `dev` 集成均已完成。PR #46 final head `d60978917546f6547a1615c6aa03e87d08c0d2ce` 通过 run `33355327790`，并 squash merge 为 `dev@4630878dacd0a15dbe8446cb26d9cea790d3ed6e`；post-merge run `33355939824` 成功。**
 >
 > 草案日期：2026-08-31
 >
@@ -15,7 +15,7 @@
 - **Task ID**：T061
 - **Title**：AI 最小上下文选择器和隔离证明
 - **Slice / Plan item**：S6 / E6-01
-- **Status**：`review`
+- **Status**：`done`
 - **Base branch**：`dev`
 - **Authorized draft base**：`dev@1342cd7d8819ad269791c1834fcbd0c7596b0959`
 - **Expected branch**：`task/T061-ai-minimal-context`
@@ -194,7 +194,7 @@ dependencies:
 - [x] clone-safe fake request capture 和唯一标记 fixture。
 - [x] unit、SQLite/query integration、Main/Application isolation 和现有 AI data capability 回归证据。
 - [x] Implementation Candidate 的完整 diff 自查和独立只读 review，无未处理 material finding。
-- [x] targeted tests、affected regression、`verify`、candidate hosted CI 和 Integration Freshness 证据；closeout push 后的 final-head CI 作为 PR 集成门继续执行。
+- [x] targeted tests、affected regression、`verify`、candidate/final-head hosted CI、post-merge CI 和 Integration Freshness 证据。
 - [x] 项目所有者批准后的最小文档收口、task delivery revision 和 merge handoff；不自动进入 T062。
 
 ## 9. 验收标准
@@ -210,7 +210,7 @@ dependencies:
 9. request DTO 与 manifest 的 included request paths、record IDs、excluded counts、字符数和预算完全一致；manifest 不进入序列化 Provider request、Renderer、持久化、export 或日志。
 10. SQLite query 与 selector 不调用 `readSnapshot()`/`readCompleteCoreSnapshot()`，不进行第二次 Repository/config/diagnostic 读取，不写数据库或更新时间戳。
 11. application startup/status/Today/query/navigation/Action switch/no-click/close-before-start 的 T061 可达路径均保持 call count 0；本任务不新增用户可见 UI 或 IPC。
-12. 指定 targeted tests、affected regression、`npm.cmd run verify`、完整 diff review、独立 review、candidate hosted CI 和 Integration Freshness 均有绑定 exact revision 的真实证据；closeout push 后的 final-head CI 必须继续绑定到 exact PR head，失败时撤销 `done` 结论。
+12. 指定 targeted tests、affected regression、`npm.cmd run verify`、完整 diff review、独立 review、candidate/final-head hosted CI、post-merge CI 和 Integration Freshness 均有绑定 exact revision 的真实证据。
 13. 依赖、lockfile、migration、网络、credential、真实 Provider、Preload、Renderer 和 T062/T063 范围没有变化。
 14. T061 仅可声明最小上下文/隔离子能力完成；AC-02、S6、人工体验和 Provider 可用性继续为 `pending`。
 
@@ -312,9 +312,8 @@ permissions:
 
 任务状态权限：
 
-- 当前为 `review`；Implementation Candidate、独立 review、targeted/affected/verify、candidate CI、Integration Freshness、项目所有者人工测试和 owner-approved docs closeout 均已有真实证据，但 closeout final-head run `33354175786` 的既有 Review migration 单例超出默认 5 秒，required gate 失败。
-- docs closeout commit 可以按现行 Repository Skill §10.4 写入 `done`；其 push 后的 documentation-updated final-head CI 是 PR 集成门。若该门失败且使完成证据失效，任务必须恢复为 `review` 并在授权范围内修复。
-- `done` 不表示 Ready、merge、AC-02、S6、T062 或 T063 完成，也不自动授权下一任务。
+- 当前为 `done`；失败 run `33354175786` 保留，修复后的 final head `d60978917546f6547a1615c6aa03e87d08c0d2ce` 已由 run `33355327790` 成功 supersede，PR #46 已合入 `dev@4630878dacd0a15dbe8446cb26d9cea790d3ed6e`，post-merge run `33355939824` 成功。
+- `done` 只表示 T061 合同和 `dev` 集成已收口，不表示 AC-02、S6、T062 或 T063 完成，也不自动授权下一任务。
 
 文档收口权限：
 
@@ -341,7 +340,7 @@ integration:
   freshness_required: true
   affected_regression_required: true
   task_delivery_revision: 5f98b2f61026721f22fe6cd627c3b402678e9a93
-  dev_integration_revision: null
+  dev_integration_revision: 4630878dacd0a15dbe8446cb26d9cea790d3ed6e
   stage_final_integration_revision: null
 ```
 
@@ -406,4 +405,4 @@ integration_freshness:
 2. 是否批准并激活本 T061 合同，包括第 5 节精确文件范围、第 11 节 Git/GitHub 权限和无 Profile 的显式执行模式。
 3. 若批准时 `dev` 已前进，是否授权先做只读基线复核并把合同/metadata 的 exact base SHA 更新后再次确认，而不是直接实现。
 
-上述 Gate 已完成。T061 task delivery revision 为 `5f98b2f61026721f22fe6cd627c3b402678e9a93`，项目所有者已报告人工测试通过并批准 docs closeout。closeout final-head run `33354175786` 因既有 Review migration 单例超出默认 5 秒失败；项目所有者随后明确授权查看 CI、实施最小修复并推送同一 PR。T062/T063、Ready、merge、tag 和 release 仍未授权；修复后的 exact final-head CI 仍由 PR 集成门验证。
+上述 Gate 已完成。T061 task delivery revision 为 `5f98b2f61026721f22fe6cd627c3b402678e9a93`；项目所有者已报告人工测试通过并批准 docs closeout。失败的 closeout run `33354175786` 保留；最小修复与证据更新后的 final head `d60978917546f6547a1615c6aa03e87d08c0d2ce` 已通过 run `33355327790`，PR #46 随后 squash merge 为 `dev_integration_revision=4630878dacd0a15dbe8446cb26d9cea790d3ed6e`，post-merge run `33355939824` 成功。T061 收口不表示 AC-02 或 S6 完成，也不自动激活 T062/T063。

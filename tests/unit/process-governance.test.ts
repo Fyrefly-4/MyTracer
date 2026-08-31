@@ -572,10 +572,12 @@ describe('T061 static AI context boundaries', () => {
     const preload = readFileSync(join(repositoryRoot, 'src', 'preload', 'index.ts'), 'utf8')
     const renderer = readFileSync(join(repositoryRoot, 'src', 'renderer', 'src', 'App.tsx'), 'utf8')
 
-    ;[mainIndex, preload, renderer].forEach((source) => {
+    ;[preload, renderer].forEach((source) => {
       expect(source).not.toContain('ai-start-help-context')
       expect(source).not.toContain('AiStartHelpContextCoordinator')
     })
+    expect(mainIndex).toContain("from './ai-start-help-context'")
+    expect(mainIndex).toContain('AiStartHelpContextCoordinator')
     expect(coordinator.indexOf('.queryStartHelpContext(')).toBeGreaterThan(-1)
     expect(coordinator.indexOf('this.selector.select(')).toBeGreaterThan(
       coordinator.indexOf('.queryStartHelpContext(')
@@ -604,5 +606,42 @@ describe('T061 static AI context boundaries', () => {
       'credentials',
       'diagnostics'
     ].forEach((forbidden) => expect(querySource).not.toContain(forbidden))
+  })
+})
+
+describe('T062 static Provider and process boundaries', () => {
+  test('keeps the SDK, endpoint, environment name, and credential access in Main infrastructure', () => {
+    const provider = readFileSync(
+      join(repositoryRoot, 'src', 'infrastructure', 'ai', 'litellm-start-help-provider.ts'),
+      'utf8'
+    )
+    const preload = readFileSync(join(repositoryRoot, 'src', 'preload', 'index.ts'), 'utf8')
+    const renderer = readFileSync(
+      join(repositoryRoot, 'src', 'renderer', 'src', 'features', 'today', 'AiStartHelpPanel.tsx'),
+      'utf8'
+    )
+    const contract = readFileSync(
+      join(repositoryRoot, 'src', 'contracts', 'ai-start-help.ts'),
+      'utf8'
+    )
+
+    expect(provider).toContain("from 'openai'")
+    ;[preload, renderer, contract].forEach((source) => {
+      expect(source).not.toContain("from 'openai'")
+      expect(source).not.toContain('litellm-gateway-811499828950')
+      expect(source).not.toContain('MYTRACER_LITELLM_API_KEY')
+      expect(source).not.toMatch(/encryptedCredential|readProviderCredential/)
+    })
+    expect(provider).not.toMatch(/Repository|UnitOfWork|sqlite|ApplicationCommand/)
+  })
+
+  test('pins the one approved SDK and keeps live contract outside verify', () => {
+    const packageJson = JSON.parse(readFileSync(join(repositoryRoot, 'package.json'), 'utf8')) as {
+      dependencies: Record<string, string>
+      scripts: Record<string, string>
+    }
+    expect(packageJson.dependencies.openai).toBe('7.8.0')
+    expect(packageJson.scripts['test:ai-contract']).toContain('MYTRACER_AI_LIVE_CONTRACT=1')
+    expect(packageJson.scripts.verify).not.toContain('test:ai-contract')
   })
 })

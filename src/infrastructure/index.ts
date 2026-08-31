@@ -1,5 +1,7 @@
 export * from './clock/system-clock'
+export * from './ai/litellm-start-help-provider'
 export * from './configuration/empty-ai-configuration'
+export * from './configuration/file-ai-configuration'
 export * from './credentials/safe-storage-credential-adapter'
 export * from './diagnostics/safe-diagnostics'
 export * from './sqlite/database-path'

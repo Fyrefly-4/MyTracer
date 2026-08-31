@@ -33,3 +33,39 @@ export interface StartHelpRequestDto {
 export interface StartHelpRequestCapturePort {
   captureStartHelpRequest(request: StartHelpRequestDto): void
 }
+
+export interface ProviderCapabilities {
+  readonly configured: boolean
+  readonly available: boolean
+  readonly providerLabel?: string
+  readonly modelLabel?: string
+}
+
+export interface ProviderRequestOptions {
+  readonly signal: AbortSignal
+  readonly requestId: string
+}
+
+/** Single-purpose trust boundary: every provider result remains unknown until Main validates it. */
+export interface AiStartHelpProvider {
+  capabilities(): ProviderCapabilities
+  requestStartHelp(request: StartHelpRequestDto, options: ProviderRequestOptions): Promise<unknown>
+}
+
+export type AiProviderFailureCode =
+  | 'context-too-large'
+  | 'timeout'
+  | 'network'
+  | 'authentication'
+  | 'quota'
+  | 'rate-limited'
+  | 'provider-unavailable'
+  | 'invalid-response'
+  | 'internal'
+
+export class AiProviderError extends Error {
+  public constructor(readonly code: AiProviderFailureCode) {
+    super('The AI provider request failed.')
+    this.name = 'AiProviderError'
+  }
+}

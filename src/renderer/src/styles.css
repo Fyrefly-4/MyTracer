@@ -1297,6 +1297,43 @@ h1 {
   background: rgba(255, 255, 255, 0.76);
 }
 
+.ai-start-help-panel {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid rgba(65, 103, 91, 0.16);
+  border-radius: 14px;
+  background: rgba(236, 244, 240, 0.62);
+}
+
+.ai-start-help-heading,
+.ai-start-help-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ai-start-help-heading h3,
+.ai-start-help-state,
+.ai-start-help-draft p {
+  margin: 0;
+}
+
+.ai-start-help-state,
+.ai-start-help-draft {
+  color: #52665f;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.ai-start-help-draft ol {
+  display: grid;
+  gap: 8px;
+  margin: 10px 0;
+  padding-left: 22px;
+}
+
 .review-notice,
 .review-form {
   border: 1px solid rgba(44, 74, 65, 0.12);
