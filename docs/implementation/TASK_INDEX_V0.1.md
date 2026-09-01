@@ -1,7 +1,7 @@
 # MyTracer v0.1 任务索引
 
 > 文档状态：v0.1 实施任务基线  
-> 当前阶段：S0～S3 已完成并形成 `v0.1.0-beta.1` 里程碑；T041～T052 已集成至 `dev@84b596e12e54db098857004497a4d1964dcdc23c`；T806 仍在 `review`；T061 已集成至 `dev@4630878dacd0a15dbe8446cb26d9cea790d3ed6e`；T062 已集成至 `dev@233d6790c6c5e11bb454b22eb027443eef54a01e`；T063 task delivery candidate 为 `fee398e08ef687bd75d9dae10e6254f09e7c9896`
+> 当前阶段：S0～S3 已完成并形成 `v0.1.0-beta.1` 里程碑；T041～T052 已集成至 `dev@84b596e12e54db098857004497a4d1964dcdc23c`；T806 仍在 `review`；T061 已集成至 `dev@4630878dacd0a15dbe8446cb26d9cea790d3ed6e`；T062 已集成至 `dev@233d6790c6c5e11bb454b22eb027443eef54a01e`；T063 已集成至 `dev@f06b1e97da07dffc05814518ad8ad83ed3e051b9`
 > 状态来源：本文件是任务执行状态的唯一账本，架构实施计划只定义范围和顺序
 
 ## 1. 使用规则
@@ -47,7 +47,7 @@
 - T806 是项目所有者于 2026-08-30 另行指定并批准激活的 S4/S5 聚合验收任务，固定产品 source 为 `dev@84b596e12e54db098857004497a4d1964dcdc23c`。本地 Unit/Integration/E2E、完整 `verify`、package 与修复后的 package smoke 已通过；PR #43 candidate run `33314322219` 仅因 hosted migration 用例超过默认 5 秒失败。项目所有者授权单用例 30 秒 test-only 窄修复及直接 docs closeout，修改后不再本地测试。任务现为 `review`，等待精确 final head hosted CI；归档见 [`archive/S4_S5_T041_T052_ARCHIVE.md`](archive/S4_S5_T041_T052_ARCHIVE.md)，聚合事实见 `EV-S4-S5-001`。
 - T061 task delivery revision `5f98b2f61026721f22fe6cd627c3b402678e9a93` 已通过 targeted/affected/完整 `verify`、完整 diff/独立 review、candidate CI、项目所有者人工测试和 owner-approved docs closeout；失败 run `33354175786` 由 final head `d60978917546f6547a1615c6aa03e87d08c0d2ce` 的成功 run `33355327790` supersede。PR #46 已 squash merge 为 `dev_integration_revision=4630878dacd0a15dbe8446cb26d9cea790d3ed6e`，post-merge run `33355939824` 成功；任务为 `done`，结果见 `EV-T061-001`。T062/T063、AC-02 和 S6 final gate 仍独立受控。
 - T062 task delivery revision `bc5461e3bcc4e0ca94abbffe9ef2f898c7bbc4a9` 已通过本地 targeted/affected/完整 `verify`、Windows package smoke、完整 diff/独立 review 和 PR #47 candidate run `33379861872`；final head `a458171be3504492a5c581b595f272c1e1e0e097` 的 run `33381804748` 成功，并 squash merge 为 `dev_integration_revision=233d6790c6c5e11bb454b22eb027443eef54a01e`，post-merge run `33382653020` 成功。项目所有者已人工复核上述收口事实；结果见 `EV-T062-001`。
-- T063 task delivery revision `fee398e08ef687bd75d9dae10e6254f09e7c9896` 已通过本地 targeted/affected/完整 `verify`、Windows package/unpacked/隔离 NSIS smoke、完整 diff/独立 review和 PR #48 implementation-candidate run `33470990276`；项目所有者已批准 docs closeout 和最后一次任务分支 push。任务为 `done`，项目所有者人工 AC-02 仍为 `pending`；docs closeout final-head CI、Ready、merge、`dev_integration_revision`、S6 final gate、main、tag、release 和 S7 仍独立受控。结果见 `EV-T063-001`。
+- T063 task delivery revision `fee398e08ef687bd75d9dae10e6254f09e7c9896` 已通过本地 targeted/affected/完整 `verify`、Windows package/unpacked/隔离 NSIS smoke、完整 diff/独立 review和 PR #48 implementation-candidate run `33470990276`。docs closeout final head `2e3fc746fcafbe67a0c4a3bc24671e6a50c2ac94` 的失败 run `33474459495` 由同 revision 的成功重跑 `33475609355` supersede；PR #48 已 squash merge 为 `dev_integration_revision=f06b1e97da07dffc05814518ad8ad83ed3e051b9`，post-merge run `33476194961` 成功。任务为 `done`，项目所有者人工 AC-02 与 S6 final gate 仍为 `pending`；结果见 `EV-T063-001`。
 
 ## 4. 任务总表
 

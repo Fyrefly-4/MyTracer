@@ -2,7 +2,7 @@
 
 > 任务类型：implementation / S6 E6-03
 >
-> 合同状态：**approved / done；T063 task delivery candidate `fee398e08ef687bd75d9dae10e6254f09e7c9896` 已通过本地完整验证、Windows package/security、完整 diff/独立 review、PR #48 implementation-candidate required CI 和项目所有者批准的文档收口。人工 AC-02、final-head CI、Ready、merge、main、tag、release、S6 final gate 和 S7 仍独立受控。**
+> 合同状态：**approved / done；T063 task delivery revision `fee398e08ef687bd75d9dae10e6254f09e7c9896` 已通过本地完整验证、Windows package/security、完整 diff/独立 review、PR #48 implementation-candidate/final-head required CI，并已 squash merge 为 `dev_integration_revision=f06b1e97da07dffc05814518ad8ad83ed3e051b9`，post-merge CI 成功。人工 AC-02、S6 final gate、main、tag、release 和 S7 仍独立受控。**
 >
 > 草案日期：2026-09-01
 >
@@ -15,11 +15,11 @@
 - **Task ID**：T063
 - **Title**：AI 建议接受、修改、拒绝和确认命令
 - **Slice / Plan item**：S6 / E6-03
-- **Status**：`done`（人工 AC-02 仍为 `pending`；PR final-head CI 与集成状态见 GitHub）
+- **Status**：`done`（人工 AC-02 仍为 `pending`；PR #48 已合入 `dev`）
 - **Base branch**：`dev`
 - **Authorized draft base**：`dev@233d6790c6c5e11bb454b22eb027443eef54a01e`
 - **Expected branch**：`task/T063-ai-suggestion-confirmation`
-- **Current branch fact**：`task/T063-ai-suggestion-confirmation` 已从授权 `dev@233d6790...` 创建并发布为 Draft PR #48；implementation candidate 为 `fee398e08ef687bd75d9dae10e6254f09e7c9896`。
+- **Current branch fact**：`task/T063-ai-suggestion-confirmation` 从授权 `dev@233d6790...` 创建，final head 为 `2e3fc746fcafbe67a0c4a3bc24671e6a50c2ac94`；PR #48 已 squash merge 为 `dev@f06b1e97da07dffc05814518ad8ad83ed3e051b9`。
 
 ## 2. 目标结果
 
@@ -504,7 +504,7 @@ integration:
   freshness_required: true
   affected_regression_required: true
   task_delivery_revision: fee398e08ef687bd75d9dae10e6254f09e7c9896
-  dev_integration_revision: null
+  dev_integration_revision: f06b1e97da07dffc05814518ad8ad83ed3e051b9
   stage_final_integration_revision: null
 ```
 
@@ -569,4 +569,6 @@ T063 只有在以下全部成立时才可报告任务交付完成候选：可观
 - **审查**：完整 `dev...task` diff、`git diff --check`、依赖/migration/security 边界检查和独立只读 review 无未解决 material finding。
 - **Implementation-candidate hosted CI**：[PR #48 run `33470990276`](https://github.com/Fyrefly-4/MyTracer/actions/runs/33470990276) 为 `success`；PR head `fee398e08ef687bd75d9dae10e6254f09e7c9896`、test-merge `21f8f362bbf9d654d534496406c70438b76166f9`。Artifact `verification-evidence-33470990276-1`（id `9786610728`）为 aggregate exit 0、capture complete。
 - **Owner closeout**：项目所有者于 2026-09-01 确认云端 CI 通过，批准 T063 文档收口和最后一次任务分支 push。
-- **人工与集成状态**：项目所有者人工 AC-02 固定为 `pending`，不因自动化或 owner closeout 被代签；docs closeout 后 exact final-head CI 是 PR 集成门禁。`dev_integration_revision=null`、`stage_final_integration_revision=null`；Ready、merge、S6 final gate、main、tag、release 和 S7 均未授权或未发生。
+- **Final-head hosted CI**：docs closeout final head `2e3fc746fcafbe67a0c4a3bc24671e6a50c2ac94` 的失败 run `33474459495` 保留，并由同 revision 的成功重跑 [`33475609355`](https://github.com/Fyrefly-4/MyTracer/actions/runs/33475609355) supersede；成功 run 的 PR quality、Governance、Full Windows verification、CI Gate 和 Windows required gate 均通过。
+- **Dev integration**：项目所有者将 PR #48 squash merge 为 `dev_integration_revision=f06b1e97da07dffc05814518ad8ad83ed3e051b9`；[`post-merge run 33476194961`](https://github.com/Fyrefly-4/MyTracer/actions/runs/33476194961) 成功。
+- **人工与阶段状态**：项目所有者人工 AC-02 固定为 `pending`，不因自动化、任务合入或 owner closeout 被代签；`stage_final_integration_revision=null`，S6 final gate、main、tag、release 和 S7 均未发生或仍需独立批准。
