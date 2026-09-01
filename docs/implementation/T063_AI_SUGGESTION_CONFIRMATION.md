@@ -2,7 +2,7 @@
 
 > 任务类型：implementation / S6 E6-03
 >
-> 合同状态：**approved / active；项目所有者于 2026-09-01 明确批准合同、激活 T063，并授权合同范围内的实现、测试、本地提交、任务分支 push 和单一 Draft PR 到 `dev`。人工 AC-02、Ready、merge、main、tag、release、S6 final gate 和 S7 仍未授权。**
+> 合同状态：**approved / done；T063 task delivery candidate `fee398e08ef687bd75d9dae10e6254f09e7c9896` 已通过本地完整验证、Windows package/security、完整 diff/独立 review、PR #48 implementation-candidate required CI 和项目所有者批准的文档收口。人工 AC-02、final-head CI、Ready、merge、main、tag、release、S6 final gate 和 S7 仍独立受控。**
 >
 > 草案日期：2026-09-01
 >
@@ -15,11 +15,11 @@
 - **Task ID**：T063
 - **Title**：AI 建议接受、修改、拒绝和确认命令
 - **Slice / Plan item**：S6 / E6-03
-- **Status**：`active`
+- **Status**：`done`（人工 AC-02 仍为 `pending`；PR final-head CI 与集成状态见 GitHub）
 - **Base branch**：`dev`
 - **Authorized draft base**：`dev@233d6790c6c5e11bb454b22eb027443eef54a01e`
 - **Expected branch**：`task/T063-ai-suggestion-confirmation`
-- **Current branch fact**：项目所有者于 2026-09-01 授权从上述最新 `dev` 创建本地 T063 任务分支；分支已创建。该授权不等于合同批准、任务激活、实现、commit、push 或 Draft PR 权限。
+- **Current branch fact**：`task/T063-ai-suggestion-confirmation` 已从授权 `dev@233d6790...` 创建并发布为 Draft PR #48；implementation candidate 为 `fee398e08ef687bd75d9dae10e6254f09e7c9896`。
 
 ## 2. 目标结果
 
@@ -80,8 +80,8 @@ references:
 - [x] 最新 `dev` 的普通 `CreateAndSetGoalCurrentNextAction` 已在一个 UnitOfWork transaction 中创建 pending Action 并更新 Goal current next，但尚缺 T063 要求的 expected current-next/Goal revision stale precondition。
 - [x] 最新 `dev` 的 ActionRecord/Understanding 外键、Progress、Recovery、Review 和 export v2 已读取未撤销 Understanding；普通 `AddConfirmedUnderstandingToActionRecord` 尚不存在，ActionRecord detail 仍只展示 manual source，均由本任务窄补齐。
 - [x] 当前代码无需新增依赖、网络域、Provider/context/credential 权限、schema 或 migration。
-- [ ] 项目所有者批准本合同、允许范围、验证矩阵和第 12 节实施/Git/GitHub 权限，并明确激活 T063。
-- [ ] 激活时重新确认本地与远端最新授权 `dev` 仍为合同基线，或按第 13 节刷新合同后重新批准。
+- [x] 项目所有者批准本合同、允许范围、验证矩阵和第 12 节实施/Git/GitHub 权限，并明确激活 T063。
+- [x] 激活、实现候选验证和首次发布前均确认本地与远端最新授权 `dev` 为合同基线 `233d6790c6c5e11bb454b22eb027443eef54a01e`。
 
 未完成最后两项前，只允许合同草案、sidecar 和项目所有者已授权的 T062 集成证据补记；不得修改实现、测试、任务状态或长期验收证据，不得提交、push 或创建 PR。
 
@@ -503,7 +503,7 @@ integration:
   prerequisite_t062_dev_integration_revision: 233d6790c6c5e11bb454b22eb027443eef54a01e
   freshness_required: true
   affected_regression_required: true
-  task_delivery_revision: null
+  task_delivery_revision: fee398e08ef687bd75d9dae10e6254f09e7c9896
   dev_integration_revision: null
   stage_final_integration_revision: null
 ```
@@ -515,7 +515,7 @@ integration_freshness:
   verified_against_revision: 233d6790c6c5e11bb454b22eb027443eef54a01e
   status: fresh
   refresh_method: not-needed
-  scope: contract-draft-only
+  scope: implementation-candidate-and-docs-closeout
 ```
 
 合同激活、首次实现修改、Implementation Candidate、发布和 merge handoff 前均重新核对最新授权 `dev`。若 `dev` 前进，先只读审计 T061/T062、current-next、Understanding、Progress/Recovery/Review/export、schema 和共享面；更新 exact base 后重新交项目所有者确认。已发布任务分支只能 ordinary merge 最新 `dev`，不得 rebase/force-push 改写历史。
@@ -561,3 +561,12 @@ T063 只有在以下全部成立时才可报告任务交付完成候选：可观
 5. 明确该批准不包含真实 Provider 调用、Ready、merge、main、tag、release、S6 final gate 或 S7。
 
 上述批准已激活 T063。实施必须严格受本合同约束；任务分支 push 和 Draft PR 创建成功后立即停止并等待项目所有者下一步命令，不主动查询 CI。
+
+## 17. 交付收口
+
+- **Implementation Candidate / task delivery revision**：`fee398e08ef687bd75d9dae10e6254f09e7c9896`，基于 `dev@233d6790c6c5e11bb454b22eb027443eef54a01e`，Integration Freshness 为 `fresh`。
+- **本地自动验证**：最终 `verify` 在该 revision 上通过 format、lint、typecheck、Unit 244/244、Integration 128/128（另 1 个 live-only contract 按批准策略 skip）和 Electron E2E 22/22（package smoke 在 aggregate 中按配置 skip）；Windows x64 package、unpacked 与隔离 NSIS smoke 另行通过。
+- **审查**：完整 `dev...task` diff、`git diff --check`、依赖/migration/security 边界检查和独立只读 review 无未解决 material finding。
+- **Implementation-candidate hosted CI**：[PR #48 run `33470990276`](https://github.com/Fyrefly-4/MyTracer/actions/runs/33470990276) 为 `success`；PR head `fee398e08ef687bd75d9dae10e6254f09e7c9896`、test-merge `21f8f362bbf9d654d534496406c70438b76166f9`。Artifact `verification-evidence-33470990276-1`（id `9786610728`）为 aggregate exit 0、capture complete。
+- **Owner closeout**：项目所有者于 2026-09-01 确认云端 CI 通过，批准 T063 文档收口和最后一次任务分支 push。
+- **人工与集成状态**：项目所有者人工 AC-02 固定为 `pending`，不因自动化或 owner closeout 被代签；docs closeout 后 exact final-head CI 是 PR 集成门禁。`dev_integration_revision=null`、`stage_final_integration_revision=null`；Ready、merge、S6 final gate、main、tag、release 和 S7 均未授权或未发生。

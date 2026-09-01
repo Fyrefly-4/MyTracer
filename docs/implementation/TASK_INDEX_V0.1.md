@@ -1,7 +1,7 @@
 # MyTracer v0.1 任务索引
 
 > 文档状态：v0.1 实施任务基线  
-> 当前阶段：S0～S3 已完成并形成 `v0.1.0-beta.1` 里程碑；T041～T052 已集成至 `dev@84b596e12e54db098857004497a4d1964dcdc23c`；T806 仍在 `review`；T061 已集成至 `dev@4630878dacd0a15dbe8446cb26d9cea790d3ed6e`；T062 已集成至 `dev@233d6790c6c5e11bb454b22eb027443eef54a01e`
+> 当前阶段：S0～S3 已完成并形成 `v0.1.0-beta.1` 里程碑；T041～T052 已集成至 `dev@84b596e12e54db098857004497a4d1964dcdc23c`；T806 仍在 `review`；T061 已集成至 `dev@4630878dacd0a15dbe8446cb26d9cea790d3ed6e`；T062 已集成至 `dev@233d6790c6c5e11bb454b22eb027443eef54a01e`；T063 task delivery candidate 为 `fee398e08ef687bd75d9dae10e6254f09e7c9896`
 > 状态来源：本文件是任务执行状态的唯一账本，架构实施计划只定义范围和顺序
 
 ## 1. 使用规则
@@ -46,7 +46,8 @@
 - S4 前工程治理与 UI Foundation 聚合不登记为新任务；固定产品 source `dev@2632ff0638fb02533100a1f9d0aea9f1323dbde3`，范围为 T804、T092、T093、T805、T094。该 revision 的治理 metadata、AC-01/03/04/07 定向回归、完整 `verify`、Windows package/unpacked/隔离 NSIS smoke 与 `main..dev` 独立 review 已通过，候选证据见 `EV-PRE-S4-FOUNDATION-001`；人工视觉对比和聚合文档 PR 的 final-head hosted CI 分别记录，不由本地 candidate 代替。
 - T806 是项目所有者于 2026-08-30 另行指定并批准激活的 S4/S5 聚合验收任务，固定产品 source 为 `dev@84b596e12e54db098857004497a4d1964dcdc23c`。本地 Unit/Integration/E2E、完整 `verify`、package 与修复后的 package smoke 已通过；PR #43 candidate run `33314322219` 仅因 hosted migration 用例超过默认 5 秒失败。项目所有者授权单用例 30 秒 test-only 窄修复及直接 docs closeout，修改后不再本地测试。任务现为 `review`，等待精确 final head hosted CI；归档见 [`archive/S4_S5_T041_T052_ARCHIVE.md`](archive/S4_S5_T041_T052_ARCHIVE.md)，聚合事实见 `EV-S4-S5-001`。
 - T061 task delivery revision `5f98b2f61026721f22fe6cd627c3b402678e9a93` 已通过 targeted/affected/完整 `verify`、完整 diff/独立 review、candidate CI、项目所有者人工测试和 owner-approved docs closeout；失败 run `33354175786` 由 final head `d60978917546f6547a1615c6aa03e87d08c0d2ce` 的成功 run `33355327790` supersede。PR #46 已 squash merge 为 `dev_integration_revision=4630878dacd0a15dbe8446cb26d9cea790d3ed6e`，post-merge run `33355939824` 成功；任务为 `done`，结果见 `EV-T061-001`。T062/T063、AC-02 和 S6 final gate 仍独立受控。
-- T062 task delivery revision `bc5461e3bcc4e0ca94abbffe9ef2f898c7bbc4a9` 已通过本地 targeted/affected/完整 `verify`、Windows package smoke、完整 diff/独立 review 和 PR #47 candidate run `33379861872`；final head `a458171be3504492a5c581b595f272c1e1e0e097` 的 run `33381804748` 成功，并 squash merge 为 `dev_integration_revision=233d6790c6c5e11bb454b22eb027443eef54a01e`，post-merge run `33382653020` 成功。项目所有者已人工复核上述收口事实；结果见 `EV-T062-001`。T063 保持 `pending`，完整 AC-02 和 S6 final gate 仍独立受控。
+- T062 task delivery revision `bc5461e3bcc4e0ca94abbffe9ef2f898c7bbc4a9` 已通过本地 targeted/affected/完整 `verify`、Windows package smoke、完整 diff/独立 review 和 PR #47 candidate run `33379861872`；final head `a458171be3504492a5c581b595f272c1e1e0e097` 的 run `33381804748` 成功，并 squash merge 为 `dev_integration_revision=233d6790c6c5e11bb454b22eb027443eef54a01e`，post-merge run `33382653020` 成功。项目所有者已人工复核上述收口事实；结果见 `EV-T062-001`。
+- T063 task delivery revision `fee398e08ef687bd75d9dae10e6254f09e7c9896` 已通过本地 targeted/affected/完整 `verify`、Windows package/unpacked/隔离 NSIS smoke、完整 diff/独立 review和 PR #48 implementation-candidate run `33470990276`；项目所有者已批准 docs closeout 和最后一次任务分支 push。任务为 `done`，项目所有者人工 AC-02 仍为 `pending`；docs closeout final-head CI、Ready、merge、`dev_integration_revision`、S6 final gate、main、tag、release 和 S7 仍独立受控。结果见 `EV-T063-001`。
 
 ## 4. 任务总表
 
@@ -72,7 +73,7 @@
 | T052 | E5-02        | ReviewResult 和下一阶段调整                                                                 | FR-RV02～RV05；D-105/110                                             | T051                          | `done`    | `EV-T052-001`                |
 | T061 | E6-01        | AI 最小上下文选择器和隔离证明                                                               | FR-AI01/03/08/10；D-108；ED-011                                      | S1/S3；dev@1342cd7           | `done`    | `EV-T061-001`                |
 | T062 | E6-02        | 可替换 Provider、超时和失败降级                                                             | FR-AI02～AI04/AI07/AI09；D-012/013/015                               | T061、Provider 批准           | `done`    | `EV-T062-001`                |
-| T063 | E6-03        | AI 建议接受/修改/拒绝和确认命令                                                             | FR-AI05/06；FR-C02/C03；D-014/109；AC-02                             | T062                          | `active`  | `task/T063-ai-suggestion-confirmation` |
+| T063 | E6-03        | AI 建议接受/修改/拒绝和确认命令                                                             | FR-AI05/06；FR-C02/C03；D-014/109；AC-02                             | T062                          | `done`    | `EV-T063-001`                |
 | T071 | S7           | 11 条 SHOULD 的既定处理结论                                                                 | Traceability §4；Implementation §10.1                                | S1～S6                        | `pending` | —                            |
 | T072 | S7           | 全量回归、AC-01～AC-07、Windows Demo 收敛                                                   | 全部 MUST/AC；Test Strategy §7～10                                   | T071                          | `pending` | —                            |
 | T090 | GOV-01       | V2 Agent 流程第一、二批文档规范                                                             | GW-001/002/004/005/006/009/010；T090 合同                            | dev@112b909                   | `done`    | `EV-T090-001`                |
