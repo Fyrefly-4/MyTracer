@@ -2,7 +2,7 @@
 
 > 任务类型：S6 aggregate acceptance / evidence closeout / milestone preparation
 >
-> 合同状态：**active；项目所有者已批准创建并激活，自动聚合验收进行中**
+> 合同状态：**blocked；Coverage Gate 发现 continuous AC-02 证据缺口，等待独立 test-only 修复授权**
 >
 > 批准与激活日期：2026-09-01
 >
@@ -15,7 +15,7 @@
 - **Task ID**：T807
 - **Title**：S6 AI Start Help aggregate acceptance and release preparation
 - **Slice / Plan item**：S6 final gate
-- **Status**：`active`；人工 AC-02、文档收口范围、Ready、merge、tag 和 Release 仍是后续独立 Gate
+- **Status**：`blocked`；合同已激活，但 S6 设计 §13.2/§13.3 的 continuous E2E 证据缺口阻止 Candidate Gate；人工 AC-02、文档收口范围、Ready、merge、tag 和 Release 仍是后续独立 Gate
 - **Base / target branch**：`dev`
 - **Expected branch**：`codex/s6-final-acceptance`
 - **Prior milestone**：`main@c6edfc550fd395a4c6e9626bc19232971fe58e3f`
@@ -295,3 +295,15 @@ integration:
 必须报告：固定 S6 product revision、T807 delivery 与 dev integration revision；T061～T063 及 FR/AC/D/ED 覆盖；本地和 hosted commands/artifacts；人工 AC-02；package、security、reopen/export；上下文、零写入与凭据隔离结论；真实 Provider 是否验证；文档归档和 PR 状态；候选版本/发布说明；失败、限制、风险、冲突、范围变化及剩余 owner gates。
 
 T807 只有在合同要求的自动化、人工、文档、final-head CI 和 Draft PR handoff 都有真实证据时才能成为 `done`。T807 完成不表示已 Ready、已合入 `dev`/`main`、已 tag、已 Release 或已启动 S7。
+
+## 16. Coverage Gate 停止记录
+
+2026-09-01 在分支 `codex/s6-final-acceptance`、合同激活 revision `eed194a09f6d1545a69fcd292fdbb409a7570054` 对固定产品 source 做只读测试覆盖审计，结论为 `blocked`：
+
+- `tests/e2e/ai-start-help-ac02.e2e.test.ts` 已连续证明 draft/关闭/拒绝/stale confirm 为零写入、主动 retry、编辑后 Action 确认、两个 Understanding 确认、export 与重开守恒。
+- 该连续用例只创建一个 Goal 和一条 ActionRecord，没有第二 Goal、Routine、ReviewResult、六条相关 Record 或禁止唯一标记；没有观察 Provider call count/request capture，因此未证明“未触发零调用”和“同一连续 DB 的跨 Goal/最多 5 条上下文隔离”。
+- 用例只确认编辑后的 Action suggestion，没有单独确认 Provider 原建议；只返回并确认两个 Understanding，没有第三项拒绝或无合法 ActionRecord 分支。
+- `tests/e2e/ai-start-help-degradation.e2e.test.ts` 在 timeout 场景中立即点击取消，没有等待 Main deadline 产生 `timeout`；not-configured、invalid response 和 cancel 分散在每次重置数据库的独立进程。
+- timeout 后 retry、旧 late response 被释放且不能覆盖新 generation，以及 authentication/network/provider-unavailable 在核心 snapshot 不变时手工路径仍可用，只在较低层或分散场景有证据，未满足 S6 §13.2 要求的同一数据库连续 E2E。
+
+因此未开始 T807 Candidate Gate 的 `verify`、package 或 package smoke，也未创建 Draft PR；绿色 task-level 测试不被提升为 S6 aggregate pass。建议项目所有者另行批准一个最小 test-only 修复任务，限定为 continuous E2E 与 `NODE_ENV=test` 的离线脚本 fake harness，不修改生产语义、Preload/IPC、依赖、schema、Provider 或产品配置。修复进入最新 `dev` 后，T807 从 Source/Coverage Gate 重新绑定并完整执行。
