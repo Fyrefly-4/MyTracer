@@ -138,6 +138,9 @@ test('runs the Electron shell with an isolated userData root', async () => {
       'start',
       'cancel',
       'retry',
+      'reject',
+      'confirmSuggestion',
+      'confirmUnderstanding',
       'close'
     ])
     expect(await page.evaluate(() => Object.keys(window.myTracer.aiConfiguration))).toEqual([

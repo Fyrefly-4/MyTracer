@@ -107,8 +107,11 @@ import {
 import {
   AI_CONFIGURATION_CHANNELS,
   AI_START_HELP_CHANNELS,
+  type AiStartHelpSessionInputDto,
   type AiConfigurationStatusDto,
   type AiStartHelpSessionDto,
+  type ConfirmAiStartHelpSuggestionInputDto,
+  type ConfirmAiStartHelpUnderstandingInputDto,
   type StartAiStartHelpInputDto
 } from '../contracts/ai-start-help'
 
@@ -299,9 +302,22 @@ const api: MyTracerApi = Object.freeze({
     status: (): Promise<AiStartHelpSessionDto> => ipcRenderer.invoke(AI_START_HELP_CHANNELS.status),
     start: (input: StartAiStartHelpInputDto): Promise<AiStartHelpSessionDto> =>
       ipcRenderer.invoke(AI_START_HELP_CHANNELS.start, input),
-    cancel: (): Promise<AiStartHelpSessionDto> => ipcRenderer.invoke(AI_START_HELP_CHANNELS.cancel),
-    retry: (): Promise<AiStartHelpSessionDto> => ipcRenderer.invoke(AI_START_HELP_CHANNELS.retry),
-    close: (): Promise<AiStartHelpSessionDto> => ipcRenderer.invoke(AI_START_HELP_CHANNELS.close)
+    cancel: (input: AiStartHelpSessionInputDto): Promise<AiStartHelpSessionDto> =>
+      ipcRenderer.invoke(AI_START_HELP_CHANNELS.cancel, input),
+    retry: (input: AiStartHelpSessionInputDto): Promise<AiStartHelpSessionDto> =>
+      ipcRenderer.invoke(AI_START_HELP_CHANNELS.retry, input),
+    reject: (input: AiStartHelpSessionInputDto): Promise<AiStartHelpSessionDto> =>
+      ipcRenderer.invoke(AI_START_HELP_CHANNELS.reject, input),
+    confirmSuggestion: (
+      input: ConfirmAiStartHelpSuggestionInputDto
+    ): Promise<AiStartHelpSessionDto> =>
+      ipcRenderer.invoke(AI_START_HELP_CHANNELS.confirmSuggestion, input),
+    confirmUnderstanding: (
+      input: ConfirmAiStartHelpUnderstandingInputDto
+    ): Promise<AiStartHelpSessionDto> =>
+      ipcRenderer.invoke(AI_START_HELP_CHANNELS.confirmUnderstanding, input),
+    close: (input: AiStartHelpSessionInputDto): Promise<AiStartHelpSessionDto> =>
+      ipcRenderer.invoke(AI_START_HELP_CHANNELS.close, input)
   }),
   aiConfiguration: Object.freeze({
     status: (): Promise<AiConfigurationStatusDto> =>

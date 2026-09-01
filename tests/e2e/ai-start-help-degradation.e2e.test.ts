@@ -66,7 +66,7 @@ test('Start Help is explicit, read-only, validated, cancellable, and degradable'
 
       if (scenario === 'success') {
         await expect(page.getByText('先打开行动需要的资料，只看一眼标题。')).toBeVisible()
-        await expect(page.getByText(/不会修改或记录任何数据/)).toBeVisible()
+        await expect(page.getByText(/只有逐项明确确认的最终文本会被保存/)).toBeVisible()
       } else if (scenario === 'invalid-response') {
         await expect(page.getByText(/未通过安全验证/)).toBeVisible()
       } else {

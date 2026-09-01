@@ -2,7 +2,7 @@
 
 > 任务类型：implementation / S6 E6-02
 >
-> 合同状态：**done；Implementation Candidate `bc5461e3bcc4e0ca94abbffe9ef2f898c7bbc4a9` 已通过本地 targeted/affected/aggregate 验证、Windows package smoke、完整 diff 与独立 review，以及 PR #47 candidate run `33379861872` 的 required CI。项目所有者于 2026-08-31 批准 docs closeout 并明确决定本次收口将 T062 标记为完成。**
+> 合同状态：**done；Implementation Candidate `bc5461e3bcc4e0ca94abbffe9ef2f898c7bbc4a9` 已通过本地 targeted/affected/aggregate 验证、Windows package smoke、完整 diff 与独立 review，以及 PR #47 candidate run `33379861872` 的 required CI。项目所有者于 2026-08-31 批准 docs closeout 并明确决定本次收口将 T062 标记为完成；final head `a458171be3504492a5c581b595f272c1e1e0e097` 的 run `33381804748`、squash merge `dev@233d6790c6c5e11bb454b22eb027443eef54a01e` 和 post-merge run `33382653020` 后经项目所有者人工复核，于 T063 合同分支补记。**
 >
 > 草案日期：2026-08-31
 >
@@ -538,7 +538,7 @@ integration:
   freshness_required: true
   affected_regression_required: true
   task_delivery_revision: bc5461e3bcc4e0ca94abbffe9ef2f898c7bbc4a9
-  dev_integration_revision: null
+  dev_integration_revision: 233d6790c6c5e11bb454b22eb027443eef54a01e
   stage_final_integration_revision: null
 ```
 
@@ -602,6 +602,8 @@ integration_freshness:
 - **Local validation**：合同 targeted Unit 76/76；targeted Integration 25/25，1 个 live-only case 按批准策略 skip；证据化完整 `verify` 为 Unit 239/239、Integration 122/122（另 1 skip）、Electron E2E 21 pass；Windows x64 package 与 unpacked/隔离 NSIS package smoke 1/1 通过。
 - **Hosted candidate CI**：PR #47 run `33379861872` success；head `bc5461e3bcc4e0ca94abbffe9ef2f898c7bbc4a9`，test-merge `66c26e1eef18d63827925f43ecacdff5b6710e33`；PR quality、Governance、Full Windows verification、CI Gate 和 Windows required gate 通过。
 - **Hosted artifact**：`verification-evidence-33379861872-1`，artifact id `9753439951`，digest `sha256:db246dea65dcb78170fe253c0e419b5517b8ece373bf9c0bfa2f84d1ada36997`；aggregate exit 0、capture complete、head/test-merge 字段正确且无 capture error。
+- **Final-head CI**：PR #47 final head `a458171be3504492a5c581b595f272c1e1e0e097` 的 run `33381804748` 为 `success`；PR quality、Governance checks、Full Windows verification、CI Gate 和 Windows required gate 全部通过。artifact `verification-evidence-33381804748-1`（artifact id `9754183630`）记录 `ci.headRevision=a458171...`、`ci.mergeRevision=f7a215cd0926f3b48c2b6148eeab2ffb92d73fdb`、aggregate exit 0 和 complete capture。较早同 head 的 run `33381664343`、`33381682938`、`33381802844` 因 concurrency 被取消，不解释为最终失败。
+- **Dev integration / post-merge CI**：PR #47 于 2026-08-31 squash merge 为 `dev_integration_revision=233d6790c6c5e11bb454b22eb027443eef54a01e`；final head 与 integration revision 的 Git tree 均为 `0122b9384f2b094f9d9b40a711e1e0ad6158522a`。该 `dev` revision 的 push run `33382653020` 为 `success`，Governance checks、Full Windows verification、CI Gate 和 Windows required gate 全部通过；artifact `verification-evidence-33382653020-1`（artifact id `9754470682`）记录 `sourceRevision/headRevision=233d679...`、aggregate exit 0 和 complete capture。
 - **Independent review**：修复 Main-owned deadline、closed/configuration late-response suppression 和 SDK timeout 分类后复核无未处理 material finding。
 - **Owner closeout**：项目所有者于 2026-08-31 确认云端 CI 通过，批准 docs closeout、`done` 标记和最后一次任务分支推送；未另行报告真实 Provider live/manual procedure，该未执行程序不伪造为 pass。
 - **Evidence**：`EV-T062-001`。

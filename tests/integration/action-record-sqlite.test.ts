@@ -48,6 +48,99 @@ afterEach(async () => {
 })
 
 describe('ActionRecord SQLite integration', () => {
+  it('adds one confirmed AI Understanding transactionally and preserves the ActionRecord', async () => {
+    const { path, connection } = await openDatabase()
+    const clock = new FakeClock({ instant, localDate: '2026-08-12', timeZone: 'Asia/Shanghai' })
+    const services = servicesFor(connection, clock, [
+      'goal-1',
+      'action-1',
+      'record-1',
+      'understanding-ai-1'
+    ])
+    services.goals.createGoal({ name: 'Goal', initialNextAction: { title: 'Action' } })
+    services.records.recordAction({
+      actionId: 'action-1',
+      capturedOn: '2026-08-12',
+      durationMinutes: 7,
+      outcome: 'partial',
+      nextStep: 'Keep the original record'
+    })
+    const before = connection.repository.readSnapshot()
+
+    expect(
+      services.records.addConfirmedUnderstandingToActionRecord({
+        actionRecordId: 'record-1',
+        expectedGoalId: 'goal-1',
+        text: 'A confirmed candidate'
+      })
+    ).toMatchObject({ source: 'ai_candidate_confirmed', text: 'A confirmed candidate' })
+    const after = connection.repository.readSnapshot()
+    expect(after.actionRecords).toEqual(before.actionRecords)
+    expect(after.actions).toEqual(before.actions)
+    expect(after.goals).toEqual(before.goals)
+    expect(after.todaySelections).toEqual(before.todaySelections)
+    expect(after.understandings).toEqual([
+      expect.objectContaining({
+        id: 'understanding-ai-1',
+        actionRecordId: 'record-1',
+        source: 'ai_candidate_confirmed'
+      })
+    ])
+
+    connection.close()
+    const reopened = SqliteConnection.open(path)
+    try {
+      expect(
+        servicesFor(reopened, clock, []).records.getActionRecordDetail('record-1').understandings
+      ).toEqual([expect.objectContaining({ source: 'ai_candidate_confirmed' })])
+    } finally {
+      reopened.close()
+    }
+  })
+
+  it('rolls back a confirmed Understanding when its single transaction fails', async () => {
+    const { connection } = await openDatabase()
+    const clock = new FakeClock({ instant, localDate: '2026-08-12', timeZone: 'Asia/Shanghai' })
+    const initial = servicesFor(connection, clock, ['goal-1', 'action-1', 'record-1'])
+    initial.goals.createGoal({ name: 'Goal', initialNextAction: { title: 'Action' } })
+    initial.records.recordAction({
+      actionId: 'action-1',
+      capturedOn: '2026-08-12',
+      durationMinutes: 1,
+      outcome: 'partial'
+    })
+    const before = connection.repository.readSnapshot()
+    const failingUnitOfWork: UnitOfWorkPort = {
+      transaction: <T>(work: (repository: RepositoryPort) => T): T =>
+        connection.transaction((repository) =>
+          work(
+            new Proxy(repository, {
+              get(target, property, receiver) {
+                if (property === 'saveUnderstanding') {
+                  return () => {
+                    throw new Error('injected Understanding write failure')
+                  }
+                }
+                const value = Reflect.get(target, property, receiver) as unknown
+                return typeof value === 'function' ? value.bind(target) : value
+              }
+            })
+          )
+        )
+    }
+    const failing = servicesFor(connection, clock, ['understanding-ai-1'], failingUnitOfWork)
+
+    expect(() =>
+      failing.records.addConfirmedUnderstandingToActionRecord({
+        actionRecordId: 'record-1',
+        expectedGoalId: 'goal-1',
+        text: 'Must roll back'
+      })
+    ).toThrow('injected Understanding write failure')
+    expect(connection.repository.readSnapshot()).toEqual(before)
+    connection.close()
+  })
+
   it('saves quick/deep facts, applies an explicit post-record choice, and survives a real reopen', async () => {
     const { path, connection } = await openDatabase()
     const clock = new FakeClock({ instant, localDate: '2026-08-12', timeZone: 'Asia/Shanghai' })

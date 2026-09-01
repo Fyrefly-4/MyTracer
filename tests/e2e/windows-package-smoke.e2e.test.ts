@@ -121,6 +121,9 @@ async function verifyPackagedApplication(
       'start',
       'cancel',
       'retry',
+      'reject',
+      'confirmSuggestion',
+      'confirmUnderstanding',
       'close'
     ])
     expect(await page.evaluate(() => Object.keys(window.myTracer.aiConfiguration))).toEqual([
