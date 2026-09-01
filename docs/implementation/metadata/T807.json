@@ -55,6 +55,20 @@
       ],
       "risk": "medium",
       "integration_policy": "serial"
+    },
+    {
+      "files": ["src/main/index.ts", "tests/e2e/ai-start-help-ac02.e2e.test.ts"],
+      "modules": ["node-env-test-scripted-ai-provider", "continuous-ac02-e2e"],
+      "schema_tables": [],
+      "ipc_contracts": [],
+      "domain_invariants": [
+        "test-only-seam-does-not-change-non-test-behavior",
+        "continuous-ac02-uses-one-isolated-database",
+        "fake-provider-never-calls-live-network",
+        "no-public-test-control-api-is-added"
+      ],
+      "risk": "medium",
+      "integration_policy": "serial"
     }
   ],
   "external": [

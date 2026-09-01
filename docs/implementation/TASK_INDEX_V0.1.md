@@ -1,7 +1,7 @@
 # MyTracer v0.1 任务索引
 
 > 文档状态：v0.1 实施任务基线  
-> 当前阶段：S0～S3 已完成并形成 `v0.1.0-beta.1` 里程碑；T041～T052 已集成至 `dev@84b596e12e54db098857004497a4d1964dcdc23c`；T806 仍在 `review`；T061～T063 已集成至 `dev@f06b1e97da07dffc05814518ad8ad83ed3e051b9`；T807 S6 聚合验收因 continuous AC-02 证据缺口为 `blocked`
+> 当前阶段：S0～S3 已完成并形成 `v0.1.0-beta.1` 里程碑；T041～T052 已集成至 `dev@84b596e12e54db098857004497a4d1964dcdc23c`；T806 仍在 `review`；T061～T063 已集成至 `dev@f06b1e97da07dffc05814518ad8ad83ed3e051b9`；T807 S6 聚合验收已恢复为 `active`
 > 状态来源：本文件是任务执行状态的唯一账本，架构实施计划只定义范围和顺序
 
 ## 1. 使用规则
@@ -48,7 +48,7 @@
 - T061 task delivery revision `5f98b2f61026721f22fe6cd627c3b402678e9a93` 已通过 targeted/affected/完整 `verify`、完整 diff/独立 review、candidate CI、项目所有者人工测试和 owner-approved docs closeout；失败 run `33354175786` 由 final head `d60978917546f6547a1615c6aa03e87d08c0d2ce` 的成功 run `33355327790` supersede。PR #46 已 squash merge 为 `dev_integration_revision=4630878dacd0a15dbe8446cb26d9cea790d3ed6e`，post-merge run `33355939824` 成功；任务为 `done`，结果见 `EV-T061-001`。T062/T063、AC-02 和 S6 final gate 仍独立受控。
 - T062 task delivery revision `bc5461e3bcc4e0ca94abbffe9ef2f898c7bbc4a9` 已通过本地 targeted/affected/完整 `verify`、Windows package smoke、完整 diff/独立 review 和 PR #47 candidate run `33379861872`；final head `a458171be3504492a5c581b595f272c1e1e0e097` 的 run `33381804748` 成功，并 squash merge 为 `dev_integration_revision=233d6790c6c5e11bb454b22eb027443eef54a01e`，post-merge run `33382653020` 成功。项目所有者已人工复核上述收口事实；结果见 `EV-T062-001`。
 - T063 task delivery revision `fee398e08ef687bd75d9dae10e6254f09e7c9896` 已通过本地 targeted/affected/完整 `verify`、Windows package/unpacked/隔离 NSIS smoke、完整 diff/独立 review和 PR #48 implementation-candidate run `33470990276`。docs closeout final head `2e3fc746fcafbe67a0c4a3bc24671e6a50c2ac94` 的失败 run `33474459495` 由同 revision 的成功重跑 `33475609355` supersede；PR #48 已 squash merge 为 `dev_integration_revision=f06b1e97da07dffc05814518ad8ad83ed3e051b9`，post-merge run `33476194961` 成功。任务为 `done`，项目所有者人工 AC-02 与 S6 final gate 仍为 `pending`；结果见 `EV-T063-001`。
-- T807 是项目所有者于 2026-09-01 批准并激活的 S6 聚合验收与发布准备任务，固定产品 source 为 `dev@f06b1e97da07dffc05814518ad8ad83ed3e051b9`。Coverage Gate 发现现有 E2E 未在同一连续数据库覆盖未触发 call count/request capture、跨 Goal/5 条 marker、真实 timeout、timeout retry/late response、原文接受和完整 Understanding 拒绝分支，任务现为 `blocked` 并等待独立 test-only 修复授权；尚未开始 aggregate `verify`/package 或创建 Draft PR。真实 LiteLLM、人工 AC-02、Ready、merge、tag 和 Release 仍受独立 Gate。合同见 [`T807_S6_FINAL_ACCEPTANCE.md`](T807_S6_FINAL_ACCEPTANCE.md)。
+- T807 是项目所有者于 2026-09-01 批准并激活的 S6 聚合验收与发布准备任务，固定产品 source 为 `dev@f06b1e97da07dffc05814518ad8ad83ed3e051b9`。Coverage Gate 发现 continuous AC-02 证据缺口后，项目所有者废弃未创建任何产物的 T808，并明确授权在 T807 内只修改 continuous E2E 与 `NODE_ENV=test` 离线 scripted fake harness；任务恢复为 `active`。真实 LiteLLM、人工 AC-02、Ready、merge、tag 和 Release 仍受独立 Gate。合同见 [`T807_S6_FINAL_ACCEPTANCE.md`](T807_S6_FINAL_ACCEPTANCE.md)。
 
 ## 4. 任务总表
 
@@ -88,7 +88,7 @@
 | T804 | GOV-03       | 统一收口长期文档中的任务、里程碑、tag/release 与 GitHub 配置事实                            | GW-001/002/004/008～010；不改变 FR/AC/D/ED                           | T803、T091                    | `done`    | `EV-T804-001`                |
 | T805 | GOV-06       | 收敛 `/docs` 文档冗余、归档已完成治理合同并限定历史快照边界                                 | GW-001/003/004/009/010；不改变 FR/AC/D/ED                            | T090～T093、T804；dev@2b31bc6 | `done`    | `EV-T805-001`、`EV-T805-002` |
 | T806 | S4/S5 aggregate | 聚合验收 T041～T052、AC-05/06、package、migration/export、证据与合同归档                  | FR-REC01～REC06；FR-RV01～RV06；AC-05/06；AC-01/03/04/07 回归       | T041、T042、T051、T052        | `review`  | `EV-S4-S5-001`；final-head CI pending |
-| T807 | S6 aggregate    | 聚合验收 T061～T063、完整 AC-02、AI 隔离、package、证据收口与里程碑准备                   | FR-AI01～AI10；FR-C02/C03；AC-02；AC-01/03/04/05/06/07 回归         | T061、T062、T063              | `blocked` | continuous AC-02 testability gap         |
+| T807 | S6 aggregate    | 聚合验收 T061～T063、完整 AC-02、AI 隔离、package、证据收口与里程碑准备                   | FR-AI01～AI10；FR-C02/C03；AC-02；AC-01/03/04/05/06/07 回归         | T061、T062、T063              | `active`  | owner-approved test-only coverage fix    |
 
 ## 5. 阶段门与主线合并
 

@@ -2,7 +2,7 @@
 
 > 任务类型：S6 aggregate acceptance / evidence closeout / milestone preparation
 >
-> 合同状态：**blocked；Coverage Gate 发现 continuous AC-02 证据缺口，等待独立 test-only 修复授权**
+> 合同状态：**active；项目所有者已授权在 T807 内实施精确的 continuous AC-02 test-only 修复**
 >
 > 批准与激活日期：2026-09-01
 >
@@ -15,7 +15,7 @@
 - **Task ID**：T807
 - **Title**：S6 AI Start Help aggregate acceptance and release preparation
 - **Slice / Plan item**：S6 final gate
-- **Status**：`blocked`；合同已激活，但 S6 设计 §13.2/§13.3 的 continuous E2E 证据缺口阻止 Candidate Gate；人工 AC-02、文档收口范围、Ready、merge、tag 和 Release 仍是后续独立 Gate
+- **Status**：`active`；项目所有者已废弃 T808，并于 2026-09-01 明确授权在 T807 内完成第 16.1 节的窄 test-only 修复；人工 AC-02、文档收口范围、Ready、merge、tag 和 Release 仍是后续独立 Gate
 - **Base / target branch**：`dev`
 - **Expected branch**：`codex/s6-final-acceptance`
 - **Prior milestone**：`main@c6edfc550fd395a4c6e9626bc19232971fe58e3f`
@@ -30,7 +30,7 @@ T806 曾在一次未采用的修复备选中建议把 `T807` 用作 test-only �
 
 自动门禁通过后，向项目所有者提交人工 AC-02 程序并保持 S6 final gate 为 `pending`，直至所有者报告实际结果。随后仅按另行批准的精确 documentation impact matrix 收口 Evidence、Task Index、README、metadata 和统一归档，创建到 `dev` 的 Draft PR，并准备但不创建 `dev → main` PR 正文与 `v0.1.0-beta.3` 候选发布说明。
 
-本任务只验收、审查和收口，不实现或修复产品与测试。任何必需修复必须保留失败证据并由项目所有者另行授权独立最小修复任务。
+本任务原则上只验收、审查和收口，不修复产品。唯一例外是第 16.1 节由项目所有者追加批准的 continuous AC-02 test-only 修复；该例外不得改变非测试运行路径、产品语义、公开接口或 AI 权限。任何其他修复仍须保留失败证据并另行申请权限。
 
 ## 3. 依据与追踪
 
@@ -112,6 +112,8 @@ dependencies:
 - `docs/implementation/metadata/T062.json`
 - `docs/implementation/metadata/T063.json`
 - `README.md`
+- `src/main/index.ts`（仅允许在 `NODE_ENV=test` 的现有离线 Provider seam 中增加 deterministic scripted fake、内部 request/call 断言和有界 timeout/late-response 测试编排；不得改变非测试路径或新增公开接口）
+- `tests/e2e/ai-start-help-ac02.e2e.test.ts`（仅允许补齐 S6 §13.2/§13.3 continuous AC-02 的同一临时数据库证据）
 - 到 `dev` 的 T807 Draft PR 正文
 - 待 T807 实际进入 `dev` 后供项目所有者审批的 `dev → main` PR 正文和 `v0.1.0-beta.3` 候选发布说明；不得据此创建 PR、tag 或 Release
 
@@ -125,8 +127,8 @@ dependencies:
 
 ## 6. 明确非范围
 
-- 任何 `src/**`、`tests/**`、`.github/**`、工具、配置、依赖、lockfile、schema、migration 或 export 实现变化。
-- 在 T807 内修复产品、测试、CI、package 或文档验证器；发现缺陷时停止受影响门禁并申请独立最小修复授权。
+- 除第 5 节和第 16.1 节精确列出的两个 test-only 文件外，任何 `src/**`、`tests/**`、`.github/**`、工具、配置、依赖、lockfile、schema、migration 或 export 实现变化。
+- 除第 16.1 节外，在 T807 内修复产品、测试、CI、package 或文档验证器；发现其他缺陷时停止受影响门禁并申请新的最小修复授权。
 - 扩大 AI 上下文、自动重试、自动规划、主动监督、跨 Goal 分析、长期记忆、会话持久化、对话历史或 Provider 写权限。
 - 读取真实凭据、真实用户数据、真实 `userData`，或未经独立批准调用真实 LiteLLM。
 - S7、延期 FR、G4 完成声明或新增用户概念。
@@ -270,7 +272,7 @@ integration:
 
 1. **Task Gate**：合同、metadata、Task Index 激活并通过 metadata/format/diff 校验。
 2. **Source Gate**：重新确认最新 `origin/dev` 与固定 source；若 `dev` 推进，按 freshness 评估并重跑受影响范围。
-3. **Coverage Gate**：逐项将 S6 §13.2/§13.3 映射到真实测试断言；缺失即停止通过声明。
+3. **Coverage Gate**：按第 16.1 节完成并验证 owner-approved test-only 修复，逐项将 S6 §13.2/§13.3 映射到真实测试断言；仍有缺失即停止通过声明。
 4. **Candidate Gate**：定向测试、affected AC、`verify`、package、package smoke、完整 diff 与独立只读 review 全部通过。
 5. **Manual Gate**：向项目所有者提交第 10.3 节；实际结果前 S6 final gate 为 `pending`。
 6. **Docs Gate**：提交精确 documentation impact matrix，获得项目所有者批准后才归档/删除 T061～T063 合同并更新长期文档。
@@ -306,4 +308,17 @@ T807 只有在合同要求的自动化、人工、文档、final-head CI 和 Dra
 - `tests/e2e/ai-start-help-degradation.e2e.test.ts` 在 timeout 场景中立即点击取消，没有等待 Main deadline 产生 `timeout`；not-configured、invalid response 和 cancel 分散在每次重置数据库的独立进程。
 - timeout 后 retry、旧 late response 被释放且不能覆盖新 generation，以及 authentication/network/provider-unavailable 在核心 snapshot 不变时手工路径仍可用，只在较低层或分散场景有证据，未满足 S6 §13.2 要求的同一数据库连续 E2E。
 
-因此未开始 T807 Candidate Gate 的 `verify`、package 或 package smoke，也未创建 Draft PR；绿色 task-level 测试不被提升为 S6 aggregate pass。建议项目所有者另行批准一个最小 test-only 修复任务，限定为 continuous E2E 与 `NODE_ENV=test` 的离线脚本 fake harness，不修改生产语义、Preload/IPC、依赖、schema、Provider 或产品配置。修复进入最新 `dev` 后，T807 从 Source/Coverage Gate 重新绑定并完整执行。
+因此当时未开始 T807 Candidate Gate 的 `verify`、package 或 package smoke，也未创建 Draft PR；绿色 task-level 测试没有被提升为 S6 aggregate pass。
+
+### 16.1 项目所有者追加批准的 test-only 修复
+
+项目所有者于 2026-09-01 先批准 T808，随后明确废弃 T808，并指示所有修复在 T807 上进行。T808 本地分支相对 `origin/dev` 独有提交数为 0，没有合同、文件、commit、push 或 PR，已安全删除。
+
+T807 获准实施以下单一例外：
+
+- 只在 `src/main/index.ts` 已有的 `NODE_ENV=test` 离线 seam 内建立进程内 scripted fake sequence；它可以用确定性响应顺序证明未触发时未消费调用、检查 Provider-facing DTO 的 allowlist/最多 5 条/禁止 marker，并模拟 timeout、late response 和已批准错误分类。
+- 只在 `tests/e2e/ai-start-help-ac02.e2e.test.ts` 扩展同一临时 SQLite/`userData` 的 continuous 程序，覆盖原文接受、编辑确认、拒绝、关闭、取消、真实 timeout、invalid response、authentication/network/provider failure、timeout retry/late response、第三条 Understanding 拒绝和无合法 ActionRecord。
+- 所有测试输入、key 和 marker 为合成值；不得读取真实 key、调用 LiteLLM、访问真实 `userData` 或把 request/response 写入日志、SQLite、export 或公开 IPC。
+- 禁止修改 Preload/Renderer/IPC/Provider Port、依赖、schema、migration、产品配置、非测试网络路径、AI 上下文选择规则或核心写权限。
+
+修复后必须从定向 continuous E2E 开始，依次重跑 affected AC、`verify`、package/package smoke、完整 diff 与独立 review。任何超出上述两个文件或改变非测试行为的需要均重新触发停止条件。
