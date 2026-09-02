@@ -69,6 +69,31 @@
       ],
       "risk": "medium",
       "integration_policy": "serial"
+    },
+    {
+      "files": [
+        "src/infrastructure/ai/litellm-start-help-provider.ts",
+        "src/application/ai-start-help.ts",
+        "src/main/ai-start-help-session.ts",
+        "tests/unit/ai-start-help-provider.test.ts",
+        "tests/unit/ai-start-help-session.test.ts",
+        "tests/unit/process-governance.test.ts",
+        "tests/integration/ai-start-help-provider-contract.test.ts"
+      ],
+      "modules": [
+        "sdk-log-isolation",
+        "provider-failure-degradation",
+        "live-contract-default-isolation"
+      ],
+      "schema_tables": [],
+      "ipc_contracts": [],
+      "domain_invariants": [
+        "prompt-and-response-never-enter-sdk-logs",
+        "unexpected-provider-failures-degrade-to-internal",
+        "ordinary-verify-never-calls-live-provider"
+      ],
+      "risk": "high",
+      "integration_policy": "serial"
     }
   ],
   "external": [

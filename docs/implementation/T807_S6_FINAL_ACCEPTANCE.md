@@ -2,7 +2,7 @@
 
 > 任务类型：S6 aggregate acceptance / evidence closeout / milestone preparation
 >
-> 合同状态：**active；项目所有者已授权在 T807 内实施精确的 continuous AC-02 test-only 修复**
+> 合同状态：**active；项目所有者已授权在 T807 内实施精确的 continuous AC-02 test-only 修复及第 16.2 节三项边界修复**
 >
 > 批准与激活日期：2026-09-01
 >
@@ -15,7 +15,7 @@
 - **Task ID**：T807
 - **Title**：S6 AI Start Help aggregate acceptance and release preparation
 - **Slice / Plan item**：S6 final gate
-- **Status**：`active`；项目所有者已废弃 T808，并于 2026-09-01 明确授权在 T807 内完成第 16.1 节的窄 test-only 修复；人工 AC-02、文档收口范围、Ready、merge、tag 和 Release 仍是后续独立 Gate
+- **Status**：`active`；项目所有者已废弃 T808，于 2026-09-01 明确授权第 16.1 节的窄 test-only 修复，并于 2026-09-02 批准第 16.2 节三项独立审查边界修复；人工 AC-02、文档收口范围、Ready、merge、tag 和 Release 仍是后续独立 Gate
 - **Base / target branch**：`dev`
 - **Expected branch**：`codex/s6-final-acceptance`
 - **Prior milestone**：`main@c6edfc550fd395a4c6e9626bc19232971fe58e3f`
@@ -30,7 +30,7 @@ T806 曾在一次未采用的修复备选中建议把 `T807` 用作 test-only �
 
 自动门禁通过后，向项目所有者提交人工 AC-02 程序并保持 S6 final gate 为 `pending`，直至所有者报告实际结果。随后仅按另行批准的精确 documentation impact matrix 收口 Evidence、Task Index、README、metadata 和统一归档，创建到 `dev` 的 Draft PR，并准备但不创建 `dev → main` PR 正文与 `v0.1.0-beta.3` 候选发布说明。
 
-本任务原则上只验收、审查和收口，不修复产品。唯一例外是第 16.1 节由项目所有者追加批准的 continuous AC-02 test-only 修复；该例外不得改变非测试运行路径、产品语义、公开接口或 AI 权限。任何其他修复仍须保留失败证据并另行申请权限。
+本任务原则上只验收、审查和收口，不修复产品。例外仅限项目所有者追加批准的第 16.1 节 continuous AC-02 test-only 修复和第 16.2 节三项安全/降级边界修复；这些例外不得改变产品语义、公开接口、依赖、schema、AI 上下文或写权限。任何其他修复仍须保留失败证据并另行申请权限。
 
 ## 3. 依据与追踪
 
@@ -114,6 +114,13 @@ dependencies:
 - `README.md`
 - `src/main/index.ts`（仅允许在 `NODE_ENV=test` 的现有离线 Provider seam 中增加 deterministic scripted fake、内部 request/call 断言和有界 timeout/late-response 测试编排；不得改变非测试路径或新增公开接口）
 - `tests/e2e/ai-start-help-ac02.e2e.test.ts`（仅允许补齐 S6 §13.2/§13.3 continuous AC-02 的同一临时数据库证据）
+- `src/infrastructure/ai/litellm-start-help-provider.ts`（仅允许显式关闭 SDK 日志，防止 prompt/response 因环境日志级别泄漏）
+- `src/application/ai-start-help.ts`（仅允许把 Provider `capabilities()` 的意外异常归一化为可降级的 `internal`）
+- `src/main/ai-start-help-session.ts`（仅允许捕获 `execute()` 的意外 rejected Promise，并在当前 generation 上进入可重试 `failed/internal`）
+- `tests/unit/ai-start-help-provider.test.ts`
+- `tests/unit/ai-start-help-session.test.ts`
+- `tests/unit/process-governance.test.ts`
+- `tests/integration/ai-start-help-provider-contract.test.ts`（仅允许让 live contract 同时要求专用 npm lifecycle 与显式 live flag，确保普通 `verify` 即使残留环境变量也不会调用真实 Provider）
 - 到 `dev` 的 T807 Draft PR 正文
 - 待 T807 实际进入 `dev` 后供项目所有者审批的 `dev → main` PR 正文和 `v0.1.0-beta.3` 候选发布说明；不得据此创建 PR、tag 或 Release
 
@@ -127,8 +134,8 @@ dependencies:
 
 ## 6. 明确非范围
 
-- 除第 5 节和第 16.1 节精确列出的两个 test-only 文件外，任何 `src/**`、`tests/**`、`.github/**`、工具、配置、依赖、lockfile、schema、migration 或 export 实现变化。
-- 除第 16.1 节外，在 T807 内修复产品、测试、CI、package 或文档验证器；发现其他缺陷时停止受影响门禁并申请新的最小修复授权。
+- 除第 5 节、第 16.1 节和第 16.2 节精确列出的文件外，任何 `src/**`、`tests/**`、`.github/**`、工具、配置、依赖、lockfile、schema、migration 或 export 实现变化。
+- 除第 16.1～16.2 节外，在 T807 内修复产品、测试、CI、package 或文档验证器；发现其他缺陷时停止受影响门禁并申请新的最小修复授权。
 - 扩大 AI 上下文、自动重试、自动规划、主动监督、跨 Goal 分析、长期记忆、会话持久化、对话历史或 Provider 写权限。
 - 读取真实凭据、真实用户数据、真实 `userData`，或未经独立批准调用真实 LiteLLM。
 - S7、延期 FR、G4 完成声明或新增用户概念。
@@ -322,3 +329,16 @@ T807 获准实施以下单一例外：
 - 禁止修改 Preload/Renderer/IPC/Provider Port、依赖、schema、migration、产品配置、非测试网络路径、AI 上下文选择规则或核心写权限。
 
 修复后必须从定向 continuous E2E 开始，依次重跑 affected AC、`verify`、package/package smoke、完整 diff 与独立 review。任何超出上述两个文件或改变非测试行为的需要均重新触发停止条件。
+
+### 16.2 项目所有者批准的独立审查边界修复
+
+2026-09-02，独立只读审查在已集成的 T062 边界中确认三项 material finding：OpenAI SDK 可受 `OPENAI_LOG` 影响记录请求/响应；Provider `capabilities()` 或 Main session `execute()` 意外抛出时可能绕过已定义的 `internal` 降级；live contract 仅依赖环境 flag，普通 integration/`verify` 在残留 flag 与 key 并存时可能访问真实 Gateway。项目所有者明确批准在 T807 内修复，且要求不在本地重跑完整门禁，推送后停止并报告下一步行动。
+
+本次授权只允许：
+
+- 在唯一生产 adapter 创建 SDK client 时固定 `logLevel: 'off'`，不依赖外部环境日志级别；
+- 将 `capabilities()` 的意外异常和当前 session generation 的 `execute()` rejected Promise 归一化为 `internal`，保持取消、关闭和迟到 generation 无效；
+- live contract 必须同时满足 `npm_lifecycle_event=test:ai-contract` 与 `MYTRACER_AI_LIVE_CONTRACT=1`，普通 `verify` 即使存在残留 flag/key 也只能 skip；
+- 仅增加对应 unit/static/integration guard，不读取真实 key、不调用真实 Provider。
+
+本授权不允许更改 SDK 版本、package scripts、依赖、公开 IPC/Preload、Renderer、schema、配置格式、上下文、自动 retry 或任何写权限。实现后只运行 metadata、format/typecheck/lint 和精确相关测试；不得在本地重跑完整 `verify`、package、package smoke 或全量门禁。提交并推送当前 Draft PR 后进入 handoff，新的 exact-head hosted CI、再次独立审查、人工 AC-02 与文档收口继续 pending。
