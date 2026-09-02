@@ -88,7 +88,7 @@
 | T804 | GOV-03       | 统一收口长期文档中的任务、里程碑、tag/release 与 GitHub 配置事实                            | GW-001/002/004/008～010；不改变 FR/AC/D/ED                           | T803、T091                    | `done`    | `EV-T804-001`                |
 | T805 | GOV-06       | 收敛 `/docs` 文档冗余、归档已完成治理合同并限定历史快照边界                                 | GW-001/003/004/009/010；不改变 FR/AC/D/ED                            | T090～T093、T804；dev@2b31bc6 | `done`    | `EV-T805-001`、`EV-T805-002` |
 | T806 | S4/S5 aggregate | 聚合验收 T041～T052、AC-05/06、package、migration/export、证据与合同归档                  | FR-REC01～REC06；FR-RV01～RV06；AC-05/06；AC-01/03/04/07 回归       | T041、T042、T051、T052        | `review`  | `EV-S4-S5-001`；final-head CI pending |
-| T807 | S6 aggregate    | 聚合验收 T061～T063、完整 AC-02、AI 隔离、package、证据收口与里程碑准备                   | FR-AI01～AI10；FR-C02/C03；AC-02；AC-01/03/04/05/06/07 回归         | T061、T062、T063              | `active`  | owner-approved coverage + boundary fixes |
+| T807 | S6 aggregate    | 聚合验收 T061～T063、完整 AC-02、AI 隔离、package、证据收口与里程碑准备                   | FR-AI01～AI10；FR-C02/C03；AC-02；AC-01/03/04/05/06/07 回归         | T061、T062、T063              | `active`  | `EV-T807-001`（partial）                  |
 
 ## 5. 阶段门与主线合并
 

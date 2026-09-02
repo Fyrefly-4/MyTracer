@@ -342,3 +342,9 @@ T807 获准实施以下单一例外：
 - 仅增加对应 unit/static/integration guard，不读取真实 key、不调用真实 Provider。
 
 本授权不允许更改 SDK 版本、package scripts、依赖、公开 IPC/Preload、Renderer、schema、配置格式、上下文、自动 retry 或任何写权限。实现后只运行 metadata、format/typecheck/lint 和精确相关测试；不得在本地重跑完整 `verify`、package、package smoke 或全量门禁。提交并推送当前 Draft PR 后进入 handoff，新的 exact-head hosted CI、再次独立审查、人工 AC-02 与文档收口继续 pending。
+
+### 16.3 边界修复本地窄验证与 handoff
+
+第 16.2 节实现 revision 为 `34454b557b43a872db616f5cff03fb030dcfb336`。在该 exact revision 上，相关 unit 为 3 files、45/45 通过；Provider contract 在故意设置残留 `MYTRACER_AI_LIVE_CONTRACT=1`、未提供 key 且非专用 npm lifecycle 的条件下为 6/6 offline 通过、1 live case skip，证明普通测试入口不会访问真实 Gateway。此前同内容上还通过 metadata、format、typecheck 和 lint。
+
+遵照项目所有者 2026-09-02 指令，本地没有重跑 `verify`、continuous E2E、package 或 package smoke。旧 head `0f85a011064233a1039384edd96870e28fd79bd5` 的 hosted green 不能证明当前修复 head；推送后 T807 停在 handoff，等待 exact-head hosted CI、独立复核、人工 AC-02 和文档收口。
