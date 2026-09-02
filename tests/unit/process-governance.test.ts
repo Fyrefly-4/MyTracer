@@ -626,6 +626,7 @@ describe('T062 static Provider and process boundaries', () => {
     )
 
     expect(provider).toContain("from 'openai'")
+    expect(provider).toContain("logLevel: 'off'")
     ;[preload, renderer, contract].forEach((source) => {
       expect(source).not.toContain("from 'openai'")
       expect(source).not.toContain('litellm-gateway-811499828950')
@@ -643,5 +644,12 @@ describe('T062 static Provider and process boundaries', () => {
     expect(packageJson.dependencies.openai).toBe('7.8.0')
     expect(packageJson.scripts['test:ai-contract']).toContain('MYTRACER_AI_LIVE_CONTRACT=1')
     expect(packageJson.scripts.verify).not.toContain('test:ai-contract')
+
+    const liveContract = readFileSync(
+      join(repositoryRoot, 'tests', 'integration', 'ai-start-help-provider-contract.test.ts'),
+      'utf8'
+    )
+    expect(liveContract).toContain("process.env.npm_lifecycle_event === 'test:ai-contract'")
+    expect(liveContract).toContain("process.env.MYTRACER_AI_LIVE_CONTRACT === '1'")
   })
 })

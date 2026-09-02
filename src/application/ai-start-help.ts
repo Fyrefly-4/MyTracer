@@ -1,6 +1,7 @@
 import type {
   AiStartHelpProvider,
   AiProviderFailureCode,
+  ProviderCapabilities,
   StartHelpRequestDto
 } from './ports/ai-start-help'
 import { AiProviderError } from './ports/ai-start-help'
@@ -205,7 +206,12 @@ export class AiStartHelpService {
     lifecycleSignal: AbortSignal
   ): Promise<AiStartHelpExecutionResult> {
     if (lifecycleSignal.aborted) return failure('cancelled')
-    const capabilities = this.options.provider.capabilities()
+    let capabilities: ProviderCapabilities
+    try {
+      capabilities = this.options.provider.capabilities()
+    } catch {
+      return failure('internal')
+    }
     if (!capabilities.configured) return failure('not-configured')
     if (!capabilities.available) return failure('credential-unavailable')
 

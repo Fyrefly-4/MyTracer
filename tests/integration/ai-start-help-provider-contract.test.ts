@@ -16,6 +16,9 @@ const request: StartHelpRequestDto = {
   recentRelevantRecords: []
 }
 const response = { acknowledgement: '先慢一点。', suggestions: [{ text: '打开资料。' }] }
+const liveContractEnabled =
+  process.env.npm_lifecycle_event === 'test:ai-contract' &&
+  process.env.MYTRACER_AI_LIVE_CONTRACT === '1'
 
 describe('AiStartHelpProvider shared offline contract', () => {
   it('keeps fake capture deep-cloned and offline', async () => {
@@ -91,7 +94,7 @@ describe('AiStartHelpProvider shared offline contract', () => {
     ).rejects.toMatchObject({ code: 'timeout' } satisfies Partial<AiProviderError>)
   })
 
-  it.skipIf(process.env.MYTRACER_AI_LIVE_CONTRACT !== '1')(
+  it.skipIf(!liveContractEnabled)(
     'live LiteLLM contract uses one synthetic request only',
     async () => {
       const apiKey = process.env.MYTRACER_LITELLM_API_KEY

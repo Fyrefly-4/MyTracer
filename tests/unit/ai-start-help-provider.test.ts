@@ -17,6 +17,20 @@ const validResponse = {
 }
 
 describe('AiStartHelpService', () => {
+  it('degrades an unexpected capabilities failure to retryable internal', async () => {
+    const result = await new AiStartHelpService({
+      provider: {
+        capabilities: () => {
+          throw new Error('synthetic capabilities failure')
+        },
+        requestStartHelp: () => Promise.reject(new Error('must not be called'))
+      },
+      generateCandidateId: () => 'candidate-1'
+    }).execute(request, new AbortController().signal)
+
+    expect(result).toEqual({ ok: false, error: { code: 'internal', retryable: true } })
+  })
+
   it('passes the frozen request and AbortSignal through the narrow provider port', async () => {
     const provider = new FakeAiProvider([{ kind: 'success', draft: validResponse }])
     const result = await new AiStartHelpService({

@@ -75,6 +75,7 @@ class OpenAiLiteLlmTransport implements LiteLlmTransport {
     this.client = new OpenAI({
       apiKey,
       baseURL: LITELLM_BASE_URL,
+      logLevel: 'off',
       maxRetries: 0,
       timeout: 18_000,
       fetch: approvedFetch

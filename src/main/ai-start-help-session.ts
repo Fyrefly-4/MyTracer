@@ -333,7 +333,25 @@ export class AiStartHelpSessionStore {
     const controller = new AbortController()
     entry.controller = controller
     entry.state = 'requesting'
-    const result = await this.options.execute(entry.context.requestDto, controller.signal)
+    let result: AiStartHelpExecutionResult
+    try {
+      result = await this.options.execute(entry.context.requestDto, controller.signal)
+    } catch {
+      const current = this.entries.get(senderId)
+      if (
+        !current ||
+        current !== entry ||
+        current.generation !== generation ||
+        current.controller !== controller
+      ) {
+        return
+      }
+      entry.controller = null
+      entry.state = 'failed'
+      entry.error = errorValue('internal')
+      entry.draft = null
+      return
+    }
     const current = this.entries.get(senderId)
     if (
       !current ||
