@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { expect, test, type ElectronApplication, type Page } from '@playwright/test'
+import Database from 'better-sqlite3'
 import { _electron as electron } from 'playwright'
 import { minimalElectronEnvironment } from '../support/electron-environment'
 import {
@@ -9,6 +10,20 @@ import {
   type TemporaryTestRoot
 } from '../support/temporary-test-root'
 
+const coreTables = Object.freeze([
+  'metadata',
+  'goals',
+  'actions',
+  'routines',
+  'routine_schedule_days',
+  'today_selections',
+  'action_records',
+  'routine_records',
+  'understandings',
+  'confusions',
+  'review_results'
+])
+
 async function launch(root: TemporaryTestRoot): Promise<ElectronApplication> {
   const application = await electron.launch({
     cwd: root.root,
@@ -16,33 +31,70 @@ async function launch(root: TemporaryTestRoot): Promise<ElectronApplication> {
     env: {
       ...minimalElectronEnvironment(root),
       NODE_ENV: 'test',
-      MYTRACER_E2E_AI_SCENARIO: 'success',
-      MYTRACER_LITELLM_API_KEY: 'synthetic-ac02-key'
+      MYTRACER_E2E_AI_SCENARIO: 'aggregate-ac02',
+      MYTRACER_LITELLM_API_KEY: '__ac02_forbidden_credential__',
+      MYTRACER_E2E_DIAGNOSTIC_MARKER: '__ac02_forbidden_diagnostic__'
     }
   })
   return application
 }
 
-async function coreSnapshot(page: Page, goalId: string) {
-  return page.evaluate(async (id) => {
-    const [data, today, goal] = await Promise.all([
-      window.myTracer.dataControl.list(),
-      window.myTracer.today.get({}),
-      window.myTracer.goals.getDetail({ goalId: id })
-    ])
-    if (!data.ok || !today.ok || !goal.ok) throw new Error('Core snapshot failed')
-    return { data: data.value, today: today.value, goal: goal.value }
-  }, goalId)
+function sqliteSnapshot(root: TemporaryTestRoot): Readonly<Record<string, readonly unknown[]>> {
+  const database = new Database(join(root.electronUserData, 'data', 'mytracer.sqlite3'), {
+    readonly: true
+  })
+  try {
+    return Object.freeze(
+      Object.fromEntries(
+        coreTables.map((table) => [
+          table,
+          database.prepare(`SELECT * FROM ${table} ORDER BY rowid`).all()
+        ])
+      )
+    )
+  } finally {
+    database.close()
+  }
 }
 
-async function triggerDraft(page: Page, input: string): Promise<void> {
+async function openTodayAction(page: Page, title: string): Promise<void> {
+  await page.getByRole('button', { name: 'Today' }).click()
+  await page
+    .getByRole('button', { name: new RegExp(title) })
+    .first()
+    .click()
+  await expect(page.getByLabel('现在最卡住你的是什么？')).toBeVisible()
+}
+
+async function triggerDraft(page: Page, input: string, acknowledgement: string): Promise<void> {
   await page.getByLabel('现在最卡住你的是什么？').fill(input)
   await page.getByRole('button', { name: '我现在不想开始' }).click()
+  await expect(page.getByText(acknowledgement)).toBeVisible()
   await expect(page.getByRole('group', { name: /选择一个临时建议/ })).toBeVisible()
 }
 
-test('continuous E2E-AC-02 keeps drafts temporary and persists only explicit final confirmations', async () => {
-  test.setTimeout(180_000)
+async function triggerFailure(page: Page, input: string, error: RegExp): Promise<void> {
+  await page.getByLabel('现在最卡住你的是什么？').fill(input)
+  await page.getByRole('button', { name: '我现在不想开始' }).click()
+  await expect(page.getByText(error)).toBeVisible()
+}
+
+async function todayCommitments(page: Page): Promise<{
+  readonly focuses: readonly { readonly id: string; readonly commitment: string }[]
+  readonly intentions: readonly { readonly id: string; readonly commitment: string }[]
+}> {
+  return page.evaluate(async () => {
+    const result = await window.myTracer.today.get({})
+    if (!result.ok) throw new Error(result.error.message)
+    return {
+      focuses: result.value.focuses.map(({ id, commitment }) => ({ id, commitment })),
+      intentions: result.value.intentions.map(({ id, commitment }) => ({ id, commitment }))
+    }
+  })
+}
+
+test('continuous E2E-AC-02 proves isolation, every temporary branch, confirmation, and reopen', async () => {
+  test.setTimeout(240_000)
   const root = await createTemporaryTestRoot()
   const destination = join(root.exports, 'ac02-export.json')
   let application: ElectronApplication | undefined
@@ -50,136 +102,357 @@ test('continuous E2E-AC-02 keeps drafts temporary and persists only explicit fin
     application = await launch(root)
     let page = await application.firstWindow()
     const setup = await page.evaluate(async () => {
-      const goal = await window.myTracer.goals.create({
-        name: '系统学习 React',
-        initialNextAction: { title: '运行状态更新示例' }
+      const primary = await window.myTracer.goals.create({
+        name: '__ac02_allowed_goal__',
+        description: '只允许当前目标进入请求',
+        initialNextAction: { title: '__ac02_allowed_action__' }
       })
-      if (!goal.ok || !goal.value.currentNextActionId) throw new Error('Goal setup failed')
-      const selected = await window.myTracer.today.selectAction({
-        actionId: goal.value.currentNextActionId
+      if (!primary.ok || !primary.value.currentNextActionId) throw new Error('Primary Goal failed')
+      const originalActionId = primary.value.currentNextActionId
+      const selected = await window.myTracer.today.selectAction({ actionId: originalActionId })
+      const extraAction = await window.myTracer.actions.create({
+        goalId: primary.value.id,
+        title: '__ac02_allowed_extra_action__'
       })
-      const record = await window.myTracer.dataControl.backfillActionRecord({
-        actionId: goal.value.currentNextActionId,
+      if (!selected.ok || !extraAction.ok) throw new Error('Primary Action setup failed')
+
+      const recordIds: string[] = []
+      for (let index = 0; index < 6; index += 1) {
+        const sequence = index + 1
+        const day = String(31 - index).padStart(2, '0')
+        const record = await window.myTracer.dataControl.backfillActionRecord({
+          actionId: originalActionId,
+          occurredOn: `2026-08-${day}`,
+          durationMinutes: sequence,
+          outcome: 'partial',
+          understanding:
+            sequence === 6 ? '__ac02_excluded_record_6__' : `__ac02_allowed_record_${sequence}__`,
+          confusion: `__ac02_allowed_confusion_${sequence}__`,
+          nextStep: `__ac02_allowed_next_${sequence}__`,
+          note: `__ac02_forbidden_note_${sequence}__`
+        })
+        if (!record.ok) throw new Error(record.error.message)
+        recordIds.push(record.value.id)
+      }
+
+      const other = await window.myTracer.goals.create({
+        name: '__ac02_forbidden_other_goal__',
+        initialNextAction: { title: '__ac02_forbidden_other_action__' }
+      })
+      if (!other.ok || !other.value.currentNextActionId) throw new Error('Other Goal failed')
+      const otherRecord = await window.myTracer.dataControl.backfillActionRecord({
+        actionId: other.value.currentNextActionId,
         occurredOn: '2026-08-31',
-        durationMinutes: 8,
-        outcome: 'partial',
-        understanding: '手工确认事实',
-        confusion: '仍需理解批处理'
+        durationMinutes: 99,
+        outcome: 'completed',
+        understanding: '__ac02_forbidden_other_record__'
       })
-      if (!selected.ok || !record.ok) throw new Error('AC-02 setup failed')
+      const routine = await window.myTracer.routines.create({
+        goalId: other.value.id,
+        name: '__ac02_forbidden_routine__',
+        minimumAction: '__ac02_forbidden_routine_minimum__',
+        weekdays: [1]
+      })
+      if (!otherRecord.ok || !routine.ok) throw new Error('Forbidden fixture failed')
+      const routineRecord = await window.myTracer.dataControl.backfillRoutineRecord({
+        routineId: routine.value.id,
+        occurredOn: '2026-08-31',
+        outcome: 'acted',
+        plannedForDate: false,
+        durationMinutes: 2,
+        note: '__ac02_forbidden_routine_record__'
+      })
+      if (!routineRecord.ok) throw new Error(routineRecord.error.message)
+
+      const review = await window.myTracer.review.begin({})
+      if (!review.ok) throw new Error(review.error.message)
+      const reviewResult = await window.myTracer.review.complete({
+        reviewContextId: review.value.reviewContextId,
+        confirmedProgress: '__ac02_forbidden_review__',
+        mainObstacle: '__ac02_forbidden_review_obstacle__',
+        nextAdjustment: '__ac02_forbidden_review_adjustment__',
+        relatedGoalId: other.value.id,
+        nextStepChange: { kind: 'none' }
+      })
+      if (!reviewResult.ok) throw new Error(reviewResult.error.message)
+
+      const empty = await window.myTracer.goals.create({
+        name: '__ac02_empty_goal__',
+        initialNextAction: { title: '__ac02_empty_action__' }
+      })
+      if (!empty.ok || !empty.value.currentNextActionId) throw new Error('Empty Goal failed')
+
       return {
-        goalId: goal.value.id,
-        originalActionId: goal.value.currentNextActionId,
-        recordId: record.value.id
+        primaryGoalId: primary.value.id,
+        originalActionId,
+        firstRecordId: recordIds[0],
+        emptyActionId: empty.value.currentNextActionId
       }
     })
+
     await page.reload()
-    await page
-      .getByRole('button', { name: /运行状态更新示例/ })
-      .first()
-      .click()
+    await openTodayAction(page, '__ac02_allowed_action__')
+    await expect(page.getByText('尚未配置 Provider')).toBeVisible()
+    const beforeConfigurationBranches = sqliteSnapshot(root)
+    const notConfigured = await page.evaluate(
+      (actionId) =>
+        window.myTracer.aiStartHelp.start({
+          actionId,
+          locale: 'zh-CN',
+          userInput: '__ac02_not_configured__'
+        }),
+      setup.originalActionId
+    )
+    expect(notConfigured).toMatchObject({
+      state: 'failed',
+      error: { code: 'not-configured', retryable: false }
+    })
+    expect(sqliteSnapshot(root)).toEqual(beforeConfigurationBranches)
+
     await page.getByRole('button', { name: '从环境变量导入配置' }).click()
     await expect(page.getByLabel('现在最卡住你的是什么？')).toBeVisible()
+    await page.getByRole('button', { name: '关闭 AI' }).click()
+    await expect(page.getByText(/AI 已关闭/)).toBeVisible()
+    const disabled = await page.evaluate(
+      (actionId) =>
+        window.myTracer.aiStartHelp.start({
+          actionId,
+          locale: 'zh-CN',
+          userInput: '__ac02_disabled__'
+        }),
+      setup.originalActionId
+    )
+    expect(disabled).toMatchObject({
+      state: 'failed',
+      error: { code: 'disabled', retryable: false }
+    })
+    expect(sqliteSnapshot(root)).toEqual(beforeConfigurationBranches)
+    await page.getByRole('button', { name: '启用 AI' }).click()
+    await expect(page.getByLabel('现在最卡住你的是什么？')).toBeVisible()
 
-    const initial = await coreSnapshot(page, setup.goalId)
-    await triggerDraft(page, '先看看但不保存')
-    expect(await coreSnapshot(page, setup.goalId)).toEqual(initial)
-    await page.getByRole('button', { name: '关闭', exact: true }).click()
-    await expect(page.getByText(/未确认内容已丢弃/)).toBeVisible()
-    expect(await coreSnapshot(page, setup.goalId)).toEqual(initial)
+    await page.evaluate(async () => {
+      await Promise.all([
+        window.myTracer.aiStartHelp.status(),
+        window.myTracer.today.get({}),
+        window.myTracer.goals.list({ status: 'active' })
+      ])
+    })
+    await page.getByRole('button', { name: 'Goals' }).click()
+    await openTodayAction(page, '__ac02_allowed_action__')
+    expect(await page.evaluate(() => window.myTracer.aiStartHelp.status())).toEqual({
+      state: 'idle',
+      generation: 0
+    })
 
-    await triggerDraft(page, '这次明确拒绝')
-    await page.getByRole('button', { name: '拒绝全部建议' }).click()
-    await expect(page.getByText(/建议已拒绝，没有保存任何内容/)).toBeVisible()
-    expect(await coreSnapshot(page, setup.goalId)).toEqual(initial)
+    const initial = sqliteSnapshot(root)
+    const initialToday = await todayCommitments(page)
 
-    await triggerDraft(page, '先制造 stale 再重试')
-    await page.evaluate(async (goalId) => {
-      const result = await window.myTracer.goals.updateDetails({
-        goalId,
-        name: '系统学习 React（已刷新）'
-      })
-      if (!result.ok) throw new Error(result.error.message)
-    }, setup.goalId)
-    const beforeStaleConfirm = await coreSnapshot(page, setup.goalId)
-    const suggestionGroup = page.getByRole('group', { name: /选择一个临时建议/ })
-    await suggestionGroup.getByRole('textbox').first().fill('stale 时不能保存')
-    await page.getByRole('button', { name: '确认并设为新的下一步' }).click()
-    await expect(page.getByText(/上下文已经变化/)).toBeVisible()
-    expect(await coreSnapshot(page, setup.goalId)).toEqual(beforeStaleConfirm)
-
-    await page.getByRole('button', { name: '主动重试' }).click()
-    await expect(page.getByRole('group', { name: /选择一个临时建议/ })).toBeVisible()
+    await triggerDraft(page, '__ac02_close__', '__ac02_ack_close__')
+    expect(sqliteSnapshot(root)).toEqual(initial)
     await page
       .getByRole('group', { name: /选择一个临时建议/ })
       .getByRole('textbox')
       .first()
-      .fill('只打开 React 示例文件')
+      .fill('__ac02_unsubmitted_edit__')
+    await page.getByRole('button', { name: '关闭', exact: true }).click()
+    await expect(page.getByText(/未确认内容已丢弃/)).toBeVisible()
+    expect(sqliteSnapshot(root)).toEqual(initial)
+
+    await triggerDraft(page, '__ac02_reject__', '__ac02_ack_reject__')
+    await page.getByRole('button', { name: '拒绝全部建议' }).click()
+    await expect(page.getByText(/建议已拒绝，没有保存任何内容/)).toBeVisible()
+    expect(sqliteSnapshot(root)).toEqual(initial)
+
+    await triggerDraft(page, '__ac02_stale__', '__ac02_ack_stale__')
+    const changedGoal = await page.evaluate((goalId) => {
+      return window.myTracer.goals.updateDetails({
+        goalId,
+        name: '__ac02_allowed_goal_changed__'
+      })
+    }, setup.primaryGoalId)
+    expect(changedGoal.ok).toBe(true)
+    const beforeStaleConfirmation = sqliteSnapshot(root)
+    await page.getByRole('button', { name: '确认并设为新的下一步' }).click()
+    await expect(page.getByText(/上下文已经变化/)).toBeVisible()
+    expect(sqliteSnapshot(root)).toEqual(beforeStaleConfirmation)
+    const restoredGoal = await page.evaluate((goalId) => {
+      return window.myTracer.goals.updateDetails({ goalId, name: '__ac02_allowed_goal__' })
+    }, setup.primaryGoalId)
+    expect(restoredGoal.ok).toBe(true)
+
+    await triggerDraft(page, '__ac02_accept_original__', '__ac02_ack_accept_original__')
     await page.getByRole('button', { name: '确认并设为新的下一步' }).click()
     await expect(page.getByText(/新的 pending Action 已保存/)).toBeVisible()
+    const afterOriginal = sqliteSnapshot(root)
+    const afterOriginalData = await page.evaluate(() => window.myTracer.dataControl.list())
+    expect(afterOriginalData).toMatchObject({
+      ok: true,
+      value: {
+        actions: expect.arrayContaining([
+          expect.objectContaining({
+            goalId: setup.primaryGoalId,
+            title: '__ac02_suggestion_accept_original__',
+            status: 'pending'
+          })
+        ])
+      }
+    })
+    expect(afterOriginal.actions).toHaveLength(initial.actions.length + 1)
+    expect(
+      await page.evaluate(
+        (goalId) => window.myTracer.goals.getDetail({ goalId }),
+        setup.primaryGoalId
+      )
+    ).toMatchObject({
+      ok: true,
+      value: { currentNextAction: { title: '__ac02_suggestion_accept_original__' } }
+    })
+    expect(await todayCommitments(page)).toEqual(initialToday)
 
-    const afterAction = await coreSnapshot(page, setup.goalId)
-    expect(afterAction.data.actions).toHaveLength(initial.data.actions.length + 1)
-    expect(afterAction.data.actions).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          goalId: setup.goalId,
-          title: '只打开 React 示例文件',
-          status: 'pending'
-        })
-      ])
+    await triggerDraft(page, '__ac02_edit_confirm__', '__ac02_ack_edit_confirm__')
+    await page
+      .getByRole('group', { name: /选择一个临时建议/ })
+      .getByRole('textbox')
+      .first()
+      .fill('__ac02_final_edited_action__')
+    await page.getByRole('button', { name: '确认并设为新的下一步' }).click()
+    await expect(page.getByText(/新的 pending Action 已保存/)).toBeVisible()
+    const afterActions = sqliteSnapshot(root)
+    const afterActionsData = await page.evaluate(() => window.myTracer.dataControl.list())
+    expect(afterActionsData).toMatchObject({
+      ok: true,
+      value: {
+        actions: expect.arrayContaining([
+          expect.objectContaining({
+            id: setup.originalActionId,
+            title: '__ac02_allowed_action__',
+            status: 'pending'
+          }),
+          expect.objectContaining({
+            goalId: setup.primaryGoalId,
+            title: '__ac02_final_edited_action__',
+            status: 'pending'
+          })
+        ])
+      }
+    })
+    expect(afterActions.actions).toHaveLength(initial.actions.length + 2)
+    expect(
+      await page.evaluate(
+        (goalId) => window.myTracer.goals.getDetail({ goalId }),
+        setup.primaryGoalId
+      )
+    ).toMatchObject({
+      ok: true,
+      value: { currentNextAction: { title: '__ac02_final_edited_action__' } }
+    })
+    const initialOriginalAction = initial.actions.find(
+      (row) => (row as { readonly id?: unknown }).id === setup.originalActionId
     )
-    expect(afterAction.today.focuses.map(({ id, commitment }) => ({ id, commitment }))).toEqual(
-      initial.today.focuses.map(({ id, commitment }) => ({ id, commitment }))
+    const finalOriginalAction = afterActions.actions.find(
+      (row) => (row as { readonly id?: unknown }).id === setup.originalActionId
     )
-    expect(afterAction.today.intentions.map(({ id, commitment }) => ({ id, commitment }))).toEqual(
-      initial.today.intentions.map(({ id, commitment }) => ({ id, commitment }))
-    )
-    expect(afterAction.data.actionRecords).toEqual(initial.data.actionRecords)
-    expect(afterAction.data.understandings).toEqual(initial.data.understandings)
-    expect(afterAction.data.confusions).toEqual(initial.data.confusions)
-    expect(afterAction.goal.currentNextActionId).not.toBe(setup.originalActionId)
+    expect(finalOriginalAction).toEqual(initialOriginalAction)
+    expect(afterActions.today_selections).toEqual(initial.today_selections)
+    expect(afterActions.action_records).toEqual(initial.action_records)
+    expect(afterActions.understandings).toEqual(initial.understandings)
+    expect(afterActions.confusions).toEqual(initial.confusions)
+    expect(await todayCommitments(page)).toEqual(initialToday)
 
-    await triggerDraft(page, '逐项保存理解候选')
+    await triggerDraft(page, '__ac02_understandings__', '__ac02_ack_understandings__')
     const understandingGroup = page.getByRole('group', { name: /理解候选/ })
     const candidateBlocks = understandingGroup.locator('.ai-start-help-candidate')
-    await expect(candidateBlocks).toHaveCount(2)
+    await expect(candidateBlocks).toHaveCount(3)
+    await expect(page.getByText(/这些只是临时候选/)).toBeVisible()
 
-    await candidateBlocks.nth(0).getByRole('textbox').fill('第一条最终理解')
     await candidateBlocks.nth(0).getByRole('combobox').selectOption({ index: 1 })
     await candidateBlocks.nth(0).getByRole('button', { name: '确认这一项' }).click()
     await expect(candidateBlocks.nth(0).getByRole('button', { name: '已保存' })).toBeVisible()
-    const afterFirstUnderstanding = await coreSnapshot(page, setup.goalId)
-    expect(afterFirstUnderstanding.data.understandings).toHaveLength(
-      initial.data.understandings.length + 1
-    )
-
-    await candidateBlocks.nth(1).getByRole('textbox').fill('第二条修改后的最终理解')
+    await candidateBlocks.nth(1).getByRole('textbox').fill('__ac02_final_understanding_2__')
     await candidateBlocks.nth(1).getByRole('combobox').selectOption({ index: 1 })
     await candidateBlocks.nth(1).getByRole('button', { name: '确认这一项' }).click()
     await expect(candidateBlocks.nth(1).getByRole('button', { name: '已保存' })).toBeVisible()
-    const afterUnderstandings = await coreSnapshot(page, setup.goalId)
-    expect(afterUnderstandings.data.understandings).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          actionRecordId: setup.recordId,
-          text: '第一条最终理解',
-          source: 'ai_candidate_confirmed'
-        }),
-        expect.objectContaining({
-          actionRecordId: setup.recordId,
-          text: '第二条修改后的最终理解',
-          source: 'ai_candidate_confirmed'
-        })
-      ])
-    )
-    expect(afterUnderstandings.data.actions).toEqual(afterAction.data.actions)
-    expect(afterUnderstandings.data.actionRecords).toEqual(afterAction.data.actionRecords)
-    expect(afterUnderstandings.today).toEqual(afterAction.today)
-
     await page.getByRole('button', { name: '拒绝全部建议' }).click()
     await expect(page.getByText(/建议已拒绝/)).toBeVisible()
-    expect(await coreSnapshot(page, setup.goalId)).toEqual(afterUnderstandings)
+
+    const afterUnderstandings = sqliteSnapshot(root)
+    const confirmedFacts = await page.evaluate(() => window.myTracer.dataControl.list())
+    expect(confirmedFacts).toMatchObject({
+      ok: true,
+      value: {
+        understandings: expect.arrayContaining([
+          expect.objectContaining({
+            actionRecordId: setup.firstRecordId,
+            text: '__ac02_understanding_understandings_1__',
+            source: 'ai_candidate_confirmed'
+          }),
+          expect.objectContaining({
+            actionRecordId: setup.firstRecordId,
+            text: '__ac02_final_understanding_2__',
+            source: 'ai_candidate_confirmed'
+          })
+        ])
+      }
+    })
+    expect(afterUnderstandings.understandings).toHaveLength(afterActions.understandings.length + 2)
+    expect(afterUnderstandings.actions).toEqual(afterActions.actions)
+    expect(afterUnderstandings.today_selections).toEqual(afterActions.today_selections)
+    expect(afterUnderstandings.action_records).toEqual(afterActions.action_records)
+    expect(afterUnderstandings.confusions).toEqual(afterActions.confusions)
+    expect(JSON.stringify(afterUnderstandings)).not.toContain(
+      '__ac02_understanding_understandings_3__'
+    )
+
+    const emptySelected = await page.evaluate(
+      (actionId) => window.myTracer.today.selectAction({ actionId }),
+      setup.emptyActionId
+    )
+    expect(emptySelected.ok).toBe(true)
+    await page.reload()
+    await openTodayAction(page, '__ac02_empty_action__')
+    const beforeNoRecord = sqliteSnapshot(root)
+    await triggerDraft(page, '__ac02_no_record__', '__ac02_ack_no_record__')
+    await expect(page.getByText(/没有可关联的真实行动记录/)).toBeVisible()
+    const noRecordCandidates = page
+      .getByRole('group', { name: /理解候选/ })
+      .locator('.ai-start-help-candidate')
+    await expect(noRecordCandidates).toHaveCount(3)
+    await expect(
+      noRecordCandidates.first().getByRole('button', { name: '确认这一项' })
+    ).toBeDisabled()
+    await page.getByRole('button', { name: '拒绝全部建议' }).click()
+    expect(sqliteSnapshot(root)).toEqual(beforeNoRecord)
+
+    await openTodayAction(page, '__ac02_allowed_action__')
+    const beforeFailures = sqliteSnapshot(root)
+
+    await triggerFailure(page, '__ac02_invalid__', /未通过安全验证/)
+    expect(sqliteSnapshot(root)).toEqual(beforeFailures)
+    await triggerFailure(page, '__ac02_authentication__', /认证未通过/)
+    expect(sqliteSnapshot(root)).toEqual(beforeFailures)
+    await triggerFailure(page, '__ac02_network__', /网络暂时不可用/)
+    expect(sqliteSnapshot(root)).toEqual(beforeFailures)
+    await triggerFailure(page, '__ac02_provider_unavailable__', /Provider 暂时不可用/)
+    expect(sqliteSnapshot(root)).toEqual(beforeFailures)
+    await expect(page.getByRole('button', { name: '开始记录' })).toBeVisible()
+
+    await page.getByLabel('现在最卡住你的是什么？').fill('__ac02_cancel__')
+    await page.getByRole('button', { name: '我现在不想开始' }).click()
+    await expect(page.getByRole('button', { name: '取消', exact: true })).toBeVisible()
+    await page.getByRole('button', { name: '取消', exact: true }).click()
+    await expect(page.getByText('已取消这次请求。')).toBeVisible()
+    expect(sqliteSnapshot(root)).toEqual(beforeFailures)
+
+    await triggerFailure(page, '__ac02_timeout_retry__', /等待时间较长/)
+    expect(sqliteSnapshot(root)).toEqual(beforeFailures)
+    await page.getByRole('button', { name: '主动重试' }).click()
+    await expect(page.getByText('__ac02_ack_retry_new_generation__')).toBeVisible()
+    await page.waitForTimeout(1_000)
+    await expect(page.getByText('__ac02_ack_retry_new_generation__')).toBeVisible()
+    await expect(page.getByText('__ac02_ack_late_old_generation__')).toHaveCount(0)
+    expect(sqliteSnapshot(root)).toEqual(beforeFailures)
+    await page.getByRole('button', { name: '关闭', exact: true }).click()
+    expect(sqliteSnapshot(root)).toEqual(beforeFailures)
 
     await application.evaluate(({ dialog }, target) => {
       dialog.showSaveDialog = async () => ({ canceled: false, filePath: target })
@@ -187,19 +460,29 @@ test('continuous E2E-AC-02 keeps drafts temporary and persists only explicit fin
     const exportResult = await page.evaluate(() => window.myTracer.exports.generate())
     expect(exportResult).toMatchObject({ ok: true, value: { exportVersion: 2 } })
     const exported = JSON.parse(await readFile(destination, 'utf8'))
+    expect(exported.data.actions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ title: '__ac02_suggestion_accept_original__' }),
+        expect.objectContaining({ title: '__ac02_final_edited_action__' })
+      ])
+    )
     expect(exported.data.understandings).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ text: '第一条最终理解', source: 'ai_candidate_confirmed' }),
         expect.objectContaining({
-          text: '第二条修改后的最终理解',
+          text: '__ac02_understanding_understandings_1__',
+          source: 'ai_candidate_confirmed'
+        }),
+        expect.objectContaining({
+          text: '__ac02_final_understanding_2__',
           source: 'ai_candidate_confirmed'
         })
       ])
     )
     expect(JSON.stringify(exported)).not.toMatch(
-      /synthetic-ac02-key|providerRequestId|sessionId|targetRef|先看看但不保存|stale 时不能保存/
+      /__ac02_forbidden_credential__|__ac02_unsubmitted_edit__|__ac02_ack_|__ac02_suggestion_stale__|__ac02_timeout_retry__/
     )
 
+    const beforeRestart = sqliteSnapshot(root)
     await application.close()
     application = undefined
     application = await launch(root)
@@ -208,7 +491,7 @@ test('continuous E2E-AC-02 keeps drafts temporary and persists only explicit fin
       state: 'idle',
       generation: 0
     })
-    expect(await coreSnapshot(page, setup.goalId)).toEqual(afterUnderstandings)
+    expect(sqliteSnapshot(root)).toEqual(beforeRestart)
   } finally {
     await application?.close().catch(() => undefined)
     await removeTemporaryTestRoot(root)
