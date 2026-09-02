@@ -57,13 +57,13 @@ function sqliteSnapshot(root: TemporaryTestRoot): Readonly<Record<string, readon
   }
 }
 
-async function openTodayAction(page: Page, title: string): Promise<void> {
+async function openTodayAction(page: Page, title: string, expectInput = true): Promise<void> {
   await page.getByRole('button', { name: 'Today' }).click()
   await page
     .getByRole('button', { name: new RegExp(title) })
     .first()
     .click()
-  await expect(page.getByLabel('现在最卡住你的是什么？')).toBeVisible()
+  if (expectInput) await expect(page.getByLabel('现在最卡住你的是什么？')).toBeVisible()
 }
 
 async function triggerDraft(page: Page, input: string, acknowledgement: string): Promise<void> {
@@ -191,7 +191,7 @@ test('continuous E2E-AC-02 proves isolation, every temporary branch, confirmatio
     })
 
     await page.reload()
-    await openTodayAction(page, '__ac02_allowed_action__')
+    await openTodayAction(page, '__ac02_allowed_action__', false)
     await expect(page.getByText('尚未配置 Provider')).toBeVisible()
     const beforeConfigurationBranches = sqliteSnapshot(root)
     const notConfigured = await page.evaluate(
