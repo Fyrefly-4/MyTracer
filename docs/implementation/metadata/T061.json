@@ -90,13 +90,13 @@
     },
     {
       "files": [
-        "docs/implementation/T061_AI_MINIMAL_CONTEXT.md",
+        "docs/implementation/archive/S6_T061_T063_ARCHIVE.md",
         "docs/implementation/metadata/T061.json",
         "docs/implementation/TASK_INDEX_V0.1.md",
         "docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md"
       ],
       "modules": [
-        "task-contract-and-machine-readable-metadata",
+        "archived-task-contract-and-machine-readable-metadata",
         "owner-controlled-task-activation",
         "revision-bound-delivery-evidence-and-docs-closeout"
       ],

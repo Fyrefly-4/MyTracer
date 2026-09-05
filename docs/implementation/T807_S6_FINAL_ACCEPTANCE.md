@@ -2,7 +2,7 @@
 
 > 任务类型：S6 aggregate acceptance / evidence closeout / milestone preparation
 >
-> 合同状态：**active；项目所有者已授权在 T807 内实施精确的 continuous AC-02 test-only 修复及第 16.2 节三项边界修复**
+> 合同状态：**review；实现、聚合自动验证、独立复核、人工 AC-02 与 owner-approved 文档收口已完成，等待文档 final-head hosted CI 与项目所有者后续 Gate**
 >
 > 批准与激活日期：2026-09-01
 >
@@ -15,7 +15,7 @@
 - **Task ID**：T807
 - **Title**：S6 AI Start Help aggregate acceptance and release preparation
 - **Slice / Plan item**：S6 final gate
-- **Status**：`active`；项目所有者已废弃 T808，于 2026-09-01 明确授权第 16.1 节的窄 test-only 修复，并于 2026-09-02 批准第 16.2 节三项独立审查边界修复；人工 AC-02、文档收口范围、Ready、merge、tag 和 Release 仍是后续独立 Gate
+- **Status**：`review`；项目所有者已废弃 T808，于 2026-09-01 明确授权第 16.1 节的窄 test-only 修复，并于 2026-09-02 批准第 16.2 节三项独立审查边界修复；2026-09-05 已报告人工 AC-02 与真实 UI + LiteLLM 体验通过，并批准文档收口矩阵、统一归档和三份原合同删除。文档 final-head hosted CI、Ready、merge、tag 和 Release 仍是后续独立 Gate
 - **Base / target branch**：`dev`
 - **Expected branch**：`codex/s6-final-acceptance`
 - **Prior milestone**：`main@c6edfc550fd395a4c6e9626bc19232971fe58e3f`
@@ -158,13 +158,13 @@ dependencies:
 
 ## 8. 交付物
 
-- [ ] 固定 source 的 `main...dev` 完整 diff、安全边界和依赖/migration 审计。
-- [ ] T061～T063 revision、FR/AC/D/ED、自动化、hosted CI 与限制的聚合矩阵。
-- [ ] continuous AC-02、失败/降级、AC-01/03/04/05/06/07 回归、完整 `verify`、package 和 package smoke 的脱敏证据。
-- [ ] 项目所有者人工 AC-02 清单和实际结果；未报告前保持 `pending`。
-- [ ] 明确记录“真实 LiteLLM 服务未验证”，除非项目所有者另行授权并实际执行 live contract。
-- [ ] owner-approved Evidence、Task Index、README、metadata 与 S6 统一归档收口。
-- [ ] T807 delivery/final-head hosted CI 与到 `dev` 的 Draft PR。
+- [x] 固定 source 的 `main...dev` 完整 diff、安全边界和依赖/migration 审计。
+- [x] T061～T063 revision、FR/AC/D/ED、自动化、hosted CI 与限制的聚合矩阵。
+- [x] continuous AC-02、失败/降级、AC-01/03/04/05/06/07 回归、完整 `verify`、package 和 package smoke 的脱敏证据。
+- [x] 项目所有者人工 AC-02 清单和实际结果。
+- [x] 真实 MyTracer UI + LiteLLM 已由项目所有者人工验证；专用自动 live contract 仍未通过，最小脱敏记录其 5 秒 harness timeout。
+- [x] owner-approved Evidence、Task Index、README、metadata 与 S6 统一归档收口。
+- [ ] T807 文档 final-head hosted CI；到 `dev` 的 Draft PR #49 已创建并保持 Draft。
 - [ ] T807 合入后供审批的 `dev → main` PR 正文与 `v0.1.0-beta.3` 候选发布说明。
 
 ## 9. 验收标准
@@ -206,6 +206,8 @@ npm.cmd run test:ai-contract
 ```
 
 本合同激活不批准该命令。若未运行，Evidence、PR 和发布说明必须写明“真实 LiteLLM 服务未验证”。如项目所有者之后选择真实体验，Agent 只提供在本机 PowerShell 中设置 `MYTRACER_LITELLM_API_KEY`、启动隔离应用和清除当前会话环境变量的具体方法；不得要求在聊天、日志或证据中提供 key，并在等待结果期间保持人工 gate pending。
+
+后续事实见第 16.4 节：项目所有者另行授权并完成真实 UI + LiteLLM 人工体验；专用自动 live contract 尝试仅形成 5 秒测试 harness timeout 的失败事实，不构成自动 contract pass。
 
 ### 10.3 项目所有者人工 AC-02
 
@@ -348,3 +350,17 @@ T807 获准实施以下单一例外：
 第 16.2 节实现 revision 为 `34454b557b43a872db616f5cff03fb030dcfb336`。在该 exact revision 上，相关 unit 为 3 files、45/45 通过；Provider contract 在故意设置残留 `MYTRACER_AI_LIVE_CONTRACT=1`、未提供 key 且非专用 npm lifecycle 的条件下为 6/6 offline 通过、1 live case skip，证明普通测试入口不会访问真实 Gateway。此前同内容上还通过 metadata、format、typecheck 和 lint。
 
 遵照项目所有者 2026-09-02 指令，本地没有重跑 `verify`、continuous E2E、package 或 package smoke。旧 head `0f85a011064233a1039384edd96870e28fd79bd5` 的 hosted green 不能证明当前修复 head；推送后 T807 停在 handoff，等待 exact-head hosted CI、独立复核、人工 AC-02 和文档收口。
+
+### 16.4 修复 head 聚合结果与人工验收
+
+- 修复与证据 head `449ad4f36ffbace59e19f55c53fa4ce9dcb02b4c` 的 [hosted run `33599620345`](https://github.com/Fyrefly-4/MyTracer/actions/runs/33599620345) 全部通过：PR quality、Governance、Full Windows verification、Milestone packaging、CI Gate 和 Windows required gate 均为 success。测试 merge revision 为 `5f56e2cea60243e003436e97976bd5d22d7423ba`。
+- `verification-evidence-33599620345-1`（artifact id `9834794149`，digest `sha256:71ca952258af7a05d0fb571848f656cdc5880819ba85a7249e82ecbb56d9e696`）记录 aggregate exit 0、Unit 247/247、Integration 128 passed 且 1 live-only skip、Electron E2E 22 passed 且 1 package-only skip；`milestone-evidence-33599620345-1`（artifact id `9835055375`，digest `sha256:11b6b5e41a855cb4b1c32d4379947aa6d813c35b827b850ba52e9a41e6b0797c`）记录 package exit 0 和 package smoke 1/1。
+- 对 `f06b1e9...449ad4f` 的再次独立只读复核结论为 `No findings`；此前三项 material finding 均已闭合，未发现 dependency/lockfile、公开 IPC/Preload、Renderer、schema/migration/export、AI 上下文或写权限漂移。
+- 项目所有者于 2026-09-05 报告人工测试和验收通过，当前相关功能符合要求。该人工结果覆盖真实 MyTracer UI + LiteLLM 体验，并绑定固定 S6 产品内容与上述边界修复内容。
+- 经另行授权运行的专用 `test:ai-contract` 自动尝试在 5,010 ms 触发 Vitest 默认 5 秒 harness timeout 并退出 1；这不证明 LiteLLM Provider 失败，也不记为自动 live contract 通过。未记录 API key、request、response 或真实用户数据。
+
+### 16.5 Owner-approved 文档收口
+
+项目所有者于 2026-09-05 批准精确文档影响矩阵、统一归档及三份原合同删除，并明确批准按上一节的最小脱敏事实保留 live contract harness timeout。收口范围为本合同、T807 metadata、Task Index、Evidence、README、T061～T063 metadata、`archive/S6_T061_T063_ARCHIVE.md` 和 PR #49 正文；已批准删除的原合同可从固定 `f06b1e9` Git 历史恢复。
+
+本次文档 revision 不替代 `stage_final_integration_revision=f06b1e97da07dffc05814518ad8ad83ed3e051b9`。T807 task delivery revision 固定为边界修复和聚合证据均已形成的 `449ad4f36ffbace59e19f55c53fa4ce9dcb02b4c`；文档 final head、最终 hosted CI 与 `dev_integration_revision` 分开记录。文档 final-head CI 尚待推送后取得，T807 因此保持 `review`，PR #49 继续为 Draft。
