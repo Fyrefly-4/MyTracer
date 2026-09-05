@@ -164,6 +164,21 @@ describe('AI Start Help sender-bound in-memory session', () => {
     expect(requestIds).toEqual(['request-1', 'request-2'])
   })
 
+  it('seals an unexpected execute rejection as retryable internal', async () => {
+    const store = new AiStartHelpSessionStore(
+      options({ execute: async () => Promise.reject(new Error('synthetic execute failure')) })
+    )
+
+    store.start(17, input)
+    const failed = await waitForState(store, 17, 'failed')
+
+    expect(failed).toMatchObject({
+      state: 'failed',
+      error: { code: 'internal', retryable: true }
+    })
+    expect(failed.draft).toBeUndefined()
+  })
+
   it('binds cancel, retry and confirmation to both sender and session token', async () => {
     const confirmSuggestion = vi.fn()
     const store = new AiStartHelpSessionStore(options({ confirmSuggestion }))
@@ -299,6 +314,25 @@ describe('AI Start Help sender-bound in-memory session', () => {
     await new Promise((resolve) => setTimeout(resolve, 0))
     expect(active.state).toBe('requesting')
     expect(store.status(15)).toEqual({ state: 'idle', generation: 0 })
+  })
+
+  it('ignores a late execute rejection after the session closes', async () => {
+    let rejectExecute: ((reason: Error) => void) | undefined
+    const store = new AiStartHelpSessionStore(
+      options({
+        execute: () =>
+          new Promise((_resolve, reject) => {
+            rejectExecute = reject
+          })
+      })
+    )
+
+    const started = store.start(18, input)
+    expect(store.close(18, started.sessionId!)).toMatchObject({ state: 'closed' })
+    rejectExecute?.(new Error('synthetic late rejection'))
+
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(store.status(18)).toMatchObject({ state: 'closed' })
   })
 
   it('clears every in-memory session when configuration changes', async () => {

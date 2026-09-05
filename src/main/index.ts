@@ -76,6 +76,157 @@ type TestAiScenario =
   | 'invalid-response'
   | 'late-response'
   | 'internal'
+  | 'aggregate-ac02'
+
+const aggregateAc02Inputs = Object.freeze([
+  '__ac02_close__',
+  '__ac02_reject__',
+  '__ac02_stale__',
+  '__ac02_accept_original__',
+  '__ac02_edit_confirm__',
+  '__ac02_understandings__',
+  '__ac02_no_record__',
+  '__ac02_invalid__',
+  '__ac02_authentication__',
+  '__ac02_network__',
+  '__ac02_provider_unavailable__',
+  '__ac02_cancel__',
+  '__ac02_timeout_retry__',
+  '__ac02_timeout_retry__'
+] as const)
+
+const aggregateAc02ForbiddenMarkers = Object.freeze([
+  '__ac02_forbidden_other_goal__',
+  '__ac02_forbidden_other_action__',
+  '__ac02_forbidden_other_record__',
+  '__ac02_forbidden_routine__',
+  '__ac02_forbidden_review__',
+  '__ac02_forbidden_credential__',
+  '__ac02_forbidden_diagnostic__',
+  '__ac02_forbidden_note_',
+  '__ac02_excluded_record_6__',
+  '__ac02_allowed_confusion_6__',
+  '__ac02_allowed_next_6__'
+])
+
+function assertAggregateAc02(condition: boolean, message: string): void {
+  if (!condition) throw new Error(`AC-02 scripted fake assertion failed: ${message}`)
+}
+
+function assertExactKeys(value: object, allowed: readonly string[], path: string): void {
+  const keys = Object.keys(value)
+  assertAggregateAc02(
+    keys.every((key) => allowed.includes(key)),
+    `${path} contained a non-allowlisted key: ${keys.join(', ')}`
+  )
+}
+
+function assertAggregateAc02Request(request: StartHelpRequestDto, expectedInput: string): void {
+  assertExactKeys(
+    request,
+    ['requestId', 'locale', 'userInput', 'goal', 'action', 'currentNextAction', 'recentRelevantRecords'],
+    'request'
+  )
+  assertExactKeys(request.goal, ['name', 'description'], 'goal')
+  assertExactKeys(request.action, ['title', 'description'], 'action')
+  if (request.currentNextAction) {
+    assertExactKeys(request.currentNextAction, ['title', 'description'], 'currentNextAction')
+  }
+  for (const [index, record] of request.recentRelevantRecords.entries()) {
+    assertExactKeys(
+      record,
+      [
+        'occurredOn',
+        'outcome',
+        'durationMinutes',
+        'confirmedUnderstandings',
+        'openConfusions',
+        'nextStepCandidate'
+      ],
+      `recentRelevantRecords[${index}]`
+    )
+  }
+
+  assertAggregateAc02(request.userInput === expectedInput, `expected input ${expectedInput}`)
+  const serialized = JSON.stringify(request)
+  for (const marker of aggregateAc02ForbiddenMarkers) {
+    assertAggregateAc02(!serialized.includes(marker), `forbidden marker escaped: ${marker}`)
+  }
+
+  if (expectedInput === '__ac02_no_record__') {
+    assertAggregateAc02(request.goal.name === '__ac02_empty_goal__', 'wrong empty Goal')
+    assertAggregateAc02(request.action.title === '__ac02_empty_action__', 'wrong empty Action')
+    assertAggregateAc02(request.recentRelevantRecords.length === 0, 'empty Goal sent Records')
+    assertAggregateAc02(!serialized.includes('__ac02_allowed_goal__'), 'other Goal escaped')
+    return
+  }
+
+  assertAggregateAc02(request.goal.name === '__ac02_allowed_goal__', 'wrong current Goal')
+  assertAggregateAc02(request.action.title === '__ac02_allowed_action__', 'wrong opened Action')
+  assertAggregateAc02(!serialized.includes('__ac02_empty_goal__'), 'empty other Goal escaped')
+  assertAggregateAc02(request.recentRelevantRecords.length === 5, 'Record limit was not five')
+  request.recentRelevantRecords.forEach((record, index) => {
+    const marker = `__ac02_allowed_record_${index + 1}__`
+    assertAggregateAc02(JSON.stringify(record).includes(marker), `Record order omitted ${marker}`)
+  })
+}
+
+function aggregateAc02Draft(label: string, understandingCount = 3): unknown {
+  return {
+    acknowledgement: `__ac02_ack_${label}__`,
+    suggestions: [{ text: `__ac02_suggestion_${label}__` }],
+    understandingCandidates: Array.from({ length: understandingCount }, (_value, index) => ({
+      text: `__ac02_understanding_${label}_${index + 1}__`
+    })),
+    safetyNotes: ['如果现在需要休息，也可以先休息。']
+  }
+}
+
+function createAggregateAc02Provider(): AiStartHelpProvider {
+  let callIndex = 0
+  return Object.freeze({
+    capabilities: () => ({ configured: true, available: true }),
+    requestStartHelp: async (
+      request: StartHelpRequestDto,
+      options: ProviderRequestOptions
+    ): Promise<unknown> => {
+      const expectedInput = aggregateAc02Inputs[callIndex]
+      assertAggregateAc02(Boolean(expectedInput), `unexpected Provider call ${callIndex + 1}`)
+      assertAggregateAc02Request(request, expectedInput!)
+      const step = callIndex
+      callIndex += 1
+
+      if (step === 7) return { acknowledgement: 'invalid', suggestions: [] }
+      if (step === 8) throw new AiProviderError('authentication')
+      if (step === 9) throw new AiProviderError('network')
+      if (step === 10) throw new AiProviderError('provider-unavailable')
+      if (step === 11) {
+        return new Promise((_resolve, reject) => {
+          options.signal.addEventListener(
+            'abort',
+            () => reject(new DOMException('cancelled', 'AbortError')),
+            { once: true }
+          )
+        })
+      }
+      if (step === 12) {
+        return new Promise((resolve) => {
+          setTimeout(() => resolve(aggregateAc02Draft('late_old_generation')), 900)
+        })
+      }
+      if (step === 13) return aggregateAc02Draft('retry_new_generation')
+      if (step === 6) return aggregateAc02Draft('no_record')
+      if (step === 5) return aggregateAc02Draft('understandings')
+      if (step === 4) return aggregateAc02Draft('edit_confirm')
+      if (step === 3) return aggregateAc02Draft('accept_original')
+      if (step === 2) return aggregateAc02Draft('stale')
+      if (step === 1) return aggregateAc02Draft('reject')
+      return aggregateAc02Draft('close')
+    }
+  })
+}
+
+let aggregateAc02Provider: AiStartHelpProvider | null = null
 
 function createOfflineTestProvider(): AiStartHelpProvider | null {
   if (process.env.NODE_ENV !== 'test') return null
@@ -84,9 +235,14 @@ function createOfflineTestProvider(): AiStartHelpProvider | null {
     !scenario ||
     ![
       'success', 'timeout', 'authentication', 'quota', 'rate-limited', 'network',
-      'invalid-response', 'late-response', 'internal'
+      'invalid-response', 'late-response', 'internal', 'aggregate-ac02'
     ].includes(scenario)
   ) return null
+
+  if (scenario === 'aggregate-ac02') {
+    aggregateAc02Provider ??= createAggregateAc02Provider()
+    return aggregateAc02Provider
+  }
 
   return Object.freeze({
     capabilities: () => ({ configured: true, available: true }),
@@ -333,7 +489,11 @@ app.whenReady().then(async () => {
       if (offlineTestProvider) {
         return new AiStartHelpService({
           provider: offlineTestProvider,
-          generateCandidateId: randomUUID
+          generateCandidateId: randomUUID,
+          ...(process.env.NODE_ENV === 'test' &&
+          process.env.MYTRACER_E2E_AI_SCENARIO === 'aggregate-ac02'
+            ? { deadlineMs: 500 }
+            : {})
         }).execute(request, signal)
       }
       const credential = aiConfiguration!.readProviderCredential()

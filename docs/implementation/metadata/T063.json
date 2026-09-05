@@ -121,13 +121,13 @@
     },
     {
       "files": [
-        "docs/implementation/T063_AI_SUGGESTION_CONFIRMATION.md",
+        "docs/implementation/archive/S6_T061_T063_ARCHIVE.md",
         "docs/implementation/metadata/T063.json",
         "docs/implementation/TASK_INDEX_V0.1.md",
         "docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md"
       ],
       "modules": [
-        "task-contract-and-machine-readable-metadata",
+        "archived-task-contract-and-machine-readable-metadata",
         "owner-controlled-task-activation-and-git-github-permissions",
         "revision-bound-delivery-evidence-manual-ac02-and-docs-closeout"
       ],

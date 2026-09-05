@@ -147,13 +147,13 @@
     },
     {
       "files": [
-        "docs/implementation/T062_AI_PROVIDER_DEGRADATION.md",
+        "docs/implementation/archive/S6_T061_T063_ARCHIVE.md",
         "docs/implementation/metadata/T062.json",
         "docs/implementation/TASK_INDEX_V0.1.md",
         "docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md"
       ],
       "modules": [
-        "task-contract-and-machine-readable-metadata",
+        "archived-task-contract-and-machine-readable-metadata",
         "owner-controlled-provider-dependency-permission-and-task-activation-gates",
         "revision-bound-delivery-evidence-and-docs-closeout"
       ],
