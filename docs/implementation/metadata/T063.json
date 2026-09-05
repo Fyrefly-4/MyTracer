@@ -1,0 +1,147 @@
+{
+  "schemaVersion": 1,
+  "task": "T063",
+  "task_kind": "implementation",
+  "dependencies": {
+    "requires": ["T062"],
+    "blocks": [],
+    "can_parallel": [],
+    "prefer_after": [],
+    "conflicts_with": ["T061", "T062"]
+  },
+  "conflict_basis": {
+    "T061": "The approved S6 design requires serial integration because T063 consumes the exact T061 Provider-facing request DTO, narrow context query, Main-only manifest eligibility, stable preconditions, and fake request isolation without widening Provider context.",
+    "T062": "The approved S6 design requires serial integration because T063 extends the integrated T062 Main-memory session, sealed draft and error contracts, IPC and Preload surface, Today Renderer, configuration lifecycle, and fake-provider harness with confirmation behavior."
+  },
+  "shared_surfaces": [
+    {
+      "files": [
+        "src/main/ai-start-help-context.ts",
+        "src/main/ai-start-help-session.ts",
+        "src/contracts/ai-start-help.ts",
+        "src/main/ai-start-help-ipc.ts",
+        "src/main/index.ts",
+        "src/preload/index.ts",
+        "src/renderer/src/features/today/AiStartHelpPanel.tsx",
+        "src/renderer/src/features/today/TodayPage.tsx",
+        "src/renderer/src/styles.css"
+      ],
+      "modules": [
+        "sender-and-generation-bound-start-help-confirmation-session",
+        "main-only-actual-goal-precondition-and-opaque-understanding-target-map",
+        "sealed-reject-close-retry-and-confirm-ipc-preload-api",
+        "today-draft-edit-reject-confirm-and-per-candidate-understanding-ui"
+      ],
+      "schema_tables": [],
+      "ipc_contracts": [
+        "ai-start-help-status-start-cancel-retry-reject-close",
+        "ai-start-help-confirm-suggestion",
+        "ai-start-help-confirm-understanding"
+      ],
+      "domain_invariants": [
+        "only-explicit-confirmation-invokes-an-ordinary-core-command",
+        "session-manifest-goal-record-ids-and-provider-data-remain-main-only-and-in-memory",
+        "renderer-submits-only-session-candidate-target-ref-and-final-text-not-goal-record-or-source",
+        "reject-close-cancel-timeout-invalid-failure-retry-and-all-unconfirmed-states-have-zero-core-writes",
+        "double-click-concurrent-and-late-confirmation-produce-at-most-one-core-fact"
+      ],
+      "risk": "high",
+      "integration_policy": "serial"
+    },
+    {
+      "files": [
+        "src/application/goals.ts",
+        "src/contracts/goals.ts",
+        "src/main/goals-ipc.ts",
+        "src/domain/action-record.ts",
+        "src/application/action-records.ts",
+        "src/application/ports/persistence.ts",
+        "src/infrastructure/sqlite/sqlite-repository.ts",
+        "src/contracts/records.ts"
+      ],
+      "modules": [
+        "create-and-set-goal-current-next-action-stale-precondition",
+        "atomic-pending-action-and-current-next-transaction",
+        "add-confirmed-understanding-to-existing-action-record-command",
+        "fixed-ai-candidate-confirmed-source-and-action-record-detail"
+      ],
+      "schema_tables": ["goals", "actions", "today_selections", "action_records", "understandings"],
+      "ipc_contracts": ["goals-create-and-set-current-next-action"],
+      "domain_invariants": [
+        "stale-check-action-create-and-goal-current-next-update-occur-in-one-transaction",
+        "new-current-next-action-is-pending-and-belongs-to-the-current-active-goal",
+        "original-action-today-selection-and-history-remain-unchanged",
+        "understanding-target-is-an-existing-manifest-eligible-action-record-that-still-belongs-to-the-current-goal",
+        "understanding-source-is-fixed-internally-to-ai-candidate-confirmed",
+        "each-understanding-confirmation-is-an-independent-transaction"
+      ],
+      "risk": "high",
+      "integration_policy": "serial"
+    },
+    {
+      "files": [
+        "tests/unit/goal-application.test.ts",
+        "tests/unit/action-record-domain.test.ts",
+        "tests/unit/action-record-application.test.ts",
+        "tests/unit/ai-start-help-session.test.ts",
+        "tests/integration/goal-sqlite.test.ts",
+        "tests/integration/action-record-sqlite.test.ts",
+        "tests/integration/ai-start-help-ipc.test.ts",
+        "tests/integration/ai-start-help-confirmation-sqlite.test.ts",
+        "tests/e2e/ai-start-help-ac02.e2e.test.ts",
+        "tests/e2e/ai-start-help-degradation.e2e.test.ts",
+        "tests/e2e/windows-package-smoke.e2e.test.ts"
+      ],
+      "modules": [
+        "confirmation-before-after-core-snapshot-and-rollback-matrix",
+        "continuous-ac02-single-database-e2e",
+        "reopen-export-progress-recovery-review-affected-regression",
+        "windows-package-preload-renderer-bundle-and-security-scan"
+      ],
+      "schema_tables": [
+        "goals",
+        "actions",
+        "today_selections",
+        "action_records",
+        "routine_records",
+        "understandings",
+        "confusions",
+        "review_results"
+      ],
+      "ipc_contracts": ["ai-start-help-confirm-suggestion", "ai-start-help-confirm-understanding"],
+      "domain_invariants": [
+        "all-automated-tests-use-fake-provider-and-unique-temporary-sqlite-and-userdata-roots",
+        "zero-write-branches-are-proven-by-complete-core-snapshot-not-only-spies",
+        "confirmed-core-facts-persist-after-reopen-and-enter-export-v2",
+        "ai-draft-session-manifest-request-response-and-credential-never-enter-core-storage-export-logs-or-evidence",
+        "ac01-ac03-ac04-ac05-ac06-and-ac07-semantics-remain-unchanged"
+      ],
+      "risk": "high",
+      "integration_policy": "serial"
+    },
+    {
+      "files": [
+        "docs/implementation/archive/S6_T061_T063_ARCHIVE.md",
+        "docs/implementation/metadata/T063.json",
+        "docs/implementation/TASK_INDEX_V0.1.md",
+        "docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md"
+      ],
+      "modules": [
+        "archived-task-contract-and-machine-readable-metadata",
+        "owner-controlled-task-activation-and-git-github-permissions",
+        "revision-bound-delivery-evidence-manual-ac02-and-docs-closeout"
+      ],
+      "schema_tables": [],
+      "ipc_contracts": [],
+      "domain_invariants": [
+        "contract-draft-does-not-activate-t063-or-authorize-implementation-publication-merge-or-release",
+        "t061-and-t062-task-delivery-final-head-and-dev-integration-revisions-remain-exactly-bound",
+        "manual-ac02-remains-pending-until-the-project-owner-performs-and-signs-it",
+        "t063-does-not-automatically-pass-the-s6-final-gate-start-s7-or-publish-a-release"
+      ],
+      "risk": "high",
+      "integration_policy": "owner-review"
+    }
+  ],
+  "external": []
+}

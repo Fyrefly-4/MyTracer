@@ -1,7 +1,7 @@
 # MyTracer v0.1 任务索引
 
 > 文档状态：v0.1 实施任务基线  
-> 当前阶段：S0～S3 已完成并形成 `v0.1.0-beta.1` 里程碑；T041～T052 已集成至 `dev@84b596e12e54db098857004497a4d1964dcdc23c`；T806 聚合文档已收口，等待 PR #43 final-head hosted CI 与项目所有者 Gate
+> 当前阶段：S0～S3 已完成并形成 `v0.1.0-beta.1` 里程碑；T041～T052 已集成至 `dev@84b596e12e54db098857004497a4d1964dcdc23c`；T806 仍在 `review`；T061～T063 已集成至 `dev@f06b1e97da07dffc05814518ad8ad83ed3e051b9`；T807 S6 聚合验收处于 `review`
 > 状态来源：本文件是任务执行状态的唯一账本，架构实施计划只定义范围和顺序
 
 ## 1. 使用规则
@@ -45,7 +45,10 @@
 - T051 task delivery revision `eccd00148ac6ca47f3215e03abffb98a732c2558` 已通过本地完整验证、完整 diff/独立只读 review、PR #41 required CI 和项目所有者人工 AC-06 步骤 1，并已集成至 `dev@3e5a14f1b5f90894e1e15a4b208aa5db254e7825`；任务结果见 `EV-T051-001`。T052 task delivery revision `7aced4fa3146ebb5d0bcf28b7dbc81e5b40e2cb2` 的本地/hosted 自动化、完整 diff/独立 review、完整人工 AC-06 与 owner-approved docs closeout 已通过，并由 PR #42 集成至 `dev@84b596e12e54db098857004497a4d1964dcdc23c`；结果见 `EV-T052-001`。
 - S4 前工程治理与 UI Foundation 聚合不登记为新任务；固定产品 source `dev@2632ff0638fb02533100a1f9d0aea9f1323dbde3`，范围为 T804、T092、T093、T805、T094。该 revision 的治理 metadata、AC-01/03/04/07 定向回归、完整 `verify`、Windows package/unpacked/隔离 NSIS smoke 与 `main..dev` 独立 review 已通过，候选证据见 `EV-PRE-S4-FOUNDATION-001`；人工视觉对比和聚合文档 PR 的 final-head hosted CI 分别记录，不由本地 candidate 代替。
 - T806 是项目所有者于 2026-08-30 另行指定并批准激活的 S4/S5 聚合验收任务，固定产品 source 为 `dev@84b596e12e54db098857004497a4d1964dcdc23c`。本地 Unit/Integration/E2E、完整 `verify`、package 与修复后的 package smoke 已通过；PR #43 candidate run `33314322219` 仅因 hosted migration 用例超过默认 5 秒失败。项目所有者授权单用例 30 秒 test-only 窄修复及直接 docs closeout，修改后不再本地测试。任务现为 `review`，等待精确 final head hosted CI；归档见 [`archive/S4_S5_T041_T052_ARCHIVE.md`](archive/S4_S5_T041_T052_ARCHIVE.md)，聚合事实见 `EV-S4-S5-001`。
-- 首个 AI Provider、模型和 SDK 只阻塞 T062，不阻塞 S0～S5 的非 AI 能力。
+- T061 task delivery revision `5f98b2f61026721f22fe6cd627c3b402678e9a93` 已通过 targeted/affected/完整 `verify`、完整 diff/独立 review、candidate CI、项目所有者人工测试和 owner-approved docs closeout；失败 run `33354175786` 由 final head `d60978917546f6547a1615c6aa03e87d08c0d2ce` 的成功 run `33355327790` supersede。PR #46 已 squash merge 为 `dev_integration_revision=4630878dacd0a15dbe8446cb26d9cea790d3ed6e`，post-merge run `33355939824` 成功；任务为 `done`，结果见 `EV-T061-001`。T061 自身不声明 T062/T063、AC-02 或 S6 final gate；后续状态见 T807。
+- T062 task delivery revision `bc5461e3bcc4e0ca94abbffe9ef2f898c7bbc4a9` 已通过本地 targeted/affected/完整 `verify`、Windows package smoke、完整 diff/独立 review 和 PR #47 candidate run `33379861872`；final head `a458171be3504492a5c581b595f272c1e1e0e097` 的 run `33381804748` 成功，并 squash merge 为 `dev_integration_revision=233d6790c6c5e11bb454b22eb027443eef54a01e`，post-merge run `33382653020` 成功。项目所有者已人工复核上述收口事实；结果见 `EV-T062-001`。
+- T063 task delivery revision `fee398e08ef687bd75d9dae10e6254f09e7c9896` 已通过本地 targeted/affected/完整 `verify`、Windows package/unpacked/隔离 NSIS smoke、完整 diff/独立 review和 PR #48 implementation-candidate run `33470990276`。docs closeout final head `2e3fc746fcafbe67a0c4a3bc24671e6a50c2ac94` 的失败 run `33474459495` 由同 revision 的成功重跑 `33475609355` supersede；PR #48 已 squash merge 为 `dev_integration_revision=f06b1e97da07dffc05814518ad8ad83ed3e051b9`，post-merge run `33476194961` 成功。任务为 `done`；项目所有者已在 T807 固定产品内容和边界修复上报告完整人工 AC-02 通过，结果见 `EV-T063-001` 与 `EV-T807-001`。
+- T807 是项目所有者于 2026-09-01 批准并激活的 S6 聚合验收与发布准备任务，固定产品 source 为 `dev@f06b1e97da07dffc05814518ad8ad83ed3e051b9`。Coverage Gate 缺口和三项独立审查边界问题均按 owner-approved 窄范围修复；`task_delivery_revision=449ad4f36ffbace59e19f55c53fa4ce9dcb02b4c` 的 hosted run `33599620345`、package、再次独立 review 和项目所有者完整人工 AC-02/真实 UI + LiteLLM 体验均通过。专用自动 live contract 因 5 秒 harness timeout 未形成通过证据，但未证明 Provider 失败。项目所有者已批准统一归档和文档收口；任务转为 `review`，等待文档 final-head CI。PR #49 仍为 Draft，Ready、merge、tag 和 Release 受独立 Gate。归档见 [`archive/S6_T061_T063_ARCHIVE.md`](archive/S6_T061_T063_ARCHIVE.md)，聚合事实见 `EV-T807-001`。
 
 ## 4. 任务总表
 
@@ -69,9 +72,9 @@
 | T042 | E4-02        | 清理过时内容并重新开始                                                                      | FR-REC04～REC06；FR-P04；D-013；AC-05                                | T041                          | `done`    | `EV-T042-001`                |
 | T051 | E5-01        | 周期事实摘要                                                                                | FR-RV01/RV06；D-106；AC-06                                           | S2/S3                         | `done`    | `EV-T051-001`                |
 | T052 | E5-02        | ReviewResult 和下一阶段调整                                                                 | FR-RV02～RV05；D-105/110                                             | T051                          | `done`    | `EV-T052-001`                |
-| T061 | E6-01        | AI 最小上下文选择器和隔离证明                                                               | FR-AI01/03/08/10；D-108；ED-011                                      | S1/S3                         | `pending` | —                            |
-| T062 | E6-02        | 可替换 Provider、超时和失败降级                                                             | FR-AI02～AI04/AI07/AI09；D-012/013/015                               | T061、Provider 批准           | `pending` | —                            |
-| T063 | E6-03        | AI 建议接受/修改/拒绝和确认命令                                                             | FR-AI05/06；FR-C02/C03；D-014/109；AC-02                             | T062                          | `pending` | —                            |
+| T061 | E6-01        | AI 最小上下文选择器和隔离证明                                                               | FR-AI01/03/08/10；D-108；ED-011                                      | S1/S3；dev@1342cd7           | `done`    | `EV-T061-001`                |
+| T062 | E6-02        | 可替换 Provider、超时和失败降级                                                             | FR-AI02～AI04/AI07/AI09；D-012/013/015                               | T061、Provider 批准           | `done`    | `EV-T062-001`                |
+| T063 | E6-03        | AI 建议接受/修改/拒绝和确认命令                                                             | FR-AI05/06；FR-C02/C03；D-014/109；AC-02                             | T062                          | `done`    | `EV-T063-001`                |
 | T071 | S7           | 11 条 SHOULD 的既定处理结论                                                                 | Traceability §4；Implementation §10.1                                | S1～S6                        | `pending` | —                            |
 | T072 | S7           | 全量回归、AC-01～AC-07、Windows Demo 收敛                                                   | 全部 MUST/AC；Test Strategy §7～10                                   | T071                          | `pending` | —                            |
 | T090 | GOV-01       | V2 Agent 流程第一、二批文档规范                                                             | GW-001/002/004/005/006/009/010；T090 合同                            | dev@112b909                   | `done`    | `EV-T090-001`                |
@@ -85,6 +88,7 @@
 | T804 | GOV-03       | 统一收口长期文档中的任务、里程碑、tag/release 与 GitHub 配置事实                            | GW-001/002/004/008～010；不改变 FR/AC/D/ED                           | T803、T091                    | `done`    | `EV-T804-001`                |
 | T805 | GOV-06       | 收敛 `/docs` 文档冗余、归档已完成治理合同并限定历史快照边界                                 | GW-001/003/004/009/010；不改变 FR/AC/D/ED                            | T090～T093、T804；dev@2b31bc6 | `done`    | `EV-T805-001`、`EV-T805-002` |
 | T806 | S4/S5 aggregate | 聚合验收 T041～T052、AC-05/06、package、migration/export、证据与合同归档                  | FR-REC01～REC06；FR-RV01～RV06；AC-05/06；AC-01/03/04/07 回归       | T041、T042、T051、T052        | `review`  | `EV-S4-S5-001`；final-head CI pending |
+| T807 | S6 aggregate    | 聚合验收 T061～T063、完整 AC-02、AI 隔离、package、证据收口与里程碑准备                   | FR-AI01～AI10；FR-C02/C03；AC-02；AC-01/03/04/05/06/07 回归         | T061、T062、T063              | `review`  | `EV-T807-001`（final-head CI pending）    |
 
 ## 5. 阶段门与主线合并
 
@@ -95,6 +99,7 @@
 | G3/S2 例行与意向  | T021～T023/T802          | PR #22 合入 `main@581e443...`；`v0.1.0-alpha.3` 已发布                                      |
 | G3/S3 数据安全    | T031～T033/T803          | PR #30 合入 `main@75e51b4...`；`v0.1.0-beta.1` 已发布                                       |
 | S4 前工程/UI 基线 | T804/T092/T093/T805/T094 | `dev@2632ff0...` 本地聚合 candidate 通过；文档 final-head CI 与 `dev -> main` Draft PR 另记 |
+| S6 AI 启动帮助    | T061～T063/T807          | 固定 `dev@f06b1e9...` 自动与人工 AC-02 已通过；文档 final-head CI、PR merge 与发布动作独立审批 |
 | G4 Demo 就绪      | T094、T041～T072         | 全量验收后再决定 `rc.1` 或 `v0.1.0`；不自动授权发布                                         |
 
 阶段门不会因任务表显示 `done` 自动通过；必须满足开发流程中的自动化和人工验收要求。
@@ -110,7 +115,8 @@
 ## 7. 当前结论
 
 - 当前任务状态以本表任务总表为唯一来源，具体验证以 Evidence 账本为准；归档文档只提供历史导航和最小有效事实。
-- S0～S3 均已完成并形成 `v0.1.0-beta.1`；T041/T042/T051/T052 已分别形成完整人工 AC-05/AC-06 task candidate，但这不表示 G4、AC-02、自动导入/恢复、AI Provider 或 S4～S7 阶段门已完成。
+- S0～S3 均已完成并形成 `v0.1.0-beta.1`；T041/T042/T051/T052 已分别形成完整人工 AC-05/AC-06 task candidate；T061～T063 已集成，T807 已形成固定 S6 产品内容上的自动与人工 AC-02 candidate。这些事实不表示 T807 已进入 `dev`、G4、S7、Ready、main、tag 或 Release 已完成。
 - T041～T052 的 Recovery/Review 最终范围、revision、PR、兼容契约与恢复入口已统一归档于 [`archive/S4_S5_T041_T052_ARCHIVE.md`](archive/S4_S5_T041_T052_ARCHIVE.md)。四任务均进入固定产品 source `dev@84b596e12e54db098857004497a4d1964dcdc23c`，任务 Evidence 与完整人工 AC-05/06 保留；T806 聚合 final-head hosted CI、Ready、merge 和 main 晋升仍是独立后续 Gate。
+- T061～T063 的 AI Start Help 最终范围、revision、PR、信任边界与恢复入口已统一归档于 [`archive/S6_T061_T063_ARCHIVE.md`](archive/S6_T061_T063_ARCHIVE.md)。三个任务均进入固定产品 source `dev@f06b1e97da07dffc05814518ad8ad83ed3e051b9`；T807 文档 final-head hosted CI、Ready、merge 和 main 晋升仍是独立后续 Gate。
 - T090～T093、T804 的完整合同和 T803 的聚合合同均已按阶段/治理归档，失败、partial 和历史候选 Evidence 继续保留。
 - T094 只完成 Structural UI Refactor；它未实现 T041、S4～S7，也未改变产品语义、依赖、migration、IPC 或发布权限。S4 前聚合验收不等于 G4、AC-02/05/06、tag 或 release 完成，`dev -> main` merge 仍由项目所有者针对确切 PR 决定。

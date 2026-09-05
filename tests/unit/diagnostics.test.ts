@@ -85,4 +85,25 @@ describe('SafeDiagnostics', () => {
       })
     ).not.toThrow()
   })
+
+  it('accepts only fixed AI metadata without request or response text', () => {
+    const write = vi.fn<DiagnosticWriter['write']>()
+    const diagnostics = new SafeDiagnostics(clock, { write })
+    diagnostics.record({
+      code: 'ai-request-failed',
+      severity: 'warning',
+      correlationId: 'ai.request-1',
+      category: 'ai-provider',
+      durationMs: 20_000,
+      providerCategory: 'litellm-gateway'
+    })
+    expect(write.mock.calls[0]?.[0]).toMatchObject({
+      code: 'ai-request-failed',
+      durationMs: 20_000,
+      providerCategory: 'litellm-gateway'
+    })
+    expect(JSON.stringify(write.mock.calls[0]?.[0])).not.toMatch(
+      /prompt|response|credential|api.?key/i
+    )
+  })
 })

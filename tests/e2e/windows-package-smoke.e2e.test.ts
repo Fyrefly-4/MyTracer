@@ -53,7 +53,9 @@ async function verifyPackagedApplication(
       'review',
       'routines',
       'dataControl',
-      'exports'
+      'exports',
+      'aiStartHelp',
+      'aiConfiguration'
     ])
     expect(await page.evaluate(() => Object.keys(window.myTracer.shell))).toEqual(['getStatus'])
     expect(await page.evaluate(() => Object.keys(window.myTracer.goals))).toEqual([
@@ -114,6 +116,23 @@ async function verifyPackagedApplication(
       'cancel'
     ])
     expect(await page.evaluate(() => Object.keys(window.myTracer.exports))).toEqual(['generate'])
+    expect(await page.evaluate(() => Object.keys(window.myTracer.aiStartHelp))).toEqual([
+      'status',
+      'start',
+      'cancel',
+      'retry',
+      'reject',
+      'confirmSuggestion',
+      'confirmUnderstanding',
+      'close'
+    ])
+    expect(await page.evaluate(() => Object.keys(window.myTracer.aiConfiguration))).toEqual([
+      'status',
+      'importFromEnvironment',
+      'enable',
+      'disable',
+      'deleteCredential'
+    ])
     expect(
       await page.evaluate(() =>
         [
@@ -128,7 +147,9 @@ async function verifyPackagedApplication(
           window.myTracer.recovery,
           window.myTracer.review,
           window.myTracer.dataControl,
-          window.myTracer.exports
+          window.myTracer.exports,
+          window.myTracer.aiStartHelp,
+          window.myTracer.aiConfiguration
         ].every((value) => Object.isFrozen(value))
       )
     ).toBe(true)

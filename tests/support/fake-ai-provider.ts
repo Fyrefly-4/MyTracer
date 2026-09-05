@@ -1,4 +1,13 @@
-export type FakeAiFailureCode = 'authentication' | 'parse'
+import type {
+  ProviderCapabilities,
+  ProviderRequestOptions
+} from '../../src/application/ports/ai-start-help'
+import {
+  AiProviderError,
+  type AiProviderFailureCode
+} from '../../src/application/ports/ai-start-help'
+
+export type FakeAiFailureCode = AiProviderFailureCode | 'parse'
 
 export class FakeAiProviderError extends Error {
   public constructor(
@@ -15,14 +24,32 @@ export type FakeAiScript<TDraft> =
   | { readonly kind: 'timeout' }
   | { readonly kind: 'cancellation' }
   | { readonly kind: 'authentication-failure'; readonly message?: string }
+  | { readonly kind: 'quota-failure'; readonly message?: string }
+  | { readonly kind: 'rate-limit-failure'; readonly message?: string }
+  | { readonly kind: 'network-failure'; readonly message?: string }
+  | { readonly kind: 'provider-unavailable'; readonly message?: string }
+  | { readonly kind: 'internal-failure'; readonly message?: string }
   | { readonly kind: 'parse-failure'; readonly message?: string }
   | { readonly kind: 'late-response'; readonly draft: TDraft }
   | { readonly kind: 'fabricated-fact'; readonly draft: TDraft }
+  | { readonly kind: 'rest-suggestion'; readonly draft: TDraft }
 
 export interface FakeAiCall<TRequest> {
   readonly request: TRequest
   readonly scriptKind: FakeAiScript<unknown>['kind']
   readonly aborted: boolean
+}
+
+export class FakeStartHelpRequestCapture<TRequest> {
+  private readonly recordedCalls: TRequest[] = []
+
+  public get calls(): readonly TRequest[] {
+    return this.recordedCalls.map((request) => clone(request))
+  }
+
+  public captureStartHelpRequest(request: TRequest): void {
+    this.recordedCalls.push(clone(request))
+  }
 }
 
 interface MutableFakeAiCall<TRequest> {
@@ -72,7 +99,20 @@ export class FakeAiProvider<TRequest, TDraft> {
     return this.recordedCalls.map((call) => clone(call))
   }
 
-  public async requestStartHelp(request: TRequest, signal?: AbortSignal): Promise<TDraft> {
+  public capabilities(): ProviderCapabilities {
+    return Object.freeze({
+      configured: true,
+      available: true,
+      providerLabel: 'Fake AI Provider',
+      modelLabel: 'Deterministic fake'
+    })
+  }
+
+  public async requestStartHelp(
+    request: TRequest,
+    options?: AbortSignal | ProviderRequestOptions
+  ): Promise<TDraft> {
+    const signal = options instanceof AbortSignal ? options : options?.signal
     const script = this.scripts.shift()
 
     if (!script) {
@@ -91,16 +131,23 @@ export class FakeAiProvider<TRequest, TDraft> {
       throw abortError()
     }
 
-    if (script.kind === 'success' || script.kind === 'fabricated-fact') {
+    if (
+      script.kind === 'success' ||
+      script.kind === 'fabricated-fact' ||
+      script.kind === 'rest-suggestion'
+    ) {
       return clone(script.draft)
     }
 
     if (script.kind === 'authentication-failure') {
-      throw new FakeAiProviderError(
-        'authentication',
-        script.message ?? 'The fake AI provider rejected authentication.'
-      )
+      throw new AiProviderError('authentication')
     }
+
+    if (script.kind === 'quota-failure') throw new AiProviderError('quota')
+    if (script.kind === 'rate-limit-failure') throw new AiProviderError('rate-limited')
+    if (script.kind === 'network-failure') throw new AiProviderError('network')
+    if (script.kind === 'provider-unavailable') throw new AiProviderError('provider-unavailable')
+    if (script.kind === 'internal-failure') throw new AiProviderError('internal')
 
     if (script.kind === 'parse-failure') {
       throw new FakeAiProviderError('parse', script.message ?? 'The fake AI response was invalid.')

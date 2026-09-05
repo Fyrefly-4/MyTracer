@@ -8,6 +8,7 @@ import type { DataControlApi } from './data-control'
 import type { CompleteExportApi } from './exports'
 import type { RecoveryApi } from './recovery'
 import type { ReviewApi } from './review'
+import type { AiConfigurationApi, AiStartHelpApi } from './ai-start-help'
 
 export const SHELL_STATUS_CHANNEL = 'shell:query-status' as const
 
@@ -16,8 +17,9 @@ export interface ShellStatus {
   readonly appVersion: string
   readonly platform: 'windows'
   readonly ai: {
-    readonly configured: false
-    readonly availability: 'not-configured'
+    readonly configured: boolean
+    readonly availability:
+      'disabled' | 'not-configured' | 'configured-available' | 'configured-unavailable'
   }
 }
 
@@ -35,4 +37,6 @@ export interface MyTracerApi {
   readonly routines: RoutineApi
   readonly dataControl: DataControlApi
   readonly exports: CompleteExportApi
+  readonly aiStartHelp: AiStartHelpApi
+  readonly aiConfiguration: AiConfigurationApi
 }

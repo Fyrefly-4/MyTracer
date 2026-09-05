@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 1,
+  "task": "T807",
+  "task_kind": "aggregate",
+  "dependencies": {
+    "requires": ["T061", "T062", "T063"],
+    "blocks": [],
+    "can_parallel": [],
+    "prefer_after": [],
+    "conflicts_with": []
+  },
+  "conflict_basis": {},
+  "shared_surfaces": [
+    {
+      "files": [
+        "docs/implementation/T807_S6_FINAL_ACCEPTANCE.md",
+        "docs/implementation/metadata/T807.json",
+        "docs/implementation/TASK_INDEX_V0.1.md",
+        "docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md",
+        "docs/implementation/archive/S6_T061_T063_ARCHIVE.md",
+        "README.md"
+      ],
+      "modules": [
+        "s6-aggregate-acceptance",
+        "revision-bound-evidence",
+        "task-contract-archive",
+        "milestone-release-handoff"
+      ],
+      "schema_tables": [],
+      "ipc_contracts": [],
+      "domain_invariants": [
+        "stage-final-integration-revision-is-fixed-product-content",
+        "ai-is-user-triggered-and-minimal-context",
+        "ai-drafts-are-temporary-until-explicit-confirmation",
+        "provider-has-no-core-write-authority",
+        "credentials-and-network-remain-main-only",
+        "manual-acceptance-is-owner-reported",
+        "aggregate-evidence-preserves-task-history"
+      ],
+      "risk": "high",
+      "integration_policy": "serial"
+    },
+    {
+      "files": [
+        "docs/implementation/metadata/T061.json",
+        "docs/implementation/metadata/T062.json",
+        "docs/implementation/metadata/T063.json"
+      ],
+      "modules": ["archived-task-metadata-navigation"],
+      "schema_tables": [],
+      "ipc_contracts": [],
+      "domain_invariants": [
+        "archived-contracts-remain-recoverable-from-fixed-git-history",
+        "failed-evidence-and-live-provider-limitations-remain-preserved"
+      ],
+      "risk": "medium",
+      "integration_policy": "serial"
+    },
+    {
+      "files": ["src/main/index.ts", "tests/e2e/ai-start-help-ac02.e2e.test.ts"],
+      "modules": ["node-env-test-scripted-ai-provider", "continuous-ac02-e2e"],
+      "schema_tables": [],
+      "ipc_contracts": [],
+      "domain_invariants": [
+        "test-only-seam-does-not-change-non-test-behavior",
+        "continuous-ac02-uses-one-isolated-database",
+        "fake-provider-never-calls-live-network",
+        "no-public-test-control-api-is-added"
+      ],
+      "risk": "medium",
+      "integration_policy": "serial"
+    },
+    {
+      "files": [
+        "src/infrastructure/ai/litellm-start-help-provider.ts",
+        "src/application/ai-start-help.ts",
+        "src/main/ai-start-help-session.ts",
+        "tests/unit/ai-start-help-provider.test.ts",
+        "tests/unit/ai-start-help-session.test.ts",
+        "tests/unit/process-governance.test.ts",
+        "tests/integration/ai-start-help-provider-contract.test.ts"
+      ],
+      "modules": [
+        "sdk-log-isolation",
+        "provider-failure-degradation",
+        "live-contract-default-isolation"
+      ],
+      "schema_tables": [],
+      "ipc_contracts": [],
+      "domain_invariants": [
+        "prompt-and-response-never-enter-sdk-logs",
+        "unexpected-provider-failures-degrade-to-internal",
+        "ordinary-verify-never-calls-live-provider"
+      ],
+      "risk": "high",
+      "integration_policy": "serial"
+    }
+  ],
+  "external": [
+    "github-t807-acceptance-branch",
+    "github-draft-pr-to-dev-after-contract-activation",
+    "github-actions-redacted-evidence-artifact",
+    "github-dev-to-main-pr-requires-separate-owner-authorization",
+    "live-litellm-requires-separate-owner-authorization"
+  ]
+}

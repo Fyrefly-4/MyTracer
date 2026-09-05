@@ -207,12 +207,41 @@ export class GoalService {
     readonly goalId: string
     readonly title: string
     readonly description?: string | null
+    readonly expectedCurrentNextActionId?: string | null
+    readonly expectedGoalUpdatedAt?: string
+    readonly expectedContextActionId?: string
+    readonly expectedContextActionUpdatedAt?: string
   }): GoalDetailView {
     const now = this.dependencies.clock.nowInstant()
     const actionId = this.dependencies.generateId()
     try {
       this.dependencies.unitOfWork.transaction((repository) => {
-        const goal = toDomain(loadGoal(repository, input.goalId))
+        const currentGoal = loadGoal(repository, input.goalId)
+        if (
+          input.expectedGoalUpdatedAt !== undefined &&
+          currentGoal.updatedAt !== input.expectedGoalUpdatedAt
+        ) {
+          throw new GoalApplicationError('invariant-violation', 'The Goal context is stale.')
+        }
+        if (
+          Object.prototype.hasOwnProperty.call(input, 'expectedCurrentNextActionId') &&
+          currentGoal.currentNextActionId !== input.expectedCurrentNextActionId
+        ) {
+          throw new GoalApplicationError('invariant-violation', 'The current next Action is stale.')
+        }
+        if (input.expectedContextActionId !== undefined) {
+          const contextAction = repository.findActionById(input.expectedContextActionId)
+          if (
+            !contextAction ||
+            contextAction.goalId !== currentGoal.id ||
+            contextAction.status !== 'pending' ||
+            (input.expectedContextActionUpdatedAt !== undefined &&
+              contextAction.updatedAt !== input.expectedContextActionUpdatedAt)
+          ) {
+            throw new GoalApplicationError('invariant-violation', 'The opened Action is stale.')
+          }
+        }
+        const goal = toDomain(currentGoal)
         const action = Object.freeze<ActionPersistenceRecord>({
           id: actionId,
           goalId: goal.id,

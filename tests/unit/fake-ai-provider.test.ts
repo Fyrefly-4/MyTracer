@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { FakeAiProvider, FakeAiProviderError, type FakeAiScript } from '../support/fake-ai-provider'
+import {
+  FakeAiProvider,
+  FakeAiProviderError,
+  FakeStartHelpRequestCapture,
+  type FakeAiScript
+} from '../support/fake-ai-provider'
 
 interface Request {
   readonly marker: string
@@ -85,6 +90,25 @@ describe('FakeAiProvider', () => {
     expect(fake.calls).toHaveLength(1)
   })
 
+  it('keeps a reasonable-rest suggestion as explicit temporary test data', async () => {
+    const fake = provider([
+      { kind: 'rest-suggestion', draft: { suggestion: '如果现在需要，可以先休息。' } }
+    ])
+    await expect(fake.requestStartHelp({ marker: 'goal-a' })).resolves.toEqual({
+      suggestion: '如果现在需要，可以先休息。'
+    })
+  })
+
+  it.each([
+    'quota-failure',
+    'rate-limit-failure',
+    'network-failure',
+    'provider-unavailable',
+    'internal-failure'
+  ] as const)('provides the offline %s script', async (kind) => {
+    await expect(provider([{ kind }]).requestStartHelp({ marker: 'goal-a' })).rejects.toBeDefined()
+  })
+
   it('keeps provider instances and scripts isolated', async () => {
     const first = provider([{ kind: 'success', draft: { suggestion: 'First.' } }])
     const second = provider([{ kind: 'success', draft: { suggestion: 'Second.' } }])
@@ -95,5 +119,21 @@ describe('FakeAiProvider', () => {
     })
     expect(first.calls[0]?.request.marker).toBe('a')
     expect(second.calls[0]?.request.marker).toBe('b')
+  })
+})
+
+describe('FakeStartHelpRequestCapture', () => {
+  it('captures clone-safe requests without network or response behavior', () => {
+    const capture = new FakeStartHelpRequestCapture<{ marker: string }>()
+    const request = { marker: 'allowed' }
+
+    expect(capture.calls).toEqual([])
+    capture.captureStartHelpRequest(request)
+    request.marker = 'mutated-after-capture'
+
+    expect(capture.calls).toEqual([{ marker: 'allowed' }])
+    const observed = capture.calls[0] as { marker: string }
+    observed.marker = 'mutated-observation'
+    expect(capture.calls).toEqual([{ marker: 'allowed' }])
   })
 })

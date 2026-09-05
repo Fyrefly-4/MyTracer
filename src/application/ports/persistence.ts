@@ -166,6 +166,37 @@ export interface RecoveryQuerySnapshotPersistence {
 
 export type ReviewQuerySnapshotPersistence = ProgressQuerySnapshotPersistence
 
+export interface StartHelpUnderstandingFactPersistence {
+  readonly id: string
+  readonly text: string
+}
+
+export interface StartHelpConfusionFactPersistence {
+  readonly id: string
+  readonly text: string
+}
+
+export interface StartHelpActionRecordFactPersistence {
+  readonly id: string
+  readonly actionId: string
+  readonly actionTitle: string
+  readonly occurredOn: string
+  readonly durationMinutes: number
+  readonly outcome: ActionRecordPersistenceRecord['outcome']
+  readonly nextStep: string | null
+  readonly createdAt: string
+  readonly understandings: readonly StartHelpUnderstandingFactPersistence[]
+  readonly confusions: readonly StartHelpConfusionFactPersistence[]
+}
+
+export interface StartHelpContextQuerySnapshotPersistence {
+  readonly goal: GoalPersistenceRecord | null
+  readonly action: ActionPersistenceRecord | null
+  readonly todaySelection: TodaySelectionPersistenceRecord | null
+  readonly currentNextAction: ActionPersistenceRecord | null
+  readonly records: readonly StartHelpActionRecordFactPersistence[]
+}
+
 export interface CorePersistenceSnapshot {
   readonly goals: readonly GoalPersistenceRecord[]
   readonly actions: readonly ActionPersistenceRecord[]
@@ -265,6 +296,13 @@ export interface ReviewRepositoryPort extends RepositoryPort {
   ): ReviewQuerySnapshotPersistence
 }
 
+export interface StartHelpContextQueryPort {
+  queryStartHelpContext(
+    actionId: string,
+    selectedFor: string
+  ): StartHelpContextQuerySnapshotPersistence
+}
+
 export interface RoutineRepositoryPort extends RepositoryPort {
   findRoutineById(id: string): RoutinePersistenceRecord | null
   listRoutines(status?: RoutineStatus): readonly RoutinePersistenceRecord[]
@@ -349,6 +387,15 @@ export function asReviewRepository(repository: RepositoryPort): ReviewRepository
     throw new TypeError('Repository does not provide the Review summary query contract.')
   }
   return repository as ReviewRepositoryPort
+}
+
+export function asStartHelpContextQueryRepository(repository: unknown): StartHelpContextQueryPort {
+  const candidate = repository as Partial<StartHelpContextQueryPort> | null
+  if (!candidate || typeof candidate.queryStartHelpContext !== 'function') {
+    throw new TypeError('Repository does not provide the Start Help context query contract.')
+  }
+  const queryStartHelpContext = candidate.queryStartHelpContext.bind(repository)
+  return Object.freeze({ queryStartHelpContext })
 }
 
 export function asRoutineRecordRepository(repository: RepositoryPort): RoutineRecordRepositoryPort {

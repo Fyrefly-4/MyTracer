@@ -561,3 +561,95 @@ describe('task metadata validator', () => {
     expect(result.stderr).toContain('required profile standard-task@1 is missing')
   })
 })
+
+describe('T061 static AI context boundaries', () => {
+  test('keeps the Start Help coordinator Main-only and unexposed', () => {
+    const coordinator = readFileSync(
+      join(repositoryRoot, 'src', 'main', 'ai-start-help-context.ts'),
+      'utf8'
+    )
+    const mainIndex = readFileSync(join(repositoryRoot, 'src', 'main', 'index.ts'), 'utf8')
+    const preload = readFileSync(join(repositoryRoot, 'src', 'preload', 'index.ts'), 'utf8')
+    const renderer = readFileSync(join(repositoryRoot, 'src', 'renderer', 'src', 'App.tsx'), 'utf8')
+
+    ;[preload, renderer].forEach((source) => {
+      expect(source).not.toContain('ai-start-help-context')
+      expect(source).not.toContain('AiStartHelpContextCoordinator')
+    })
+    expect(mainIndex).toContain("from './ai-start-help-context'")
+    expect(mainIndex).toContain('AiStartHelpContextCoordinator')
+    expect(coordinator.indexOf('.queryStartHelpContext(')).toBeGreaterThan(-1)
+    expect(coordinator.indexOf('this.selector.select(')).toBeGreaterThan(
+      coordinator.indexOf('.queryStartHelpContext(')
+    )
+    expect(coordinator.indexOf('.captureStartHelpRequest(')).toBeGreaterThan(
+      coordinator.indexOf('this.selector.select(')
+    )
+  })
+
+  test('keeps the narrow SQLite query independent from broad snapshots and excluded tables', () => {
+    const source = readFileSync(
+      join(repositoryRoot, 'src', 'infrastructure', 'sqlite', 'sqlite-repository.ts'),
+      'utf8'
+    )
+    const queryStart = source.indexOf('queryStartHelpContext(')
+    const nextQuery = source.indexOf('queryProgressSnapshot(', queryStart)
+    expect(queryStart).toBeGreaterThan(-1)
+    expect(nextQuery).toBeGreaterThan(queryStart)
+    const querySource = source.slice(queryStart, nextQuery)
+
+    ;[
+      'readSnapshot(',
+      'readCompleteCoreSnapshot(',
+      'routine_records',
+      'review_results',
+      'credentials',
+      'diagnostics'
+    ].forEach((forbidden) => expect(querySource).not.toContain(forbidden))
+  })
+})
+
+describe('T062 static Provider and process boundaries', () => {
+  test('keeps the SDK, endpoint, environment name, and credential access in Main infrastructure', () => {
+    const provider = readFileSync(
+      join(repositoryRoot, 'src', 'infrastructure', 'ai', 'litellm-start-help-provider.ts'),
+      'utf8'
+    )
+    const preload = readFileSync(join(repositoryRoot, 'src', 'preload', 'index.ts'), 'utf8')
+    const renderer = readFileSync(
+      join(repositoryRoot, 'src', 'renderer', 'src', 'features', 'today', 'AiStartHelpPanel.tsx'),
+      'utf8'
+    )
+    const contract = readFileSync(
+      join(repositoryRoot, 'src', 'contracts', 'ai-start-help.ts'),
+      'utf8'
+    )
+
+    expect(provider).toContain("from 'openai'")
+    expect(provider).toContain("logLevel: 'off'")
+    ;[preload, renderer, contract].forEach((source) => {
+      expect(source).not.toContain("from 'openai'")
+      expect(source).not.toContain('litellm-gateway-811499828950')
+      expect(source).not.toContain('MYTRACER_LITELLM_API_KEY')
+      expect(source).not.toMatch(/encryptedCredential|readProviderCredential/)
+    })
+    expect(provider).not.toMatch(/Repository|UnitOfWork|sqlite|ApplicationCommand/)
+  })
+
+  test('pins the one approved SDK and keeps live contract outside verify', () => {
+    const packageJson = JSON.parse(readFileSync(join(repositoryRoot, 'package.json'), 'utf8')) as {
+      dependencies: Record<string, string>
+      scripts: Record<string, string>
+    }
+    expect(packageJson.dependencies.openai).toBe('7.8.0')
+    expect(packageJson.scripts['test:ai-contract']).toContain('MYTRACER_AI_LIVE_CONTRACT=1')
+    expect(packageJson.scripts.verify).not.toContain('test:ai-contract')
+
+    const liveContract = readFileSync(
+      join(repositoryRoot, 'tests', 'integration', 'ai-start-help-provider-contract.test.ts'),
+      'utf8'
+    )
+    expect(liveContract).toContain("process.env.npm_lifecycle_event === 'test:ai-contract'")
+    expect(liveContract).toContain("process.env.MYTRACER_AI_LIVE_CONTRACT === '1'")
+  })
+})

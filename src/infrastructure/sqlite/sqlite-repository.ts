@@ -21,6 +21,9 @@ import type {
   RoutineRecordRepositoryPort,
   RoutineProgressQueryRecordPersistence,
   RoutineScheduleDayPersistenceRecord,
+  StartHelpActionRecordFactPersistence,
+  StartHelpContextQueryPort,
+  StartHelpContextQuerySnapshotPersistence,
   TodaySelectionPersistenceRecord,
   UnderstandingPersistenceRecord
 } from '../../application/ports/persistence'
@@ -33,7 +36,11 @@ const asNullableString = (row: Row, name: string): string | null =>
   row[name] === null ? null : asString(row, name)
 
 export class SqliteRepository
-  implements ActionRecordRepositoryPort, RoutineRecordRepositoryPort, DataControlRepositoryPort
+  implements
+    ActionRecordRepositoryPort,
+    RoutineRecordRepositoryPort,
+    DataControlRepositoryPort,
+    StartHelpContextQueryPort
 {
   constructor(private readonly database: Database.Database) {}
 
@@ -437,6 +444,143 @@ export class SqliteRepository
         )
         .all(goalId, selectedFor) as readonly Row[]
     ).map((row) => asString(row, 'action_id'))
+  }
+
+  queryStartHelpContext(
+    actionId: string,
+    selectedFor: string
+  ): StartHelpContextQuerySnapshotPersistence {
+    return this.database.transaction(() => {
+      const contextRow = this.database
+        .prepare(
+          `SELECT actions.id AS action_id, actions.goal_id AS action_goal_id,
+             actions.title AS action_title, actions.description AS action_description,
+             actions.status AS action_status, actions.created_at AS action_created_at,
+             actions.updated_at AS action_updated_at,
+             goals.id AS goal_id, goals.title AS goal_title,
+             goals.description AS goal_description, goals.status AS goal_status,
+             goals.current_next_action_id, goals.created_at AS goal_created_at,
+             goals.updated_at AS goal_updated_at,
+             selections.selected_for, selections.kind AS selection_kind,
+             selections.selected_by, selections.created_at AS selection_created_at
+           FROM actions
+           INNER JOIN goals ON goals.id = actions.goal_id AND goals.status = 'active'
+           INNER JOIN today_selections AS selections ON selections.action_id = actions.id
+             AND selections.selected_for = @selectedFor
+           WHERE actions.id = @actionId AND actions.status = 'pending'`
+        )
+        .get({ actionId, selectedFor }) as Row | undefined
+
+      if (!contextRow) {
+        return Object.freeze({
+          goal: null,
+          action: null,
+          todaySelection: null,
+          currentNextAction: null,
+          records: Object.freeze([])
+        })
+      }
+
+      const goal: GoalPersistenceRecord = Object.freeze({
+        id: asString(contextRow, 'goal_id'),
+        title: asString(contextRow, 'goal_title'),
+        description: asNullableString(contextRow, 'goal_description'),
+        status: asString(contextRow, 'goal_status') as GoalPersistenceRecord['status'],
+        currentNextActionId: asNullableString(contextRow, 'current_next_action_id'),
+        createdAt: asString(contextRow, 'goal_created_at'),
+        updatedAt: asString(contextRow, 'goal_updated_at')
+      })
+      const action: ActionPersistenceRecord = Object.freeze({
+        id: asString(contextRow, 'action_id'),
+        goalId: asNullableString(contextRow, 'action_goal_id'),
+        title: asString(contextRow, 'action_title'),
+        description: asNullableString(contextRow, 'action_description'),
+        status: asString(contextRow, 'action_status') as ActionPersistenceRecord['status'],
+        createdAt: asString(contextRow, 'action_created_at'),
+        updatedAt: asString(contextRow, 'action_updated_at')
+      })
+      const todaySelection: TodaySelectionPersistenceRecord = Object.freeze({
+        actionId: action.id,
+        selectedFor: asString(contextRow, 'selected_for'),
+        kind: asString(contextRow, 'selection_kind') as TodaySelectionPersistenceRecord['kind'],
+        selectedBy: asString(contextRow, 'selected_by') as 'user',
+        createdAt: asString(contextRow, 'selection_created_at')
+      })
+
+      const currentNextAction =
+        goal.currentNextActionId && goal.currentNextActionId !== action.id
+          ? this.currentNextActionForGoal(goal.currentNextActionId, goal.id)
+          : null
+
+      const recordRows = this.database
+        .prepare(
+          `SELECT records.id, records.action_id, actions.title AS action_title,
+             records.occurred_on,
+             records.duration_minutes, records.outcome, records.next_step,
+             records.created_at
+           FROM action_records AS records
+           INNER JOIN actions ON actions.id = records.action_id
+           WHERE actions.goal_id = @goalId
+           ORDER BY records.occurred_on DESC, records.created_at DESC, records.id ASC`
+        )
+        .all({ goalId: goal.id }) as readonly Row[]
+
+      const records = recordRows.map((row): StartHelpActionRecordFactPersistence => {
+        const recordId = asString(row, 'id')
+        const understandings = (
+          this.database
+            .prepare(
+              `SELECT id, text FROM understandings
+               WHERE action_record_id = ? AND revoked_at IS NULL
+               ORDER BY created_at ASC, id ASC`
+            )
+            .all(recordId) as readonly Row[]
+        ).map((item) => Object.freeze({ id: asString(item, 'id'), text: asString(item, 'text') }))
+        const confusions = (
+          this.database
+            .prepare(
+              `SELECT id, text FROM confusions
+               WHERE action_record_id = ? AND status = 'open'
+               ORDER BY created_at ASC, id ASC`
+            )
+            .all(recordId) as readonly Row[]
+        ).map((item) => Object.freeze({ id: asString(item, 'id'), text: asString(item, 'text') }))
+
+        return Object.freeze({
+          id: recordId,
+          actionId: asString(row, 'action_id'),
+          actionTitle: asString(row, 'action_title'),
+          occurredOn: asString(row, 'occurred_on'),
+          durationMinutes: Number(row.duration_minutes),
+          outcome: asString(row, 'outcome') as ActionRecordPersistenceRecord['outcome'],
+          nextStep: asNullableString(row, 'next_step'),
+          createdAt: asString(row, 'created_at'),
+          understandings: Object.freeze(understandings),
+          confusions: Object.freeze(confusions)
+        })
+      })
+
+      return Object.freeze({
+        goal,
+        action,
+        todaySelection,
+        currentNextAction,
+        records: Object.freeze(records)
+      })
+    })()
+  }
+
+  private currentNextActionForGoal(
+    actionId: string,
+    goalId: string
+  ): ActionPersistenceRecord | null {
+    const row = this.database
+      .prepare(
+        `SELECT * FROM actions
+         WHERE id = @actionId AND goal_id = @goalId AND status = 'pending'`
+      )
+      .get({ actionId, goalId }) as Row | undefined
+    return row ? this.actionFromRow(row) : null
   }
 
   queryProgressSnapshot(filter: ProgressQueryFilterPersistence): ProgressQuerySnapshotPersistence {

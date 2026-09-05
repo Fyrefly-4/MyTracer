@@ -24,6 +24,7 @@ import {
 import {
   ActionRecordDomainError,
   createActionRecord,
+  createConfirmedAiUnderstanding,
   createManualUnderstanding,
   createOpenConfusion,
   type ActionRecordOutcome
@@ -70,7 +71,7 @@ export interface ActionRecordSummaryView {
 export interface UnderstandingView {
   readonly id: string
   readonly text: string
-  readonly source: 'manual'
+  readonly source: 'manual' | 'ai_candidate_confirmed'
   readonly createdAt: string
 }
 
@@ -164,12 +165,12 @@ function detail(
 ): ActionRecordDetailView {
   const understandings = repository
     .listUnderstandingsByActionRecordId(record.id)
-    .filter((item) => item.source === 'manual' && item.revokedAt === null)
+    .filter((item) => item.revokedAt === null)
     .map((item) =>
       Object.freeze({
         id: item.id,
         text: item.text,
-        source: 'manual' as const,
+        source: item.source,
         createdAt: item.createdAt
       })
     )
@@ -319,6 +320,58 @@ export class ActionRecordService {
       throw new ActionRecordApplicationError('not-found', 'Action record was not found.')
     }
     return detail(repository, record)
+  }
+
+  public addConfirmedUnderstandingToActionRecord(input: {
+    readonly actionRecordId: string
+    readonly expectedGoalId: string
+    readonly text: string
+  }): UnderstandingView {
+    const now = this.dependencies.clock.nowInstant()
+    try {
+      return this.dependencies.unitOfWork.transaction((baseRepository) => {
+        const repository = asActionRecordRepository(baseRepository)
+        const record = repository.findActionRecordById(input.actionRecordId)
+        if (!record) {
+          throw new ActionRecordApplicationError('not-found', 'Action record was not found.')
+        }
+        const action = repository.findActionById(record.actionId)
+        if (!action) {
+          throw new ActionRecordApplicationError('not-found', 'Action was not found.')
+        }
+        if (action.goalId !== input.expectedGoalId) {
+          throw new ActionRecordApplicationError(
+            'invariant-violation',
+            'The Action record no longer belongs to the expected Goal.'
+          )
+        }
+        const goal = repository.findGoalById(input.expectedGoalId)
+        if (!goal) {
+          throw new ActionRecordApplicationError('not-found', 'Goal was not found.')
+        }
+        if (goal.status !== 'active') {
+          throw new ActionRecordApplicationError(
+            'invalid-transition',
+            'A confirmed Understanding requires an active Goal.'
+          )
+        }
+        const understanding = createConfirmedAiUnderstanding({
+          id: this.dependencies.generateId(),
+          actionRecordId: record.id,
+          text: input.text,
+          now
+        })
+        repository.saveUnderstanding(understanding)
+        return Object.freeze({
+          id: understanding.id,
+          text: understanding.text,
+          source: understanding.source,
+          createdAt: understanding.createdAt
+        })
+      })
+    } catch (error) {
+      mapDomainError(error)
+    }
   }
 
   private applyPostRecord(

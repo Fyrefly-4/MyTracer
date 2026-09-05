@@ -24,6 +24,16 @@ export interface ManualUnderstanding {
   readonly updatedAt: string
 }
 
+export interface ConfirmedAiUnderstanding {
+  readonly id: string
+  readonly actionRecordId: string
+  readonly text: string
+  readonly source: 'ai_candidate_confirmed'
+  readonly revokedAt: null
+  readonly createdAt: string
+  readonly updatedAt: string
+}
+
 export interface OpenConfusion {
   readonly id: string
   readonly actionRecordId: string
@@ -182,6 +192,23 @@ export function createManualUnderstanding(input: {
     actionRecordId: requiredText(input.actionRecordId, 'Action record id'),
     text: requiredText(input.text, 'Understanding text'),
     source: 'manual',
+    revokedAt: null,
+    createdAt: input.now,
+    updatedAt: input.now
+  })
+}
+
+export function createConfirmedAiUnderstanding(input: {
+  readonly id: string
+  readonly actionRecordId: string
+  readonly text: string
+  readonly now: string
+}): ConfirmedAiUnderstanding {
+  return Object.freeze({
+    id: requiredText(input.id, 'Understanding id'),
+    actionRecordId: requiredText(input.actionRecordId, 'Action record id'),
+    text: requiredText(input.text, 'Understanding text'),
+    source: 'ai_candidate_confirmed',
     revokedAt: null,
     createdAt: input.now,
     updatedAt: input.now

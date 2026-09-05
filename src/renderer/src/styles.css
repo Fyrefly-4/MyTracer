@@ -1297,6 +1297,88 @@ h1 {
   background: rgba(255, 255, 255, 0.76);
 }
 
+.ai-start-help-panel {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid rgba(65, 103, 91, 0.16);
+  border-radius: 14px;
+  background: rgba(236, 244, 240, 0.62);
+}
+
+.ai-start-help-heading,
+.ai-start-help-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ai-start-help-heading h3,
+.ai-start-help-state,
+.ai-start-help-draft p {
+  margin: 0;
+}
+
+.ai-start-help-state,
+.ai-start-help-draft {
+  color: #52665f;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.ai-start-help-draft ol {
+  display: grid;
+  gap: 8px;
+  margin: 10px 0;
+  padding-left: 22px;
+}
+
+.ai-start-help-draft,
+.ai-start-help-draft fieldset,
+.ai-start-help-candidate {
+  display: grid;
+  gap: 10px;
+}
+
+.ai-start-help-draft fieldset {
+  margin: 10px 0 0;
+  border: 1px solid rgba(65, 103, 91, 0.14);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.ai-start-help-draft legend {
+  padding: 0 6px;
+  color: #315d50;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.ai-start-help-candidate {
+  padding: 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.68);
+}
+
+.ai-start-help-candidate > span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.ai-start-help-candidate textarea,
+.ai-start-help-candidate select {
+  width: 100%;
+}
+
+.ai-start-help-actions {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
 .review-notice,
 .review-form {
   border: 1px solid rgba(44, 74, 65, 0.12);

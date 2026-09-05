@@ -234,6 +234,41 @@ describe('Goal SQLite integration', () => {
     }
   })
 
+  it('rejects stale current-next, Goal revision and opened Action revision with an equal SQLite snapshot', async () => {
+    const { connection } = await openDatabase()
+    const service = serviceFor(connection, ['goal-1', 'action-1', 'action-never'])
+    const goal = service.createGoal({
+      name: 'Stale Goal',
+      initialNextAction: { title: 'Opened Action' }
+    })
+    const opened = connection.repository.findActionById('action-1')!
+    const before = connection.repository.readSnapshot()
+
+    for (const precondition of [
+      { expectedCurrentNextActionId: null },
+      {
+        expectedCurrentNextActionId: goal.currentNextActionId,
+        expectedGoalUpdatedAt: 'stale-goal-revision'
+      },
+      {
+        expectedCurrentNextActionId: goal.currentNextActionId,
+        expectedGoalUpdatedAt: goal.updatedAt,
+        expectedContextActionId: opened.id,
+        expectedContextActionUpdatedAt: 'stale-action-revision'
+      }
+    ]) {
+      expect(() =>
+        service.createAndSetGoalCurrentNextAction({
+          goalId: goal.id,
+          title: 'Must not exist',
+          ...precondition
+        })
+      ).toThrowError(expect.objectContaining({ code: 'invariant-violation' }))
+      expect(connection.repository.readSnapshot()).toEqual(before)
+    }
+    connection.close()
+  })
+
   it('rolls back the new Action when the Goal current-next write fails', async () => {
     const { connection } = await openDatabase()
     const setupService = serviceFor(connection, ['goal-1'])

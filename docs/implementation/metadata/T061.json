@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 1,
+  "task": "T061",
+  "task_kind": "implementation",
+  "dependencies": {
+    "requires": ["T014", "T033"],
+    "blocks": ["T062"],
+    "can_parallel": [],
+    "prefer_after": ["T806"],
+    "conflicts_with": ["T062", "T063"]
+  },
+  "conflict_basis": {
+    "T062": "The S6 design requires strict serial integration because T061 freezes the Provider-facing request DTO, narrow context query, Main-only manifest boundary, and fake request capture that T062 must consume without widening context or adding a second read path.",
+    "T063": "The S6 design requires strict serial integration because T061 defines eligible ActionRecord and Understanding target IDs in the Main-only manifest and shares persistence, contracts, Main composition, and fake-provider test surfaces with T063 confirmation work."
+  },
+  "shared_surfaces": [
+    {
+      "files": [
+        "src/application/ai-start-help-context.ts",
+        "src/application/ports/ai-start-help.ts",
+        "src/application/ports/persistence.ts",
+        "src/infrastructure/sqlite/sqlite-repository.ts"
+      ],
+      "modules": [
+        "read-start-help-context-narrow-query",
+        "pure-ai-context-selector",
+        "injected-context-budget-and-unicode-code-point-truncation",
+        "provider-facing-start-help-request-dto"
+      ],
+      "schema_tables": [
+        "goals",
+        "actions",
+        "today_selections",
+        "action_records",
+        "understandings",
+        "confusions"
+      ],
+      "ipc_contracts": [],
+      "domain_invariants": [
+        "only-the-current-active-goal-pending-today-action-and-valid-current-next-are-eligible",
+        "only-same-goal-action-records-unrevoked-understandings-and-open-confusions-are-readable",
+        "record-order-is-occurred-on-desc-created-at-desc-id-asc-and-is-capped-at-five",
+        "mandatory-text-is-never-truncated-and-context-too-large-produces-zero-provider-calls",
+        "query-and-selector-are-read-only-and-never-consume-a-complete-core-or-export-snapshot",
+        "provider-facing-dto-contains-no-persistent-ids-manifest-notes-credentials-logs-or-unrelated-goal-data"
+      ],
+      "risk": "high",
+      "integration_policy": "serial"
+    },
+    {
+      "files": [
+        "src/main/ai-start-help-context.ts",
+        "src/main/index.ts",
+        "tests/support/fake-ai-provider.ts",
+        "tests/support/ai-start-help-context-fixture.ts",
+        "tests/unit/ai-start-help-context.test.ts",
+        "tests/unit/fake-ai-provider.test.ts",
+        "tests/unit/process-governance.test.ts",
+        "tests/integration/ai-start-help-context-sqlite.test.ts",
+        "tests/integration/ai-start-help-context-isolation.test.ts",
+        "tests/integration/ai-data-capability.test.ts"
+      ],
+      "modules": [
+        "main-only-selected-context-manifest",
+        "explicit-trigger-and-local-failure-call-count-gate",
+        "clone-safe-fake-request-capture",
+        "unique-marker-context-isolation-fixture"
+      ],
+      "schema_tables": [
+        "goals",
+        "actions",
+        "today_selections",
+        "action_records",
+        "routine_records",
+        "understandings",
+        "confusions",
+        "review_results"
+      ],
+      "ipc_contracts": [],
+      "domain_invariants": [
+        "startup-navigation-query-action-switch-no-trigger-and-close-before-start-have-zero-provider-calls",
+        "invalid-missing-stale-unrelated-or-over-budget-context-has-zero-provider-calls-and-zero-core-writes",
+        "the-manifest-remains-main-only-in-memory-and-is-not-serialized-logged-persisted-exported-or-renderer-visible",
+        "forbidden-unique-markers-never-enter-the-captured-provider-request",
+        "the-fake-request-sink-has-no-repository-configuration-diagnostics-network-or-command-capability",
+        "t061-adds-no-production-provider-ipc-preload-renderer-session-draft-or-confirmation-flow"
+      ],
+      "risk": "high",
+      "integration_policy": "serial"
+    },
+    {
+      "files": [
+        "docs/implementation/archive/S6_T061_T063_ARCHIVE.md",
+        "docs/implementation/metadata/T061.json",
+        "docs/implementation/TASK_INDEX_V0.1.md",
+        "docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md"
+      ],
+      "modules": [
+        "archived-task-contract-and-machine-readable-metadata",
+        "owner-controlled-task-activation",
+        "revision-bound-delivery-evidence-and-docs-closeout"
+      ],
+      "schema_tables": [],
+      "ipc_contracts": [],
+      "domain_invariants": [
+        "owner-approval-activates-only-t061-and-does-not-authorize-t062-or-t063",
+        "contract-and-metadata-base-revision-must-be-revalidated-against-latest-authorized-dev-at-activation",
+        "evidence-is-bound-to-real-results-and-exact-revisions",
+        "docs-closeout-requires-owner-approval-after-green-candidate-ci",
+        "t061-does-not-claim-ac02-s6-provider-ui-or-confirmation-completion",
+        "t061-does-not-automatically-start-t062"
+      ],
+      "risk": "high",
+      "integration_policy": "owner-review"
+    }
+  ],
+  "external": [
+    "github-t061-task-branch-after-owner-contract-activation",
+    "github-t061-draft-pr-to-dev-after-owner-contract-activation",
+    "github-actions-t061-validation-after-owner-contract-activation"
+  ]
+}

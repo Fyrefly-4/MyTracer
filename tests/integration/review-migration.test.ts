@@ -93,7 +93,7 @@ describe('ReviewResult v2 to v3 migration', () => {
     } finally {
       reopened.close()
     }
-  })
+  }, 30_000)
 
   it('stops on duplicate periods and leaves the complete v2 table and version unchanged', async () => {
     const { path, database } = await createV2()

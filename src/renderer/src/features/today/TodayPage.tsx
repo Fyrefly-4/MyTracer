@@ -17,6 +17,7 @@ import type {
 import type { RoutineRecordOutcomeDto } from '../../../../contracts/routine-records'
 import type { TodayViewDto } from '../../../../contracts/today'
 import { RoutineRecordingPanel } from '../routines/RoutinesPage'
+import { AiStartHelpPanel } from './AiStartHelpPanel'
 
 const goalStatusText: Record<GoalStatusDto, string> = {
   active: '活跃',
@@ -940,6 +941,12 @@ function TodayWorkspace(): ReactNode {
                       ? '这是今天可能想做的意向，不构成承诺；未发生不会产生失败或记录。'
                       : '当前可行动；可由你选择为今日重点或非强制意向。'}
               </p>
+
+              {detail.status === 'pending' &&
+              detail.goal?.status === 'active' &&
+              detail.todayCommitment !== null ? (
+                <AiStartHelpPanel key={`ai-${detail.id}`} action={detail} />
+              ) : null}
 
               <ActionRecordingPanel
                 key={detail.id}

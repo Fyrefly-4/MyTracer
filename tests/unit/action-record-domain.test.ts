@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   createActionRecord,
+  createConfirmedAiUnderstanding,
   createManualUnderstanding,
   createOpenConfusion,
   updateActionRecord
@@ -69,7 +70,7 @@ describe('ActionRecord domain', () => {
     ).toThrowError(expect.objectContaining({ code: 'validation' }))
   })
 
-  it('creates only manual Understanding and open Confusion children', () => {
+  it('creates manual and internally fixed confirmed AI Understanding children', () => {
     expect(
       createManualUnderstanding({
         id: 'understanding-1',
@@ -78,6 +79,18 @@ describe('ActionRecord domain', () => {
         now
       })
     ).toMatchObject({ text: 'State is a snapshot', source: 'manual', revokedAt: null })
+    expect(
+      createConfirmedAiUnderstanding({
+        id: 'understanding-ai-1',
+        actionRecordId: 'record-1',
+        text: '  A user-confirmed candidate  ',
+        now
+      })
+    ).toMatchObject({
+      text: 'A user-confirmed candidate',
+      source: 'ai_candidate_confirmed',
+      revokedAt: null
+    })
     expect(
       createOpenConfusion({
         id: 'confusion-1',
