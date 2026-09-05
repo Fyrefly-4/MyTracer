@@ -1404,6 +1404,7 @@ Agent 只提供步骤和观察位置，不得替项目所有者签署人工验�
 - **Requirements / regression conclusion**：T061～T063 聚合覆盖 FR-AI01～AI10、FR-C02/C03 与 AC-02；continuous E2E 和 hosted aggregate 证明未触发零调用、最小上下文/禁止 marker、接受/编辑/拒绝/关闭/取消/timeout/invalid/error/retry/late response、确认前零写入、Action 原子 current-next、不自动 Today、Understanding 逐项确认、重开/export 守恒，以及 AC-01/03/04/05/06/07 受影响回归
 - **Trust-boundary conclusion**：Provider/SDK/network/credential 保持 Main-only，Provider 无 Repository/UnitOfWork/Command 能力；draft/session/prompt/response/manifest 不持久化、不导出；AI unavailable/failure 时核心功能继续工作。schema v3、export v2、依赖和生产写权限均未扩大
 - **Documentation closeout**：项目所有者于 2026-09-05 批准并执行精确 impact matrix；统一归档为 `archive/S6_T061_T063_ARCHIVE.md`，T061～T063 metadata 指向归档，三份原合同按授权删除且可从 `f06b1e9...` 恢复。T807 `task_delivery_revision=449ad4f36ffbace59e19f55c53fa4ce9dcb02b4c`；文档 final head 不替代固定产品 revision
+- **Final-docs local attempt**：文档收口提交 `18a2e4f2021f44eea1d9b0999b8e7cb448378f71` 上 metadata 18 sidecar 与 format check 通过；随后定向 continuous AC-02 E2E 在受限本地环境于产品断言前因 Electron `Target crashed` 退出 1。项目所有者明确要求不在本地重复测试、直接推送云端，因此未在本地重跑该 E2E、`verify`、package 或 package smoke；该环境失败保留，不解释为产品失败，最终文档 head 以 hosted CI 判定
 - **Pending gates**：文档 final-head hosted CI；PR #49 仍为 Draft；Ready、merge 到 `dev`、创建/合入 `dev → main`、候选版本 `v0.1.0-beta.3`、tag 和 Release均由项目所有者另行批准
 - **Supersedes / superseded by**：成功 run `33596122427` supersede 失败 run `33595663669`；边界修复使旧 head `0f85a01...` 的成功不足以证明新内容，随后 exact delivery run `33599620345` 给出新 head 成功证据。历史失败和三项独立 review finding 均保留
 - **Recorded at**：2026-09-05

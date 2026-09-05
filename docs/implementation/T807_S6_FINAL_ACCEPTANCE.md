@@ -364,3 +364,5 @@ T807 获准实施以下单一例外：
 项目所有者于 2026-09-05 批准精确文档影响矩阵、统一归档及三份原合同删除，并明确批准按上一节的最小脱敏事实保留 live contract harness timeout。收口范围为本合同、T807 metadata、Task Index、Evidence、README、T061～T063 metadata、`archive/S6_T061_T063_ARCHIVE.md` 和 PR #49 正文；已批准删除的原合同可从固定 `f06b1e9` Git 历史恢复。
 
 本次文档 revision 不替代 `stage_final_integration_revision=f06b1e97da07dffc05814518ad8ad83ed3e051b9`。T807 task delivery revision 固定为边界修复和聚合证据均已形成的 `449ad4f36ffbace59e19f55c53fa4ce9dcb02b4c`；文档 final head、最终 hosted CI 与 `dev_integration_revision` 分开记录。文档 final-head CI 尚待推送后取得，T807 因此保持 `review`，PR #49 继续为 Draft。
+
+文档收口提交 `18a2e4f2021f44eea1d9b0999b8e7cb448378f71` 上 metadata 与 format check 通过；定向 continuous AC-02 E2E 在受限本地环境于产品断言前因 Electron `Target crashed` 失败。项目所有者随后明确要求不在本地重复测试并直接推送云端，因此本地 final-docs `verify`、package 和 package smoke 不再执行；该失败作为环境事实保留，最终 head 由 Windows hosted CI 判定。
