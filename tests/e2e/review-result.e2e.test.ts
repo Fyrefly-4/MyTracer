@@ -70,7 +70,7 @@ test('AC-06 cancels cleanly, saves and edits one stable ReviewResult, resolves n
       }
     })
 
-    await page.getByRole('button', { name: 'Review' }).click()
+    await page.getByRole('button', { name: '复盘', exact: true }).click()
     await page.getByLabel('一个真实进展').fill('取消的进展')
     await page.getByLabel('一个主要阻力').fill('取消的阻力')
     await page.getByLabel('下一周期的一个调整').fill('取消的调整')
@@ -99,7 +99,7 @@ test('AC-06 cancels cleanly, saves and edits one stable ReviewResult, resolves n
     })
 
     await page.getByLabel('关联活跃目标（可选）').selectOption(seeded.goalId)
-    await page.getByLabel('使用已有 pending Action').check()
+    await page.getByLabel('使用已有待行动').check()
     await page.getByLabel('选择已有下一步行动').selectOption(seeded.existingActionId)
     await page.getByLabel('一个真实进展').fill('编辑后的真实进展')
     await page.getByRole('button', { name: '保存复盘' }).click()
@@ -159,7 +159,7 @@ test('AC-06 cancels cleanly, saves and edits one stable ReviewResult, resolves n
     application = await launch(root)
     await setDate(application, new Date(2026, 7, 12, 12).toISOString())
     page = await application.firstWindow()
-    await page.getByRole('button', { name: 'Review' }).click()
+    await page.getByRole('button', { name: '复盘', exact: true }).click()
     await expect(page.getByLabel('一个真实进展')).toHaveValue('编辑后的真实进展')
     await expect(page.getByLabel('一个主要阻力')).toHaveValue('上下文切换')
     await expect(page.getByLabel('下一周期的一个调整')).toHaveValue('保护一个专注时段')

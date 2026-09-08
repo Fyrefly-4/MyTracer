@@ -58,8 +58,8 @@ test('exports complete retained facts through the UI without exposing a destinat
     await application.evaluate(({ dialog }, target) => {
       dialog.showSaveDialog = async () => ({ canceled: false, filePath: target })
     }, destination)
-    await page.getByRole('button', { name: 'Data' }).click()
-    await expect(page.getByText('v0.1 目前只支持导出；尚不支持自动导入或一键恢复。')).toBeVisible()
+    await page.getByRole('button', { name: '数据', exact: true }).click()
+    await expect(page.getByText('目前只支持导出；尚不支持自动导入或一键恢复。')).toBeVisible()
     await page.getByRole('button', { name: '导出完整数据' }).click()
     await expect(page.getByText(/已导出 complete\.json/)).toBeVisible()
     const exported = JSON.parse(await readFile(destination, 'utf8'))
@@ -87,7 +87,7 @@ test('exports complete retained facts through the UI without exposing a destinat
       },
       join(root.exports, 'again.json')
     )
-    await secondPage.getByRole('button', { name: 'Data' }).click()
+    await secondPage.getByRole('button', { name: '数据', exact: true }).click()
     await secondPage.getByRole('button', { name: '导出完整数据' }).click()
     await expect(secondPage.getByText(/已导出 again\.json/)).toBeVisible()
   } finally {

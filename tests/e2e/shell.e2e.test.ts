@@ -55,7 +55,7 @@ test('runs the Electron shell with an isolated userData root', async () => {
     })
 
     const page = await application.firstWindow()
-    await expect(page.getByRole('heading', { name: '今天，从一个真实动作开始' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: '今天', exact: true })).toBeVisible()
 
     const status = await page.evaluate(() => window.myTracer.shell.getStatus())
     expect(status.ai).toEqual({ configured: false, availability: 'not-configured' })
@@ -155,14 +155,14 @@ test('runs the Electron shell with an isolated userData root', async () => {
     expect(await page.evaluate(() => typeof Reflect.get(window, 'process'))).toBe('undefined')
     expect(await page.evaluate(() => typeof Reflect.get(window, 'safeStorage'))).toBe('undefined')
 
-    await page.getByRole('button', { name: 'Progress' }).click()
-    await expect(page.getByRole('heading', { name: '进展会来自已经记录的事实' })).toBeVisible()
-    await page.getByRole('button', { name: 'Review' }).click()
-    await expect(page.getByRole('heading', { name: '复盘将帮助你选择下一次调整' })).toBeVisible()
+    await page.getByRole('button', { name: '进展', exact: true }).click()
+    await expect(page.getByRole('heading', { name: '进展', exact: true })).toBeVisible()
+    await page.getByRole('button', { name: '复盘', exact: true }).click()
+    await expect(page.getByRole('heading', { name: '复盘', exact: true })).toBeVisible()
     await expect(page.getByRole('heading', { name: '本周期还没有已记录事实' })).toBeVisible()
-    await expect(page.getByText(/unknown 不会被转换成未做或失败/)).toBeVisible()
-    await page.getByRole('button', { name: 'Today' }).click()
-    await expect(page.getByRole('heading', { name: '今天，从一个真实动作开始' })).toBeVisible()
+    await expect(page.getByText(/未记录不等于未进行或失败/)).toBeVisible()
+    await page.getByRole('button', { name: '今天', exact: true }).click()
+    await expect(page.getByRole('heading', { name: '今天', exact: true })).toBeVisible()
   } finally {
     try {
       await application?.close()

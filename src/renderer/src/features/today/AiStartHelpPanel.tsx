@@ -416,7 +416,7 @@ export function AiStartHelpPanel(props: { readonly action: ActionDetailDto }): R
         </div>
       ) : null}
       {session.state === 'confirmed' ? (
-        <p className="ai-start-help-state">新的 pending Action 已保存并设为 current next。</p>
+        <p className="ai-start-help-state">新的待行动已保存，并设为当前下一步。</p>
       ) : null}
       {session.state === 'rejected' ? (
         <p className="ai-start-help-state">建议已拒绝，没有保存任何内容。</p>

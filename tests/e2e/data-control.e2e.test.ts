@@ -112,16 +112,16 @@ test('edits, backfills, previews, deletes, and reopens T031 facts through the tr
       }
     })
 
-    await page.getByRole('button', { name: 'Data' }).click()
-    await expect(page.getByRole('heading', { name: 'Action Records' })).toBeVisible()
-    await expect(page.getByLabel('Action 发生日期')).toHaveValue('2026-08-11')
-    await expect(page.getByLabel('Routine 发生日期')).toHaveValue('2026-08-11')
+    await page.getByRole('button', { name: '数据', exact: true }).click()
+    await expect(page.getByRole('heading', { name: '行动记录', exact: true })).toBeVisible()
+    await expect(page.getByLabel('行动发生日期')).toHaveValue('2026-08-11')
+    await expect(page.getByLabel('例行发生日期')).toHaveValue('2026-08-11')
     await expect(page.getByText('历史计划由用户确认')).toBeVisible()
 
-    await page.getByRole('button', { name: '删除 Goal：T031 Goal' }).click()
-    const dialog = page.getByRole('dialog', { name: '确认删除 goal' })
-    await expect(dialog).toContainText('Actions：1')
-    await expect(dialog).toContainText('解除关联的 Routines：1')
+    await page.getByRole('button', { name: '删除目标：T031 Goal' }).click()
+    const dialog = page.getByRole('dialog', { name: '确认删除目标' })
+    await expect(dialog).toContainText('行动：1')
+    await expect(dialog).toContainText('解除关联的例行：1')
     await dialog.getByRole('button', { name: '取消' }).click()
     await expect(dialog).toBeHidden()
 

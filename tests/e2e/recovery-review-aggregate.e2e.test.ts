@@ -66,11 +66,11 @@ test('aggregate AC-05 to AC-06 keeps pre-recovery and post-recovery records in o
     await setDate(application, new Date(2026, 7, 27, 12).toISOString())
     page = await application.firstWindow()
 
-    await page.getByRole('button', { name: 'Goals' }).click()
+    await page.getByRole('button', { name: '目标', exact: true }).click()
     await page.getByRole('button', { name: /连续恢复复盘目标.*有下一步/ }).click()
-    await page.getByRole('button', { name: '查看 Recovery' }).click()
-    await expect(page.getByLabel('Recovery 页面')).toContainText('恢复前事实')
-    await page.getByLabel('新的小 Action').fill('恢复后的真实行动')
+    await page.getByRole('button', { name: '查看恢复与整理' }).click()
+    await expect(page.getByLabel('恢复与整理页面')).toContainText('恢复前事实')
+    await page.getByLabel('新的小行动').fill('恢复后的真实行动')
     await page.getByRole('button', { name: '创建并设为下一步' }).click()
     await page.getByRole('button', { name: '确认保存' }).click()
 
@@ -93,7 +93,7 @@ test('aggregate AC-05 to AC-06 keeps pre-recovery and post-recovery records in o
     }, seeded.goalId)
     expect(afterRecord).toBe('恢复后的真实行动')
 
-    await page.getByRole('button', { name: 'Review' }).click()
+    await page.getByRole('button', { name: '复盘', exact: true }).click()
     await expect(page.getByRole('heading', { name: '2026-08-24 至 2026-08-30' })).toBeVisible()
     await expect(page.getByLabel('周期汇总')).toContainText('投入时间10 分钟')
     await expect(page.getByLabel('周期汇总')).toContainText('真实行动次数2')

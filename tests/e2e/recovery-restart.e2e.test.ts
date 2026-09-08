@@ -45,10 +45,10 @@ async function setMainProcessDate(
 }
 
 async function openRecovery(page: Page, goalName: string): Promise<void> {
-  await page.getByRole('button', { name: 'Goals' }).click()
+  await page.getByRole('button', { name: '目标', exact: true }).click()
   await page.getByRole('button', { name: new RegExp(`${goalName}.*有下一步`) }).click()
-  await page.getByRole('button', { name: '查看 Recovery' }).click()
-  await expect(page.getByLabel('Recovery 页面')).toBeVisible()
+  await page.getByRole('button', { name: '查看恢复与整理' }).click()
+  await expect(page.getByLabel('恢复与整理页面')).toBeVisible()
 }
 
 test('AC-05 keeps history intact while a user confirms cleanup, chooses a new Action, and optionally adds Today', async () => {
@@ -107,10 +107,10 @@ test('AC-05 keeps history intact while a user confirms cleanup, chooses a new Ac
     }, seeded.goalId)
 
     await openRecovery(page, '继续 React 学习')
-    await expect(page.getByLabel('Recovery 页面')).toContainText('5 天')
+    await expect(page.getByLabel('恢复与整理页面')).toContainText('5 天')
     const routineRow = page.getByText('每日旧练习').locator('..')
     await routineRow.getByRole('button', { name: '暂停' }).click()
-    await expect(page.getByRole('alertdialog')).toContainText('确认暂停 Routine')
+    await expect(page.getByRole('alertdialog')).toContainText('确认暂停例行')
     await page.getByRole('button', { name: '取消草稿' }).click()
     expect(
       await page.evaluate(
@@ -135,9 +135,9 @@ test('AC-05 keeps history intact while a user confirms cleanup, chooses a new Ac
       routine: { ok: true, value: { status: 'paused' } }
     })
 
-    await page.getByLabel('新的小 Action').fill('运行一个最小状态示例')
+    await page.getByLabel('新的小行动').fill('运行一个最小状态示例')
     await page.getByRole('button', { name: '创建并设为下一步' }).click()
-    await expect(page.getByRole('alertdialog')).toContainText('不会自动加入 Today')
+    await expect(page.getByRole('alertdialog')).toContainText('不会自动加入今天')
     await page.getByRole('button', { name: '取消草稿' }).click()
     expect(
       await page.evaluate((goalId) => window.myTracer.goals.getDetail({ goalId }), seeded.goalId)
@@ -169,9 +169,9 @@ test('AC-05 keeps history intact while a user confirms cleanup, chooses a new Ac
     expect(afterCreate.recovery.ok && afterCreate.recovery.value.pendingActions).toHaveLength(2)
 
     await setMainProcessDate(application, new Date(2026, 7, 26, 0, 5).toISOString())
-    await page.getByRole('button', { name: '将当前下一步加入 Today' }).click()
+    await page.getByRole('button', { name: '将当前下一步加入今天' }).click()
     await page.getByRole('button', { name: '确认保存' }).click()
-    await expect(page.getByText('已加入 Today（2026-08-26）。')).toBeVisible()
+    await expect(page.getByText('已加入今天（2026-08-26）。')).toBeVisible()
     const finalFacts = await page.evaluate(
       async (goalId) => ({
         context: await window.myTracer.recovery.getContext({ goalId }),
@@ -199,7 +199,7 @@ test('AC-05 keeps history intact while a user confirms cleanup, chooses a new Ac
     await setMainProcessDate(application, new Date(2026, 7, 26, 12).toISOString())
     page = await application.firstWindow()
     await openRecovery(page, '继续 React 学习')
-    await expect(page.getByLabel('Recovery 页面')).toContainText('运行一个最小状态示例')
+    await expect(page.getByLabel('恢复与整理页面')).toContainText('运行一个最小状态示例')
     expect(
       await page.evaluate(
         async ({ goalId, routineId }) => ({
