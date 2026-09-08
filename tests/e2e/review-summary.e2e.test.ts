@@ -105,7 +105,7 @@ test('shows the current-week ReviewSummary from Progress facts without turning u
     const before = await page.evaluate(() => window.myTracer.dataControl.list())
     if (!progress.ok || !before.ok) throw new Error('Expected factual setup queries to pass.')
 
-    await page.getByRole('button', { name: 'Review' }).click()
+    await page.getByRole('button', { name: '复盘', exact: true }).click()
     await expect(page.getByRole('heading', { name: '2026-08-10 至 2026-08-16' })).toBeVisible()
     await expect(page.getByLabel('周期汇总')).toContainText('投入时间18 分钟')
     await expect(page.getByLabel('周期汇总')).toContainText('真实行动次数3')
@@ -113,8 +113,8 @@ test('shows the current-week ReviewSummary from Progress facts without turning u
     await expect(page.getByLabel('周期汇总')).toContainText('开放困惑1')
     await expect(page.getByLabel('达到目标 1 条')).toContainText('2026-08-10')
     await expect(page.getByLabel('有所行动 1 条')).toContainText('2026-08-11')
-    await expect(page.getByLabel('有意休息 1 条')).toContainText('2026-08-12')
-    await expect(page.getByLabel('明确未做 1 条')).toContainText('2026-08-13')
+    await expect(page.getByLabel('主动休息 1 条')).toContainText('2026-08-12')
+    await expect(page.getByLabel('未进行 1 条')).toContainText('2026-08-13')
     await expect(page.getByText('状态更新会进入队列')).toBeVisible()
     await expect(page.getByText('批处理何时结束')).toBeVisible()
     await expect(page.getByLabel('周期事实复盘')).not.toContainText(
@@ -165,10 +165,10 @@ test('shows the current-week ReviewSummary from Progress facts without turning u
     application = await launchApplication(root)
     await setMainProcessDate(application, new Date(2026, 7, 12, 12).toISOString())
     page = await application.firstWindow()
-    await page.getByRole('button', { name: 'Review' }).click()
+    await page.getByRole('button', { name: '复盘', exact: true }).click()
     await expect(page.getByRole('heading', { name: '2026-08-10 至 2026-08-16' })).toBeVisible()
     await expect(page.getByLabel('周期汇总')).toContainText('投入时间18 分钟')
-    await expect(page.getByLabel('明确未做 1 条')).toBeVisible()
+    await expect(page.getByLabel('未进行 1 条')).toBeVisible()
   } finally {
     await application?.close()
     await removeTemporaryTestRoot(root)
@@ -184,15 +184,15 @@ test('keeps a Sunday period fixed across Monday and captures a new week only aft
     application = await launchApplication(root)
     await setMainProcessDate(application, new Date(2026, 7, 30, 12).toISOString())
     const page = await application.firstWindow()
-    await page.getByRole('button', { name: 'Review' }).click()
+    await page.getByRole('button', { name: '复盘', exact: true }).click()
     await expect(page.getByRole('heading', { name: '2026-08-24 至 2026-08-30' })).toBeVisible()
 
     await setMainProcessDate(application, new Date(2026, 7, 31, 12).toISOString())
     await page.getByRole('button', { name: '重新读取事实' }).click()
     await expect(page.getByRole('heading', { name: '2026-08-24 至 2026-08-30' })).toBeVisible()
 
-    await page.getByRole('button', { name: 'Today' }).click()
-    await page.getByRole('button', { name: 'Review' }).click()
+    await page.getByRole('button', { name: '今天', exact: true }).click()
+    await page.getByRole('button', { name: '复盘', exact: true }).click()
     await expect(page.getByRole('heading', { name: '2026-08-31 至 2026-09-06' })).toBeVisible()
 
     const oldContextId = await page.evaluate(async () => {
@@ -201,14 +201,14 @@ test('keeps a Sunday period fixed across Monday and captures a new week only aft
       return result.value.reviewContextId
     })
     await page.reload()
-    await expect(page.getByRole('heading', { name: '今天，从一个真实动作开始' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: '今天', exact: true })).toBeVisible()
     expect(
       await page.evaluate(
         (reviewContextId) => window.myTracer.review.getSummary({ reviewContextId }),
         oldContextId
       )
     ).toMatchObject({ ok: false, error: { code: 'context-stale' } })
-    await page.getByRole('button', { name: 'Review' }).click()
+    await page.getByRole('button', { name: '复盘', exact: true }).click()
     await expect(page.getByRole('heading', { name: '2026-08-31 至 2026-09-06' })).toBeVisible()
   } finally {
     await application?.close()

@@ -1,3 +1,4 @@
+import { usePagePosition } from '../../app/ui-session'
 import { type ReactNode, useEffect, useState } from 'react'
 import type {
   CompleteReviewInputDto,
@@ -8,7 +9,7 @@ import type {
 import type { GoalActionSummaryDto, GoalSummaryDto } from '../../../../contracts/goals'
 
 const errorText: Record<ReviewErrorCode, string> = {
-  validation: '复盘请求无效，请重新进入 Review。',
+  validation: '复盘请求无效，请重新进入复盘。',
   'context-invalid': '本次复盘上下文无效，请重新进入。',
   'context-stale': '本次复盘上下文已失效，请重新进入。',
   'related-goal-invalid': '所选目标已不再处于活跃状态，请重新选择。',
@@ -21,16 +22,17 @@ const routineColumns: readonly {
   readonly title: string
   readonly description: string
 }[] = [
-  { key: 'targetMet', title: '达到目标', description: '明确记录为 target_met' },
-  { key: 'acted', title: '有所行动', description: '明确记录为 acted' },
-  { key: 'intentionalRest', title: '有意休息', description: '明确记录为 intentional_rest' },
-  { key: 'notDone', title: '明确未做', description: '明确记录为 not_done' }
+  { key: 'targetMet', title: '达到目标', description: '本次达到了例行的最低行动' },
+  { key: 'acted', title: '有所行动', description: '确实行动了，但未达到最低行动' },
+  { key: 'intentionalRest', title: '主动休息', description: '当时主动决定休息' },
+  { key: 'notDone', title: '未进行', description: '当时确认没有开始行动' }
 ]
 
 export function ReviewPage(): ReactNode {
   const [entryKey, setEntryKey] = useState(0)
   const [contextId, setContextId] = useState<string | null>(null)
   const [summary, setSummary] = useState<ReviewSummaryDto | null>(null)
+  usePagePosition('review', summary !== null)
   const [busy, setBusy] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
@@ -260,11 +262,11 @@ export function ReviewPage(): ReactNode {
             </article>
           </div>
 
-          <section aria-label="Routine 周期事实">
+          <section aria-label="例行周期事实">
             <div className="review-section-heading">
               <div>
-                <h2>Routine 事实</h2>
-                <p>这里只分列已明确保存的事实；没有 Record 的日期保持 unknown。</p>
+                <h2>例行事实</h2>
+                <p>这里只分列已明确保存的事实；未记录的日期保持未知。</p>
               </div>
             </div>
             <div className="review-routine-grid">
@@ -345,7 +347,7 @@ export function ReviewPage(): ReactNode {
           {!summary.hasRecordedFacts ? (
             <div className="review-empty">
               <h2>本周期还没有已记录事实</h2>
-              <p>空白只表示没有 ActionRecord 或 RoutineRecord；unknown 不会被转换成未做或失败。</p>
+              <p>空白只表示没有行动记录或例行记录；未记录不等于未进行或失败。</p>
             </div>
           ) : null}
 
@@ -358,7 +360,7 @@ export function ReviewPage(): ReactNode {
           >
             <div className="review-section-heading">
               <h2>确认本周期复盘</h2>
-              <p>事实摘要会随 Record 重算；下面三段用户确认文本会保持原样保存。</p>
+              <p>事实摘要会随已有记录更新；下面三段用户确认文本会保持原样保存。</p>
             </div>
             <label>
               一个真实进展
@@ -415,7 +417,7 @@ export function ReviewPage(): ReactNode {
                     checked={nextStepKind === 'use-existing'}
                     onChange={() => setNextStepKind('use-existing')}
                   />
-                  使用已有 pending Action
+                  使用已有待行动
                 </label>
                 {nextStepKind === 'use-existing' ? (
                   <select

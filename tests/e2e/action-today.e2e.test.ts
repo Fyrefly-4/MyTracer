@@ -1,3 +1,4 @@
+import { openManagement, openActionCreate } from '../support/ui-disclosure'
 import Database from 'better-sqlite3'
 import { join } from 'node:path'
 import { expect, test, type ElectronApplication } from '@playwright/test'
@@ -21,6 +22,7 @@ async function expectKeyboardInputAfterTransition(
   page: Awaited<ReturnType<ElectronApplication['firstWindow']>>,
   value: string
 ): Promise<void> {
+  await openActionCreate(page)
   const input = page.locator('form.goal-create').getByLabel('行动标题')
   await input.fill('')
   await input.click()
@@ -38,16 +40,18 @@ test('runs Action and Today focus lifecycle and preserves facts through a real r
     application = await launchApplication(root)
     let page = await application.firstWindow()
 
-    await page.getByRole('button', { name: 'Goals' }).click()
+    await page.getByRole('button', { name: '目标', exact: true }).click()
+    await page.getByRole('button', { name: '新建目标', exact: true }).click()
     await page.getByLabel('目标名称').fill('系统学习 React')
     await page.getByLabel('当前下一步（可选）').fill('运行一个 React 状态更新示例')
     await page.getByRole('button', { name: '创建目标' }).click()
 
-    await page.getByRole('button', { name: 'Today' }).click()
-    await expect(page.getByRole('heading', { name: '今天，从一个真实动作开始' })).toBeVisible()
+    await page.getByRole('button', { name: '今天', exact: true }).click()
+    await expect(page.getByRole('heading', { name: '今天', exact: true })).toBeVisible()
     await page.getByRole('button', { name: /运行一个 React 状态更新示例.*待行动/ }).click()
     let detail = page.getByLabel('运行一个 React 状态更新示例 行动详情')
     await expect(detail).toBeVisible()
+    await openManagement(detail, '行动')
     await detail.getByRole('button', { name: '选为今日重点' }).click()
     await expect(page.getByText('已由你选为今日重点，可以从这里继续。')).toBeVisible()
     await expect(
@@ -68,12 +72,14 @@ test('runs Action and Today focus lifecycle and preserves facts through a real r
     await createForm.getByLabel('行动标题').fill('稍后继续阅读')
     await createForm.getByRole('button', { name: '创建行动' }).click()
     detail = page.getByLabel('稍后继续阅读 行动详情')
+    await openManagement(detail, '行动')
     await detail.getByRole('button', { name: '选为今日重点' }).click()
     await detail.getByRole('button', { name: '重新安排' }).click()
     await detail.getByRole('alertdialog').getByRole('button', { name: '确认重新安排' }).click()
     await expect(detail.getByText('已重新安排', { exact: true })).toBeVisible()
     await expect(page.locator('.focus-row').filter({ hasText: '稍后继续阅读' })).toHaveCount(0)
     await expectKeyboardInputAfterTransition(page, '重新安排后仍可输入')
+    await openManagement(detail, '行动')
     await detail.getByRole('button', { name: '选为今日重点' }).click()
     await expect(detail.getByText('待行动', { exact: true })).toBeVisible()
     await expect(page.locator('.focus-row').filter({ hasText: '稍后继续阅读' })).toBeVisible()
@@ -81,6 +87,7 @@ test('runs Action and Today focus lifecycle and preserves facts through a real r
     await createForm.getByLabel('行动标题').fill('取消但保留今天')
     await createForm.getByRole('button', { name: '创建行动' }).click()
     detail = page.getByLabel('取消但保留今天 行动详情')
+    await openManagement(detail, '行动')
     await detail.getByRole('button', { name: '选为今日重点' }).click()
     await detail.getByRole('button', { name: '取消行动' }).click()
     await detail.getByRole('alertdialog').getByRole('button', { name: '确认取消' }).click()

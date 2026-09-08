@@ -1,11 +1,11 @@
+import { goalStatusText, actionStatusText, recordOutcomeText } from '../../app/ui-text'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import type {
   ActionDetailDto,
   ActionErrorCode,
-  ActionStatusDto,
   CurrentNextResolutionDto
 } from '../../../../contracts/actions'
-import type { GoalErrorCode, GoalStatusDto, GoalSummaryDto } from '../../../../contracts/goals'
+import type { GoalErrorCode, GoalSummaryDto } from '../../../../contracts/goals'
 import type {
   ActionRecordDetailDto,
   ActionRecordOutcomeDto,
@@ -14,16 +14,10 @@ import type {
   RecordErrorCode,
   RecordingDateChoiceDto
 } from '../../../../contracts/records'
-import type { RoutineRecordOutcomeDto } from '../../../../contracts/routine-records'
 import type { TodayViewDto } from '../../../../contracts/today'
+import { useUiSession, usePagePosition, revealStart, useUiLifetime } from '../../app/ui-session'
 import { RoutineRecordingPanel } from '../routines/RoutinesPage'
 import { AiStartHelpPanel } from './AiStartHelpPanel'
-
-const goalStatusText: Record<GoalStatusDto, string> = {
-  active: '活跃',
-  paused: '暂停',
-  ended: '结束'
-}
 
 const goalErrorText: Record<GoalErrorCode, string> = {
   validation: '请检查必填内容。',
@@ -31,13 +25,6 @@ const goalErrorText: Record<GoalErrorCode, string> = {
   'invalid-transition': '当前状态不能执行这个操作。',
   'invariant-violation': '这个行动不能作为该目标的当前下一步。',
   'persistence-failed': '本地数据暂时无法保存或读取。'
-}
-
-const actionStatusText: Record<ActionStatusDto, string> = {
-  pending: '待行动',
-  completed: '已完成',
-  cancelled: '已取消',
-  rescheduled: '已重新安排'
 }
 
 const actionErrorText: Record<ActionErrorCode, string> = {
@@ -56,20 +43,6 @@ const recordErrorText: Record<RecordErrorCode, string> = {
   'invariant-violation': '记录后的行动或下一步选择当前不可用。',
   'invalid-recording-context': '这次记录表单已失效，请重新开始记录。',
   'persistence-failed': '本地记录暂时无法保存或读取。'
-}
-
-const recordOutcomeText: Record<ActionRecordOutcomeDto, string> = {
-  completed: '本次达到预期',
-  partial: '本次完成一部分',
-  stopped: '本次在这里停下'
-}
-
-const routineRecordOutcomeText: Record<RoutineRecordOutcomeDto | 'unknown', string> = {
-  target_met: '达到目标',
-  acted: '有真实行动',
-  intentional_rest: '有意休息',
-  not_done: '明确未做',
-  unknown: '尚无记录'
 }
 
 const unavailableReasonText: Record<NonNullable<ActionDetailDto['unavailableReason']>, string> = {
@@ -104,6 +77,12 @@ function ActionRecordingPanel(props: {
   readonly replacementCandidates: readonly ActionDetailDto[]
   readonly onSaved: (action: ActionDetailDto) => Promise<void>
 }): ReactNode {
+  const activeRef = useUiLifetime()
+  const panelRef = useRef<HTMLElement | null>(null)
+  const beginRef = useRef<HTMLButtonElement | null>(null)
+  const restoreBeginFocus = useRef(false)
+  const [savedMessage, setSavedMessage] = useState('')
+  const [postExpanded, setPostExpanded] = useState(false)
   const [context, setContext] = useState<BeginActionRecordingDto | null>(null)
   const contextRef = useRef<BeginActionRecordingDto | null>(null)
   const [records, setRecords] = useState<readonly ActionRecordSummaryDto[]>([])
@@ -125,6 +104,19 @@ function ActionRecordingPanel(props: {
   } | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!context) {
+      if (restoreBeginFocus.current) {
+        restoreBeginFocus.current = false
+        revealStart(panelRef.current)
+        beginRef.current?.focus({ preventScroll: true })
+      }
+      return
+    }
+    revealStart(panelRef.current)
+    panelRef.current?.querySelector<HTMLInputElement>('input')?.focus({ preventScroll: true })
+  }, [context])
 
   const loadRecords = async (): Promise<void> => {
     const result = await window.myTracer.records.listForAction({ actionId: props.action.id })
@@ -169,6 +161,7 @@ function ActionRecordingPanel(props: {
     setConfusion('')
     setNextStep('')
     setNote('')
+    setPostExpanded(false)
     setPostAction('keep-pending')
     setNextMode('clear')
     setReplacementActionId('')
@@ -179,11 +172,19 @@ function ActionRecordingPanel(props: {
   const begin = async (): Promise<void> => {
     setBusy(true)
     const result = await window.myTracer.records.begin({ actionId: props.action.id })
+    if (!activeRef.current) {
+      if (result.ok)
+        await window.myTracer.records.cancel({
+          recordingContextId: result.value.recordingContextId
+        })
+      return
+    }
     setBusy(false)
     if (!result.ok) {
       setError(recordErrorText[result.error.code])
       return
     }
+    setSavedMessage('')
     contextRef.current = result.value
     setContext(result.value)
     setError(null)
@@ -195,11 +196,13 @@ function ActionRecordingPanel(props: {
     const result = await window.myTracer.records.cancel({
       recordingContextId: context.recordingContextId
     })
+    if (!activeRef.current) return
     setBusy(false)
     if (!result.ok) {
       setError(recordErrorText[result.error.code])
       return
     }
+    restoreBeginFocus.current = true
     resetForm()
     setError(null)
   }
@@ -248,16 +251,17 @@ function ActionRecordingPanel(props: {
       dateChoice,
       durationMinutes: minutes,
       outcome,
-      understanding: deepExpanded && understanding.trim() ? understanding : null,
-      confusion: deepExpanded && confusion.trim() ? confusion : null,
-      nextStep: deepExpanded && nextStep.trim() ? nextStep : null,
-      note: deepExpanded && note.trim() ? note : null,
+      understanding: understanding.trim() ? understanding : null,
+      confusion: confusion.trim() ? confusion : null,
+      nextStep: nextStep.trim() ? nextStep : null,
+      note: note.trim() ? note : null,
       postRecord: {
         action: postAction,
         currentNextResolution,
         applyRecordedNextStep: !changingCurrentAction && applyRecordedNextStep
       }
     })
+    if (!activeRef.current) return
     setBusy(false)
     if (!result.ok) {
       setError(recordErrorText[result.error.code])
@@ -270,6 +274,10 @@ function ActionRecordingPanel(props: {
     }
     const saved = result.value
     resetForm()
+    setSavedMessage(
+      `已保存：${saved.record.durationMinutes} 分钟 · ${recordOutcomeText[saved.record.outcome]}`
+    )
+    requestAnimationFrame(() => revealStart(panelRef.current))
     setRecordDetail(saved.record)
     await loadRecords()
     await props.onSaved(saved.action)
@@ -277,16 +285,39 @@ function ActionRecordingPanel(props: {
 
   const canApplyNextStep = props.action.goal?.status === 'active'
   const changingCurrentAction = postAction !== 'keep-pending' && props.action.isCurrentNextAction
+  const nextChangeSummary = changingCurrentAction
+    ? nextMode === 'clear'
+      ? '清空目标当前下一步'
+      : nextMode === 'use-existing'
+        ? `改用“${props.replacementCandidates.find((candidate) => candidate.id === replacementActionId)?.title ?? '尚未选择'}”作为当前下一步`
+        : `用“${nextStep}”创建目标当前下一步`
+    : applyRecordedNextStep
+      ? `用“${nextStep}”创建目标当前下一步`
+      : null
+  const saveImpact =
+    postAction === 'keep-pending' && !nextChangeSummary
+      ? '仅保存记录，行动状态和当前下一步保持不变。'
+      : `保存时将${postAction === 'keep-pending' ? '保持行动状态' : transitionLabels[postAction] + '行动'}${nextChangeSummary ? `，并${nextChangeSummary}` : ''}。`
 
   return (
-    <section className="recording-panel" aria-label={`${props.action.title} 行动记录`}>
+    <section
+      ref={panelRef}
+      className="recording-panel"
+      aria-label={`${props.action.title} 行动记录`}
+    >
       <div className="recording-heading">
         <div>
           <p className="eyebrow">真实行动记录</p>
-          <h3>先完成快速记录，再按需展开</h3>
+          <h3>{props.action.title}</h3>
         </div>
         {!context && props.action.canStart ? (
-          <button type="button" disabled={busy} onClick={() => void begin()}>
+          <button
+            ref={beginRef}
+            className="primary-button"
+            type="button"
+            disabled={busy}
+            onClick={() => void begin()}
+          >
             开始记录
           </button>
         ) : null}
@@ -297,6 +328,11 @@ function ActionRecordingPanel(props: {
         </p>
       ) : null}
 
+      {savedMessage ? (
+        <p className="success-message" role="status">
+          {savedMessage}
+        </p>
+      ) : null}
       {context ? (
         <form
           className="recording-form"
@@ -305,151 +341,191 @@ function ActionRecordingPanel(props: {
             void save()
           }}
         >
-          <p className="captured-date">发生日已由应用捕获：{context.capturedOn}</p>
-          <div className="quick-record-grid">
-            <label>
-              投入分钟
-              <input
-                required
-                min="0"
-                step="1"
-                type="number"
-                value={durationMinutes}
-                onChange={(event) => setDurationMinutes(event.target.value)}
-              />
-              <small>0 表示不足 1 分钟但确有行动</small>
-            </label>
-            <label>
-              本次结果
-              <select
-                value={outcome}
-                onChange={(event) => setOutcome(event.target.value as ActionRecordOutcomeDto)}
-              >
-                <option value="completed">本次达到预期</option>
-                <option value="partial">本次完成一部分</option>
-                <option value="stopped">本次在这里停下</option>
-              </select>
-            </label>
-          </div>
-          <button
-            className="quiet-button deep-toggle"
-            type="button"
-            onClick={() => setDeepExpanded((value) => !value)}
-          >
-            {deepExpanded ? '收起深入记录' : '添加理解、困惑、下一步或备注'}
-          </button>
-          {deepExpanded ? (
-            <div className="deep-record-fields">
+          <fieldset className="recording-fields" disabled={busy}>
+            <p className="captured-date">记录日期：{context.capturedOn}</p>
+            <div className="quick-record-grid">
               <label>
-                我理解了（可选）
-                <textarea
-                  rows={2}
-                  value={understanding}
-                  onChange={(event) => setUnderstanding(event.target.value)}
-                />
-              </label>
-              <label>
-                我仍困惑（可选）
-                <textarea
-                  rows={2}
-                  value={confusion}
-                  onChange={(event) => setConfusion(event.target.value)}
-                />
-              </label>
-              <label>
-                记录中的下一步（可选）
-                <input value={nextStep} onChange={(event) => setNextStep(event.target.value)} />
-              </label>
-              <label>
-                备注（可选）
-                <textarea rows={2} value={note} onChange={(event) => setNote(event.target.value)} />
-              </label>
-            </div>
-          ) : null}
-
-          <div className="post-record-panel">
-            <label>
-              保存记录后
-              <select
-                value={postAction}
-                onChange={(event) => setPostAction(event.target.value as PostRecordActionChoice)}
-              >
-                <option value="keep-pending">保持行动为待行动（默认）</option>
-                <option value="complete">另行确认行动已完成</option>
-                <option value="cancel">另行确认取消行动</option>
-                <option value="reschedule">另行确认重新安排</option>
-              </select>
-            </label>
-            <p>本次结果不会自动改变行动状态；这里是独立选择。</p>
-            {changingCurrentAction ? (
-              <label>
-                当前下一步处理
-                <select
-                  value={nextMode}
-                  onChange={(event) => setNextMode(event.target.value as RecordedNextMode)}
-                >
-                  <option value="clear">清空目标当前下一步</option>
-                  <option value="use-existing">改用已有待行动</option>
-                  <option value="recorded-next">用记录中的下一步创建新行动</option>
-                </select>
-              </label>
-            ) : null}
-            {changingCurrentAction && nextMode === 'use-existing' ? (
-              <label>
-                已有待行动
-                <select
-                  value={replacementActionId}
-                  onChange={(event) => setReplacementActionId(event.target.value)}
-                >
-                  <option value="">请选择</option>
-                  {props.replacementCandidates.map((candidate) => (
-                    <option key={candidate.id} value={candidate.id}>
-                      {candidate.title}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            ) : null}
-            {canApplyNextStep && !changingCurrentAction ? (
-              <label className="checkbox-label">
+                投入时长（分钟，必填）
                 <input
-                  type="checkbox"
-                  checked={applyRecordedNextStep}
-                  onChange={(event) => setApplyRecordedNextStep(event.target.checked)}
+                  required
+                  min="0"
+                  step="1"
+                  type="number"
+                  value={durationMinutes}
+                  onChange={(event) => setDurationMinutes(event.target.value)}
                 />
-                明确将记录中的下一步创建为目标当前下一步
+                <small>0 表示不足 1 分钟但确有行动</small>
               </label>
-            ) : null}
-          </div>
-
-          {dateConfirmation ? (
-            <div className="date-confirmation" role="alertdialog" aria-label="确认记录发生日">
-              <p>
-                保存时已经跨日。请选择保留开始日 {dateConfirmation.capturedOn}，或使用当前日{' '}
-                {dateConfirmation.currentLocalDate}。
-              </p>
-              <div>
-                <button type="button" disabled={busy} onClick={() => void save('keep-captured-on')}>
-                  保留开始日
-                </button>
-                <button type="button" disabled={busy} onClick={() => void save('use-current-on')}>
-                  使用当前日
-                </button>
-              </div>
+              <label>
+                本次结果
+                <select
+                  value={outcome}
+                  onChange={(event) => setOutcome(event.target.value as ActionRecordOutcomeDto)}
+                >
+                  <option value="completed">本次达到预期</option>
+                  <option value="partial">本次完成一部分</option>
+                  <option value="stopped">本次在这里停下</option>
+                </select>
+              </label>
             </div>
-          ) : null}
-          <div className="recording-actions">
             <button
-              className="primary-button"
-              type="submit"
-              disabled={busy || Boolean(dateConfirmation)}
+              className="quiet-button deep-toggle"
+              type="button"
+              aria-expanded={deepExpanded}
+              onClick={() => setDeepExpanded((value) => !value)}
             >
-              保存记录
+              {deepExpanded ? '收起深入记录' : '添加理解、困惑、下一步或备注'}
             </button>
-            <button type="button" disabled={busy} onClick={() => void cancel()}>
-              取消记录
+            {!deepExpanded &&
+            [understanding, confusion, nextStep, note].some((value) => value.trim()) ? (
+              <p className="empty-copy">已填写的补充内容会随记录保存，可展开修改。</p>
+            ) : null}
+            {deepExpanded ? (
+              <div className="deep-record-fields">
+                <label>
+                  我理解了（可选）
+                  <textarea
+                    rows={2}
+                    value={understanding}
+                    onChange={(event) => setUnderstanding(event.target.value)}
+                  />
+                </label>
+                <label>
+                  我仍困惑（可选）
+                  <textarea
+                    rows={2}
+                    value={confusion}
+                    onChange={(event) => setConfusion(event.target.value)}
+                  />
+                </label>
+                <label>
+                  记录中的下一步（可选）
+                  <input
+                    value={nextStep}
+                    onChange={(event) => {
+                      const value = event.target.value
+                      setNextStep(value)
+                      if (!value.trim()) {
+                        setApplyRecordedNextStep(false)
+                        if (nextMode === 'recorded-next') setNextMode('clear')
+                      }
+                    }}
+                  />
+                </label>
+                <label>
+                  备注（可选）
+                  <textarea
+                    rows={2}
+                    value={note}
+                    onChange={(event) => setNote(event.target.value)}
+                  />
+                </label>
+              </div>
+            ) : null}
+
+            <button
+              type="button"
+              className="quiet-button"
+              aria-expanded={postExpanded}
+              onClick={() => setPostExpanded(!postExpanded)}
+            >
+              调整行动状态或当前下一步（可选）
             </button>
-          </div>
+            {postExpanded ? (
+              <div className="post-record-panel">
+                <label>
+                  保存记录后
+                  <select
+                    value={postAction}
+                    onChange={(event) =>
+                      setPostAction(event.target.value as PostRecordActionChoice)
+                    }
+                  >
+                    <option value="keep-pending">保持行动为待行动（默认）</option>
+                    <option value="complete">另行确认行动已完成</option>
+                    <option value="cancel">另行确认取消行动</option>
+                    <option value="reschedule">另行确认重新安排</option>
+                  </select>
+                </label>
+                <p>本次结果不会自动改变行动状态，请明确选择是否调整。</p>
+                {changingCurrentAction ? (
+                  <label>
+                    当前下一步处理
+                    <select
+                      value={nextMode}
+                      onChange={(event) => setNextMode(event.target.value as RecordedNextMode)}
+                    >
+                      <option value="clear">清空目标当前下一步</option>
+                      <option value="use-existing">改用已有待行动</option>
+                      {nextStep.trim() ? (
+                        <option value="recorded-next">用记录中的下一步创建新行动</option>
+                      ) : null}
+                    </select>
+                  </label>
+                ) : null}
+                {changingCurrentAction && nextMode === 'use-existing' ? (
+                  <label>
+                    已有待行动
+                    <select
+                      value={replacementActionId}
+                      onChange={(event) => setReplacementActionId(event.target.value)}
+                    >
+                      <option value="">请选择</option>
+                      {props.replacementCandidates.map((candidate) => (
+                        <option key={candidate.id} value={candidate.id}>
+                          {candidate.title}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ) : null}
+                {canApplyNextStep && !changingCurrentAction && nextStep.trim() ? (
+                  <label className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={applyRecordedNextStep}
+                      onChange={(event) => setApplyRecordedNextStep(event.target.checked)}
+                    />
+                    明确将记录中的下一步创建为目标当前下一步
+                  </label>
+                ) : null}
+              </div>
+            ) : null}
+            <p className="save-impact">{saveImpact}</p>
+
+            {dateConfirmation ? (
+              <div className="date-confirmation" role="alertdialog" aria-label="确认记录发生日">
+                <p>
+                  保存时已经跨日。请选择保留开始日 {dateConfirmation.capturedOn}，或使用当前日{' '}
+                  {dateConfirmation.currentLocalDate}。
+                </p>
+                <div>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void save('keep-captured-on')}
+                  >
+                    保留开始日
+                  </button>
+                  <button type="button" disabled={busy} onClick={() => void save('use-current-on')}>
+                    使用当前日
+                  </button>
+                </div>
+              </div>
+            ) : null}
+            <div className="recording-actions">
+              <button
+                className="primary-button"
+                type="submit"
+                disabled={busy || Boolean(dateConfirmation)}
+              >
+                保存记录
+              </button>
+              <button type="button" disabled={busy} onClick={() => void cancel()}>
+                取消记录
+              </button>
+            </div>
+          </fieldset>
         </form>
       ) : !props.action.canStart ? (
         <p className="empty-copy">该行动当前不可开始，因此不能新增记录。</p>
@@ -497,6 +573,12 @@ function ActionRecordingPanel(props: {
 }
 
 function TodayWorkspace(): ReactNode {
+  const activeRef = useUiLifetime()
+  const session = useUiSession()
+  const [selectionLoaded, setSelectionLoaded] = useState(false)
+  const [selectionError, setSelectionError] = useState<string | null>(null)
+  const [creating, setCreating] = useState(false)
+  const detailRef = useRef<HTMLElement | null>(null)
   const [today, setToday] = useState<TodayViewDto | null>(null)
   const [activeGoals, setActiveGoals] = useState<readonly GoalSummaryDto[]>([])
   const [detail, setDetail] = useState<ActionDetailDto | null>(null)
@@ -512,6 +594,7 @@ function TodayWorkspace(): ReactNode {
   const [replacementActionId, setReplacementActionId] = useState('')
   const [replacementTitle, setReplacementTitle] = useState('')
   const [pendingTransition, setPendingTransition] = useState<PendingTransition | null>(null)
+  usePagePosition('today', today !== null && selectionLoaded)
   const transitionTriggerRef = useRef<HTMLButtonElement | null>(null)
 
   useEffect(() => {
@@ -538,7 +621,48 @@ function TodayWorkspace(): ReactNode {
     }
   }, [refreshVersion])
 
+  useEffect(() => {
+    let active = true
+    const actionId = session.actionId
+    if (!actionId) {
+      Promise.resolve().then(() => {
+        if (active) setSelectionLoaded(true)
+      })
+    } else {
+      void window.myTracer.actions
+        .getDetail({ actionId })
+        .then((result) => {
+          if (!active) return
+          if (session.actionId !== actionId) {
+            setSelectionLoaded(true)
+            return
+          }
+          if (result.ok) {
+            setDetail(result.value)
+            setEditTitle(result.value.title)
+            setEditDescription(result.value.description ?? '')
+          } else {
+            if (result.error.code === 'not-found') session.selectAction(null)
+            setSelectionError(actionErrorText[result.error.code])
+          }
+          setSelectionLoaded(true)
+        })
+        .catch(() => {
+          if (active) {
+            setSelectionError(actionErrorText['persistence-failed'])
+            setSelectionLoaded(true)
+          }
+        })
+    }
+    return () => {
+      active = false
+    }
+  }, [session])
+
   const showDetail = (action: ActionDetailDto): void => {
+    if (!activeRef.current) return
+    setSelectionError(null)
+    session.selectAction(action.id)
     setDetail(action)
     setEditTitle(action.title)
     setEditDescription(action.description ?? '')
@@ -546,6 +670,11 @@ function TodayWorkspace(): ReactNode {
     setReplacementActionId('')
     setReplacementTitle('')
     setPendingTransition(null)
+  }
+
+  const selectAction = (action: ActionDetailDto): void => {
+    showDetail(action)
+    requestAnimationFrame(() => revealStart(detailRef.current))
   }
 
   const refresh = async (actionId?: string): Promise<void> => {
@@ -579,11 +708,13 @@ function TodayWorkspace(): ReactNode {
       setError(actionErrorText[result.error.code])
       return
     }
+    setCreating(false)
     setCreateTitle('')
     setCreateDescription('')
     setCreateGoalId('')
     showDetail(result.value)
     await refresh(result.value.id)
+    requestAnimationFrame(() => revealStart(detailRef.current))
     setRefreshVersion((version) => version + 1)
   }
 
@@ -733,6 +864,11 @@ function TodayWorkspace(): ReactNode {
 
   return (
     <section className="today-workspace" aria-label="今日行动">
+      {selectionError ? (
+        <p className="form-error" role="alert">
+          {selectionError}
+        </p>
+      ) : null}
       {error ? (
         <p className="form-error" role="alert">
           {error}
@@ -741,153 +877,125 @@ function TodayWorkspace(): ReactNode {
       <div className="today-date-row">
         <span>当前本地日期</span>
         <strong>{today?.localDate ?? '读取中'}</strong>
+        <button
+          type="button"
+          className="secondary-button"
+          aria-expanded={creating}
+          onClick={() => setCreating(!creating)}
+        >
+          新建行动
+        </button>
       </div>
-      <section className="goal-card planned-routines" aria-label="今日 Routine 计划">
-        <div className="card-heading">
-          <p className="eyebrow">今日例行（Routine）</p>
-          <h2>当天匹配的活跃节奏</h2>
-        </div>
-        <div className="planned-routine-list">
-          {today?.plannedRoutines.length ? (
-            today.plannedRoutines.map((routine) => (
-              <article key={routine.id}>
-                <div>
-                  <strong>{routine.name}</strong>
-                  <span>最小行动：{routine.minimumAction}</span>
-                  <small>
-                    {routine.goal
-                      ? `目标：${routine.goal.name} · ${goalStatusText[routine.goal.status]}`
-                      : '未关联目标'}
-                  </small>
-                </div>
-                <span className="status-badge status-active">
-                  {routineRecordOutcomeText[routine.recordState]}
-                </span>
-                <RoutineRecordingPanel
-                  routineId={routine.id}
-                  routineName={routine.name}
-                  initialState={{
-                    routineId: routine.id,
-                    localDate: today.localDate,
-                    plannedByCurrentSchedule: true,
-                    recordState: routine.recordState,
-                    record: routine.record
-                  }}
-                  onSaved={async () => refresh()}
-                />
-              </article>
-            ))
-          ) : (
-            <p className="empty-copy">今天没有匹配的活跃 Routine。</p>
-          )}
-        </div>
-      </section>
+      {creating ? (
+        <form className="goal-card goal-create" onSubmit={(event) => void submitCreate(event)}>
+          <div className="card-heading">
+            <p className="eyebrow">新行动</p>
+            <h2>留下一个可以直接开始的小步骤</h2>
+          </div>
+          <label>
+            行动标题
+            <input
+              autoFocus
+              required
+              value={createTitle}
+              onChange={(event) => setCreateTitle(event.target.value)}
+            />
+          </label>
+          <label>
+            说明（可选）
+            <textarea
+              rows={2}
+              value={createDescription}
+              onChange={(event) => setCreateDescription(event.target.value)}
+            />
+          </label>
+          <label>
+            关联目标（可选）
+            <select value={createGoalId} onChange={(event) => setCreateGoalId(event.target.value)}>
+              <option value="">不关联目标</option>
+              {activeGoals.map((goal) => (
+                <option key={goal.id} value={goal.id}>
+                  {goal.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button className="primary-button" type="submit" disabled={busy}>
+            创建行动
+          </button>
+          <button type="button" onClick={() => setCreating(false)}>
+            取消新建
+          </button>
+        </form>
+      ) : null}
       <div className="today-grid">
         <div className="goal-column">
-          <form className="goal-card goal-create" onSubmit={(event) => void submitCreate(event)}>
-            <div className="card-heading">
-              <p className="eyebrow">新行动</p>
-              <h2>留下一个可以直接开始的小步骤</h2>
+          {today?.focuses.length ? (
+            <div className="goal-card goal-list-card">
+              <div className="card-heading">
+                <p className="eyebrow">今日重点</p>
+                <h2>由你选入今天</h2>
+              </div>
+              <div className="action-list">
+                {today?.focuses.length ? (
+                  today.focuses.map((action) => (
+                    <div className="focus-row" key={action.id}>
+                      <button type="button" onClick={() => selectAction(action)}>
+                        <span>{action.title}</span>
+                        <small>
+                          {actionStatusText[action.status]}
+                          {action.goal ? ` · ${action.goal.name}` : ''}
+                        </small>
+                      </button>
+                      <button
+                        className="quiet-button"
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void removeFromToday(action.id)}
+                      >
+                        移出今天
+                      </button>
+                    </div>
+                  ))
+                ) : (
+                  <p className="empty-copy">尚未选择今日重点。</p>
+                )}
+              </div>
             </div>
-            <label>
-              行动标题
-              <input
-                required
-                value={createTitle}
-                onChange={(event) => setCreateTitle(event.target.value)}
-              />
-            </label>
-            <label>
-              说明（可选）
-              <textarea
-                rows={2}
-                value={createDescription}
-                onChange={(event) => setCreateDescription(event.target.value)}
-              />
-            </label>
-            <label>
-              关联目标（可选）
-              <select
-                value={createGoalId}
-                onChange={(event) => setCreateGoalId(event.target.value)}
-              >
-                <option value="">不关联目标</option>
-                {activeGoals.map((goal) => (
-                  <option key={goal.id} value={goal.id}>
-                    {goal.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button className="primary-button" type="submit" disabled={busy}>
-              创建行动
-            </button>
-          </form>
-
-          <div className="goal-card goal-list-card">
-            <div className="card-heading">
-              <p className="eyebrow">今日重点</p>
-              <h2>只显示你明确选入的行动</h2>
+          ) : null}
+          {today?.intentions.length ? (
+            <div className="goal-card goal-list-card intention-card">
+              <div className="card-heading">
+                <p className="eyebrow">今日意向</p>
+                <h2>今天可能想做，不构成承诺</h2>
+              </div>
+              <div className="action-list">
+                {today?.intentions.length ? (
+                  today.intentions.map((action) => (
+                    <div className="focus-row intention-row" key={action.id}>
+                      <button type="button" onClick={() => selectAction(action)}>
+                        <span>{action.title}</span>
+                        <small>
+                          {actionStatusText[action.status]}
+                          {action.goal ? ` · ${action.goal.name}` : ' · 独立行动'}
+                        </small>
+                      </button>
+                      <button
+                        className="quiet-button"
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void removeIntention(action.id)}
+                      >
+                        移出今日意向
+                      </button>
+                    </div>
+                  ))
+                ) : (
+                  <p className="empty-copy">尚未选择今日意向，不必每天安排。</p>
+                )}
+              </div>
             </div>
-            <div className="action-list">
-              {today?.focuses.length ? (
-                today.focuses.map((action) => (
-                  <div className="focus-row" key={action.id}>
-                    <button type="button" onClick={() => showDetail(action)}>
-                      <span>{action.title}</span>
-                      <small>
-                        {actionStatusText[action.status]}
-                        {action.goal ? ` · ${action.goal.name}` : ''}
-                      </small>
-                    </button>
-                    <button
-                      className="quiet-button"
-                      type="button"
-                      disabled={busy}
-                      onClick={() => void removeFromToday(action.id)}
-                    >
-                      移出今天
-                    </button>
-                  </div>
-                ))
-              ) : (
-                <p className="empty-copy">今天还没有重点；系统不会自动搬运旧行动。</p>
-              )}
-            </div>
-          </div>
-
-          <div className="goal-card goal-list-card intention-card">
-            <div className="card-heading">
-              <p className="eyebrow">今日意向</p>
-              <h2>今天可能想做，不构成承诺</h2>
-            </div>
-            <div className="action-list">
-              {today?.intentions.length ? (
-                today.intentions.map((action) => (
-                  <div className="focus-row intention-row" key={action.id}>
-                    <button type="button" onClick={() => showDetail(action)}>
-                      <span>{action.title}</span>
-                      <small>
-                        {actionStatusText[action.status]}
-                        {action.goal ? ` · ${action.goal.name}` : ' · 独立行动'}
-                      </small>
-                    </button>
-                    <button
-                      className="quiet-button"
-                      type="button"
-                      disabled={busy}
-                      onClick={() => void removeIntention(action.id)}
-                    >
-                      移出今日意向
-                    </button>
-                  </div>
-                ))
-              ) : (
-                <p className="empty-copy">今天没有意向；未选择或未发生都不会被评价为失败。</p>
-              )}
-            </div>
-          </div>
-
+          ) : null}
           <div className="goal-card goal-list-card">
             <div className="card-heading">
               <p className="eyebrow">行动列表</p>
@@ -897,10 +1005,11 @@ function TodayWorkspace(): ReactNode {
               {today?.availableActions.length ? (
                 today.availableActions.map((action) => (
                   <button
-                    className="goal-list-item"
+                    className={`goal-list-item ${detail?.id === action.id ? 'selected' : ''}`}
+                    aria-pressed={detail?.id === action.id}
                     type="button"
                     key={action.id}
-                    onClick={() => showDetail(action)}
+                    onClick={() => selectAction(action)}
                   >
                     <span>{action.title}</span>
                     <small>
@@ -918,11 +1027,59 @@ function TodayWorkspace(): ReactNode {
               )}
             </div>
           </div>
+
+          <div className="empty-selections">
+            {!today?.focuses.length ? <p className="empty-copy">尚未选择今日重点。</p> : null}
+            {!today?.intentions.length ? (
+              <p className="empty-copy">尚未选择今日意向，不必每天安排。</p>
+            ) : null}
+          </div>
+          <section className="goal-card planned-routines" aria-label="今日例行计划">
+            <div className="card-heading">
+              <p className="eyebrow">今日例行</p>
+              <h2>今天的例行事项</h2>
+            </div>
+            <div className="planned-routine-list">
+              {today?.plannedRoutines.length ? (
+                today.plannedRoutines.map((routine) => (
+                  <article key={routine.id}>
+                    <div>
+                      <strong>{routine.name}</strong>
+                      <span>最小行动：{routine.minimumAction}</span>
+                      <small>
+                        {routine.goal
+                          ? `目标：${routine.goal.name} · ${goalStatusText[routine.goal.status]}`
+                          : '未关联目标'}
+                      </small>
+                    </div>
+                    <RoutineRecordingPanel
+                      routineId={routine.id}
+                      routineName={routine.name}
+                      initialState={{
+                        routineId: routine.id,
+                        localDate: today.localDate,
+                        plannedByCurrentSchedule: true,
+                        recordState: routine.recordState,
+                        record: routine.record
+                      }}
+                      onSaved={async () => refresh()}
+                    />
+                  </article>
+                ))
+              ) : (
+                <p className="empty-copy">今天没有匹配的活跃例行。</p>
+              )}
+            </div>
+          </section>
         </div>
 
         <div className="goal-column">
           {detail ? (
-            <article className="goal-card action-detail" aria-label={`${detail.title} 行动详情`}>
+            <article
+              ref={detailRef}
+              className="goal-card action-detail"
+              aria-label={`${detail.title} 行动详情`}
+            >
               <div className="detail-title-row">
                 <div>
                   <p className="eyebrow">{detail.goal?.name ?? '独立行动'}</p>
@@ -942,12 +1099,6 @@ function TodayWorkspace(): ReactNode {
                       : '当前可行动；可由你选择为今日重点或非强制意向。'}
               </p>
 
-              {detail.status === 'pending' &&
-              detail.goal?.status === 'active' &&
-              detail.todayCommitment !== null ? (
-                <AiStartHelpPanel key={`ai-${detail.id}`} action={detail} />
-              ) : null}
-
               <ActionRecordingPanel
                 key={detail.id}
                 action={detail}
@@ -955,195 +1106,205 @@ function TodayWorkspace(): ReactNode {
                 onSaved={async (action) => refresh(action.id)}
               />
 
-              <form className="detail-form" onSubmit={(event) => void submitUpdate(event)}>
-                <label>
-                  行动标题
-                  <input
-                    required
-                    value={editTitle}
-                    onChange={(event) => setEditTitle(event.target.value)}
-                  />
-                </label>
-                <label>
-                  说明（可选）
-                  <textarea
-                    rows={2}
-                    value={editDescription}
-                    onChange={(event) => setEditDescription(event.target.value)}
-                  />
-                </label>
-                <button className="secondary-button" type="submit" disabled={busy}>
-                  保存行动修改
-                </button>
-              </form>
+              {detail.status === 'pending' &&
+              detail.goal?.status === 'active' &&
+              detail.todayCommitment !== null ? (
+                <AiStartHelpPanel key={`ai-${detail.id}`} action={detail} />
+              ) : null}
 
-              {detail.isCurrentNextAction ? (
-                <div className="resolution-panel">
-                  <h3>处理目标的当前下一步</h3>
-                  {detail.goal?.status === 'active' ? (
-                    <>
-                      <label>
-                        状态转换后
-                        <select
-                          value={resolutionMode}
-                          onChange={(event) =>
-                            setResolutionMode(event.target.value as ResolutionMode)
-                          }
-                        >
-                          <option value="clear">清空当前下一步</option>
-                          <option value="use-existing">改用已有待行动</option>
-                          <option value="create-and-use">创建并使用新行动</option>
-                        </select>
-                      </label>
-                      {resolutionMode === 'use-existing' ? (
+              <details className="disclosure" key={`management-${detail.id}`}>
+                <summary>编辑与管理行动</summary>
+                <form className="detail-form" onSubmit={(event) => void submitUpdate(event)}>
+                  <label>
+                    行动标题
+                    <input
+                      required
+                      value={editTitle}
+                      onChange={(event) => setEditTitle(event.target.value)}
+                    />
+                  </label>
+                  <label>
+                    说明（可选）
+                    <textarea
+                      rows={2}
+                      value={editDescription}
+                      onChange={(event) => setEditDescription(event.target.value)}
+                    />
+                  </label>
+                  <button className="secondary-button" type="submit" disabled={busy}>
+                    保存行动修改
+                  </button>
+                </form>
+
+                {detail.isCurrentNextAction ? (
+                  <div className="resolution-panel">
+                    <h3>处理目标的当前下一步</h3>
+                    {detail.goal?.status === 'active' ? (
+                      <>
                         <label>
-                          已有待行动
+                          状态转换后
                           <select
-                            required
-                            value={replacementActionId}
-                            onChange={(event) => setReplacementActionId(event.target.value)}
+                            value={resolutionMode}
+                            onChange={(event) =>
+                              setResolutionMode(event.target.value as ResolutionMode)
+                            }
                           >
-                            <option value="">请选择</option>
-                            {replacementCandidates.map((action) => (
-                              <option key={action.id} value={action.id}>
-                                {action.title}
-                              </option>
-                            ))}
+                            <option value="clear">清空当前下一步</option>
+                            <option value="use-existing">改用已有待行动</option>
+                            <option value="create-and-use">创建并使用新行动</option>
                           </select>
                         </label>
-                      ) : null}
-                      {resolutionMode === 'create-and-use' ? (
-                        <label>
-                          新的当前下一步
-                          <input
-                            required
-                            value={replacementTitle}
-                            onChange={(event) => setReplacementTitle(event.target.value)}
-                          />
-                        </label>
+                        {resolutionMode === 'use-existing' ? (
+                          <label>
+                            已有待行动
+                            <select
+                              required
+                              value={replacementActionId}
+                              onChange={(event) => setReplacementActionId(event.target.value)}
+                            >
+                              <option value="">请选择</option>
+                              {replacementCandidates.map((action) => (
+                                <option key={action.id} value={action.id}>
+                                  {action.title}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        ) : null}
+                        {resolutionMode === 'create-and-use' ? (
+                          <label>
+                            新的当前下一步
+                            <input
+                              required
+                              value={replacementTitle}
+                              onChange={(event) => setReplacementTitle(event.target.value)}
+                            />
+                          </label>
+                        ) : null}
+                      </>
+                    ) : (
+                      <p className="empty-copy">目标不是活跃状态，本次只能清空当前下一步。</p>
+                    )}
+                  </div>
+                ) : null}
+
+                <div className="action-controls">
+                  {detail.canSelectForToday && detail.todayCommitment === null ? (
+                    <>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void selectForToday(detail.id)}
+                      >
+                        选为今日重点
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void selectAsIntention(detail.id)}
+                      >
+                        加入今日意向
+                      </button>
+                    </>
+                  ) : null}
+                  {detail.todayCommitment === 'focus' ? (
+                    <>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void removeFromToday(detail.id)}
+                      >
+                        移出今日重点
+                      </button>
+                      {detail.canSelectForToday ? (
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => void changeCommitment(detail.id, 'intention')}
+                        >
+                          转为今日意向
+                        </button>
                       ) : null}
                     </>
-                  ) : (
-                    <p className="empty-copy">目标不是活跃状态，本次只能清空当前下一步。</p>
-                  )}
-                </div>
-              ) : null}
-
-              <div className="action-controls">
-                {detail.canSelectForToday && detail.todayCommitment === null ? (
-                  <>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => void selectForToday(detail.id)}
-                    >
-                      选为今日重点
-                    </button>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => void selectAsIntention(detail.id)}
-                    >
-                      加入今日意向
-                    </button>
-                  </>
-                ) : null}
-                {detail.todayCommitment === 'focus' ? (
-                  <>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => void removeFromToday(detail.id)}
-                    >
-                      移出今日重点
-                    </button>
-                    {detail.canSelectForToday ? (
+                  ) : null}
+                  {detail.todayCommitment === 'intention' ? (
+                    <>
                       <button
                         type="button"
                         disabled={busy}
-                        onClick={() => void changeCommitment(detail.id, 'intention')}
+                        onClick={() => void removeIntention(detail.id)}
                       >
-                        转为今日意向
+                        移出今日意向
                       </button>
-                    ) : null}
-                  </>
-                ) : null}
-                {detail.todayCommitment === 'intention' ? (
-                  <>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => void removeIntention(detail.id)}
-                    >
-                      移出今日意向
-                    </button>
-                    {detail.canSelectForToday ? (
+                      {detail.canSelectForToday ? (
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => void changeCommitment(detail.id, 'focus')}
+                        >
+                          转为今日重点
+                        </button>
+                      ) : null}
+                    </>
+                  ) : null}
+                  {detail.status === 'pending' ? (
+                    <>
                       <button
                         type="button"
                         disabled={busy}
-                        onClick={() => void changeCommitment(detail.id, 'focus')}
+                        onClick={(event) => requestTransition('complete', event.currentTarget)}
                       >
-                        转为今日重点
+                        标记完成
                       </button>
-                    ) : null}
-                  </>
-                ) : null}
-                {detail.status === 'pending' ? (
-                  <>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={(event) => requestTransition('complete', event.currentTarget)}
-                    >
-                      标记完成
-                    </button>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={(event) => requestTransition('cancel', event.currentTarget)}
-                    >
-                      取消行动
-                    </button>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={(event) => requestTransition('reschedule', event.currentTarget)}
-                    >
-                      重新安排
-                    </button>
-                  </>
-                ) : null}
-              </div>
-              {pendingTransition ? (
-                <div
-                  className="transition-confirmation"
-                  role="alertdialog"
-                  aria-labelledby="transition-confirmation-title"
-                >
-                  <div>
-                    <h3 id="transition-confirmation-title">
-                      确认{transitionLabels[pendingTransition.kind]}
-                    </h3>
-                    <p>
-                      确定{transitionLabels[pendingTransition.kind]}“{pendingTransition.actionTitle}
-                      ”吗？
-                    </p>
-                  </div>
-                  <div className="transition-confirmation-actions">
-                    <button
-                      type="button"
-                      autoFocus
-                      disabled={busy}
-                      onClick={() => void confirmTransition()}
-                    >
-                      确认{transitionLabels[pendingTransition.kind]}
-                    </button>
-                    <button type="button" disabled={busy} onClick={dismissTransition}>
-                      返回
-                    </button>
-                  </div>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={(event) => requestTransition('cancel', event.currentTarget)}
+                      >
+                        取消行动
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={(event) => requestTransition('reschedule', event.currentTarget)}
+                      >
+                        重新安排
+                      </button>
+                    </>
+                  ) : null}
                 </div>
-              ) : null}
+                {pendingTransition ? (
+                  <div
+                    className="transition-confirmation"
+                    role="alertdialog"
+                    aria-labelledby="transition-confirmation-title"
+                  >
+                    <div>
+                      <h3 id="transition-confirmation-title">
+                        确认{transitionLabels[pendingTransition.kind]}
+                      </h3>
+                      <p>
+                        确定{transitionLabels[pendingTransition.kind]}“
+                        {pendingTransition.actionTitle}
+                        ”吗？
+                      </p>
+                    </div>
+                    <div className="transition-confirmation-actions">
+                      <button
+                        type="button"
+                        autoFocus
+                        disabled={busy}
+                        onClick={() => void confirmTransition()}
+                      >
+                        确认{transitionLabels[pendingTransition.kind]}
+                      </button>
+                      <button type="button" disabled={busy} onClick={dismissTransition}>
+                        返回
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+              </details>
             </article>
           ) : (
             <div className="goal-card detail-empty">

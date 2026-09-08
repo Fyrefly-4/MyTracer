@@ -1,3 +1,4 @@
+import { openManagement, openActionCreate } from '../support/ui-disclosure'
 import Database from 'better-sqlite3'
 import { join } from 'node:path'
 import { expect, test, type ElectronApplication } from '@playwright/test'
@@ -53,13 +54,15 @@ test('completes AC-04 with a generic intention, explicit conversion, and no sile
     await setMainProcessDate(application, firstDayInstant)
     let page = await application.firstWindow()
     await page.reload()
-    await page.getByRole('button', { name: 'Today' }).click()
+    await page.getByRole('button', { name: '今天', exact: true }).click()
 
+    await openActionCreate(page)
     const createForm = page.locator('form.goal-create')
     await createForm.getByLabel('行动标题').fill(title)
     await createForm.getByRole('button', { name: '创建行动' }).click()
     const detail = page.getByLabel(`${title} 行动详情`)
     await expect(detail).toBeVisible()
+    await openManagement(detail, '行动')
     await detail.getByRole('button', { name: '加入今日意向' }).click()
 
     await expect(page.getByRole('heading', { name: '今天可能想做，不构成承诺' })).toBeVisible()
@@ -130,9 +133,9 @@ test('completes AC-04 with a generic intention, explicit conversion, and no sile
     await setMainProcessDate(application, nextDayInstant)
     page = await application.firstWindow()
     await page.reload()
-    await page.getByRole('button', { name: 'Today' }).click()
+    await page.getByRole('button', { name: '今天', exact: true }).click()
     await expect(page.locator('.intention-row').filter({ hasText: title })).toHaveCount(0)
-    await expect(page.getByText('今天没有意向；未选择或未发生都不会被评价为失败。')).toBeVisible()
+    await expect(page.getByText('尚未选择今日意向，不必每天安排。')).toBeVisible()
 
     const nextDayFacts = await page.evaluate(async () => ({
       today: await window.myTracer.today.get({}),
@@ -149,9 +152,10 @@ test('completes AC-04 with a generic intention, explicit conversion, and no sile
 
     await page.getByRole('button', { name: new RegExp(title) }).click()
     const reopenedDetail = page.getByLabel(`${title} 行动详情`)
+    await openManagement(reopenedDetail, '行动')
     await reopenedDetail.getByRole('button', { name: '加入今日意向' }).click()
     await reopenedDetail.getByRole('button', { name: '开始记录' }).click()
-    await reopenedDetail.getByLabel('投入分钟').fill('5')
+    await reopenedDetail.getByLabel('投入时长（分钟，必填）').fill('5')
     await reopenedDetail.getByRole('button', { name: '保存记录' }).click()
     const recordList = reopenedDetail.getByLabel('行动记录列表')
     await expect(recordList.getByRole('button')).toHaveCount(1)

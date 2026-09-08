@@ -1,3 +1,4 @@
+import { factOutcomeText } from '../../app/ui-text'
 import { type ReactNode, useCallback, useEffect, useState } from 'react'
 import type { RecoveryActionDto, RecoveryContextDto } from '../../../../contracts/recovery'
 import type { RoutineSummaryDto } from '../../../../contracts/routines'
@@ -16,22 +17,22 @@ type RecoveryDraft =
 const draftTitle: Record<RecoveryDraft['kind'], string> = {
   'pause-goal': '确认暂停目标',
   'end-goal': '确认结束目标',
-  'pause-routine': '确认暂停 Routine',
-  'end-routine': '确认结束 Routine',
-  'complete-action': '确认完成 Action',
-  'cancel-action': '确认取消 Action',
-  'reschedule-action': '确认重新安排 Action',
+  'pause-routine': '确认暂停例行',
+  'end-routine': '确认结束例行',
+  'complete-action': '确认完成行动',
+  'cancel-action': '确认取消行动',
+  'reschedule-action': '确认重新安排行动',
   'set-current': '确认设置当前下一步',
   'create-current': '确认创建并设置当前下一步',
-  'select-today': '确认加入 Today'
+  'select-today': '确认加入今天'
 }
 
 function draftDescription(draft: RecoveryDraft, context: RecoveryContextDto): string {
   switch (draft.kind) {
     case 'pause-goal':
-      return `暂停“${context.goal.name}”；关联 Routine 与已有历史保持原样。`
+      return `暂停“${context.goal.name}”；关联例行与已有历史保持原样。`
     case 'end-goal':
-      return `结束“${context.goal.name}”；该状态不能恢复，关联 Routine 与已有历史保持原样。`
+      return `结束“${context.goal.name}”；该状态不能恢复，关联例行与已有历史保持原样。`
     case 'pause-routine':
       return `暂停“${draft.routine.name}”；目标与已有历史保持原样。`
     case 'end-routine':
@@ -45,9 +46,9 @@ function draftDescription(draft: RecoveryDraft, context: RecoveryContextDto): st
     case 'set-current':
       return `把“${draft.action.title}”设为“${context.goal.name}”的当前下一步。`
     case 'create-current':
-      return `创建“${draft.title}”，并在同一次保存中设为当前下一步；不会自动加入 Today。`
+      return `创建“${draft.title}”，并在同一次保存中设为当前下一步；不会自动加入今天。`
     case 'select-today':
-      return `把“${draft.action.title}”加入命令开始时所在日期的 Today。`
+      return `把“${draft.action.title}”加入你操作时的今天。`
   }
 }
 
@@ -74,7 +75,7 @@ export function RecoveryPanel(props: {
       setError(
         recoveryResult.error.code === 'not-found'
           ? '这个目标已不存在。'
-          : '暂时无法读取 Recovery 事实。'
+          : '暂时无法读取恢复与整理事实。'
       )
       return
     }
@@ -84,7 +85,7 @@ export function RecoveryPanel(props: {
         ? routinesResult.value.filter((routine) => routine.goalId === props.goalId)
         : []
     )
-    setError(routinesResult.ok ? null : '目标事实已刷新，但关联 Routine 暂时无法读取。')
+    setError(routinesResult.ok ? null : '目标事实已刷新，但关联例行暂时无法读取。')
   }, [props.goalId])
 
   useEffect(() => {
@@ -99,7 +100,7 @@ export function RecoveryPanel(props: {
           setError(
             recoveryResult.error.code === 'not-found'
               ? '这个目标已不存在。'
-              : '暂时无法读取 Recovery 事实。'
+              : '暂时无法读取恢复与整理事实。'
           )
           return
         }
@@ -109,10 +110,10 @@ export function RecoveryPanel(props: {
             ? routinesResult.value.filter((routine) => routine.goalId === props.goalId)
             : []
         )
-        setError(routinesResult.ok ? null : '目标事实已刷新，但关联 Routine 暂时无法读取。')
+        setError(routinesResult.ok ? null : '目标事实已刷新，但关联例行暂时无法读取。')
       })
       .catch(() => {
-        if (active) setError('暂时无法读取 Recovery 事实。')
+        if (active) setError('暂时无法读取恢复与整理事实。')
       })
     return () => {
       active = false
@@ -192,8 +193,8 @@ export function RecoveryPanel(props: {
         const today = await window.myTracer.today.get({})
         setNotice(
           today.ok
-            ? `已加入 Today（${today.value.localDate}）。`
-            : '已加入 Today；日期事实将在下次刷新时显示。'
+            ? `已加入今天（${today.value.localDate}）。`
+            : '已加入今天；日期事实将在下次刷新时显示。'
         )
       } else {
         setNotice('已保存，并重新读取了最新事实。')
@@ -208,7 +209,7 @@ export function RecoveryPanel(props: {
 
   const createActionDraft = (): void => {
     if (!newActionTitle.trim()) {
-      setError('请先写下一个小 Action。')
+      setError('请先写下一个小行动。')
       return
     }
     setError(null)
@@ -220,10 +221,10 @@ export function RecoveryPanel(props: {
   }
 
   return (
-    <article className="goal-card recovery-panel" aria-label="Recovery 页面">
+    <article className="goal-card recovery-panel" aria-label="恢复与整理页面">
       <div className="detail-title-row">
         <div>
-          <p className="eyebrow">Recovery</p>
+          <p className="eyebrow">恢复与整理</p>
           <h2>{context?.goal.name ?? '正在读取事实…'}</h2>
         </div>
         <button className="secondary-button" type="button" disabled={busy} onClick={props.onClose}>
@@ -314,7 +315,7 @@ export function RecoveryPanel(props: {
           </section>
 
           <section className="related-section recovery-actions" aria-label="选择下一步">
-            <h3>选择一个小 Action</h3>
+            <h3>选择一个小行动</h3>
             {context.pendingActions.length ? (
               context.pendingActions.map((action) => (
                 <div className="related-row recovery-operation-row" key={action.id}>
@@ -358,12 +359,12 @@ export function RecoveryPanel(props: {
                 </div>
               ))
             ) : (
-              <p className="empty-copy">目前没有待行动 Action。</p>
+              <p className="empty-copy">目前没有可继续的行动。</p>
             )}
             {context.goal.status === 'active' ? (
               <div className="recovery-create-action">
                 <label>
-                  新的小 Action
+                  新的小行动
                   <input
                     value={newActionTitle}
                     onChange={(event) => setNewActionTitle(event.target.value)}
@@ -396,7 +397,7 @@ export function RecoveryPanel(props: {
                   setDraft({ kind: 'select-today', action: context.currentNextAction! })
                 }
               >
-                将当前下一步加入 Today
+                将当前下一步加入今天
               </button>
             ) : null}
           </section>
@@ -412,7 +413,8 @@ export function RecoveryPanel(props: {
                     : `${context.latestRealRecord.durationMinutes} 分钟`}
                 </span>
                 <small>
-                  {context.latestRealRecord.occurredOn} · {context.latestRealRecord.outcome}
+                  {context.latestRealRecord.occurredOn} ·{' '}
+                  {factOutcomeText[context.latestRealRecord.outcome]}
                 </small>
               </div>
             ) : (

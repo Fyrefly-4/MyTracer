@@ -58,7 +58,7 @@ function sqliteSnapshot(root: TemporaryTestRoot): Readonly<Record<string, readon
 }
 
 async function openTodayAction(page: Page, title: string, expectInput = true): Promise<void> {
-  await page.getByRole('button', { name: 'Today' }).click()
+  await page.getByRole('button', { name: '今天', exact: true }).click()
   await page
     .getByRole('button', { name: new RegExp(title) })
     .first()
@@ -237,7 +237,7 @@ test('continuous E2E-AC-02 proves isolation, every temporary branch, confirmatio
         window.myTracer.goals.list({ status: 'active' })
       ])
     })
-    await page.getByRole('button', { name: 'Goals' }).click()
+    await page.getByRole('button', { name: '目标', exact: true }).click()
     await openTodayAction(page, '__ac02_allowed_action__')
     expect(await page.evaluate(() => window.myTracer.aiStartHelp.status())).toEqual({
       state: 'idle',
@@ -282,7 +282,7 @@ test('continuous E2E-AC-02 proves isolation, every temporary branch, confirmatio
 
     await triggerDraft(page, '__ac02_accept_original__', '__ac02_ack_accept_original__')
     await page.getByRole('button', { name: '确认并设为新的下一步' }).click()
-    await expect(page.getByText(/新的 pending Action 已保存/)).toBeVisible()
+    await expect(page.getByText(/新的待行动已保存/)).toBeVisible()
     const afterOriginal = sqliteSnapshot(root)
     const afterOriginalData = await page.evaluate(() => window.myTracer.dataControl.list())
     expect(afterOriginalData).toMatchObject({
@@ -316,7 +316,7 @@ test('continuous E2E-AC-02 proves isolation, every temporary branch, confirmatio
       .first()
       .fill('__ac02_final_edited_action__')
     await page.getByRole('button', { name: '确认并设为新的下一步' }).click()
-    await expect(page.getByText(/新的 pending Action 已保存/)).toBeVisible()
+    await expect(page.getByText(/新的待行动已保存/)).toBeVisible()
     const afterActions = sqliteSnapshot(root)
     const afterActionsData = await page.evaluate(() => window.myTracer.dataControl.list())
     expect(afterActionsData).toMatchObject({

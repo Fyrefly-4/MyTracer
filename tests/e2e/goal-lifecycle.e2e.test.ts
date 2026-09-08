@@ -1,3 +1,4 @@
+import { openManagement } from '../support/ui-disclosure'
 import Database from 'better-sqlite3'
 import { join } from 'node:path'
 import { expect, test, type ElectronApplication, type Locator } from '@playwright/test'
@@ -34,11 +35,10 @@ test('runs the Goal lifecycle and preserves it across a complete Electron and SQ
   try {
     application = await launchApplication(root)
     let page = await application.firstWindow()
-    await page.getByRole('button', { name: 'Goals' }).click()
-    await expect(
-      page.getByRole('heading', { name: '目标可以停下，也可以从一个小步骤继续' })
-    ).toBeVisible()
+    await page.getByRole('button', { name: '目标', exact: true }).click()
+    await expect(page.getByRole('heading', { name: '目标', exact: true })).toBeVisible()
 
+    await page.getByRole('button', { name: '新建目标', exact: true }).click()
     await page.getByLabel('目标名称').fill('系统学习 React')
     await page.getByLabel('说明（可选）').fill('建立稳定基础')
     await page.getByLabel('当前下一步（可选）').fill('运行一个 React 状态更新示例')
@@ -51,6 +51,7 @@ test('runs the Goal lifecycle and preserves it across a complete Electron and SQ
     )
     await expect(detail.getByText('活跃', { exact: true }).first()).toBeVisible()
 
+    await openManagement(detail, '目标')
     await detail.getByLabel('目标名称').fill('系统学习 React（已更新）')
     await detail.getByLabel('说明（可选）').fill('从一个可执行示例开始')
     await detail.getByRole('button', { name: '保存修改' }).click()
@@ -112,7 +113,7 @@ test('runs the Goal lifecycle and preserves it across a complete Electron and SQ
     application = undefined
     application = await launchApplication(root)
     page = await application.firstWindow()
-    await page.getByRole('button', { name: 'Goals' }).click()
+    await page.getByRole('button', { name: '目标', exact: true }).click()
     await page.getByRole('button', { name: /系统学习 React（已更新）/ }).click()
     detail = page.getByLabel('系统学习 React（已更新） 详情')
     await expect(detail.getByText('结束', { exact: true }).first()).toBeVisible()

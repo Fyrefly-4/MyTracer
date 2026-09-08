@@ -1,27 +1,13 @@
+import { usePagePosition } from '../../app/ui-session'
+import { recordOutcomeText, routineRecordOutcomeText } from '../../app/ui-text'
 import { type ReactNode, useEffect, useState } from 'react'
 import type { GoalSummaryDto } from '../../../../contracts/goals'
 import type { ProgressErrorCode, ProgressViewDto } from '../../../../contracts/progress'
-import type { ActionRecordOutcomeDto } from '../../../../contracts/records'
-import type { RoutineRecordOutcomeDto } from '../../../../contracts/routine-records'
 
 const progressErrorText: Record<ProgressErrorCode, string> = {
   validation: '请检查目标或日期筛选；开始日期不能晚于结束日期。',
   'not-found': '所选目标已不存在，请重新选择。',
   'persistence-failed': '本地进展事实暂时无法读取。'
-}
-
-const recordOutcomeText: Record<ActionRecordOutcomeDto, string> = {
-  completed: '本次达到预期',
-  partial: '本次完成一部分',
-  stopped: '本次在这里停下'
-}
-
-const routineRecordOutcomeText: Record<RoutineRecordOutcomeDto | 'unknown', string> = {
-  target_met: '达到目标',
-  acted: '有真实行动',
-  intentional_rest: '有意休息',
-  not_done: '明确未做',
-  unknown: '尚无记录'
 }
 
 function ProgressWorkspace(): ReactNode {
@@ -30,6 +16,7 @@ function ProgressWorkspace(): ReactNode {
   const [from, setFrom] = useState('')
   const [through, setThrough] = useState('')
   const [progress, setProgress] = useState<ProgressViewDto | null>(null)
+  usePagePosition('progress', progress !== null)
   const [busy, setBusy] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -132,7 +119,7 @@ function ProgressWorkspace(): ReactNode {
               <strong>{progress.realActionCount}</strong>
             </article>
             <article>
-              <span>Routine 达到目标次数</span>
+              <span>例行达到目标次数</span>
               <strong>{progress.targetMetCount}</strong>
             </article>
             <article>
@@ -142,8 +129,8 @@ function ProgressWorkspace(): ReactNode {
           </div>
 
           {progress.routineRecords.length ? (
-            <section aria-label="Routine 事实">
-              <h2 className="progress-section-title">Routine 事实</h2>
+            <section aria-label="例行事实">
+              <h2 className="progress-section-title">例行事实</h2>
               <ol className="progress-records routine-progress-records">
                 {progress.routineRecords.map((record) => (
                   <li key={record.recordId}>
@@ -152,7 +139,7 @@ function ProgressWorkspace(): ReactNode {
                         <h2>{record.routineName}</h2>
                         <p>
                           {record.occurredOn} · {routineRecordOutcomeText[record.outcome]} ·{' '}
-                          {record.plannedForDate ? '计划日快照' : '非计划日事实'}
+                          {record.plannedForDate ? '计划日记录' : '非计划日事实'}
                         </p>
                       </div>
                       <strong>
@@ -169,8 +156,8 @@ function ProgressWorkspace(): ReactNode {
           ) : null}
 
           {progress.records.length ? (
-            <section aria-label="Action 事实">
-              <h2 className="progress-section-title">Action 事实</h2>
+            <section aria-label="行动事实">
+              <h2 className="progress-section-title">行动事实</h2>
               <ol className="progress-records">
                 {progress.records.map((record) => (
                   <li key={record.recordId}>
@@ -211,9 +198,7 @@ function ProgressWorkspace(): ReactNode {
           {!progress.records.length && !progress.routineRecords.length ? (
             <div className="progress-empty">
               <h2>这个范围内还没有已记录事实</h2>
-              <p>
-                空白不表示失败、未坚持或未掌握；它只表示当前筛选没有 ActionRecord 或 RoutineRecord。
-              </p>
+              <p>空白不表示失败、未坚持或未掌握；它只表示当前筛选没有行动记录或例行记录。</p>
             </div>
           ) : null}
         </>

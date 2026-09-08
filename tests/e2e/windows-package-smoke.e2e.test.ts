@@ -36,7 +36,7 @@ async function verifyPackagedApplication(
     expect(actualUserData).toBe(userData)
 
     const page = await application.firstWindow()
-    await expect(page.getByRole('heading', { name: '今天，从一个真实动作开始' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: '今天', exact: true })).toBeVisible()
     expect(await page.evaluate(() => window.myTracer.shell.getStatus())).toMatchObject({
       appName: 'MyTracer',
       platform: 'windows',

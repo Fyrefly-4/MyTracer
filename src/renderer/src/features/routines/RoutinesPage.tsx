@@ -1,5 +1,7 @@
+import { revealStart, usePagePosition, useUiLifetime } from '../../app/ui-session'
+import { goalStatusText, routineRecordOutcomeText } from '../../app/ui-text'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
-import type { GoalErrorCode, GoalStatusDto, GoalSummaryDto } from '../../../../contracts/goals'
+import type { GoalErrorCode, GoalSummaryDto } from '../../../../contracts/goals'
 import type {
   RoutineDetailDto,
   RoutineErrorCode,
@@ -13,12 +15,6 @@ import type {
   RoutineRecordOutcomeDto,
   RoutineRecordingDateChoiceDto
 } from '../../../../contracts/routine-records'
-
-const goalStatusText: Record<GoalStatusDto, string> = {
-  active: '活跃',
-  paused: '暂停',
-  ended: '结束'
-}
 
 const goalErrorText: Record<GoalErrorCode, string> = {
   validation: '请检查必填内容。',
@@ -36,28 +32,20 @@ const routineStatusText: Record<RoutineStatusDto, string> = {
 
 const routineErrorText: Record<RoutineErrorCode, string> = {
   validation: '请填写名称、最小行动，并至少选择一个星期日。',
-  'not-found': 'Routine 或关联目标已不存在，请刷新后重试。',
-  'invalid-transition': '当前状态不能执行这个 Routine 操作。',
-  'invariant-violation': '这个 Routine 当前不允许该操作。',
-  'persistence-failed': '本地 Routine 数据暂时无法保存或读取。'
+  'not-found': '例行或关联目标已不存在，请刷新后重试。',
+  'invalid-transition': '当前状态不能执行这个例行操作。',
+  'invariant-violation': '这个例行当前不允许该操作。',
+  'persistence-failed': '本地例行数据暂时无法保存或读取。'
 }
 
 const routineRecordErrorText: Record<RoutineRecordErrorCode, string> = {
   validation: '请检查记录内容；行动时长需为非负整数分钟。',
-  'not-found': 'Routine 已不存在，请刷新后重试。',
-  'invalid-transition': '只有活跃 Routine 可以新增记录。',
-  'invariant-violation': '当前 Routine 记录关系不可用。',
-  'record-already-exists': '这个 Routine 在所选日期已经有记录；不会覆盖已有事实。',
+  'not-found': '例行已不存在，请刷新后重试。',
+  'invalid-transition': '只有活跃例行可以新增记录。',
+  'invariant-violation': '当前例行记录关系不可用。',
+  'record-already-exists': '这个例行在所选日期已经有记录；不会覆盖已有事实。',
   'invalid-recording-context': '这次记录表单已失效，请重新开始记录。',
-  'persistence-failed': '本地 Routine 记录暂时无法保存或读取。'
-}
-
-const routineRecordOutcomeText: Record<RoutineRecordOutcomeDto | 'unknown', string> = {
-  target_met: '达到目标',
-  acted: '有真实行动',
-  intentional_rest: '有意休息',
-  not_done: '明确未做',
-  unknown: '尚无记录'
+  'persistence-failed': '本地例行记录暂时无法保存或读取。'
 }
 
 const weekdayOptions = [
@@ -118,6 +106,11 @@ export function RoutineRecordingPanel(props: {
   readonly initialState?: RoutineDayStateDto | null
   readonly onSaved?: () => Promise<void>
 }): ReactNode {
+  const activeRef = useUiLifetime()
+  const panelRef = useRef<HTMLElement | null>(null)
+  const beginRef = useRef<HTMLButtonElement | null>(null)
+  const restoreBeginFocus = useRef(false)
+  const [savedMessage, setSavedMessage] = useState('')
   const [context, setContext] = useState<BeginRoutineRecordingDto | null>(null)
   const contextRef = useRef<BeginRoutineRecordingDto | null>(null)
   const [dayState, setDayState] = useState<RoutineDayStateDto | null>(props.initialState ?? null)
@@ -130,6 +123,19 @@ export function RoutineRecordingPanel(props: {
   } | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!context) {
+      if (restoreBeginFocus.current) {
+        restoreBeginFocus.current = false
+        revealStart(panelRef.current)
+        beginRef.current?.focus({ preventScroll: true })
+      }
+      return
+    }
+    revealStart(panelRef.current)
+    panelRef.current?.querySelector<HTMLSelectElement>('select')?.focus({ preventScroll: true })
+  }, [context])
 
   useEffect(() => {
     return () => {
@@ -145,17 +151,26 @@ export function RoutineRecordingPanel(props: {
   const begin = async (): Promise<void> => {
     setBusy(true)
     const result = await window.myTracer.routines.beginRecording({ routineId: props.routineId })
+    if (!activeRef.current) {
+      if (result.ok)
+        await window.myTracer.routines.cancelRecording({
+          recordingContextId: result.value.recordingContextId
+        })
+      return
+    }
     setBusy(false)
     if (!result.ok) {
       setError(routineRecordErrorText[result.error.code])
       return
     }
+    setSavedMessage('')
     contextRef.current = result.value
     setContext(result.value)
     const stateResult = await window.myTracer.routines.getDayState({
       routineId: props.routineId,
       localDate: result.value.capturedOn
     })
+    if (!activeRef.current) return
     if (stateResult.ok) {
       setDayState(stateResult.value)
       if (stateResult.value.record) {
@@ -175,14 +190,19 @@ export function RoutineRecordingPanel(props: {
     const result = await window.myTracer.routines.cancelRecording({
       recordingContextId: context.recordingContextId
     })
+    if (!activeRef.current) return
     setBusy(false)
     if (!result.ok) {
       setError(routineRecordErrorText[result.error.code])
       return
     }
+    restoreBeginFocus.current = true
     contextRef.current = null
     setContext(null)
     setDateConfirmation(null)
+    setOutcome('acted')
+    setDurationMinutes('')
+    setNote('')
     setError(null)
   }
 
@@ -207,6 +227,7 @@ export function RoutineRecordingPanel(props: {
       durationMinutes: actionOutcome ? parsedDuration : null,
       note: note.trim() || null
     })
+    if (!activeRef.current) return
     setBusy(false)
     if (!result.ok) {
       setError(routineRecordErrorText[result.error.code])
@@ -220,6 +241,10 @@ export function RoutineRecordingPanel(props: {
     contextRef.current = null
     setContext(null)
     setDateConfirmation(null)
+    setSavedMessage(
+      `已保存：${routineRecordOutcomeText[result.value.record.outcome]} · ${result.value.record.occurredOn}`
+    )
+    requestAnimationFrame(() => revealStart(panelRef.current))
     setDayState({
       routineId: props.routineId,
       localDate: result.value.record.occurredOn,
@@ -234,26 +259,41 @@ export function RoutineRecordingPanel(props: {
   const displayedDayState = props.initialState ?? dayState
   const state = displayedDayState?.recordState ?? 'unknown'
   return (
-    <section className="routine-recording-panel" aria-label={`${props.routineName} Routine 记录`}>
+    <section
+      ref={panelRef}
+      className="routine-recording-panel"
+      aria-label={`${props.routineName} 例行记录`}
+    >
       <div className="routine-record-state">
-        <span>当前日期事实</span>
+        <span>{props.routineName} · 记录</span>
         <strong>{routineRecordOutcomeText[state]}</strong>
         {displayedDayState?.record ? (
           <small>
             {displayedDayState.record.occurredOn} ·{' '}
-            {displayedDayState.record.plannedForDate ? '计划日快照' : '非计划日事实'}
+            {displayedDayState.record.plannedForDate ? '计划日记录' : '非计划日事实'}
             {displayedDayState.record.durationMinutes === null
               ? ''
               : ` · ${displayedDayState.record.durationMinutes} 分钟`}
           </small>
         ) : (
-          <small>缺少记录保持 unknown，不会自动记为未做。</small>
+          <small>未记录表示情况未知，不等于未进行。</small>
         )}
       </div>
       {!context && state === 'unknown' ? (
-        <button type="button" disabled={busy || props.disabled} onClick={() => void begin()}>
-          记录 Routine
+        <button
+          ref={beginRef}
+          className="primary-button"
+          type="button"
+          disabled={busy || props.disabled}
+          onClick={() => void begin()}
+        >
+          记录例行
         </button>
+      ) : null}
+      {savedMessage ? (
+        <p className="success-message" role="status">
+          {savedMessage}
+        </p>
       ) : null}
       {context ? (
         <form
@@ -263,65 +303,64 @@ export function RoutineRecordingPanel(props: {
             void save()
           }}
         >
-          <p>发生日期固定为 {context.capturedOn}</p>
-          <label>
-            本次结果
-            <select
-              value={outcome}
-              onChange={(event) => setOutcome(event.target.value as RoutineRecordOutcomeDto)}
-            >
-              <option value="target_met">达到目标</option>
-              <option value="acted">有真实行动</option>
-              <option value="intentional_rest">有意休息</option>
-              <option value="not_done">明确未做</option>
-            </select>
-          </label>
-          {outcome === 'target_met' || outcome === 'acted' ? (
+          <fieldset className="recording-fields" disabled={busy}>
+            <p>记录日期： {context.capturedOn}</p>
             <label>
-              行动分钟（可空）
-              <input
-                type="number"
-                min="0"
-                step="1"
-                value={durationMinutes}
-                onChange={(event) => setDurationMinutes(event.target.value)}
-              />
+              本次结果
+              <select
+                value={outcome}
+                onChange={(event) => setOutcome(event.target.value as RoutineRecordOutcomeDto)}
+              >
+                <option value="target_met">达到目标</option>
+                <option value="acted">有所行动</option>
+                <option value="intentional_rest">主动休息</option>
+                <option value="not_done">未进行</option>
+              </select>
             </label>
-          ) : null}
-          <label>
-            备注（可选）
-            <textarea rows={2} value={note} onChange={(event) => setNote(event.target.value)} />
-          </label>
-          {dateConfirmation ? (
-            <div
-              className="date-confirmation"
-              role="alertdialog"
-              aria-label="确认 Routine 记录发生日"
-            >
-              <p>
-                保存时已经跨日。请选择保留开始日 {dateConfirmation.capturedOn}，或使用当前日{' '}
-                {dateConfirmation.currentLocalDate}。
-              </p>
-              <button type="button" disabled={busy} onClick={() => void save('keep-captured-on')}>
-                保留开始日
+            {outcome === 'target_met' || outcome === 'acted' ? (
+              <label>
+                投入时长（分钟，可选）
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={durationMinutes}
+                  onChange={(event) => setDurationMinutes(event.target.value)}
+                />
+                <small>留空表示未记录时长；0 表示不足 1 分钟但确有行动。</small>
+              </label>
+            ) : null}
+            <label>
+              备注（可选）
+              <textarea rows={2} value={note} onChange={(event) => setNote(event.target.value)} />
+            </label>
+            {dateConfirmation ? (
+              <div className="date-confirmation" role="alertdialog" aria-label="确认例行记录发生日">
+                <p>
+                  保存时已经跨日。请选择保留开始日 {dateConfirmation.capturedOn}，或使用当前日{' '}
+                  {dateConfirmation.currentLocalDate}。
+                </p>
+                <button type="button" disabled={busy} onClick={() => void save('keep-captured-on')}>
+                  保留开始日
+                </button>
+                <button type="button" disabled={busy} onClick={() => void save('use-current-on')}>
+                  使用当前日
+                </button>
+              </div>
+            ) : null}
+            <div className="recording-actions">
+              <button
+                className="primary-button"
+                type="submit"
+                disabled={busy || Boolean(dateConfirmation)}
+              >
+                保存例行记录
               </button>
-              <button type="button" disabled={busy} onClick={() => void save('use-current-on')}>
-                使用当前日
+              <button type="button" disabled={busy} onClick={() => void cancel()}>
+                取消
               </button>
             </div>
-          ) : null}
-          <div className="recording-actions">
-            <button
-              className="primary-button"
-              type="submit"
-              disabled={busy || Boolean(dateConfirmation)}
-            >
-              保存 Routine 记录
-            </button>
-            <button type="button" disabled={busy} onClick={() => void cancel()}>
-              取消
-            </button>
-          </div>
+          </fieldset>
         </form>
       ) : null}
       {error ? (
@@ -334,6 +373,8 @@ export function RoutineRecordingPanel(props: {
 }
 
 function RoutineWorkspace(): ReactNode {
+  const [loaded, setLoaded] = useState(false)
+  usePagePosition('routines', loaded)
   const [routines, setRoutines] = useState<readonly RoutineSummaryDto[]>([])
   const [goals, setGoals] = useState<readonly GoalSummaryDto[]>([])
   const [detail, setDetail] = useState<RoutineDetailDto | null>(null)
@@ -375,6 +416,7 @@ function RoutineWorkspace(): ReactNode {
         setError(goalErrorText[goalResult.error.code])
         return
       }
+      setLoaded(true)
       setRoutines(routineResult.value)
       setGoals(goalResult.value)
       setError(null)
@@ -484,7 +526,7 @@ function RoutineWorkspace(): ReactNode {
   }
 
   return (
-    <section className="routine-workspace" aria-label="Routine 管理">
+    <section className="routine-workspace" aria-label="例行管理">
       {error ? (
         <p className="form-error" role="alert">
           {error}
@@ -494,7 +536,7 @@ function RoutineWorkspace(): ReactNode {
         <div className="goal-column">
           <form className="goal-card goal-create" onSubmit={(event) => void submitCreate(event)}>
             <div className="card-heading">
-              <p className="eyebrow">新 Routine</p>
+              <p className="eyebrow">新例行</p>
               <h2>定义一个最小行动和星期节奏</h2>
             </div>
             <label>
@@ -542,13 +584,13 @@ function RoutineWorkspace(): ReactNode {
               disabled={busy}
             />
             <button className="primary-button" type="submit" disabled={busy}>
-              创建 Routine
+              创建例行
             </button>
           </form>
 
           <div className="goal-card goal-list-card">
             <div className="card-heading">
-              <p className="eyebrow">Routine 列表</p>
+              <p className="eyebrow">例行列表</p>
               <h2>暂停与结束的项目仍保留</h2>
             </div>
             <div className="goal-list">
@@ -567,7 +609,7 @@ function RoutineWorkspace(): ReactNode {
                   </button>
                 ))
               ) : (
-                <p className="empty-copy">还没有 Routine。</p>
+                <p className="empty-copy">还没有例行。</p>
               )}
             </div>
           </div>
@@ -575,7 +617,7 @@ function RoutineWorkspace(): ReactNode {
 
         <div className="goal-column">
           {detail ? (
-            <article className="goal-card goal-detail" aria-label={`${detail.name} Routine 详情`}>
+            <article className="goal-card goal-detail" aria-label={`${detail.name} 例行详情`}>
               <div className="detail-title-row">
                 <div>
                   <p className="eyebrow">
@@ -650,7 +692,7 @@ function RoutineWorkspace(): ReactNode {
                 ) : null}
                 {detail.status !== 'ended' ? (
                   <button type="button" disabled={busy} onClick={() => setConfirmEnd(true)}>
-                    结束 Routine
+                    结束例行
                   </button>
                 ) : null}
               </div>
@@ -661,7 +703,7 @@ function RoutineWorkspace(): ReactNode {
                 disabled={detail.status !== 'active'}
               />
               {confirmEnd ? (
-                <div className="inline-confirm" role="alertdialog" aria-label="确认结束 Routine">
+                <div className="inline-confirm" role="alertdialog" aria-label="确认结束例行">
                   <p>结束后不能恢复；已有历史会保留。</p>
                   <div className="lifecycle-actions">
                     <button type="button" disabled={busy} onClick={() => void transition('end')}>
@@ -675,15 +717,15 @@ function RoutineWorkspace(): ReactNode {
               ) : null}
               {detail.status === 'ended' ? (
                 <p className="empty-copy">
-                  这个 Routine 已结束且不能恢复；当前内容、节奏与历史仍会保留。
+                  这个例行已结束且不能恢复；当前内容、节奏与历史仍会保留。
                 </p>
               ) : null}
             </article>
           ) : (
-            <section className="goal-card empty-detail" aria-label="Routine 详情占位">
-              <p className="eyebrow">选择一个 Routine</p>
+            <section className="goal-card empty-detail" aria-label="例行详情占位">
+              <p className="eyebrow">选择一个例行</p>
               <h2>查看节奏、目标状态与生命周期</h2>
-              <p>星期安排只决定 Today 是否匹配，不会预生成任何记录。</p>
+              <p>星期安排只决定今天是否匹配，不会预生成任何记录。</p>
             </section>
           )}
         </div>

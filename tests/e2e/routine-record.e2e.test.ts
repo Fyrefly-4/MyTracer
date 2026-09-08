@@ -221,34 +221,34 @@ test('completes AC-03 with five distinct states, factual Progress, and stable re
       record: { plannedForDate: true, durationMinutes: 10 }
     })
 
-    await page.getByRole('button', { name: 'Routines' }).click()
-    await page.getByRole('button', { name: 'Today' }).click()
+    await page.getByRole('button', { name: '例行', exact: true }).click()
+    await page.getByRole('button', { name: '今天', exact: true }).click()
     await expect(
       page
-        .getByLabel('计划日主动休息 Routine 记录', { exact: true })
-        .getByText('有意休息', { exact: true })
+        .getByLabel('计划日主动休息 例行记录', { exact: true })
+        .getByText('主动休息', { exact: true })
     ).toBeVisible()
     await expect(
       page
-        .getByLabel('计划日明确未做 Routine 记录', { exact: true })
-        .getByText('明确未做', { exact: true })
+        .getByLabel('计划日明确未做 例行记录', { exact: true })
+        .getByText('未进行', { exact: true })
     ).toBeVisible()
     await expect(
-      page.getByLabel('保持未知 Routine 记录').getByText('尚无记录', { exact: true })
+      page.getByLabel('保持未知 例行记录').getByText('未记录', { exact: true })
     ).toBeVisible()
-    const uiPanel = page.getByLabel('UI 行动 Routine 记录')
-    await uiPanel.getByRole('button', { name: '记录 Routine' }).click()
+    const uiPanel = page.getByLabel('UI 行动 例行记录')
+    await uiPanel.getByRole('button', { name: '记录例行' }).click()
     await uiPanel.getByLabel('本次结果').selectOption('acted')
-    await uiPanel.getByLabel('行动分钟（可空）').fill('5')
-    await uiPanel.getByRole('button', { name: '保存 Routine 记录' }).click()
-    await expect(uiPanel.getByText('有真实行动', { exact: true }).first()).toBeVisible()
+    await uiPanel.getByLabel('投入时长（分钟，可选）').fill('5')
+    await uiPanel.getByRole('button', { name: '保存例行记录' }).click()
+    await expect(uiPanel.getByText('有所行动', { exact: true }).first()).toBeVisible()
 
-    await page.getByRole('button', { name: 'Progress' }).click()
+    await page.getByRole('button', { name: '进展', exact: true }).click()
     await expect(page.getByLabel('进展汇总')).toContainText('累计行动分钟22')
     await expect(page.getByLabel('进展汇总')).toContainText('记录到的行动次数5')
-    await expect(page.getByLabel('进展汇总')).toContainText('Routine 达到目标次数2')
+    await expect(page.getByLabel('进展汇总')).toContainText('例行达到目标次数2')
     await expect(page.getByLabel('进展汇总')).toContainText('计划日达到目标次数1')
-    await expect(page.getByLabel('Routine 事实').locator('li')).toHaveCount(9)
+    await expect(page.getByLabel('例行事实').locator('li')).toHaveCount(9)
 
     const lifecycle = await page.evaluate(
       async ({ pauseId, endId }) => {
