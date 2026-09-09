@@ -705,6 +705,10 @@ function TodayWorkspace(): ReactNode {
   const [replacementActionId, setReplacementActionId] = useState('')
   const [replacementTitle, setReplacementTitle] = useState('')
   const [pendingTransition, setPendingTransition] = useState<PendingTransition | null>(null)
+  const availableCandidates =
+    today?.availableActions.filter(
+      (action) => action.canSelectForToday && action.todayCommitment === null
+    ) ?? []
   usePagePosition('today', today !== null && selectionLoaded)
   const transitionTriggerRef = useRef<HTMLButtonElement | null>(null)
 
@@ -895,6 +899,55 @@ function TodayWorkspace(): ReactNode {
       setError(actionErrorText[result.error.code])
     }
   }
+
+  const renderActionCandidates = (): ReactNode => (
+    <details className="goal-card action-candidates" open={!today?.focuses.length}>
+      <summary>其它行动（{availableCandidates.length}）</summary>
+      <p className="empty-copy">浏览候选不会自动改变今日重点或目标的当前下一步。</p>
+      <div className="action-list">
+        {availableCandidates.length ? (
+          availableCandidates.map((action) => (
+            <div className="candidate-row" key={action.id}>
+              <button
+                className={`goal-list-item ${detail?.id === action.id ? 'selected' : ''}`}
+                aria-pressed={detail?.id === action.id}
+                type="button"
+                onClick={() => selectAction(action)}
+              >
+                <span>{action.title}</span>
+                <small>
+                  {actionStatusText[action.status]}
+                  {action.goal ? ` · ${action.goal.name}` : ' · 独立行动'}
+                  {action.isCurrentNextAction ? ' · 目标当前下一步' : ''}
+                  {session.hasActionDraft(action.id) ? ' · 有未保存草稿' : ''}
+                </small>
+              </button>
+              <div className="candidate-actions">
+                <button
+                  className="secondary-button"
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void selectForToday(action.id)}
+                >
+                  选为今日重点
+                </button>
+                <button
+                  className="quiet-button"
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void selectAsIntention(action.id)}
+                >
+                  加入今日意向
+                </button>
+              </div>
+            </div>
+          ))
+        ) : (
+          <p className="empty-copy">还没有可加入今天的行动。</p>
+        )}
+      </div>
+    </details>
+  )
 
   const changeCommitment = async (
     actionId: string,
@@ -1089,6 +1142,8 @@ function TodayWorkspace(): ReactNode {
             </div>
           </section>
 
+          {!today?.focuses.length ? renderActionCandidates() : null}
+
           <section className="goal-card planned-routines" aria-label="今日例行计划">
             <div className="card-heading">
               <p className="eyebrow">今日例行</p>
@@ -1163,60 +1218,7 @@ function TodayWorkspace(): ReactNode {
               </div>
             </div>
           ) : null}
-          <details
-            className="goal-card action-candidates"
-            open={!today?.focuses.length && !today?.plannedRoutines.length}
-          >
-            <summary>其它行动（{today?.availableActions.length ?? 0}）</summary>
-            <p className="empty-copy">浏览候选不会自动改变今日重点或目标的当前下一步。</p>
-            <div className="action-list">
-              {today?.availableActions.length ? (
-                today.availableActions.map((action) => (
-                  <div className="candidate-row" key={action.id}>
-                    <button
-                      className={`goal-list-item ${detail?.id === action.id ? 'selected' : ''}`}
-                      aria-pressed={detail?.id === action.id}
-                      type="button"
-                      onClick={() => selectAction(action)}
-                    >
-                      <span>{action.title}</span>
-                      <small>
-                        {actionStatusText[action.status]}
-                        {action.goal ? ` · ${action.goal.name}` : ' · 独立行动'}
-                        {action.isCurrentNextAction ? ' · 目标当前下一步' : ''}
-                        {action.unavailableReason
-                          ? ` · ${unavailableReasonText[action.unavailableReason]}`
-                          : ''}
-                        {session.hasActionDraft(action.id) ? ' · 有未保存草稿' : ''}
-                      </small>
-                    </button>
-                    {action.canSelectForToday && action.todayCommitment === null ? (
-                      <div className="candidate-actions">
-                        <button
-                          className="secondary-button"
-                          type="button"
-                          disabled={busy}
-                          onClick={() => void selectForToday(action.id)}
-                        >
-                          选为今日重点
-                        </button>
-                        <button
-                          className="quiet-button"
-                          type="button"
-                          disabled={busy}
-                          onClick={() => void selectAsIntention(action.id)}
-                        >
-                          加入今日意向
-                        </button>
-                      </div>
-                    ) : null}
-                  </div>
-                ))
-              ) : (
-                <p className="empty-copy">还没有行动。</p>
-              )}
-            </div>
-          </details>
+          {today?.focuses.length ? renderActionCandidates() : null}
         </div>
 
         <div className="goal-column">

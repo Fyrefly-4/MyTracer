@@ -120,6 +120,9 @@ test('shows the current-week ReviewSummary from Progress facts without turning u
     await expect(page.getByLabel('周期复盘')).not.toContainText(
       /失败率|完成率|评分|掌握度|连续天数|人格|AI 周计划/
     )
+    const actionFacts = page.getByLabel('周期行动记录')
+    await expect(actionFacts).toContainText('读取一个例子')
+    await expect(actionFacts).toContainText('2026-08-10 · 11 分钟')
 
     const apiFacts = await page.evaluate(async () => {
       const begun = await window.myTracer.review.begin({})
@@ -147,6 +150,9 @@ test('shows the current-week ReviewSummary from Progress facts without turning u
     })
     const after = await page.evaluate(() => window.myTracer.dataControl.list())
     expect(after).toEqual(before)
+    await actionFacts.getByRole('button', { name: '查看完整记录或修改' }).click()
+    await expect(page.getByLabel('所选记录')).toContainText('行动 · 读取一个例子')
+    await expect(page.getByLabel('行动分钟')).toHaveValue('11')
 
     await application.close()
     application = undefined
@@ -184,6 +190,11 @@ test('keeps a Sunday period fixed across Monday and captures a new week only aft
     application = await launchApplication(root)
     await setMainProcessDate(application, new Date(2026, 7, 30, 12).toISOString())
     const page = await application.firstWindow()
+    await page.getByRole('button', { name: '复盘', exact: true }).click()
+    await expect(page.getByRole('heading', { name: '2026-08-24 至 2026-08-30' })).toBeVisible()
+    await page.getByRole('button', { name: '查看前一周记录' }).click()
+    await expect(page.getByLabel('开始日期（包含）')).toHaveValue('2026-08-17')
+    await expect(page.getByLabel('结束日期（包含）')).toHaveValue('2026-08-23')
     await page.getByRole('button', { name: '复盘', exact: true }).click()
     await expect(page.getByRole('heading', { name: '2026-08-24 至 2026-08-30' })).toBeVisible()
 

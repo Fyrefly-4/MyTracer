@@ -63,7 +63,25 @@ test('keeps existing work reachable, restores selection, and records without imp
         minimumAction: '走一小段',
         weekdays: [1, 2, 3, 4, 5, 6, 7]
       })
-      if (!routine.ok) throw new Error('Cannot create isolated routine fixture')
+      const completed = await window.myTracer.actions.create({ title: '已经完成的候选' })
+      const intention = await window.myTracer.actions.create({ title: '已经加入今天的候选' })
+      const pausedGoal = await window.myTracer.goals.create({
+        name: '暂停目标',
+        initialNextAction: { title: '当前不可行动的候选' }
+      })
+      if (!routine.ok || !completed.ok || !intention.ok || !pausedGoal.ok) {
+        throw new Error('Cannot create isolated UX fixtures')
+      }
+      const completedResult = await window.myTracer.actions.complete({
+        actionId: completed.value.id
+      })
+      const intentionResult = await window.myTracer.today.selectActionAsIntention({
+        actionId: intention.value.id
+      })
+      const pausedResult = await window.myTracer.goals.pause({ goalId: pausedGoal.value.id })
+      if (!completedResult.ok || !intentionResult.ok || !pausedResult.ok) {
+        throw new Error('Cannot prepare candidate states')
+      }
       return { goalId: goals.value[0].id, actionId: goals.value[0].currentNextActionId! }
     })
     await navigate(page, '目标')
@@ -72,6 +90,20 @@ test('keeps existing work reachable, restores selection, and records without imp
     await navigate(page, '今天')
     await expect(detail).toBeVisible()
     await expect(page.locator('form.goal-create')).toHaveCount(0)
+    const candidateSection = page.locator('.action-candidates')
+    await expect(candidateSection).toHaveAttribute('open', '')
+    await expect(candidateSection).toContainText(actionName)
+    await expect(candidateSection).not.toContainText('已经完成的候选')
+    await expect(candidateSection).not.toContainText('已经加入今天的候选')
+    await expect(candidateSection).not.toContainText('当前不可行动的候选')
+    expect(
+      await candidateSection.evaluate((candidate) => {
+        const routine = document.querySelector('.planned-routines')
+        if (!routine || !candidate.parentElement) return false
+        const siblings = [...candidate.parentElement.children]
+        return siblings.indexOf(candidate) < siblings.indexOf(routine)
+      })
+    ).toBe(true)
 
     const panel = page.getByLabel(`${actionName} 行动记录`, { exact: true })
     for (const size of [

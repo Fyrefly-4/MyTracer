@@ -1,4 +1,4 @@
-import { usePagePosition } from '../../app/ui-session'
+import { usePagePosition, useUiSession } from '../../app/ui-session'
 import { type ReactNode, useEffect, useState } from 'react'
 import type {
   CompleteReviewInputDto,
@@ -28,7 +28,20 @@ const routineColumns: readonly {
   { key: 'notDone', title: '未进行', description: '当时确认没有开始行动' }
 ]
 
+interface ReviewFollowUp {
+  readonly actionId: string
+  readonly actionTitle: string
+  readonly isInToday: boolean
+}
+
+function shiftLocalDate(localDate: string, days: number): string {
+  const [year, month, day] = localDate.split('-').map(Number)
+  const date = new Date(Date.UTC(year, month - 1, day + days))
+  return date.toISOString().slice(0, 10)
+}
+
 export function ReviewPage(): ReactNode {
+  const session = useUiSession()
   const [entryKey, setEntryKey] = useState(0)
   const [contextId, setContextId] = useState<string | null>(null)
   const [summary, setSummary] = useState<ReviewSummaryDto | null>(null)
@@ -47,6 +60,7 @@ export function ReviewPage(): ReactNode {
   )
   const [existingActionId, setExistingActionId] = useState('')
   const [newActionTitle, setNewActionTitle] = useState('')
+  const [followUp, setFollowUp] = useState<ReviewFollowUp | null>(null)
 
   useEffect(() => {
     let active = true
@@ -183,6 +197,29 @@ export function ReviewPage(): ReactNode {
       setError(errorText[result.error.code])
       return
     }
+    if (relatedGoalId && nextStepKind !== 'none') {
+      const [goalResult, todayResult] = await Promise.all([
+        window.myTracer.goals.getDetail({ goalId: relatedGoalId }).catch(() => null),
+        window.myTracer.today.get({}).catch(() => null)
+      ])
+      if (goalResult?.ok && goalResult.value.currentNextAction) {
+        const action = goalResult.value.currentNextAction
+        setFollowUp({
+          actionId: action.id,
+          actionTitle: action.title,
+          isInToday:
+            todayResult !== null &&
+            todayResult.ok &&
+            [...todayResult.value.focuses, ...todayResult.value.intentions].some(
+              (todayAction) => todayAction.id === action.id
+            )
+        })
+      } else {
+        setFollowUp(null)
+      }
+    } else {
+      setFollowUp(null)
+    }
     setNotice('本周期复盘已保存。')
     setContextId(null)
     setEntryKey((value) => value + 1)
@@ -208,6 +245,20 @@ export function ReviewPage(): ReactNode {
         >
           重新读取记录
         </button>
+        {summary ? (
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={() =>
+              session.openProgressPeriod(
+                shiftLocalDate(summary.periodStartedOn, -7),
+                shiftLocalDate(summary.periodEndedOn, -7)
+              )
+            }
+          >
+            查看前一周记录
+          </button>
+        ) : null}
       </div>
 
       {error ? (
@@ -233,6 +284,22 @@ export function ReviewPage(): ReactNode {
         <p className="review-notice" role="status">
           {notice}
         </p>
+      ) : null}
+
+      {followUp ? (
+        <div className="review-notice" aria-label="复盘后的下一步">
+          <p>
+            当前下一步：<strong>{followUp.actionTitle}</strong> ·{' '}
+            {followUp.isInToday ? '已在今天' : '尚未加入今天'}
+          </p>
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={() => session.openAction(followUp.actionId, 'review')}
+          >
+            前往今天确认
+          </button>
+        </div>
       ) : null}
 
       {busy && !summary ? (
@@ -261,6 +328,45 @@ export function ReviewPage(): ReactNode {
               <strong>{summary.openConfusionCount}</strong>
             </article>
           </div>
+
+          <section aria-label="周期行动记录">
+            <div className="review-section-heading">
+              <div>
+                <h2>行动记录</h2>
+              </div>
+              <span>{summary.actionRecords.length} 条</span>
+            </div>
+            {summary.actionRecords.length ? (
+              <ol className="progress-records">
+                {summary.actionRecords.map((record) => (
+                  <li key={record.recordId}>
+                    <div className="progress-record-heading">
+                      <div>
+                        <h3>{record.actionTitle}</h3>
+                        <p>
+                          {record.occurredOn} · {record.durationMinutes} 分钟
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      className="quiet-button record-open-button"
+                      type="button"
+                      onClick={() =>
+                        session.openDataRecord(
+                          { type: 'action-record', id: record.recordId },
+                          'review'
+                        )
+                      }
+                    >
+                      查看完整记录或修改
+                    </button>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className="review-no-explicit-fact">本周期没有行动记录。</p>
+            )}
+          </section>
 
           <section aria-label="例行周期记录">
             <div className="review-section-heading">

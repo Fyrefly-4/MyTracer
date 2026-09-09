@@ -137,13 +137,19 @@ export class UiSession {
   getPosition(section: AppSectionId): number {
     return this.positions[section] ?? 0
   }
-  openAction(actionId: string): void {
+  openAction(actionId: string, source: 'goals' | 'review' = 'goals'): void {
     this.selectedAction = actionId
-    this.positions.goals = document.querySelector('main')?.scrollTop ?? 0
+    this.positions[source] = document.querySelector('main')?.scrollTop ?? 0
     this.positions.today = 0
     this.onNavigate('today')
   }
-  openDataRecord(selection: DataRecordSelection, source: 'goals' | 'progress'): void {
+  openProgressPeriod(from: string, through: string): void {
+    this.applyProgressFilter({ goalId: '', from, through })
+    this.positions.review = document.querySelector('main')?.scrollTop ?? 0
+    this.positions.progress = 0
+    this.onNavigate('progress')
+  }
+  openDataRecord(selection: DataRecordSelection, source: 'goals' | 'progress' | 'review'): void {
     this.selectedDataRecord = selection
     this.positions[source] = document.querySelector('main')?.scrollTop ?? 0
     this.positions.data = 0

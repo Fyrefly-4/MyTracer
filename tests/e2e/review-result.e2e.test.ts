@@ -65,6 +65,7 @@ test('AC-06 cancels cleanly, saves and edits one stable ReviewResult, resolves n
       if (!second.ok || !record.ok) throw new Error('Review setup failed')
       return {
         goalId: goal.value.id,
+        originalActionId: goal.value.currentNextAction.id,
         existingActionId: second.value.id,
         recordId: record.value.id
       }
@@ -98,6 +99,12 @@ test('AC-06 cancels cleanly, saves and edits one stable ReviewResult, resolves n
       goal_id: null
     })
 
+    const selectedOriginal = await page.evaluate(
+      (actionId) => window.myTracer.today.selectAction({ actionId }),
+      seeded.originalActionId
+    )
+    expect(selectedOriginal).toMatchObject({ ok: true })
+
     await page.getByLabel('关联活跃目标（可选）').selectOption(seeded.goalId)
     await page.getByLabel('使用已有待行动').check()
     await page.getByLabel('选择已有下一步行动').selectOption(seeded.existingActionId)
@@ -107,6 +114,21 @@ test('AC-06 cancels cleanly, saves and edits one stable ReviewResult, resolves n
     expect(
       await page.evaluate((goalId) => window.myTracer.goals.getDetail({ goalId }), seeded.goalId)
     ).toMatchObject({ ok: true, value: { currentNextActionId: seeded.existingActionId } })
+    await expect(page.getByLabel('复盘后的下一步')).toContainText(
+      '当前下一步：第二个候选 · 尚未加入今天'
+    )
+    expect(await page.evaluate(() => window.myTracer.today.get({}))).toMatchObject({
+      ok: true,
+      value: {
+        focuses: [{ id: seeded.originalActionId }],
+        intentions: []
+      }
+    })
+    await page.getByRole('button', { name: '前往今天确认' }).click()
+    await expect(page.getByLabel('第二个候选 行动详情')).toBeVisible()
+    await expect(page.locator('.focus-row').filter({ hasText: '已有下一步' })).toBeVisible()
+    await expect(page.locator('.focus-row').filter({ hasText: '第二个候选' })).toHaveCount(0)
+    await page.getByRole('button', { name: '复盘', exact: true }).click()
 
     await expect(page.getByLabel('关联活跃目标（可选）')).toHaveValue(seeded.goalId)
     await page.getByLabel('创建并使用').check()
@@ -125,7 +147,10 @@ test('AC-06 cancels cleanly, saves and edits one stable ReviewResult, resolves n
         ok: true,
         value: { currentNextAction: { title: '新建轻量下一步', status: 'pending' } }
       },
-      today: { ok: true, value: { focuses: [], intentions: [] } }
+      today: {
+        ok: true,
+        value: { focuses: [{ id: seeded.originalActionId }], intentions: [] }
+      }
     })
 
     const beforeRefreshId = firstRow.id
