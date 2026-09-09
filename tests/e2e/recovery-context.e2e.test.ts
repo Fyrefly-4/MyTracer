@@ -108,7 +108,7 @@ test('opens a Goal Recovery page explicitly and shows read-only recorded facts a
     await page.getByRole('button', { name: '查看恢复与整理' }).click()
     await expect(page.getByRole('heading', { name: '恢复 React 学习' })).toBeVisible()
     await expect(page.getByLabel('恢复与整理页面')).toContainText('3 天')
-    await expect(page.getByLabel('恢复与整理页面')).toContainText('0 分钟')
+    await expect(page.getByLabel('恢复与整理页面')).toContainText('少于 1 分钟')
     await expect(page.getByLabel('恢复与整理页面')).toContainText('状态更新会排队')
     await expect(page.getByLabel('恢复与整理页面')).toContainText('批处理何时结束')
     await expect(page.getByLabel('恢复与整理页面')).toContainText('运行状态示例')

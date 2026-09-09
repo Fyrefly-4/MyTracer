@@ -940,9 +940,9 @@ button:disabled {
   gap: 14px;
   margin-top: 14px;
   padding: 15px;
-  border: 1px solid rgba(138, 68, 61, 0.22);
+  border: 1px solid rgba(63, 116, 95, 0.24);
   border-radius: 12px;
-  background: #f8efec;
+  background: #edf5f0;
 }
 
 .transition-confirmation h3,
@@ -951,13 +951,13 @@ button:disabled {
 }
 
 .transition-confirmation h3 {
-  color: #71413b;
+  color: #315d50;
   font-size: 13px;
 }
 
 .transition-confirmation p {
   margin-top: 5px;
-  color: #6d5d58;
+  color: #5d6d67;
   font-size: 14px;
   line-height: 1.5;
 }
@@ -980,12 +980,40 @@ button:disabled {
 
 .transition-confirmation-actions button:first-child {
   color: #fff;
-  background: #8a443d;
+  background: #3f745f;
 }
 
 .transition-confirmation-actions button:last-child {
   color: #5d6d67;
   background: #e7e3de;
+}
+
+.transition-confirmation.is-warning {
+  border-color: rgba(153, 111, 43, 0.28);
+  background: #faf4e8;
+}
+
+.transition-confirmation.is-warning h3 {
+  color: #765623;
+}
+
+.transition-confirmation.is-warning .transition-confirmation-actions button:first-child {
+  color: #65491f;
+  background: #ead5a8;
+}
+
+.transition-confirmation.is-danger {
+  border-color: rgba(138, 68, 61, 0.24);
+  background: #f8efec;
+}
+
+.transition-confirmation.is-danger h3 {
+  color: #71413b;
+}
+
+.transition-confirmation.is-danger .transition-confirmation-actions button:first-child {
+  color: #fff;
+  background: #8a443d;
 }
 
 .lifecycle-actions {
@@ -1784,4 +1812,177 @@ h1, h2, h3, p, strong, small, button, .related-row, .status-badge {
 
   border: 0;
 
+}
+
+.warning-button {
+  color: #765623 !important;
+  background: #f5ead3 !important;
+}
+
+.draft-notice,
+.filter-notice {
+  margin: 0 0 14px;
+  padding: 11px 13px;
+  border: 1px solid rgba(63, 116, 95, 0.18);
+  border-radius: 10px;
+  color: #456358;
+  background: #edf5f0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.today-commitment-actions,
+.candidate-actions,
+.data-delete-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 9px;
+}
+
+.today-commitment-actions { margin-top: 14px; }
+
+.action-candidates > summary,
+.data-tool > summary {
+  cursor: pointer;
+  color: #315d50;
+  font-weight: 750;
+}
+
+.action-candidates[open] > summary,
+.data-tool[open] > summary { margin-bottom: 16px; }
+
+.candidate-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 13px 0;
+  border-top: 1px solid rgba(36, 51, 47, 0.07);
+}
+
+.candidate-row p,
+.candidate-row small { margin: 3px 0 0; }
+
+.progress-timeline-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 26px 0 12px;
+}
+
+.progress-timeline-heading p,
+.progress-timeline-heading h2 { margin: 0; }
+
+.record-kind {
+  display: inline-flex;
+  margin-bottom: 5px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  color: #42675a;
+  background: #e8f1eb;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.record-open-button { margin-top: 12px; }
+
+.data-history { display: grid; gap: 16px; }
+
+.data-history-filters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.data-history-list {
+  display: grid;
+  max-height: 420px;
+  overflow: auto;
+  border-top: 1px solid rgba(36, 51, 47, 0.09);
+}
+
+.data-history-row,
+.related-record-button {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  width: 100%;
+  padding: 13px 10px;
+  border: 0;
+  border-bottom: 1px solid rgba(36, 51, 47, 0.08);
+  border-radius: 0;
+  color: #334b43;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.data-history-row:hover,
+.data-history-row.selected,
+.related-record-button:hover { background: #edf4ef; }
+
+.data-history-row > span,
+.related-record-button > span {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.data-history-row > span:last-child,
+.related-record-button > span:last-child { text-align: right; }
+
+.data-history-row small,
+.related-record-button small {
+  color: #748079;
+  font-size: 12px;
+}
+
+.selected-data-record { scroll-margin-top: 16px; }
+.selected-record-facts { margin-top: 12px; }
+.data-tool { margin-top: 16px; }
+
+.data-delete-picker label {
+  min-width: 180px;
+  flex: 1;
+}
+
+.destructive-tool { border-color: rgba(138, 68, 61, 0.2); }
+
+.recovery-resume-card {
+  margin-top: 18px;
+  padding: 18px;
+  border: 1px solid rgba(63, 116, 95, 0.2);
+  border-radius: 14px;
+  background: #edf5f0;
+}
+
+.recovery-resume-card h3,
+.recovery-resume-card p { margin: 0 0 9px; }
+
+.recovery-fact-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.recovery-management { margin-top: 20px; }
+.create-disclosure-button { align-self: start; }
+
+@media (max-width: 1099px) {
+  .data-history-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 700px) {
+  .candidate-row,
+  .data-history-filters,
+  .recovery-fact-columns { grid-template-columns: minmax(0, 1fr); }
+
+  .data-history-row,
+  .related-record-button { flex-direction: column; }
+
+  .data-history-row > span:last-child,
+  .related-record-button > span:last-child { text-align: left; }
 }

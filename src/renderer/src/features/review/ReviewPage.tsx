@@ -10,11 +10,11 @@ import type { GoalActionSummaryDto, GoalSummaryDto } from '../../../../contracts
 
 const errorText: Record<ReviewErrorCode, string> = {
   validation: '复盘请求无效，请重新进入复盘。',
-  'context-invalid': '本次复盘上下文无效，请重新进入。',
-  'context-stale': '本次复盘上下文已失效，请重新进入。',
+  'context-invalid': '本次复盘已失效，请重新进入。',
+  'context-stale': '复盘期间记录发生了变化，请重新读取。',
   'related-goal-invalid': '所选目标已不再处于活跃状态，请重新选择。',
   'next-step-invalid': '所选行动已不可作为当前下一步，请重新选择。',
-  'persistence-failed': '本地周期事实暂时无法读取。'
+  'persistence-failed': '本地周期记录暂时无法读取。'
 }
 
 const routineColumns: readonly {
@@ -22,8 +22,8 @@ const routineColumns: readonly {
   readonly title: string
   readonly description: string
 }[] = [
-  { key: 'targetMet', title: '达到目标', description: '本次达到了例行的最低行动' },
-  { key: 'acted', title: '有所行动', description: '确实行动了，但未达到最低行动' },
+  { key: 'targetMet', title: '达到目标', description: '本次达到了例行的最小行动' },
+  { key: 'acted', title: '有所行动', description: '确实行动了，但未达到最小行动' },
   { key: 'intentionalRest', title: '主动休息', description: '当时主动决定休息' },
   { key: 'notDone', title: '未进行', description: '当时确认没有开始行动' }
 ]
@@ -189,7 +189,7 @@ export function ReviewPage(): ReactNode {
   }
 
   return (
-    <section className="review-workspace" aria-label="周期事实复盘">
+    <section className="review-workspace" aria-label="周期复盘">
       <div className="review-toolbar">
         <div>
           <p className="review-kicker">当前周期 · 周一至周日</p>
@@ -198,7 +198,7 @@ export function ReviewPage(): ReactNode {
               ? `${summary.periodStartedOn} 至 ${summary.periodEndedOn}`
               : '正在捕获本周周期…'}
           </h2>
-          <p>周期在进入时固定；页面保持打开时不会因跨周而静默移动。</p>
+          <p>本次复盘会保持在当前日期范围；跨周后可由你主动重新读取。</p>
         </div>
         <button
           className="secondary-button"
@@ -206,7 +206,7 @@ export function ReviewPage(): ReactNode {
           disabled={busy || !contextId}
           onClick={() => void refresh()}
         >
-          重新读取事实
+          重新读取记录
         </button>
       </div>
 
@@ -237,7 +237,7 @@ export function ReviewPage(): ReactNode {
 
       {busy && !summary ? (
         <p className="empty-copy" role="status">
-          正在读取本地周期事实…
+          正在读取本地周期记录…
         </p>
       ) : null}
 
@@ -253,20 +253,20 @@ export function ReviewPage(): ReactNode {
               <strong>{summary.realActionCount}</strong>
             </article>
             <article>
-              <span>确认理解</span>
+              <span>已确认的理解</span>
               <strong>{summary.confirmedUnderstandingCount}</strong>
             </article>
             <article>
-              <span>开放困惑</span>
+              <span>尚未解决的困惑</span>
               <strong>{summary.openConfusionCount}</strong>
             </article>
           </div>
 
-          <section aria-label="例行周期事实">
+          <section aria-label="例行周期记录">
             <div className="review-section-heading">
               <div>
-                <h2>例行事实</h2>
-                <p>这里只分列已明确保存的事实；未记录的日期保持未知。</p>
+                <h2>例行记录</h2>
+                <p>这里只分列已明确保存的记录；未记录的日期保持未知。</p>
               </div>
             </div>
             <div className="review-routine-grid">
@@ -299,7 +299,7 @@ export function ReviewPage(): ReactNode {
                         ))}
                       </ol>
                     ) : (
-                      <p className="review-no-explicit-fact">本周期没有这类明确事实</p>
+                      <p className="review-no-explicit-fact">本周期没有这类明确记录</p>
                     )}
                   </article>
                 )
@@ -308,8 +308,8 @@ export function ReviewPage(): ReactNode {
           </section>
 
           <div className="review-learning-grid">
-            <section aria-label="周期确认理解">
-              <h2>确认理解</h2>
+            <section aria-label="周期已确认理解">
+              <h2>已确认的理解</h2>
               {summary.confirmedUnderstandingCount > 0 ? (
                 <ol>
                   {summary.understandings.map((fact) => (
@@ -325,8 +325,8 @@ export function ReviewPage(): ReactNode {
                 <p className="review-no-explicit-fact">本周期没有已确认理解。</p>
               )}
             </section>
-            <section aria-label="周期开放困惑">
-              <h2>开放困惑</h2>
+            <section aria-label="周期未解决困惑">
+              <h2>尚未解决的困惑</h2>
               {summary.openConfusionCount > 0 ? (
                 <ol>
                   {summary.openConfusions.map((fact) => (
@@ -339,14 +339,14 @@ export function ReviewPage(): ReactNode {
                   ))}
                 </ol>
               ) : (
-                <p className="review-no-explicit-fact">本周期没有开放困惑。</p>
+                <p className="review-no-explicit-fact">本周期没有尚未解决的困惑。</p>
               )}
             </section>
           </div>
 
           {!summary.hasRecordedFacts ? (
             <div className="review-empty">
-              <h2>本周期还没有已记录事实</h2>
+              <h2>本周期还没有记录</h2>
               <p>空白只表示没有行动记录或例行记录；未记录不等于未进行或失败。</p>
             </div>
           ) : null}
@@ -360,7 +360,7 @@ export function ReviewPage(): ReactNode {
           >
             <div className="review-section-heading">
               <h2>确认本周期复盘</h2>
-              <p>事实摘要会随已有记录更新；下面三段用户确认文本会保持原样保存。</p>
+              <p>记录摘要会随已有内容更新；下面三段由你确认的文字会保持原样保存。</p>
             </div>
             <label>
               一个真实进展

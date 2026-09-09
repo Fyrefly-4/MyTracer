@@ -14,7 +14,7 @@ export const appSections: readonly AppSection[] = [
     label: '今天',
     eyebrow: '轻量开始',
     title: '今天',
-    description: '找到一件可以继续的事，记录一点真实行动。'
+    description: '找到一件可以继续的事，记录一点行动。'
   },
   {
     id: 'goals',
@@ -34,14 +34,14 @@ export const appSections: readonly AppSection[] = [
   {
     id: 'progress',
     label: '进展',
-    eyebrow: '只看事实',
+    eyebrow: '查看记录',
     title: '进展',
     description: '查看已记录的投入、理解与困惑。'
   },
   {
     id: 'data',
     label: '数据',
-    eyebrow: '历史事实与数据控制',
+    eyebrow: '历史记录与数据控制',
     title: '数据',
     description: '补记、修正历史记录，管理和导出本地数据。'
   },
@@ -50,6 +50,6 @@ export const appSections: readonly AppSection[] = [
     label: '复盘',
     eyebrow: '温和复盘',
     title: '复盘',
-    description: '回顾近期事实，决定下一次调整。'
+    description: '回顾近期记录，决定下一次调整。'
   }
 ]

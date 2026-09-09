@@ -141,7 +141,7 @@ test('AC-06 cancels cleanly, saves and edits one stable ReviewResult, resolves n
       seeded
     )
     expect(updatedRecord).toMatchObject({ ok: true })
-    await page.getByRole('button', { name: '重新读取事实' }).click()
+    await page.getByRole('button', { name: '重新读取记录' }).click()
     await expect(page.getByLabel('周期汇总')).toContainText('投入时间9 分钟')
     await expect(page.getByLabel('一个真实进展')).toHaveValue('编辑后的真实进展')
 

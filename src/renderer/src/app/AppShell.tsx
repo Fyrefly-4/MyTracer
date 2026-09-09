@@ -12,7 +12,7 @@ import { appSections, type AppSectionId } from './navigation'
 export function AppShell(): ReactNode {
   const [activeSection, setActiveSection] = useState<AppSectionId>('today')
   const mainRef = useRef<HTMLElement | null>(null)
-  const [session] = useState(() => new UiSession(() => setActiveSection('today')))
+  const [session] = useState(() => new UiSession((section) => setActiveSection(section)))
   const navigate = (section: AppSectionId): void => {
     if (section === activeSection) return
     session.setPosition(activeSection, mainRef.current?.scrollTop ?? 0)
@@ -48,18 +48,18 @@ export function AppShell(): ReactNode {
             </span>
             <div>
               <p className="brand">MyTracer</p>
-              <p className="brand-note">事实、行动与温和恢复</p>
+              <p className="brand-note">行动、记录与温和恢复</p>
             </div>
           </div>
           <div className={`connection ${statusError ? 'connection-error' : ''}`} role="status">
             <span aria-hidden="true" />
-            {statusError ? '本地数据暂时无法连接' : status ? '本地应用已连接' : '正在连接本地应用'}
+            {statusError ? '本地数据暂时无法连接' : status ? '本地数据可用' : '正在连接本地数据'}
           </div>
         </header>
 
         <div className="workspace">
           <nav className="sidebar" aria-label="主要视图">
-            <p className="nav-label">空间</p>
+            <p className="nav-label">主要页面</p>
             {appSections.map((section) => (
               <button
                 className={section.id === activeSection ? 'nav-item active' : 'nav-item'}

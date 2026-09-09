@@ -57,7 +57,7 @@ test('Start Help is explicit, read-only, validated, cancellable, and degradable'
       application = launched.application
       const page = launched.page
       await createFocusedAction(page)
-      await expect(page.getByText('尚未配置 Provider')).toBeVisible()
+      await expect(page.getByText('尚未配置 AI 服务')).toBeVisible()
       const before = await page.evaluate(() => window.myTracer.dataControl.list())
       await page.getByRole('button', { name: '从环境变量导入配置' }).click()
       await expect(page.getByLabel('现在最卡住你的是什么？')).toBeVisible()
@@ -68,7 +68,7 @@ test('Start Help is explicit, read-only, validated, cancellable, and degradable'
         await expect(page.getByText('先打开行动需要的资料，只看一眼标题。')).toBeVisible()
         await expect(page.getByText(/只有逐项明确确认的最终文本会被保存/)).toBeVisible()
       } else if (scenario === 'invalid-response') {
-        await expect(page.getByText(/未通过安全验证/)).toBeVisible()
+        await expect(page.getByText(/未通过安全检查/)).toBeVisible()
       } else {
         await expect(page.getByRole('button', { name: '取消', exact: true })).toBeVisible()
         await page.getByRole('button', { name: '取消', exact: true }).click()

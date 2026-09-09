@@ -1,14 +1,63 @@
 import { createContext, useContext, useEffect, useRef, type RefObject } from 'react'
 import type { GoalStatusDto } from '../../../contracts/goals'
+import type { BeginActionRecordingDto, ActionRecordOutcomeDto } from '../../../contracts/records'
+import type {
+  BeginRoutineRecordingDto,
+  RoutineRecordOutcomeDto
+} from '../../../contracts/routine-records'
 import type { AppSectionId } from './navigation'
+
+export type PostRecordActionChoice = 'keep-pending' | 'complete' | 'cancel' | 'reschedule'
+export type RecordedNextMode = 'clear' | 'use-existing' | 'recorded-next'
+
+export interface ActionRecordingDraft {
+  readonly context: BeginActionRecordingDto
+  readonly durationMinutes: string
+  readonly outcome: ActionRecordOutcomeDto
+  readonly deepExpanded: boolean
+  readonly understanding: string
+  readonly confusion: string
+  readonly nextStep: string
+  readonly note: string
+  readonly postExpanded: boolean
+  readonly postAction: PostRecordActionChoice
+  readonly nextMode: RecordedNextMode
+  readonly replacementActionId: string
+  readonly applyRecordedNextStep: boolean
+}
+
+export interface RoutineRecordingDraft {
+  readonly context: BeginRoutineRecordingDto
+  readonly outcome: RoutineRecordOutcomeDto
+  readonly durationMinutes: string
+  readonly note: string
+}
+
+export interface ProgressFilterState {
+  readonly goalId: string
+  readonly from: string
+  readonly through: string
+}
+
+export interface DataRecordSelection {
+  readonly type: 'action-record' | 'routine-record'
+  readonly id: string
+}
 
 export class UiSession {
   private selectedGoal: string | null = null
   private selectedAction: string | null = null
+  private selectedRoutine: string | null = null
+  private recoveryGoal: string | null = null
+  private selectedDataRecord: DataRecordSelection | null = null
   private filter: GoalStatusDto | '' = ''
+  private progressDraft: ProgressFilterState = { goalId: '', from: '', through: '' }
+  private progressApplied: ProgressFilterState = { goalId: '', from: '', through: '' }
   private positions: Partial<Record<AppSectionId, number>> = {}
+  private actionDrafts = new Map<string, ActionRecordingDraft>()
+  private routineDrafts = new Map<string, RoutineRecordingDraft>()
 
-  constructor(private readonly onOpenAction: () => void) {}
+  constructor(private readonly onNavigate: (section: AppSectionId) => void) {}
   get goalId(): string | null {
     return this.selectedGoal
   }
@@ -18,6 +67,21 @@ export class UiSession {
   get goalFilter(): GoalStatusDto | '' {
     return this.filter
   }
+  get routineId(): string | null {
+    return this.selectedRoutine
+  }
+  get recoveryGoalId(): string | null {
+    return this.recoveryGoal
+  }
+  get dataRecord(): DataRecordSelection | null {
+    return this.selectedDataRecord
+  }
+  get progressDraftFilter(): ProgressFilterState {
+    return this.progressDraft
+  }
+  get progressAppliedFilter(): ProgressFilterState {
+    return this.progressApplied
+  }
   selectGoal(id: string | null): void {
     this.selectedGoal = id
   }
@@ -26,6 +90,46 @@ export class UiSession {
   }
   setGoalFilter(filter: GoalStatusDto | ''): void {
     this.filter = filter
+  }
+  selectRoutine(id: string | null): void {
+    this.selectedRoutine = id
+  }
+  setRecoveryGoal(id: string | null): void {
+    this.recoveryGoal = id
+  }
+  selectDataRecord(selection: DataRecordSelection | null): void {
+    this.selectedDataRecord = selection
+  }
+  setProgressDraftFilter(filter: ProgressFilterState): void {
+    this.progressDraft = filter
+  }
+  applyProgressFilter(filter: ProgressFilterState): void {
+    this.progressDraft = filter
+    this.progressApplied = filter
+  }
+  getActionDraft(actionId: string): ActionRecordingDraft | null {
+    return this.actionDrafts.get(actionId) ?? null
+  }
+  setActionDraft(actionId: string, draft: ActionRecordingDraft): void {
+    this.actionDrafts.set(actionId, draft)
+  }
+  clearActionDraft(actionId: string): void {
+    this.actionDrafts.delete(actionId)
+  }
+  hasActionDraft(actionId: string): boolean {
+    return this.actionDrafts.has(actionId)
+  }
+  getRoutineDraft(routineId: string): RoutineRecordingDraft | null {
+    return this.routineDrafts.get(routineId) ?? null
+  }
+  setRoutineDraft(routineId: string, draft: RoutineRecordingDraft): void {
+    this.routineDrafts.set(routineId, draft)
+  }
+  clearRoutineDraft(routineId: string): void {
+    this.routineDrafts.delete(routineId)
+  }
+  hasRoutineDraft(routineId: string): boolean {
+    return this.routineDrafts.has(routineId)
   }
   setPosition(section: AppSectionId, position: number): void {
     this.positions[section] = position
@@ -37,7 +141,13 @@ export class UiSession {
     this.selectedAction = actionId
     this.positions.goals = document.querySelector('main')?.scrollTop ?? 0
     this.positions.today = 0
-    this.onOpenAction()
+    this.onNavigate('today')
+  }
+  openDataRecord(selection: DataRecordSelection, source: 'goals' | 'progress'): void {
+    this.selectedDataRecord = selection
+    this.positions[source] = document.querySelector('main')?.scrollTop ?? 0
+    this.positions.data = 0
+    this.onNavigate('data')
   }
 }
 

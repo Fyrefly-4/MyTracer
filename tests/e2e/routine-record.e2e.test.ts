@@ -246,9 +246,9 @@ test('completes AC-03 with five distinct states, factual Progress, and stable re
     await page.getByRole('button', { name: '进展', exact: true }).click()
     await expect(page.getByLabel('进展汇总')).toContainText('累计行动分钟22')
     await expect(page.getByLabel('进展汇总')).toContainText('记录到的行动次数5')
-    await expect(page.getByLabel('进展汇总')).toContainText('例行达到目标次数2')
-    await expect(page.getByLabel('进展汇总')).toContainText('计划日达到目标次数1')
-    await expect(page.getByLabel('例行事实').locator('li')).toHaveCount(9)
+    await expect(page.getByLabel('进展汇总')).toContainText('例行达标次数2')
+    await expect(page.getByLabel('进展汇总')).toContainText('计划日达标次数1')
+    await expect(page.locator('.progress-records > li')).toHaveCount(9)
 
     const lifecycle = await page.evaluate(
       async ({ pauseId, endId }) => {
