@@ -59,6 +59,7 @@ test('exports complete retained facts through the UI without exposing a destinat
       dialog.showSaveDialog = async () => ({ canceled: false, filePath: target })
     }, destination)
     await page.getByRole('button', { name: '数据', exact: true }).click()
+    await page.locator('details.export-card > summary').click()
     await expect(page.getByText('目前只支持导出；尚不支持自动导入或一键恢复。')).toBeVisible()
     await page.getByRole('button', { name: '导出完整数据' }).click()
     await expect(page.getByText(/已导出 complete\.json/)).toBeVisible()
