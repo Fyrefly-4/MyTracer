@@ -89,6 +89,7 @@ test('exports complete retained facts through the UI without exposing a destinat
       join(root.exports, 'again.json')
     )
     await secondPage.getByRole('button', { name: '数据', exact: true }).click()
+    await secondPage.locator('details.export-card > summary').click()
     await secondPage.getByRole('button', { name: '导出完整数据' }).click()
     await expect(secondPage.getByText(/已导出 again\.json/)).toBeVisible()
   } finally {
