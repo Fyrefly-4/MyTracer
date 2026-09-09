@@ -192,7 +192,7 @@ test('continuous E2E-AC-02 proves isolation, every temporary branch, confirmatio
 
     await page.reload()
     await openTodayAction(page, '__ac02_allowed_action__', false)
-    await expect(page.getByText('尚未配置 Provider')).toBeVisible()
+    await expect(page.getByText('尚未配置 AI 服务')).toBeVisible()
     const beforeConfigurationBranches = sqliteSnapshot(root)
     const notConfigured = await page.evaluate(
       (actionId) =>
@@ -273,7 +273,7 @@ test('continuous E2E-AC-02 proves isolation, every temporary branch, confirmatio
     expect(changedGoal.ok).toBe(true)
     const beforeStaleConfirmation = sqliteSnapshot(root)
     await page.getByRole('button', { name: '确认并设为新的下一步' }).click()
-    await expect(page.getByText(/上下文已经变化/)).toBeVisible()
+    await expect(page.getByText(/当前行动已经变化/)).toBeVisible()
     expect(sqliteSnapshot(root)).toEqual(beforeStaleConfirmation)
     const restoredGoal = await page.evaluate((goalId) => {
       return window.myTracer.goals.updateDetails({ goalId, name: '__ac02_allowed_goal__' })
@@ -426,13 +426,13 @@ test('continuous E2E-AC-02 proves isolation, every temporary branch, confirmatio
     await openTodayAction(page, '__ac02_allowed_action__')
     const beforeFailures = sqliteSnapshot(root)
 
-    await triggerFailure(page, '__ac02_invalid__', /未通过安全验证/)
+    await triggerFailure(page, '__ac02_invalid__', /未通过安全检查/)
     expect(sqliteSnapshot(root)).toEqual(beforeFailures)
     await triggerFailure(page, '__ac02_authentication__', /认证未通过/)
     expect(sqliteSnapshot(root)).toEqual(beforeFailures)
     await triggerFailure(page, '__ac02_network__', /网络暂时不可用/)
     expect(sqliteSnapshot(root)).toEqual(beforeFailures)
-    await triggerFailure(page, '__ac02_provider_unavailable__', /Provider 暂时不可用/)
+    await triggerFailure(page, '__ac02_provider_unavailable__', /AI 服务暂时不可用/)
     expect(sqliteSnapshot(root)).toEqual(beforeFailures)
     await expect(page.getByRole('button', { name: '开始记录' })).toBeVisible()
 

@@ -10,12 +10,18 @@ import type {
   ActionRecordDetailDto,
   ActionRecordOutcomeDto,
   ActionRecordSummaryDto,
-  BeginActionRecordingDto,
   RecordErrorCode,
   RecordingDateChoiceDto
 } from '../../../../contracts/records'
 import type { TodayViewDto } from '../../../../contracts/today'
-import { useUiSession, usePagePosition, revealStart, useUiLifetime } from '../../app/ui-session'
+import {
+  useUiSession,
+  usePagePosition,
+  revealStart,
+  useUiLifetime,
+  type PostRecordActionChoice,
+  type RecordedNextMode
+} from '../../app/ui-session'
 import { RoutineRecordingPanel } from '../routines/RoutinesPage'
 import { AiStartHelpPanel } from './AiStartHelpPanel'
 
@@ -41,7 +47,7 @@ const recordErrorText: Record<RecordErrorCode, string> = {
   'not-found': '行动或记录已不存在，请刷新后重试。',
   'invalid-transition': '该行动当前不能新增记录。',
   'invariant-violation': '记录后的行动或下一步选择当前不可用。',
-  'invalid-recording-context': '这次记录表单已失效，请重新开始记录。',
+  'invalid-recording-context': '这次记录连接已失效；草稿内容仍在，可以重新开始后继续保存。',
   'persistence-failed': '本地记录暂时无法保存或读取。'
 }
 
@@ -69,41 +75,85 @@ const transitionLabels: Record<TransitionKind, string> = {
   reschedule: '重新安排'
 }
 
-type PostRecordActionChoice = 'keep-pending' | TransitionKind
-type RecordedNextMode = 'clear' | 'use-existing' | 'recorded-next'
-
 function ActionRecordingPanel(props: {
   readonly action: ActionDetailDto
   readonly replacementCandidates: readonly ActionDetailDto[]
   readonly onSaved: (action: ActionDetailDto) => Promise<void>
 }): ReactNode {
   const activeRef = useUiLifetime()
+  const session = useUiSession()
+  const [restoredDraft] = useState(() => session.getActionDraft(props.action.id))
+  const [restoredNotice, setRestoredNotice] = useState(Boolean(restoredDraft))
   const panelRef = useRef<HTMLElement | null>(null)
   const beginRef = useRef<HTMLButtonElement | null>(null)
   const restoreBeginFocus = useRef(false)
   const [savedMessage, setSavedMessage] = useState('')
-  const [postExpanded, setPostExpanded] = useState(false)
-  const [context, setContext] = useState<BeginActionRecordingDto | null>(null)
-  const contextRef = useRef<BeginActionRecordingDto | null>(null)
+  const [postExpanded, setPostExpanded] = useState(restoredDraft?.postExpanded ?? false)
+  const [context, setContext] = useState(restoredDraft?.context ?? null)
+  const contextRef = useRef(restoredDraft?.context ?? null)
   const [records, setRecords] = useState<readonly ActionRecordSummaryDto[]>([])
   const [recordDetail, setRecordDetail] = useState<ActionRecordDetailDto | null>(null)
-  const [durationMinutes, setDurationMinutes] = useState('0')
-  const [outcome, setOutcome] = useState<ActionRecordOutcomeDto>('partial')
-  const [deepExpanded, setDeepExpanded] = useState(false)
-  const [understanding, setUnderstanding] = useState('')
-  const [confusion, setConfusion] = useState('')
-  const [nextStep, setNextStep] = useState('')
-  const [note, setNote] = useState('')
-  const [postAction, setPostAction] = useState<PostRecordActionChoice>('keep-pending')
-  const [nextMode, setNextMode] = useState<RecordedNextMode>('clear')
-  const [replacementActionId, setReplacementActionId] = useState('')
-  const [applyRecordedNextStep, setApplyRecordedNextStep] = useState(false)
+  const [durationMinutes, setDurationMinutes] = useState(restoredDraft?.durationMinutes ?? '0')
+  const [outcome, setOutcome] = useState<ActionRecordOutcomeDto>(
+    restoredDraft?.outcome ?? 'partial'
+  )
+  const [deepExpanded, setDeepExpanded] = useState(restoredDraft?.deepExpanded ?? false)
+  const [understanding, setUnderstanding] = useState(restoredDraft?.understanding ?? '')
+  const [confusion, setConfusion] = useState(restoredDraft?.confusion ?? '')
+  const [nextStep, setNextStep] = useState(restoredDraft?.nextStep ?? '')
+  const [note, setNote] = useState(restoredDraft?.note ?? '')
+  const [postAction, setPostAction] = useState<PostRecordActionChoice>(
+    restoredDraft?.postAction ?? 'keep-pending'
+  )
+  const [nextMode, setNextMode] = useState<RecordedNextMode>(restoredDraft?.nextMode ?? 'clear')
+  const [replacementActionId, setReplacementActionId] = useState(
+    restoredDraft?.replacementActionId ?? ''
+  )
+  const [applyRecordedNextStep, setApplyRecordedNextStep] = useState(
+    restoredDraft?.applyRecordedNextStep ?? false
+  )
   const [dateConfirmation, setDateConfirmation] = useState<{
     readonly capturedOn: string
     readonly currentLocalDate: string
   } | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [invalidContext, setInvalidContext] = useState(false)
+
+  useEffect(() => {
+    if (!context) return
+    session.setActionDraft(props.action.id, {
+      context,
+      durationMinutes,
+      outcome,
+      deepExpanded,
+      understanding,
+      confusion,
+      nextStep,
+      note,
+      postExpanded,
+      postAction,
+      nextMode,
+      replacementActionId,
+      applyRecordedNextStep
+    })
+  }, [
+    applyRecordedNextStep,
+    confusion,
+    context,
+    deepExpanded,
+    durationMinutes,
+    nextMode,
+    nextStep,
+    note,
+    outcome,
+    postAction,
+    postExpanded,
+    props.action.id,
+    replacementActionId,
+    session,
+    understanding
+  ])
 
   useEffect(() => {
     if (!context) {
@@ -141,17 +191,13 @@ function ActionRecordingPanel(props: {
     })
     return () => {
       active = false
-      const activeContext = contextRef.current
       contextRef.current = null
-      if (activeContext) {
-        void window.myTracer.records.cancel({
-          recordingContextId: activeContext.recordingContextId
-        })
-      }
     }
   }, [props.action.id])
 
   const resetForm = (): void => {
+    setRestoredNotice(false)
+    session.clearActionDraft(props.action.id)
     contextRef.current = null
     setContext(null)
     setDurationMinutes('0')
@@ -167,6 +213,7 @@ function ActionRecordingPanel(props: {
     setReplacementActionId('')
     setApplyRecordedNextStep(false)
     setDateConfirmation(null)
+    setInvalidContext(false)
   }
 
   const begin = async (): Promise<void> => {
@@ -187,6 +234,37 @@ function ActionRecordingPanel(props: {
     setSavedMessage('')
     contextRef.current = result.value
     setContext(result.value)
+    session.setActionDraft(props.action.id, {
+      context: result.value,
+      durationMinutes,
+      outcome,
+      deepExpanded,
+      understanding,
+      confusion,
+      nextStep,
+      note,
+      postExpanded,
+      postAction,
+      nextMode,
+      replacementActionId,
+      applyRecordedNextStep
+    })
+    setInvalidContext(false)
+    setError(null)
+  }
+
+  const restartContext = async (): Promise<void> => {
+    setBusy(true)
+    const result = await window.myTracer.records.begin({ actionId: props.action.id })
+    if (!activeRef.current) return
+    setBusy(false)
+    if (!result.ok) {
+      setError(recordErrorText[result.error.code])
+      return
+    }
+    contextRef.current = result.value
+    setContext(result.value)
+    setInvalidContext(false)
     setError(null)
   }
 
@@ -199,6 +277,11 @@ function ActionRecordingPanel(props: {
     if (!activeRef.current) return
     setBusy(false)
     if (!result.ok) {
+      if (result.error.code === 'invalid-recording-context') {
+        resetForm()
+        setSavedMessage('已放弃未保存草稿。')
+        return
+      }
       setError(recordErrorText[result.error.code])
       return
     }
@@ -264,6 +347,7 @@ function ActionRecordingPanel(props: {
     if (!activeRef.current) return
     setBusy(false)
     if (!result.ok) {
+      setInvalidContext(result.error.code === 'invalid-recording-context')
       setError(recordErrorText[result.error.code])
       return
     }
@@ -274,8 +358,19 @@ function ActionRecordingPanel(props: {
     }
     const saved = result.value
     resetForm()
+    const actionState = `行动现在为${actionStatusText[saved.action.status]}`
+    const nextState = changingCurrentAction
+      ? saved.appliedNextActionId
+        ? '目标的当前下一步已按你的选择更新'
+        : '目标的当前下一步已按你的选择清空'
+      : saved.appliedNextActionId
+        ? '目标的当前下一步已按你的选择更新'
+        : '没有更改目标的当前下一步'
+    const todayState = saved.action.todayCommitment
+      ? `仍保留为${saved.action.todayCommitment === 'focus' ? '今日重点' : '今日意向'}`
+      : '没有自动加入今天'
     setSavedMessage(
-      `已保存：${saved.record.durationMinutes} 分钟 · ${recordOutcomeText[saved.record.outcome]}`
+      `记录已保存：${saved.record.durationMinutes} 分钟 · ${recordOutcomeText[saved.record.outcome]}。${actionState}；${nextState}；${todayState}。`
     )
     requestAnimationFrame(() => revealStart(panelRef.current))
     setRecordDetail(saved.record)
@@ -307,7 +402,7 @@ function ActionRecordingPanel(props: {
     >
       <div className="recording-heading">
         <div>
-          <p className="eyebrow">真实行动记录</p>
+          <p className="eyebrow">行动记录</p>
           <h3>{props.action.title}</h3>
         </div>
         {!context && props.action.canStart ? (
@@ -342,6 +437,11 @@ function ActionRecordingPanel(props: {
           }}
         >
           <fieldset className="recording-fields" disabled={busy}>
+            <p className="draft-notice" role="status">
+              {restoredNotice
+                ? '未保存的记录草稿已恢复。它仍未写入记录，你可以继续填写、保存或放弃。'
+                : '未保存草稿会在本次应用会话中保留，直到你保存或明确放弃。'}
+            </p>
             <p className="captured-date">记录日期：{context.capturedOn}</p>
             <div className="quick-record-grid">
               <label>
@@ -522,8 +622,18 @@ function ActionRecordingPanel(props: {
                 保存记录
               </button>
               <button type="button" disabled={busy} onClick={() => void cancel()}>
-                取消记录
+                放弃草稿
               </button>
+              {invalidContext ? (
+                <button
+                  className="secondary-button"
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void restartContext()}
+                >
+                  保留内容并重新开始记录
+                </button>
+              ) : null}
             </div>
           </fieldset>
         </form>
@@ -562,7 +672,7 @@ function ActionRecordingPanel(props: {
             <span key={item.id}>理解：{item.text}</span>
           ))}
           {recordDetail.confusions.map((item) => (
-            <span key={item.id}>开放困惑：{item.text}</span>
+            <span key={item.id}>尚未解决的困惑：{item.text}</span>
           ))}
           {recordDetail.nextStep ? <span>记录中的下一步：{recordDetail.nextStep}</span> : null}
           {recordDetail.note ? <span>备注：{recordDetail.note}</span> : null}
@@ -583,6 +693,7 @@ function TodayWorkspace(): ReactNode {
   const [activeGoals, setActiveGoals] = useState<readonly GoalSummaryDto[]>([])
   const [detail, setDetail] = useState<ActionDetailDto | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [refreshVersion, setRefreshVersion] = useState(0)
   const [createTitle, setCreateTitle] = useState('')
@@ -594,6 +705,10 @@ function TodayWorkspace(): ReactNode {
   const [replacementActionId, setReplacementActionId] = useState('')
   const [replacementTitle, setReplacementTitle] = useState('')
   const [pendingTransition, setPendingTransition] = useState<PendingTransition | null>(null)
+  const availableCandidates =
+    today?.availableActions.filter(
+      (action) => action.canSelectForToday && action.todayCommitment === null
+    ) ?? []
   usePagePosition('today', today !== null && selectionLoaded)
   const transitionTriggerRef = useRef<HTMLButtonElement | null>(null)
 
@@ -740,6 +855,7 @@ function TodayWorkspace(): ReactNode {
     const result = await window.myTracer.today.selectAction({ actionId })
     setBusy(false)
     if (result.ok) {
+      setNotice('已设为今日重点；目标的当前下一步没有自动改变。')
       await refresh(actionId)
     } else {
       setError(actionErrorText[result.error.code])
@@ -751,6 +867,7 @@ function TodayWorkspace(): ReactNode {
     const result = await window.myTracer.today.selectActionAsIntention({ actionId })
     setBusy(false)
     if (result.ok) {
+      setNotice('已加入今日意向；它不构成承诺，未发生时不会产生失败记录。')
       await refresh(actionId)
     } else {
       setError(actionErrorText[result.error.code])
@@ -762,6 +879,7 @@ function TodayWorkspace(): ReactNode {
     const result = await window.myTracer.today.removeAction({ actionId })
     setBusy(false)
     if (result.ok) {
+      setNotice('已移出今日重点；行动和历史记录仍然保留。')
       setToday(result.value)
       if (detail?.id === actionId) await refresh(actionId)
     } else {
@@ -774,12 +892,76 @@ function TodayWorkspace(): ReactNode {
     const result = await window.myTracer.today.removeActionIntention({ actionId })
     setBusy(false)
     if (result.ok) {
+      setNotice('已移出今日意向；行动和历史记录仍然保留。')
       setToday(result.value)
       if (detail?.id === actionId) await refresh(actionId)
     } else {
       setError(actionErrorText[result.error.code])
     }
   }
+
+  const renderActionCandidates = (): ReactNode => (
+    <details className="goal-card action-candidates" open={!today?.focuses.length}>
+      <summary>其它行动（{availableCandidates.length}）</summary>
+      <p className="empty-copy">浏览候选不会自动改变今日重点或目标的当前下一步。</p>
+      <div className="action-list">
+        {availableCandidates.length ? (
+          availableCandidates.map((action) => (
+            <div className="candidate-row" key={action.id}>
+              <button
+                className={`goal-list-item ${detail?.id === action.id ? 'selected' : ''}`}
+                aria-pressed={detail?.id === action.id}
+                type="button"
+                onClick={() => {
+                  if (!activeRef.current) return
+                  setSelectionError(null)
+                  session.selectAction(action.id)
+                  setDetail(action)
+                  setEditTitle(action.title)
+                  setEditDescription(action.description ?? '')
+                  setResolutionMode('clear')
+                  setReplacementActionId('')
+                  setReplacementTitle('')
+                  setPendingTransition(null)
+                  requestAnimationFrame(() =>
+                    revealStart(document.querySelector<HTMLElement>('.action-detail'))
+                  )
+                }}
+              >
+                <span>{action.title}</span>
+                <small>
+                  {actionStatusText[action.status]}
+                  {action.goal ? ` · ${action.goal.name}` : ' · 独立行动'}
+                  {action.isCurrentNextAction ? ' · 目标当前下一步' : ''}
+                  {session.hasActionDraft(action.id) ? ' · 有未保存草稿' : ''}
+                </small>
+              </button>
+              <div className="candidate-actions">
+                <button
+                  className="secondary-button"
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void selectForToday(action.id)}
+                >
+                  选为今日重点
+                </button>
+                <button
+                  className="quiet-button"
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void selectAsIntention(action.id)}
+                >
+                  加入今日意向
+                </button>
+              </div>
+            </div>
+          ))
+        ) : (
+          <p className="empty-copy">还没有可加入今天的行动。</p>
+        )}
+      </div>
+    </details>
+  )
 
   const changeCommitment = async (
     actionId: string,
@@ -792,6 +974,11 @@ function TodayWorkspace(): ReactNode {
     })
     setBusy(false)
     if (result.ok) {
+      setNotice(
+        commitment === 'focus'
+          ? '已改为今日重点；目标的当前下一步没有自动改变。'
+          : '已改为今日意向；它不构成承诺。'
+      )
       await refresh(actionId)
     } else {
       setError(actionErrorText[result.error.code])
@@ -874,6 +1061,11 @@ function TodayWorkspace(): ReactNode {
           {error}
         </p>
       ) : null}
+      {notice ? (
+        <p className="success-message" role="status">
+          {notice}
+        </p>
+      ) : null}
       <div className="today-date-row">
         <span>当前本地日期</span>
         <strong>{today?.localDate ?? '读取中'}</strong>
@@ -930,114 +1122,46 @@ function TodayWorkspace(): ReactNode {
       ) : null}
       <div className="today-grid">
         <div className="goal-column">
-          {today?.focuses.length ? (
-            <div className="goal-card goal-list-card">
-              <div className="card-heading">
-                <p className="eyebrow">今日重点</p>
-                <h2>由你选入今天</h2>
-              </div>
-              <div className="action-list">
-                {today?.focuses.length ? (
-                  today.focuses.map((action) => (
-                    <div className="focus-row" key={action.id}>
-                      <button type="button" onClick={() => selectAction(action)}>
-                        <span>{action.title}</span>
-                        <small>
-                          {actionStatusText[action.status]}
-                          {action.goal ? ` · ${action.goal.name}` : ''}
-                        </small>
-                      </button>
-                      <button
-                        className="quiet-button"
-                        type="button"
-                        disabled={busy}
-                        onClick={() => void removeFromToday(action.id)}
-                      >
-                        移出今天
-                      </button>
-                    </div>
-                  ))
-                ) : (
-                  <p className="empty-copy">尚未选择今日重点。</p>
-                )}
-              </div>
-            </div>
-          ) : null}
-          {today?.intentions.length ? (
-            <div className="goal-card goal-list-card intention-card">
-              <div className="card-heading">
-                <p className="eyebrow">今日意向</p>
-                <h2>今天可能想做，不构成承诺</h2>
-              </div>
-              <div className="action-list">
-                {today?.intentions.length ? (
-                  today.intentions.map((action) => (
-                    <div className="focus-row intention-row" key={action.id}>
-                      <button type="button" onClick={() => selectAction(action)}>
-                        <span>{action.title}</span>
-                        <small>
-                          {actionStatusText[action.status]}
-                          {action.goal ? ` · ${action.goal.name}` : ' · 独立行动'}
-                        </small>
-                      </button>
-                      <button
-                        className="quiet-button"
-                        type="button"
-                        disabled={busy}
-                        onClick={() => void removeIntention(action.id)}
-                      >
-                        移出今日意向
-                      </button>
-                    </div>
-                  ))
-                ) : (
-                  <p className="empty-copy">尚未选择今日意向，不必每天安排。</p>
-                )}
-              </div>
-            </div>
-          ) : null}
-          <div className="goal-card goal-list-card">
+          <section className="goal-card goal-list-card today-priority" aria-label="今日重点">
             <div className="card-heading">
-              <p className="eyebrow">行动列表</p>
-              <h2>由你决定哪些进入今天</h2>
+              <p className="eyebrow">今日重点</p>
+              <h2>现在可以继续什么</h2>
             </div>
             <div className="action-list">
-              {today?.availableActions.length ? (
-                today.availableActions.map((action) => (
-                  <button
-                    className={`goal-list-item ${detail?.id === action.id ? 'selected' : ''}`}
-                    aria-pressed={detail?.id === action.id}
-                    type="button"
-                    key={action.id}
-                    onClick={() => selectAction(action)}
-                  >
-                    <span>{action.title}</span>
-                    <small>
-                      {actionStatusText[action.status]}
-                      {action.todayCommitment === 'focus'
-                        ? ' · 今日重点'
-                        : action.todayCommitment === 'intention'
-                          ? ' · 今日意向'
-                          : ''}
-                    </small>
-                  </button>
+              {today?.focuses.length ? (
+                today.focuses.map((action) => (
+                  <div className="focus-row" key={action.id}>
+                    <button type="button" onClick={() => selectAction(action)}>
+                      <span>{action.title}</span>
+                      <small>
+                        {actionStatusText[action.status]}
+                        {action.goal ? ` · ${action.goal.name}` : ' · 独立行动'}
+                        {action.isCurrentNextAction ? ' · 目标当前下一步' : ''}
+                        {session.hasActionDraft(action.id) ? ' · 有未保存草稿' : ''}
+                      </small>
+                    </button>
+                    <button
+                      className="quiet-button"
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void removeFromToday(action.id)}
+                    >
+                      移出今天
+                    </button>
+                  </div>
                 ))
               ) : (
-                <p className="empty-copy">还没有行动。</p>
+                <p className="empty-copy">还没有今日重点。可以从下方其它行动中明确选择。</p>
               )}
             </div>
-          </div>
+          </section>
 
-          <div className="empty-selections">
-            {!today?.focuses.length ? <p className="empty-copy">尚未选择今日重点。</p> : null}
-            {!today?.intentions.length ? (
-              <p className="empty-copy">尚未选择今日意向，不必每天安排。</p>
-            ) : null}
-          </div>
+          {!today?.focuses.length ? renderActionCandidates() : null}
+
           <section className="goal-card planned-routines" aria-label="今日例行计划">
             <div className="card-heading">
               <p className="eyebrow">今日例行</p>
-              <h2>今天的例行事项</h2>
+              <h2>今天安排的例行事项</h2>
             </div>
             <div className="planned-routine-list">
               {today?.plannedRoutines.length ? (
@@ -1050,6 +1174,7 @@ function TodayWorkspace(): ReactNode {
                         {routine.goal
                           ? `目标：${routine.goal.name} · ${goalStatusText[routine.goal.status]}`
                           : '未关联目标'}
+                        {session.hasRoutineDraft(routine.id) ? ' · 有未保存草稿' : ''}
                       </small>
                     </div>
                     <RoutineRecordingPanel
@@ -1071,6 +1196,43 @@ function TodayWorkspace(): ReactNode {
               )}
             </div>
           </section>
+
+          {today?.intentions.length ? (
+            <div className="goal-card goal-list-card intention-card">
+              <div className="card-heading">
+                <p className="eyebrow">今日意向</p>
+                <h2>今天也想做，但不构成承诺</h2>
+              </div>
+              <div className="action-list">
+                {today?.intentions.length ? (
+                  today.intentions.map((action) => (
+                    <div className="focus-row intention-row" key={action.id}>
+                      <button type="button" onClick={() => selectAction(action)}>
+                        <span>{action.title}</span>
+                        <small>
+                          {actionStatusText[action.status]}
+                          {action.goal ? ` · ${action.goal.name}` : ' · 独立行动'}
+                          {action.isCurrentNextAction ? ' · 目标当前下一步' : ''}
+                          {session.hasActionDraft(action.id) ? ' · 有未保存草稿' : ''}
+                        </small>
+                      </button>
+                      <button
+                        className="quiet-button"
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void removeIntention(action.id)}
+                      >
+                        移出今日意向
+                      </button>
+                    </div>
+                  ))
+                ) : (
+                  <p className="empty-copy">尚未选择今日意向，不必每天安排。</p>
+                )}
+              </div>
+            </div>
+          ) : null}
+          {today?.focuses.length ? renderActionCandidates() : null}
         </div>
 
         <div className="goal-column">
@@ -1096,8 +1258,75 @@ function TodayWorkspace(): ReactNode {
                     ? '已由你选为今日重点，可以从这里继续。'
                     : detail.todayCommitment === 'intention'
                       ? '这是今天可能想做的意向，不构成承诺；未发生不会产生失败或记录。'
-                      : '当前可行动；可由你选择为今日重点或非强制意向。'}
+                      : '当前可行动；可由你选择为今日重点或今日意向。'}
               </p>
+
+              <div className="today-commitment-actions" aria-label="今天的安排">
+                {detail.canSelectForToday && detail.todayCommitment === null ? (
+                  <>
+                    <button
+                      className="primary-button"
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void selectForToday(detail.id)}
+                    >
+                      选为今日重点
+                    </button>
+                    <button
+                      className="secondary-button"
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void selectAsIntention(detail.id)}
+                    >
+                      加入今日意向
+                    </button>
+                  </>
+                ) : null}
+                {detail.todayCommitment === 'focus' ? (
+                  <>
+                    <button
+                      className="secondary-button"
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void removeFromToday(detail.id)}
+                    >
+                      移出今日重点
+                    </button>
+                    {detail.canSelectForToday ? (
+                      <button
+                        className="quiet-button"
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void changeCommitment(detail.id, 'intention')}
+                      >
+                        改为今日意向
+                      </button>
+                    ) : null}
+                  </>
+                ) : null}
+                {detail.todayCommitment === 'intention' ? (
+                  <>
+                    <button
+                      className="secondary-button"
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void removeIntention(detail.id)}
+                    >
+                      移出今日意向
+                    </button>
+                    {detail.canSelectForToday ? (
+                      <button
+                        className="primary-button"
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void changeCommitment(detail.id, 'focus')}
+                      >
+                        改为今日重点
+                      </button>
+                    ) : null}
+                  </>
+                ) : null}
+              </div>
 
               <ActionRecordingPanel
                 key={detail.id}
@@ -1142,7 +1371,7 @@ function TodayWorkspace(): ReactNode {
                     {detail.goal?.status === 'active' ? (
                       <>
                         <label>
-                          状态转换后
+                          结束这个行动后，目标的当前下一步
                           <select
                             value={resolutionMode}
                             onChange={(event) =>
@@ -1150,7 +1379,7 @@ function TodayWorkspace(): ReactNode {
                             }
                           >
                             <option value="clear">清空当前下一步</option>
-                            <option value="use-existing">改用已有待行动</option>
+                            <option value="use-existing">选择已有行动</option>
                             <option value="create-and-use">创建并使用新行动</option>
                           </select>
                         </label>
@@ -1189,64 +1418,6 @@ function TodayWorkspace(): ReactNode {
                 ) : null}
 
                 <div className="action-controls">
-                  {detail.canSelectForToday && detail.todayCommitment === null ? (
-                    <>
-                      <button
-                        type="button"
-                        disabled={busy}
-                        onClick={() => void selectForToday(detail.id)}
-                      >
-                        选为今日重点
-                      </button>
-                      <button
-                        type="button"
-                        disabled={busy}
-                        onClick={() => void selectAsIntention(detail.id)}
-                      >
-                        加入今日意向
-                      </button>
-                    </>
-                  ) : null}
-                  {detail.todayCommitment === 'focus' ? (
-                    <>
-                      <button
-                        type="button"
-                        disabled={busy}
-                        onClick={() => void removeFromToday(detail.id)}
-                      >
-                        移出今日重点
-                      </button>
-                      {detail.canSelectForToday ? (
-                        <button
-                          type="button"
-                          disabled={busy}
-                          onClick={() => void changeCommitment(detail.id, 'intention')}
-                        >
-                          转为今日意向
-                        </button>
-                      ) : null}
-                    </>
-                  ) : null}
-                  {detail.todayCommitment === 'intention' ? (
-                    <>
-                      <button
-                        type="button"
-                        disabled={busy}
-                        onClick={() => void removeIntention(detail.id)}
-                      >
-                        移出今日意向
-                      </button>
-                      {detail.canSelectForToday ? (
-                        <button
-                          type="button"
-                          disabled={busy}
-                          onClick={() => void changeCommitment(detail.id, 'focus')}
-                        >
-                          转为今日重点
-                        </button>
-                      ) : null}
-                    </>
-                  ) : null}
                   {detail.status === 'pending' ? (
                     <>
                       <button
@@ -1257,6 +1428,7 @@ function TodayWorkspace(): ReactNode {
                         标记完成
                       </button>
                       <button
+                        className="danger-button"
                         type="button"
                         disabled={busy}
                         onClick={(event) => requestTransition('cancel', event.currentTarget)}
@@ -1264,6 +1436,7 @@ function TodayWorkspace(): ReactNode {
                         取消行动
                       </button>
                       <button
+                        className="warning-button"
                         type="button"
                         disabled={busy}
                         onClick={(event) => requestTransition('reschedule', event.currentTarget)}
@@ -1275,7 +1448,13 @@ function TodayWorkspace(): ReactNode {
                 </div>
                 {pendingTransition ? (
                   <div
-                    className="transition-confirmation"
+                    className={`transition-confirmation ${
+                      pendingTransition.kind === 'cancel'
+                        ? 'is-danger'
+                        : pendingTransition.kind === 'reschedule'
+                          ? 'is-warning'
+                          : ''
+                    }`}
                     role="alertdialog"
                     aria-labelledby="transition-confirmation-title"
                   >

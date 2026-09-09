@@ -159,7 +159,7 @@ test('runs the Electron shell with an isolated userData root', async () => {
     await expect(page.getByRole('heading', { name: '进展', exact: true })).toBeVisible()
     await page.getByRole('button', { name: '复盘', exact: true }).click()
     await expect(page.getByRole('heading', { name: '复盘', exact: true })).toBeVisible()
-    await expect(page.getByRole('heading', { name: '本周期还没有已记录事实' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: '本周期还没有记录' })).toBeVisible()
     await expect(page.getByText(/未记录不等于未进行或失败/)).toBeVisible()
     await page.getByRole('button', { name: '今天', exact: true }).click()
     await expect(page.getByRole('heading', { name: '今天', exact: true })).toBeVisible()

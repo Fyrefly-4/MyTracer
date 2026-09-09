@@ -65,7 +65,7 @@ test('completes AC-04 with a generic intention, explicit conversion, and no sile
     await openManagement(detail, '行动')
     await detail.getByRole('button', { name: '加入今日意向' }).click()
 
-    await expect(page.getByRole('heading', { name: '今天可能想做，不构成承诺' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: '今天也想做，但不构成承诺' })).toBeVisible()
     await expect(page.locator('.intention-row').filter({ hasText: title })).toBeVisible()
     await expect(
       page.locator('.focus-row:not(.intention-row)').filter({ hasText: title })
@@ -104,11 +104,11 @@ test('completes AC-04 with a generic intention, explicit conversion, and no sile
       value: { totalDurationMinutes: 0, realActionCount: 0, records: [] }
     })
 
-    await detail.getByRole('button', { name: '转为今日重点' }).click()
+    await detail.getByRole('button', { name: '改为今日重点' }).click()
     await expect(
       page.locator('.focus-row:not(.intention-row)').filter({ hasText: title })
     ).toBeVisible()
-    await detail.getByRole('button', { name: '转为今日意向' }).click()
+    await detail.getByRole('button', { name: '改为今日意向' }).click()
     await expect(page.locator('.intention-row').filter({ hasText: title })).toBeVisible()
 
     await application.close()
@@ -135,7 +135,7 @@ test('completes AC-04 with a generic intention, explicit conversion, and no sile
     await page.reload()
     await page.getByRole('button', { name: '今天', exact: true }).click()
     await expect(page.locator('.intention-row').filter({ hasText: title })).toHaveCount(0)
-    await expect(page.getByText('尚未选择今日意向，不必每天安排。')).toBeVisible()
+    await expect(page.locator('.intention-card')).toHaveCount(0)
 
     const nextDayFacts = await page.evaluate(async () => ({
       today: await window.myTracer.today.get({}),

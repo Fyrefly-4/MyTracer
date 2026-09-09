@@ -57,6 +57,9 @@ test('runs Action and Today focus lifecycle and preserves facts through a real r
     await expect(
       page.locator('.focus-row').filter({ hasText: '运行一个 React 状态更新示例' })
     ).toBeVisible()
+    await expect(
+      page.locator('.action-candidates').getByText('运行一个 React 状态更新示例')
+    ).toHaveCount(0)
 
     await detail.getByRole('button', { name: '标记完成' }).click()
     await detail.getByRole('alertdialog').getByRole('button', { name: '确认完成' }).click()
@@ -66,6 +69,9 @@ test('runs Action and Today focus lifecycle and preserves facts through a real r
     await expect(
       page.locator('.focus-row').filter({ hasText: '运行一个 React 状态更新示例' })
     ).toContainText('已完成')
+    await expect(
+      page.locator('.action-candidates').getByText('运行一个 React 状态更新示例')
+    ).toHaveCount(0)
     await expectKeyboardInputAfterTransition(page, '完成后仍可输入')
 
     const createForm = page.locator('form.goal-create')

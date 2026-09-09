@@ -1,4 +1,4 @@
-import { revealStart, usePagePosition, useUiLifetime } from '../../app/ui-session'
+import { revealStart, usePagePosition, useUiLifetime, useUiSession } from '../../app/ui-session'
 import { goalStatusText, routineRecordOutcomeText } from '../../app/ui-text'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import type { GoalErrorCode, GoalSummaryDto } from '../../../../contracts/goals'
@@ -44,7 +44,7 @@ const routineRecordErrorText: Record<RoutineRecordErrorCode, string> = {
   'invalid-transition': '只有活跃例行可以新增记录。',
   'invariant-violation': '当前例行记录关系不可用。',
   'record-already-exists': '这个例行在所选日期已经有记录；不会覆盖已有事实。',
-  'invalid-recording-context': '这次记录表单已失效，请重新开始记录。',
+  'invalid-recording-context': '这次记录连接已失效；草稿内容仍在，可以重新开始后继续保存。',
   'persistence-failed': '本地例行记录暂时无法保存或读取。'
 }
 
@@ -107,22 +107,33 @@ export function RoutineRecordingPanel(props: {
   readonly onSaved?: () => Promise<void>
 }): ReactNode {
   const activeRef = useUiLifetime()
+  const session = useUiSession()
+  const [restoredDraft] = useState(() => session.getRoutineDraft(props.routineId))
+  const [restoredNotice, setRestoredNotice] = useState(Boolean(restoredDraft))
   const panelRef = useRef<HTMLElement | null>(null)
   const beginRef = useRef<HTMLButtonElement | null>(null)
   const restoreBeginFocus = useRef(false)
   const [savedMessage, setSavedMessage] = useState('')
-  const [context, setContext] = useState<BeginRoutineRecordingDto | null>(null)
-  const contextRef = useRef<BeginRoutineRecordingDto | null>(null)
+  const [context, setContext] = useState<BeginRoutineRecordingDto | null>(
+    restoredDraft?.context ?? null
+  )
+  const contextRef = useRef<BeginRoutineRecordingDto | null>(restoredDraft?.context ?? null)
   const [dayState, setDayState] = useState<RoutineDayStateDto | null>(props.initialState ?? null)
-  const [outcome, setOutcome] = useState<RoutineRecordOutcomeDto>('acted')
-  const [durationMinutes, setDurationMinutes] = useState('')
-  const [note, setNote] = useState('')
+  const [outcome, setOutcome] = useState<RoutineRecordOutcomeDto>(restoredDraft?.outcome ?? 'acted')
+  const [durationMinutes, setDurationMinutes] = useState(restoredDraft?.durationMinutes ?? '')
+  const [note, setNote] = useState(restoredDraft?.note ?? '')
   const [dateConfirmation, setDateConfirmation] = useState<{
     readonly capturedOn: string
     readonly currentLocalDate: string
   } | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [invalidContext, setInvalidContext] = useState(false)
+
+  useEffect(() => {
+    if (!context) return
+    session.setRoutineDraft(props.routineId, { context, outcome, durationMinutes, note })
+  }, [context, durationMinutes, note, outcome, props.routineId, session])
 
   useEffect(() => {
     if (!context) {
@@ -139,12 +150,7 @@ export function RoutineRecordingPanel(props: {
 
   useEffect(() => {
     return () => {
-      const activeContext = contextRef.current
-      if (activeContext) {
-        void window.myTracer.routines.cancelRecording({
-          recordingContextId: activeContext.recordingContextId
-        })
-      }
+      contextRef.current = null
     }
   }, [props.routineId])
 
@@ -166,6 +172,13 @@ export function RoutineRecordingPanel(props: {
     setSavedMessage('')
     contextRef.current = result.value
     setContext(result.value)
+    session.setRoutineDraft(props.routineId, {
+      context: result.value,
+      outcome,
+      durationMinutes,
+      note
+    })
+    setInvalidContext(false)
     const stateResult = await window.myTracer.routines.getDayState({
       routineId: props.routineId,
       localDate: result.value.capturedOn
@@ -179,6 +192,7 @@ export function RoutineRecordingPanel(props: {
         })
         contextRef.current = null
         setContext(null)
+        session.clearRoutineDraft(props.routineId)
       }
     }
     setError(null)
@@ -193,16 +207,43 @@ export function RoutineRecordingPanel(props: {
     if (!activeRef.current) return
     setBusy(false)
     if (!result.ok) {
+      if (result.error.code === 'invalid-recording-context') {
+        setRestoredNotice(false)
+        session.clearRoutineDraft(props.routineId)
+        contextRef.current = null
+        setContext(null)
+        setSavedMessage('已放弃未保存草稿。')
+        setInvalidContext(false)
+        setError(null)
+        return
+      }
       setError(routineRecordErrorText[result.error.code])
       return
     }
     restoreBeginFocus.current = true
+    setRestoredNotice(false)
     contextRef.current = null
     setContext(null)
+    session.clearRoutineDraft(props.routineId)
     setDateConfirmation(null)
     setOutcome('acted')
     setDurationMinutes('')
     setNote('')
+    setError(null)
+  }
+
+  const restartContext = async (): Promise<void> => {
+    setBusy(true)
+    const result = await window.myTracer.routines.beginRecording({ routineId: props.routineId })
+    if (!activeRef.current) return
+    setBusy(false)
+    if (!result.ok) {
+      setError(routineRecordErrorText[result.error.code])
+      return
+    }
+    contextRef.current = result.value
+    setContext(result.value)
+    setInvalidContext(false)
     setError(null)
   }
 
@@ -230,6 +271,7 @@ export function RoutineRecordingPanel(props: {
     if (!activeRef.current) return
     setBusy(false)
     if (!result.ok) {
+      setInvalidContext(result.error.code === 'invalid-recording-context')
       setError(routineRecordErrorText[result.error.code])
       return
     }
@@ -239,7 +281,9 @@ export function RoutineRecordingPanel(props: {
       return
     }
     contextRef.current = null
+    setRestoredNotice(false)
     setContext(null)
+    session.clearRoutineDraft(props.routineId)
     setDateConfirmation(null)
     setSavedMessage(
       `已保存：${routineRecordOutcomeText[result.value.record.outcome]} · ${result.value.record.occurredOn}`
@@ -304,6 +348,11 @@ export function RoutineRecordingPanel(props: {
           }}
         >
           <fieldset className="recording-fields" disabled={busy}>
+            <p className="draft-notice" role="status">
+              {restoredNotice
+                ? '未保存的例行记录草稿已恢复。它仍未写入记录，你可以继续填写、保存或放弃。'
+                : '未保存草稿会在本次应用会话中保留，直到你保存或明确放弃。'}
+            </p>
             <p>记录日期： {context.capturedOn}</p>
             <label>
               本次结果
@@ -357,8 +406,18 @@ export function RoutineRecordingPanel(props: {
                 保存例行记录
               </button>
               <button type="button" disabled={busy} onClick={() => void cancel()}>
-                取消
+                放弃草稿
               </button>
+              {invalidContext ? (
+                <button
+                  className="secondary-button"
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void restartContext()}
+                >
+                  保留内容并重新开始记录
+                </button>
+              ) : null}
             </div>
           </fieldset>
         </form>
@@ -373,6 +432,7 @@ export function RoutineRecordingPanel(props: {
 }
 
 function RoutineWorkspace(): ReactNode {
+  const session = useUiSession()
   const [loaded, setLoaded] = useState(false)
   usePagePosition('routines', loaded)
   const [routines, setRoutines] = useState<readonly RoutineSummaryDto[]>([])
@@ -391,8 +451,10 @@ function RoutineWorkspace(): ReactNode {
   const [editMinimumAction, setEditMinimumAction] = useState('')
   const [editWeekdays, setEditWeekdays] = useState<readonly number[]>([])
   const [confirmEnd, setConfirmEnd] = useState(false)
+  const [creating, setCreating] = useState(false)
 
   const showDetail = (routine: RoutineDetailDto): void => {
+    session.selectRoutine(routine.id)
     setDetail(routine)
     setEditName(routine.name)
     setEditDescription(routine.description ?? '')
@@ -425,6 +487,27 @@ function RoutineWorkspace(): ReactNode {
       active = false
     }
   }, [refreshVersion])
+
+  useEffect(() => {
+    if (!loaded || !session.routineId || detail?.id === session.routineId) return
+    let active = true
+    void window.myTracer.routines.getDetail({ routineId: session.routineId }).then((result) => {
+      if (!active) return
+      if (result.ok) {
+        const routine = result.value
+        session.selectRoutine(routine.id)
+        setDetail(routine)
+        setEditName(routine.name)
+        setEditDescription(routine.description ?? '')
+        setEditMinimumAction(routine.minimumAction)
+        setEditWeekdays(routine.weekdays)
+        setConfirmEnd(false)
+      } else if (result.error.code === 'not-found') session.selectRoutine(null)
+    })
+    return () => {
+      active = false
+    }
+  }, [detail?.id, loaded, session])
 
   const refresh = async (routineId?: string): Promise<void> => {
     const listResult = await window.myTracer.routines.list({})
@@ -464,6 +547,7 @@ function RoutineWorkspace(): ReactNode {
     setCreateMinimumAction('')
     setCreateGoalId('')
     setCreateWeekdays([1, 2, 3, 4, 5])
+    setCreating(false)
     showDetail(result.value)
     await refresh(result.value.id)
     setRefreshVersion((version) => version + 1)
@@ -534,64 +618,10 @@ function RoutineWorkspace(): ReactNode {
       ) : null}
       <div className="goal-grid">
         <div className="goal-column">
-          <form className="goal-card goal-create" onSubmit={(event) => void submitCreate(event)}>
-            <div className="card-heading">
-              <p className="eyebrow">新例行</p>
-              <h2>定义一个最小行动和星期节奏</h2>
-            </div>
-            <label>
-              名称
-              <input
-                required
-                value={createName}
-                onChange={(event) => setCreateName(event.target.value)}
-              />
-            </label>
-            <label>
-              最小行动
-              <input
-                required
-                value={createMinimumAction}
-                onChange={(event) => setCreateMinimumAction(event.target.value)}
-              />
-            </label>
-            <label>
-              说明（可选）
-              <textarea
-                rows={2}
-                value={createDescription}
-                onChange={(event) => setCreateDescription(event.target.value)}
-              />
-            </label>
-            <label>
-              关联目标（可选，创建后不可改）
-              <select
-                value={createGoalId}
-                onChange={(event) => setCreateGoalId(event.target.value)}
-              >
-                <option value="">不关联目标</option>
-                {goals.map((goal) => (
-                  <option key={goal.id} value={goal.id}>
-                    {goal.name} · {goalStatusText[goal.status]}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <RoutineWeekdayPicker
-              label="计划星期"
-              value={createWeekdays}
-              onChange={setCreateWeekdays}
-              disabled={busy}
-            />
-            <button className="primary-button" type="submit" disabled={busy}>
-              创建例行
-            </button>
-          </form>
-
           <div className="goal-card goal-list-card">
             <div className="card-heading">
               <p className="eyebrow">例行列表</p>
-              <h2>暂停与结束的项目仍保留</h2>
+              <h2>先查看和维护已有内容</h2>
             </div>
             <div className="goal-list">
               {routines.length ? (
@@ -605,6 +635,7 @@ function RoutineWorkspace(): ReactNode {
                     <span>{routine.name}</span>
                     <small>
                       {routineStatusText[routine.status]} · 周{routine.weekdays.join('、')}
+                      {session.hasRoutineDraft(routine.id) ? ' · 有未保存草稿' : ''}
                     </small>
                   </button>
                 ))
@@ -613,6 +644,69 @@ function RoutineWorkspace(): ReactNode {
               )}
             </div>
           </div>
+          <button
+            className="secondary-button create-disclosure-button"
+            type="button"
+            aria-expanded={creating || routines.length === 0}
+            onClick={() => setCreating((value) => !value)}
+          >
+            {creating || routines.length === 0 ? '收起新建表单' : '新建例行'}
+          </button>
+          {creating || routines.length === 0 ? (
+            <form className="goal-card goal-create" onSubmit={(event) => void submitCreate(event)}>
+              <div className="card-heading">
+                <p className="eyebrow">新例行</p>
+                <h2>定义一个最小行动和每周安排</h2>
+              </div>
+              <label>
+                名称
+                <input
+                  required
+                  value={createName}
+                  onChange={(event) => setCreateName(event.target.value)}
+                />
+              </label>
+              <label>
+                最小行动
+                <input
+                  required
+                  value={createMinimumAction}
+                  onChange={(event) => setCreateMinimumAction(event.target.value)}
+                />
+              </label>
+              <label>
+                说明（可选）
+                <textarea
+                  rows={2}
+                  value={createDescription}
+                  onChange={(event) => setCreateDescription(event.target.value)}
+                />
+              </label>
+              <label>
+                关联目标（可选，创建后不可改）
+                <select
+                  value={createGoalId}
+                  onChange={(event) => setCreateGoalId(event.target.value)}
+                >
+                  <option value="">不关联目标</option>
+                  {goals.map((goal) => (
+                    <option key={goal.id} value={goal.id}>
+                      {goal.name} · {goalStatusText[goal.status]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <RoutineWeekdayPicker
+                label="每周安排"
+                value={createWeekdays}
+                onChange={setCreateWeekdays}
+                disabled={busy}
+              />
+              <button className="primary-button" type="submit" disabled={busy}>
+                创建例行
+              </button>
+            </form>
+          ) : null}
         </div>
 
         <div className="goal-column">
@@ -632,56 +726,71 @@ function RoutineWorkspace(): ReactNode {
                 </span>
               </div>
 
-              <form className="detail-form" onSubmit={(event) => void submitDetails(event)}>
-                <label>
-                  名称
-                  <input
-                    required
-                    value={editName}
-                    onChange={(event) => setEditName(event.target.value)}
-                  />
-                </label>
-                <label>
-                  最小行动
-                  <input
-                    required
-                    value={editMinimumAction}
-                    onChange={(event) => setEditMinimumAction(event.target.value)}
-                  />
-                </label>
-                <label>
-                  说明（可选）
-                  <textarea
-                    rows={3}
-                    value={editDescription}
-                    onChange={(event) => setEditDescription(event.target.value)}
-                  />
-                </label>
-                <button className="secondary-button" type="submit" disabled={busy}>
-                  保存内容修改
-                </button>
-              </form>
+              <RoutineRecordingPanel
+                key={detail.id}
+                routineId={detail.id}
+                routineName={detail.name}
+                disabled={detail.status !== 'active'}
+              />
 
-              <div className="schedule-editor">
-                <RoutineWeekdayPicker
-                  label="星期节奏"
-                  value={editWeekdays}
-                  onChange={setEditWeekdays}
-                  disabled={busy}
-                />
-                <button
-                  className="secondary-button"
-                  type="button"
-                  disabled={busy}
-                  onClick={() => void replaceSchedule()}
-                >
-                  整组替换星期
-                </button>
-              </div>
+              <details className="disclosure">
+                <summary>编辑内容和每周安排</summary>
+                <form className="detail-form" onSubmit={(event) => void submitDetails(event)}>
+                  <label>
+                    名称
+                    <input
+                      required
+                      value={editName}
+                      onChange={(event) => setEditName(event.target.value)}
+                    />
+                  </label>
+                  <label>
+                    最小行动
+                    <input
+                      required
+                      value={editMinimumAction}
+                      onChange={(event) => setEditMinimumAction(event.target.value)}
+                    />
+                  </label>
+                  <label>
+                    说明（可选）
+                    <textarea
+                      rows={3}
+                      value={editDescription}
+                      onChange={(event) => setEditDescription(event.target.value)}
+                    />
+                  </label>
+                  <button className="secondary-button" type="submit" disabled={busy}>
+                    保存内容修改
+                  </button>
+                </form>
+
+                <div className="schedule-editor">
+                  <RoutineWeekdayPicker
+                    label="每周安排"
+                    value={editWeekdays}
+                    onChange={setEditWeekdays}
+                    disabled={busy}
+                  />
+                  <button
+                    className="secondary-button"
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void replaceSchedule()}
+                  >
+                    保存星期安排
+                  </button>
+                </div>
+              </details>
 
               <div className="lifecycle-actions">
                 {detail.status === 'active' ? (
-                  <button type="button" disabled={busy} onClick={() => void transition('pause')}>
+                  <button
+                    className="warning-button"
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void transition('pause')}
+                  >
                     暂停
                   </button>
                 ) : null}
@@ -691,22 +800,26 @@ function RoutineWorkspace(): ReactNode {
                   </button>
                 ) : null}
                 {detail.status !== 'ended' ? (
-                  <button type="button" disabled={busy} onClick={() => setConfirmEnd(true)}>
+                  <button
+                    className="danger-button"
+                    type="button"
+                    disabled={busy}
+                    onClick={() => setConfirmEnd(true)}
+                  >
                     结束例行
                   </button>
                 ) : null}
               </div>
-              <RoutineRecordingPanel
-                key={detail.id}
-                routineId={detail.id}
-                routineName={detail.name}
-                disabled={detail.status !== 'active'}
-              />
               {confirmEnd ? (
                 <div className="inline-confirm" role="alertdialog" aria-label="确认结束例行">
                   <p>结束后不能恢复；已有历史会保留。</p>
                   <div className="lifecycle-actions">
-                    <button type="button" disabled={busy} onClick={() => void transition('end')}>
+                    <button
+                      className="danger-button"
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void transition('end')}
+                    >
                       确认结束
                     </button>
                     <button type="button" disabled={busy} onClick={() => setConfirmEnd(false)}>

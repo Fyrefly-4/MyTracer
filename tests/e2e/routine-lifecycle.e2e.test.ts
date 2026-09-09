@@ -63,6 +63,7 @@ test('manages a Routine lifecycle, shows its Today plan, and preserves history o
     await page.getByRole('button', { name: '例行', exact: true }).click()
     await page.getByRole('button', { name: /晨间伸展/ }).click()
     detail = page.getByLabel('晨间伸展 例行详情')
+    await detail.getByText('编辑内容和每周安排', { exact: true }).click()
     await expect(detail.getByText('维持身体状态 · 暂停')).toBeVisible()
     await page.getByRole('button', { name: '今天', exact: true }).click()
     await expect(page.getByText('目标：维持身体状态 · 暂停')).toBeVisible()
@@ -77,13 +78,14 @@ test('manages a Routine lifecycle, shows its Today plan, and preserves history o
     await page.getByRole('button', { name: '例行', exact: true }).click()
     await page.getByRole('button', { name: /晨间伸展/ }).click()
     detail = page.getByLabel('晨间伸展 例行详情')
+    await detail.getByText('编辑内容和每周安排', { exact: true }).click()
     await detail.getByLabel('名称').fill('晨间舒展')
     await detail.getByLabel('最小行动').fill('舒展 3 分钟')
     await detail.getByRole('button', { name: '保存内容修改' }).click()
     detail = page.getByLabel('晨间舒展 例行详情')
     await expect(detail).toBeVisible()
     await detail.getByRole('button', { name: '工作日' }).click()
-    await detail.getByRole('button', { name: '整组替换星期' }).click()
+    await detail.getByRole('button', { name: '保存星期安排' }).click()
     expect(
       await page.evaluate(async () => {
         const listed = await window.myTracer.routines.list({})
@@ -112,6 +114,7 @@ test('manages a Routine lifecycle, shows its Today plan, and preserves history o
     await page.getByRole('button', { name: '例行', exact: true }).click()
     await page.getByRole('button', { name: /晨间舒展/ }).click()
     detail = page.getByLabel('晨间舒展 例行详情')
+    await detail.getByText('编辑内容和每周安排', { exact: true }).click()
     await expect(detail.getByText('结束', { exact: true }).last()).toBeVisible()
     await expect(detail.getByLabel('最小行动')).toHaveValue('舒展 3 分钟')
 

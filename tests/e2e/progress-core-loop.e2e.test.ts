@@ -85,9 +85,9 @@ test('completes AC-01 through factual Progress and recalculates after a real reo
 
     await page.getByLabel('目标（可选）').selectOption({ label: '系统学习 React' })
     await page.getByLabel('开始日期（包含）').fill('2099-01-01')
-    await page.getByRole('button', { name: '查看事实' }).click()
-    await expect(page.getByRole('heading', { name: '这个范围内还没有已记录事实' })).toBeVisible()
-    await expect(page.getByText(/空白不表示失败、未坚持或未掌握/)).toBeVisible()
+    await page.getByRole('button', { name: '查看记录' }).click()
+    await expect(page.getByRole('heading', { name: '这个范围内还没有记录' })).toBeVisible()
+    await expect(page.getByText(/没有记录不表示失败或未坚持/)).toBeVisible()
   } finally {
     await application?.close()
     await removeTemporaryTestRoot(root)

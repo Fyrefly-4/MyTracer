@@ -63,7 +63,25 @@ test('keeps existing work reachable, restores selection, and records without imp
         minimumAction: '走一小段',
         weekdays: [1, 2, 3, 4, 5, 6, 7]
       })
-      if (!routine.ok) throw new Error('Cannot create isolated routine fixture')
+      const completed = await window.myTracer.actions.create({ title: '已经完成的候选' })
+      const intention = await window.myTracer.actions.create({ title: '已经加入今天的候选' })
+      const pausedGoal = await window.myTracer.goals.create({
+        name: '暂停目标',
+        initialNextAction: { title: '当前不可行动的候选' }
+      })
+      if (!routine.ok || !completed.ok || !intention.ok || !pausedGoal.ok) {
+        throw new Error('Cannot create isolated UX fixtures')
+      }
+      const completedResult = await window.myTracer.actions.complete({
+        actionId: completed.value.id
+      })
+      const intentionResult = await window.myTracer.today.selectActionAsIntention({
+        actionId: intention.value.id
+      })
+      const pausedResult = await window.myTracer.goals.pause({ goalId: pausedGoal.value.id })
+      if (!completedResult.ok || !intentionResult.ok || !pausedResult.ok) {
+        throw new Error('Cannot prepare candidate states')
+      }
       return { goalId: goals.value[0].id, actionId: goals.value[0].currentNextActionId! }
     })
     await navigate(page, '目标')
@@ -72,6 +90,20 @@ test('keeps existing work reachable, restores selection, and records without imp
     await navigate(page, '今天')
     await expect(detail).toBeVisible()
     await expect(page.locator('form.goal-create')).toHaveCount(0)
+    const candidateSection = page.locator('.action-candidates')
+    await expect(candidateSection).toHaveAttribute('open', '')
+    await expect(candidateSection).toContainText(actionName)
+    await expect(candidateSection).not.toContainText('已经完成的候选')
+    await expect(candidateSection).not.toContainText('已经加入今天的候选')
+    await expect(candidateSection).not.toContainText('当前不可行动的候选')
+    expect(
+      await candidateSection.evaluate((candidate) => {
+        const routine = document.querySelector('.planned-routines')
+        if (!routine || !candidate.parentElement) return false
+        const siblings = [...candidate.parentElement.children]
+        return siblings.indexOf(candidate) < siblings.indexOf(routine)
+      })
+    ).toBe(true)
 
     const panel = page.getByLabel(`${actionName} 行动记录`, { exact: true })
     for (const size of [
@@ -88,16 +120,14 @@ test('keeps existing work reachable, restores selection, and records without imp
       await page.locator('main').evaluate((main) => {
         main.scrollTop = 0
       })
-      await expect(
-        page.locator('.action-list .goal-list-item').filter({ hasText: actionName })
-      ).toBeInViewport()
+      await expect(detail).toBeVisible()
       await panel.getByRole('button', { name: '开始记录' }).click()
       await expect(panel.getByLabel('投入时长（分钟，必填）')).toBeInViewport()
       await expect(panel.getByLabel('投入时长（分钟，必填）')).toBeFocused()
       await expect(panel.getByRole('heading', { name: actionName })).toBeInViewport()
       await expect(panel.getByLabel('保存记录后')).toHaveCount(0)
       await expect(panel.getByText('仅保存记录，行动状态和当前下一步保持不变。')).toBeVisible()
-      await panel.getByRole('button', { name: '取消记录' }).click()
+      await panel.getByRole('button', { name: '放弃草稿' }).click()
       await expect(panel.getByRole('button', { name: '开始记录' })).toBeFocused()
       await page.locator('main').evaluate((main) => {
         main.scrollTop = main.scrollHeight
@@ -114,6 +144,16 @@ test('keeps existing work reachable, restores selection, and records without imp
       ids.actionId
     )
     expect(empty).toMatchObject({ ok: true, value: [] })
+    await panel.getByRole('button', { name: '开始记录' }).click()
+    await panel.getByLabel('投入时长（分钟，必填）').fill('7')
+    await panel.getByRole('button', { name: /添加理解/ }).click()
+    await panel.getByLabel('备注（可选）').fill('页面切换后仍应保留')
+    await navigate(page, '目标')
+    await navigate(page, '今天')
+    await expect(panel.getByText('未保存的记录草稿已恢复')).toBeVisible()
+    await expect(panel.getByLabel('投入时长（分钟，必填）')).toHaveValue('7')
+    await expect(panel.getByLabel('备注（可选）')).toHaveValue('页面切换后仍应保留')
+    await panel.getByRole('button', { name: '放弃草稿' }).click()
     await panel.getByRole('button', { name: '开始记录' }).click()
     await panel.getByLabel('投入时长（分钟，必填）').fill('12')
     await panel.getByLabel('本次结果').selectOption('partial')
@@ -140,12 +180,19 @@ test('keeps existing work reachable, restores selection, and records without imp
     await navigate(page, '进展')
     await page.getByLabel('开始日期').fill('2026-09-07')
     await page.getByLabel('结束日期').fill('2026-09-13')
-    await page.getByRole('button', { name: '查看事实' }).click()
+    await page.getByRole('button', { name: '查看记录' }).click()
     await expect(page.getByLabel('进展汇总')).toContainText('累计行动分钟12')
     await expect(page.getByLabel('进展汇总')).toContainText('记录到的行动次数1')
     await navigate(page, '复盘')
     await expect(page.getByLabel('周期汇总')).toContainText('投入时间12 分钟')
     await expect(page.getByLabel('周期汇总')).toContainText('真实行动次数1')
+    await navigate(page, '进展')
+    await expect(page.getByLabel('开始日期（包含）')).toHaveValue('2026-09-07')
+    await expect(page.getByLabel('结束日期（包含）')).toHaveValue('2026-09-13')
+    await expect(page.getByLabel('进展汇总')).toContainText('累计行动分钟12')
+    await page.getByRole('button', { name: '查看完整记录或修改' }).click()
+    await expect(page.getByLabel('所选记录')).toContainText(`行动 · ${actionName}`)
+    await expect(page.getByLabel('行动分钟')).toHaveValue('12')
     await navigate(page, '目标')
     await expect(page.getByLabel(`${goalName} 详情`)).toBeVisible()
     await expect(page.getByLabel('状态', { exact: true })).toHaveValue('active')
@@ -159,11 +206,11 @@ test('keeps existing work reachable, restores selection, and records without imp
     await panel.getByLabel('记录中的下一步（可选）').fill('')
     await expect(panel.getByLabel('明确将记录中的下一步创建为目标当前下一步')).toHaveCount(0)
     await expect(panel.getByText('仅保存记录，行动状态和当前下一步保持不变。')).toBeVisible()
-    await panel.getByRole('button', { name: '取消记录' }).click()
+    await panel.getByRole('button', { name: '放弃草稿' }).click()
     const routinePanel = page.getByLabel('散步 例行记录', { exact: true })
     await routinePanel.getByRole('button', { name: '记录例行' }).click()
     await expect(routinePanel.getByLabel('本次结果')).toBeInViewport()
-    await routinePanel.getByRole('button', { name: '取消', exact: true }).click()
+    await routinePanel.getByRole('button', { name: '放弃草稿', exact: true }).click()
     await expect(routinePanel.getByRole('button', { name: '记录例行' })).toBeFocused()
     const afterCancel = await page.evaluate(() => window.myTracer.dataControl.list())
     expect(afterCancel).toMatchObject({
@@ -187,6 +234,7 @@ test('labels historical facts, explains missing objects, and clears a deleted se
     application = await launch(root)
     const page = await application.firstWindow()
     await navigate(page, '数据')
+    await page.getByText('补记历史记录', { exact: true }).click()
     await expect(page.getByText('还没有可补记的行动，请先在今天或目标页创建行动。')).toBeVisible()
     await expect(page.getByRole('button', { name: '补记行动记录', exact: true })).toBeDisabled()
     await expect(page.getByRole('button', { name: '补记例行记录', exact: true })).toBeDisabled()
@@ -212,6 +260,7 @@ test('labels historical facts, explains missing objects, and clears a deleted se
     await page.getByRole('button', { name: '去今天处理' }).click()
     await expect(page.getByLabel('历史行动 行动详情')).toBeVisible()
     await navigate(page, '数据')
+    await page.getByText('补记历史记录', { exact: true }).click()
     await page.getByLabel('行动补记日期', { exact: true }).fill('2026-09-01')
     await page.getByLabel('行动补记分钟', { exact: true }).fill('9')
     const dateField = page.getByLabel('行动补记日期', { exact: true }).locator('..')
@@ -252,8 +301,11 @@ test('labels historical facts, explains missing objects, and clears a deleted se
         ]
       }
     })
-    await page.getByRole('button', { name: '删除行动：历史行动', exact: true }).click()
-    const dialog = page.getByRole('dialog', { name: '确认删除行动' })
+    await page.getByText('删除目标、行动或例行', { exact: true }).click()
+    await page.getByLabel('内容类型').selectOption('action')
+    await page.getByLabel('选择内容').selectOption({ label: '历史行动' })
+    await page.getByRole('button', { name: '预览永久删除影响', exact: true }).click()
+    const dialog = page.getByRole('dialog', { name: /确认永久删除行动“历史行动”/ })
     await dialog.getByRole('button', { name: '永久删除', exact: true }).click()
     await expect(dialog).toHaveCount(0)
     await navigate(page, '今天')

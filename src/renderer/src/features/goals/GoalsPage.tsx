@@ -44,7 +44,7 @@ function GoalWorkspace(): ReactNode {
   const [editDescription, setEditDescription] = useState('')
   const [selectedActionId, setSelectedActionId] = useState('')
   const [pendingGoalEnd, setPendingGoalEnd] = useState<PendingGoalEnd | null>(null)
-  const [recoveryGoalId, setRecoveryGoalId] = useState<string | null>(null)
+  const [recoveryGoalId, setRecoveryGoalId] = useState<string | null>(session.recoveryGoalId)
   const goalEndTriggerRef = useRef<HTMLButtonElement | null>(null)
 
   useEffect(() => {
@@ -112,7 +112,10 @@ function GoalWorkspace(): ReactNode {
     setEditDescription(nextDetail.description ?? '')
     setSelectedActionId(nextDetail.currentNextActionId ?? '')
     setPendingGoalEnd(null)
-    setRecoveryGoalId(null)
+    if (session.recoveryGoalId !== nextDetail.id) {
+      session.setRecoveryGoal(null)
+      setRecoveryGoalId(null)
+    }
   }
 
   const selectGoal = async (goalId: string, reveal = true): Promise<void> => {
@@ -366,7 +369,10 @@ function GoalWorkspace(): ReactNode {
           {detail && recoveryGoalId ? (
             <RecoveryPanel
               goalId={recoveryGoalId}
-              onClose={() => setRecoveryGoalId(null)}
+              onClose={() => {
+                session.setRecoveryGoal(null)
+                setRecoveryGoalId(null)
+              }}
               onMutation={refreshAfterRecoveryMutation}
             />
           ) : detail ? (
@@ -403,7 +409,10 @@ function GoalWorkspace(): ReactNode {
               <button
                 className="secondary-button"
                 type="button"
-                onClick={() => setRecoveryGoalId(detail.id)}
+                onClick={() => {
+                  session.setRecoveryGoal(detail.id)
+                  setRecoveryGoalId(detail.id)
+                }}
               >
                 查看恢复与整理
               </button>
@@ -425,14 +434,21 @@ function GoalWorkspace(): ReactNode {
                 <h3>已有记录</h3>
                 {detail.records.length ? (
                   detail.records.map((record) => (
-                    <div className="related-row" key={record.id}>
+                    <button
+                      className="related-row related-record-button"
+                      type="button"
+                      key={record.id}
+                      onClick={() =>
+                        session.openDataRecord({ type: 'action-record', id: record.id }, 'goals')
+                      }
+                    >
                       <span>
                         {record.actionTitle} · {record.durationMinutes} 分钟
                       </span>
                       <small>
-                        {record.occurredOn} · {recordOutcomeText[record.outcome]}
+                        {record.occurredOn} · {recordOutcomeText[record.outcome]} · 查看完整记录
                       </small>
-                    </div>
+                    </button>
                   ))
                 ) : (
                   <p className="empty-copy">暂无记录。做过一点后，可以从行动入口留下记录。</p>
@@ -525,7 +541,7 @@ function GoalWorkspace(): ReactNode {
                 </div>
                 {pendingGoalEnd ? (
                   <div
-                    className="transition-confirmation"
+                    className="transition-confirmation is-danger"
                     role="alertdialog"
                     aria-labelledby="goal-end-confirmation-title"
                   >
