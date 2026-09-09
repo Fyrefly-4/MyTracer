@@ -82,7 +82,7 @@ function ActionRecordingPanel(props: {
 }): ReactNode {
   const activeRef = useUiLifetime()
   const session = useUiSession()
-  const restoredDraft = useRef(session.getActionDraft(props.action.id)).current
+  const [restoredDraft] = useState(() => session.getActionDraft(props.action.id))
   const [restoredNotice, setRestoredNotice] = useState(Boolean(restoredDraft))
   const panelRef = useRef<HTMLElement | null>(null)
   const beginRef = useRef<HTMLButtonElement | null>(null)
@@ -912,7 +912,21 @@ function TodayWorkspace(): ReactNode {
                 className={`goal-list-item ${detail?.id === action.id ? 'selected' : ''}`}
                 aria-pressed={detail?.id === action.id}
                 type="button"
-                onClick={() => selectAction(action)}
+                onClick={() => {
+                  if (!activeRef.current) return
+                  setSelectionError(null)
+                  session.selectAction(action.id)
+                  setDetail(action)
+                  setEditTitle(action.title)
+                  setEditDescription(action.description ?? '')
+                  setResolutionMode('clear')
+                  setReplacementActionId('')
+                  setReplacementTitle('')
+                  setPendingTransition(null)
+                  requestAnimationFrame(() =>
+                    revealStart(document.querySelector<HTMLElement>('.action-detail'))
+                  )
+                }}
               >
                 <span>{action.title}</span>
                 <small>

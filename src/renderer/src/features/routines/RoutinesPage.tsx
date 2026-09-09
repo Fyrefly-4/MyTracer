@@ -108,7 +108,7 @@ export function RoutineRecordingPanel(props: {
 }): ReactNode {
   const activeRef = useUiLifetime()
   const session = useUiSession()
-  const restoredDraft = useRef(session.getRoutineDraft(props.routineId)).current
+  const [restoredDraft] = useState(() => session.getRoutineDraft(props.routineId))
   const [restoredNotice, setRestoredNotice] = useState(Boolean(restoredDraft))
   const panelRef = useRef<HTMLElement | null>(null)
   const beginRef = useRef<HTMLButtonElement | null>(null)
@@ -493,8 +493,16 @@ function RoutineWorkspace(): ReactNode {
     let active = true
     void window.myTracer.routines.getDetail({ routineId: session.routineId }).then((result) => {
       if (!active) return
-      if (result.ok) showDetail(result.value)
-      else if (result.error.code === 'not-found') session.selectRoutine(null)
+      if (result.ok) {
+        const routine = result.value
+        session.selectRoutine(routine.id)
+        setDetail(routine)
+        setEditName(routine.name)
+        setEditDescription(routine.description ?? '')
+        setEditMinimumAction(routine.minimumAction)
+        setEditWeekdays(routine.weekdays)
+        setConfirmEnd(false)
+      } else if (result.error.code === 'not-found') session.selectRoutine(null)
     })
     return () => {
       active = false
