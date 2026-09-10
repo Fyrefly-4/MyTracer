@@ -98,17 +98,6 @@ export function AppShell(): ReactNode {
               ) : (
                 <ReviewPage />
               )}
-
-              <footer className="status-strip">
-                <div>
-                  <span>AI 状态</span>
-                  <strong>
-                    {status?.ai.availability === 'not-configured'
-                      ? '未配置 · 不影响使用'
-                      : '读取中'}
-                  </strong>
-                </div>
-              </footer>
             </div>
           </main>
         </div>

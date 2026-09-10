@@ -135,9 +135,7 @@ button:focus-visible {
 .eyebrow,
 .lede,
 .placeholder-card h2,
-.placeholder-card p,
-.status-strip span,
-.status-strip strong {
+.placeholder-card p {
   margin: 0;
 }
 
@@ -1131,38 +1129,6 @@ h1 {
   line-height: 1.65;
 }
 
-.status-strip {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px;
-  margin-top: auto;
-  padding-top: 28px;
-}
-
-.status-strip > div {
-  padding-top: 15px;
-  border-top: 1px solid rgba(36, 51, 47, 0.12);
-}
-
-.status-strip span,
-.status-strip strong {
-  display: block;
-}
-
-.status-strip span {
-  color: #8a948f;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.status-strip strong {
-  margin-top: 6px;
-  color: #445650;
-  font-size: 14px;
-}
-
 .fatal-state {
   max-width: 620px;
   margin: 20vh auto 0;
@@ -1424,8 +1390,8 @@ h1 {
 
 .ai-start-help-panel {
   display: grid;
-  gap: 12px;
-  padding: 16px;
+  gap: 14px;
+  padding: 18px;
   border: 1px solid rgba(65, 103, 91, 0.16);
   border-radius: 14px;
   background: rgba(236, 244, 240, 0.62);
@@ -1440,50 +1406,132 @@ h1 {
 }
 
 .ai-start-help-heading h3,
-.ai-start-help-state,
-.ai-start-help-draft p {
+.ai-start-help-panel p,
+.ai-start-help-panel h4 {
   margin: 0;
 }
 
-.ai-start-help-state,
-.ai-start-help-draft {
+.ai-start-help-intro,
+.ai-start-help-draft,
+.ai-start-help-feedback,
+.ai-start-help-availability,
+.ai-start-help-waiting {
   color: #52665f;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.6;
 }
 
-.ai-start-help-draft ol {
+.ai-start-help-input,
+.ai-start-help-draft,
+.ai-start-help-suggestions,
+.ai-start-help-understandings,
+.ai-start-help-candidate,
+.ai-start-help-response-copy,
+.ai-start-help-section-heading {
   display: grid;
   gap: 8px;
-  margin: 10px 0;
-  padding-left: 22px;
 }
 
-.ai-start-help-draft,
-.ai-start-help-draft fieldset,
-.ai-start-help-candidate {
-  display: grid;
-  gap: 10px;
+.ai-start-help-input {
+  color: #40554e;
+  font-weight: 650;
 }
 
-.ai-start-help-draft fieldset {
-  margin: 10px 0 0;
-  border: 1px solid rgba(65, 103, 91, 0.14);
-  border-radius: 12px;
-  padding: 12px;
+.ai-start-help-availability,
+.ai-start-help-waiting,
+.ai-start-help-feedback {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 14px;
+  border-left: 3px solid rgba(49, 93, 80, 0.34);
+  background: rgba(255, 255, 255, 0.38);
 }
 
-.ai-start-help-draft legend {
-  padding: 0 6px;
+.ai-start-help-availability strong,
+.ai-start-help-waiting strong {
+  display: block;
   color: #315d50;
   font-size: 14px;
   font-weight: 700;
 }
 
+.ai-start-help-availability p,
+.ai-start-help-waiting p,
+.ai-start-help-waiting small {
+  display: block;
+  margin-top: 3px;
+}
+
+.ai-start-help-availability > button,
+.ai-start-help-waiting > button {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.ai-start-help-waiting p {
+  color: #40554e;
+}
+
+.ai-start-help-waiting small {
+  color: #748079;
+}
+
+.ai-start-help-feedback-error {
+  border-left-color: rgba(185, 94, 81, 0.52);
+  background: rgba(250, 239, 236, 0.58);
+}
+
+.ai-start-help-feedback-success {
+  border-left-color: #4e8b70;
+  color: #315d50;
+}
+
+.ai-start-help-draft {
+  gap: 16px;
+}
+
+.ai-start-help-response-copy {
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(65, 103, 91, 0.13);
+  color: #40554e;
+}
+
+.ai-start-help-suggestions,
+.ai-start-help-understandings {
+  gap: 10px;
+}
+
+.ai-start-help-understandings {
+  margin-top: 2px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(65, 103, 91, 0.13);
+}
+
+.ai-start-help-section-heading h4 {
+  color: #315d50;
+  font-size: 14px;
+}
+
+.ai-start-help-section-heading p {
+  color: #748079;
+  font-size: 13px;
+}
+
 .ai-start-help-candidate {
-  padding: 10px;
+  padding: 11px;
+  border: 1px solid transparent;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.68);
+  background: rgba(255, 255, 255, 0.48);
+  transition:
+    border-color 120ms ease,
+    background 120ms ease;
+}
+
+.ai-start-help-candidate.is-selected {
+  border-color: rgba(49, 93, 80, 0.34);
+  background: rgba(223, 234, 225, 0.78);
 }
 
 .ai-start-help-candidate > span {
@@ -1491,7 +1539,7 @@ h1 {
   align-items: center;
   gap: 7px;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 650;
 }
 
 .ai-start-help-candidate textarea,
@@ -1502,6 +1550,19 @@ h1 {
 .ai-start-help-actions {
   justify-content: flex-start;
   flex-wrap: wrap;
+}
+
+.ai-start-help-retry {
+  justify-self: start;
+  min-height: auto;
+  padding: 2px 0;
+  border: 0;
+  border-radius: 0;
+  color: #60716a;
+  background: transparent;
+  font-size: 13px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .review-notice,
@@ -1757,8 +1818,12 @@ h1, h2, h3, p, strong, small, button, .related-row, .status-badge {
   .topbar {
     padding: 0 16px;
   }
-  .quick-record-grid, .progress-filters, .data-edit-grid, .review-routine-grid, .review-learning-grid, .status-strip {
+  .quick-record-grid, .progress-filters, .data-edit-grid, .review-routine-grid, .review-learning-grid {
     grid-template-columns: minmax(0, 1fr);
+  }
+  .ai-start-help-availability, .ai-start-help-waiting, .ai-start-help-feedback {
+    align-items: flex-start;
+    flex-direction: column;
   }
   .review-toolbar, .review-error, .detail-title-row {
     align-items: flex-start;

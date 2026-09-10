@@ -57,22 +57,22 @@ test('Start Help is explicit, read-only, validated, cancellable, and degradable'
       application = launched.application
       const page = launched.page
       await createFocusedAction(page)
-      await expect(page.getByText('尚未配置 AI 服务')).toBeVisible()
+      await expect(page.getByText('AI 尚未配置')).toBeVisible()
       const before = await page.evaluate(() => window.myTracer.dataControl.list())
       await page.getByRole('button', { name: '从环境变量导入配置' }).click()
       await expect(page.getByLabel('现在最卡住你的是什么？')).toBeVisible()
       await page.getByLabel('现在最卡住你的是什么？').fill('我不知道从哪里开始')
-      await page.getByRole('button', { name: '我现在不想开始' }).click()
+      await page.getByRole('button', { name: '帮我找一个小起点' }).click()
 
       if (scenario === 'success') {
         await expect(page.getByText('先打开行动需要的资料，只看一眼标题。')).toBeVisible()
-        await expect(page.getByText(/只有逐项明确确认的最终文本会被保存/)).toBeVisible()
+        await expect(page.getByText(/确认前不会保存或改变当前行动/)).toBeVisible()
       } else if (scenario === 'invalid-response') {
         await expect(page.getByText(/未通过安全检查/)).toBeVisible()
       } else {
-        await expect(page.getByRole('button', { name: '取消', exact: true })).toBeVisible()
-        await page.getByRole('button', { name: '取消', exact: true }).click()
-        await expect(page.getByText('已取消这次请求。')).toBeVisible()
+        await expect(page.getByRole('button', { name: '取消整理' })).toBeVisible()
+        await page.getByRole('button', { name: '取消整理' }).click()
+        await expect(page.getByText('已取消这次整理，没有保存任何内容。')).toBeVisible()
       }
 
       expect(await page.evaluate(() => window.myTracer.dataControl.list())).toEqual(before)
