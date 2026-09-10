@@ -96,6 +96,17 @@ test('keeps existing work reachable, restores selection, and records without imp
     await expect(candidateSection).not.toContainText('已经完成的候选')
     await expect(candidateSection).not.toContainText('已经加入今天的候选')
     await expect(candidateSection).not.toContainText('当前不可行动的候选')
+    const candidateRow = candidateSection.locator('.candidate-row').filter({ hasText: actionName })
+    expect(
+      await candidateRow.evaluate((row) => {
+        const action = row.querySelector<HTMLElement>('.goal-list-item')
+        const controls = row.querySelector<HTMLElement>('.candidate-actions')
+        if (!action || !controls) return false
+        const actionBox = action.getBoundingClientRect()
+        const controlsBox = controls.getBoundingClientRect()
+        return actionBox.width >= 200 && controlsBox.top >= actionBox.bottom
+      })
+    ).toBe(true)
     expect(
       await candidateSection.evaluate((candidate) => {
         const routine = document.querySelector('.planned-routines')

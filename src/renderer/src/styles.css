@@ -1854,7 +1854,7 @@ h1, h2, h3, p, strong, small, button, .related-row, .status-badge {
 
 .candidate-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
   align-items: center;
   padding: 13px 0;
@@ -1976,7 +1976,6 @@ h1, h2, h3, p, strong, small, button, .related-row, .status-badge {
 }
 
 @media (max-width: 700px) {
-  .candidate-row,
   .data-history-filters,
   .recovery-fact-columns { grid-template-columns: minmax(0, 1fr); }
 
