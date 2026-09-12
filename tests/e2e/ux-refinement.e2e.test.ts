@@ -118,20 +118,40 @@ test('keeps existing work reachable, restores selection, and records without imp
 
     const panel = page.getByLabel(`${actionName} 行动记录`, { exact: true })
     for (const size of [
-      { width: 2560, height: 1440 },
-      { width: 1280, height: 800 },
-      { width: 1024, height: 768 }
+      { width: 1440, height: 900, layout: 'columns' },
+      { width: 1106, height: 698, layout: 'columns' },
+      { width: 900, height: 698, layout: 'stacked' }
     ]) {
       await application.evaluate(({ BrowserWindow }, dimensions) => {
         BrowserWindow.getAllWindows()[0].setContentSize(dimensions.width, dimensions.height)
       }, size)
       await expect
-        .poll(() => page.evaluate(() => ({ width: innerWidth, height: innerHeight })))
-        .toEqual(size)
+        .poll(() =>
+          page.evaluate(
+            ({ width, height }) =>
+              Math.abs(innerWidth - width) <= 2 && Math.abs(innerHeight - height) <= 2,
+            size
+          )
+        )
+        .toBe(true)
       await page.locator('main').evaluate((main) => {
         main.scrollTop = 0
       })
       await expect(detail).toBeVisible()
+      await expect(candidateRow.locator('.goal-list-item')).toHaveAttribute('aria-pressed', 'true')
+      expect(
+        await page.locator('.today-grid').evaluate((grid, expectedLayout) => {
+          const [context, action] = Array.from(grid.children) as HTMLElement[]
+          const contextBox = context.getBoundingClientRect()
+          const actionBox = action.getBoundingClientRect()
+          return expectedLayout === 'columns'
+            ? actionBox.left > contextBox.right && Math.abs(actionBox.top - contextBox.top) < 2
+            : actionBox.top >= contextBox.bottom && Math.abs(actionBox.left - contextBox.left) < 2
+        }, size.layout)
+      ).toBe(true)
+      expect(
+        await page.locator('main').evaluate((main) => main.scrollWidth <= main.clientWidth)
+      ).toBe(true)
       await panel.getByRole('button', { name: '开始记录' }).click()
       await expect(panel.getByLabel('投入时长（分钟，必填）')).toBeInViewport()
       await expect(panel.getByLabel('投入时长（分钟，必填）')).toBeFocused()
