@@ -44,6 +44,21 @@ test('keeps existing work reachable, restores selection, and records without imp
   try {
     application = await launch(root)
     const page = await application.firstWindow()
+    await application.evaluate(({ BrowserWindow }) => {
+      BrowserWindow.getAllWindows()[0].setContentSize(1120, 760)
+    })
+    await navigate(page, '今天')
+    const emptyDetail = page.locator('.detail-empty')
+    await expect(emptyDetail).toBeVisible()
+    expect(
+      await emptyDetail.evaluate((empty) => {
+        const grid = empty.closest('.today-grid')
+        if (!grid) return false
+        const emptyBox = empty.getBoundingClientRect()
+        const gridBox = grid.getBoundingClientRect()
+        return emptyBox.width <= 522 && emptyBox.top - gridBox.top < 90
+      })
+    ).toBe(true)
     await navigate(page, '目标')
     await expect(page.locator('form.goal-create')).toHaveCount(0)
     await page.getByRole('button', { name: '新建目标', exact: true }).click()
@@ -139,16 +154,29 @@ test('keeps existing work reachable, restores selection, and records without imp
       })
       await expect(detail).toBeVisible()
       await expect(candidateRow.locator('.goal-list-item')).toHaveAttribute('aria-pressed', 'true')
-      expect(
-        await page.locator('.today-grid').evaluate((grid, expectedLayout) => {
-          const [context, action] = Array.from(grid.children) as HTMLElement[]
-          const contextBox = context.getBoundingClientRect()
-          const actionBox = action.getBoundingClientRect()
-          return expectedLayout === 'columns'
-            ? actionBox.left > contextBox.right && Math.abs(actionBox.top - contextBox.top) < 2
-            : actionBox.top >= contextBox.bottom && Math.abs(actionBox.left - contextBox.left) < 2
-        }, size.layout)
-      ).toBe(true)
+      const layoutMetrics = await page.locator('.today-grid').evaluate((grid, expectedLayout) => {
+        const [context, action] = Array.from(grid.children) as HTMLElement[]
+        const gridBox = grid.getBoundingClientRect()
+        const contextBox = context.getBoundingClientRect()
+        const actionBox = action.getBoundingClientRect()
+        return {
+          matches:
+            expectedLayout === 'columns'
+              ? actionBox.left > contextBox.right && Math.abs(actionBox.top - contextBox.top) < 2
+              : actionBox.top >= contextBox.bottom &&
+                Math.abs(actionBox.left - contextBox.left) < 2,
+          gridWidth: gridBox.width,
+          contextWidth: contextBox.width,
+          actionWidth: actionBox.width
+        }
+      }, size.layout)
+      expect(layoutMetrics.matches).toBe(true)
+      if (size.layout === 'columns') {
+        expect(layoutMetrics.gridWidth).toBeLessThanOrEqual(1042)
+        expect(layoutMetrics.contextWidth / layoutMetrics.gridWidth).toBeGreaterThanOrEqual(0.3)
+        expect(layoutMetrics.contextWidth / layoutMetrics.gridWidth).toBeLessThanOrEqual(0.38)
+        expect(layoutMetrics.actionWidth).toBeGreaterThan(layoutMetrics.contextWidth)
+      }
       expect(
         await page.locator('main').evaluate((main) => main.scrollWidth <= main.clientWidth)
       ).toBe(true)

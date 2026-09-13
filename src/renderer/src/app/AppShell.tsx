@@ -73,8 +73,11 @@ export function AppShell(): ReactNode {
               </button>
             ))}
             <div className="sidebar-note">
-              <p>本地优先</p>
-              <span>目标和下一步保存在本机；AI 未配置也不影响使用。</span>
+              <span>
+                留下已经发生的事，
+                <br />
+                也留一点继续的空间。
+              </span>
             </div>
           </nav>
 

@@ -2127,8 +2127,14 @@ h1 {
 }
 
 .today-grid {
-  grid-template-columns: minmax(260px, 0.95fr) minmax(0, 1.65fr);
-  gap: 38px;
+  grid-template-columns: clamp(320px, 36%, 350px) minmax(0, 1fr);
+  gap: var(--space-6);
+}
+
+.today-workspace {
+  width: 100%;
+  max-width: 1040px;
+  margin-inline: auto;
 }
 
 .today-grid > .goal-column {
@@ -2137,7 +2143,7 @@ h1 {
 
 .today-grid > .goal-column:last-child {
   min-height: 360px;
-  padding-left: 36px;
+  padding-left: 30px;
   border-left: 1px solid var(--color-line);
 }
 
@@ -2282,11 +2288,14 @@ h1 {
 }
 
 .today-grid .action-detail > .detail-title-row h2 {
+  max-width: 28ch;
   margin-top: var(--space-2);
   color: var(--color-text);
   font-size: 25px;
   font-weight: 600;
-  line-height: 1.4;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
 }
 
 .today-grid .status-badge {
@@ -2365,13 +2374,36 @@ h1 {
 }
 
 .today-grid .detail-empty {
-  min-height: 280px;
-  align-content: center;
+  width: 100%;
+  max-width: 520px;
+  min-height: 0;
+  align-content: start;
+  padding-top: 56px;
+}
+
+.today-grid .detail-empty h2,
+.today-grid .detail-empty p {
+  margin: 0;
+}
+
+.today-grid .detail-empty h2 {
+  font-size: 19px;
+  line-height: 1.45;
+  text-wrap: balance;
+}
+
+.today-grid .detail-empty p {
+  max-width: 34em;
 }
 
 @media (min-width: 1320px) {
   .today-grid {
     grid-template-columns: 350px minmax(0, 1fr);
+    gap: 38px;
+  }
+
+  .today-grid > .goal-column:last-child {
+    padding-left: 36px;
   }
 }
 
@@ -2387,6 +2419,12 @@ h1 {
     padding-left: 0;
     border-top: 1px solid var(--color-line);
     border-left: 0;
+  }
+
+  .today-grid .detail-empty {
+    min-height: 180px;
+    align-content: center;
+    padding-top: 0;
   }
 }
 
