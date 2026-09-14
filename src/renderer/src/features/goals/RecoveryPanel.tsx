@@ -1,6 +1,8 @@
-import { type ReactNode, useCallback, useEffect, useState } from 'react'
+import { factOutcomeText } from '../../app/ui-text'
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import type { RecoveryActionDto, RecoveryContextDto } from '../../../../contracts/recovery'
 import type { RoutineSummaryDto } from '../../../../contracts/routines'
+import { revealStart, useUiSession } from '../../app/ui-session'
 
 type RecoveryDraft =
   | { readonly kind: 'pause-goal' | 'end-goal' }
@@ -16,22 +18,22 @@ type RecoveryDraft =
 const draftTitle: Record<RecoveryDraft['kind'], string> = {
   'pause-goal': '确认暂停目标',
   'end-goal': '确认结束目标',
-  'pause-routine': '确认暂停 Routine',
-  'end-routine': '确认结束 Routine',
-  'complete-action': '确认完成 Action',
-  'cancel-action': '确认取消 Action',
-  'reschedule-action': '确认重新安排 Action',
+  'pause-routine': '确认暂停例行',
+  'end-routine': '确认结束例行',
+  'complete-action': '确认完成行动',
+  'cancel-action': '确认取消行动',
+  'reschedule-action': '确认重新安排行动',
   'set-current': '确认设置当前下一步',
   'create-current': '确认创建并设置当前下一步',
-  'select-today': '确认加入 Today'
+  'select-today': '确认加入今天'
 }
 
 function draftDescription(draft: RecoveryDraft, context: RecoveryContextDto): string {
   switch (draft.kind) {
     case 'pause-goal':
-      return `暂停“${context.goal.name}”；关联 Routine 与已有历史保持原样。`
+      return `暂停“${context.goal.name}”；关联例行与已有历史保持原样。`
     case 'end-goal':
-      return `结束“${context.goal.name}”；该状态不能恢复，关联 Routine 与已有历史保持原样。`
+      return `结束“${context.goal.name}”；该状态不能恢复，关联例行与已有历史保持原样。`
     case 'pause-routine':
       return `暂停“${draft.routine.name}”；目标与已有历史保持原样。`
     case 'end-routine':
@@ -45,9 +47,9 @@ function draftDescription(draft: RecoveryDraft, context: RecoveryContextDto): st
     case 'set-current':
       return `把“${draft.action.title}”设为“${context.goal.name}”的当前下一步。`
     case 'create-current':
-      return `创建“${draft.title}”，并在同一次保存中设为当前下一步；不会自动加入 Today。`
+      return `创建“${draft.title}”，并在同一次保存中设为当前下一步；不会自动加入今天。`
     case 'select-today':
-      return `把“${draft.action.title}”加入命令开始时所在日期的 Today。`
+      return `把“${draft.action.title}”加入你操作时的今天。`
   }
 }
 
@@ -56,8 +58,11 @@ export function RecoveryPanel(props: {
   readonly onClose: () => void
   readonly onMutation: () => Promise<void>
 }): ReactNode {
+  const session = useUiSession()
+  const resumeRef = useRef<HTMLElement | null>(null)
   const [context, setContext] = useState<RecoveryContextDto | null>(null)
   const [routines, setRoutines] = useState<readonly RoutineSummaryDto[]>([])
+  const [todayActionIds, setTodayActionIds] = useState<readonly string[]>([])
   const [draft, setDraft] = useState<RecoveryDraft | null>(null)
   const [newActionTitle, setNewActionTitle] = useState('')
   const [newActionDescription, setNewActionDescription] = useState('')
@@ -66,15 +71,16 @@ export function RecoveryPanel(props: {
   const [busy, setBusy] = useState(false)
 
   const loadFacts = useCallback(async (): Promise<void> => {
-    const [recoveryResult, routinesResult] = await Promise.all([
+    const [recoveryResult, routinesResult, todayResult] = await Promise.all([
       window.myTracer.recovery.getContext({ goalId: props.goalId }),
-      window.myTracer.routines.list({ status: null })
+      window.myTracer.routines.list({ status: null }),
+      window.myTracer.today.get({})
     ])
     if (!recoveryResult.ok) {
       setError(
         recoveryResult.error.code === 'not-found'
           ? '这个目标已不存在。'
-          : '暂时无法读取 Recovery 事实。'
+          : '暂时无法读取恢复与整理内容。'
       )
       return
     }
@@ -84,22 +90,28 @@ export function RecoveryPanel(props: {
         ? routinesResult.value.filter((routine) => routine.goalId === props.goalId)
         : []
     )
-    setError(routinesResult.ok ? null : '目标事实已刷新，但关联 Routine 暂时无法读取。')
+    setTodayActionIds(
+      todayResult.ok
+        ? [...todayResult.value.focuses, ...todayResult.value.intentions].map((action) => action.id)
+        : []
+    )
+    setError(routinesResult.ok ? null : '目标内容已刷新，但关联例行暂时无法读取。')
   }, [props.goalId])
 
   useEffect(() => {
     let active = true
     void Promise.all([
       window.myTracer.recovery.getContext({ goalId: props.goalId }),
-      window.myTracer.routines.list({ status: null })
+      window.myTracer.routines.list({ status: null }),
+      window.myTracer.today.get({})
     ])
-      .then(([recoveryResult, routinesResult]) => {
+      .then(([recoveryResult, routinesResult, todayResult]) => {
         if (!active) return
         if (!recoveryResult.ok) {
           setError(
             recoveryResult.error.code === 'not-found'
               ? '这个目标已不存在。'
-              : '暂时无法读取 Recovery 事实。'
+              : '暂时无法读取恢复与整理内容。'
           )
           return
         }
@@ -109,10 +121,17 @@ export function RecoveryPanel(props: {
             ? routinesResult.value.filter((routine) => routine.goalId === props.goalId)
             : []
         )
-        setError(routinesResult.ok ? null : '目标事实已刷新，但关联 Routine 暂时无法读取。')
+        setTodayActionIds(
+          todayResult.ok
+            ? [...todayResult.value.focuses, ...todayResult.value.intentions].map(
+                (action) => action.id
+              )
+            : []
+        )
+        setError(routinesResult.ok ? null : '目标内容已刷新，但关联例行暂时无法读取。')
       })
       .catch(() => {
-        if (active) setError('暂时无法读取 Recovery 事实。')
+        if (active) setError('暂时无法读取恢复与整理内容。')
       })
     return () => {
       active = false
@@ -179,7 +198,7 @@ export function RecoveryPanel(props: {
         setError(
           result.error?.code === 'validation'
             ? '请检查草稿内容。没有保存任何变化。'
-            : '这次保存没有完成；请刷新事实后再试。'
+            : '这次保存没有完成；请刷新后再试。'
         )
         return
       }
@@ -192,15 +211,21 @@ export function RecoveryPanel(props: {
         const today = await window.myTracer.today.get({})
         setNotice(
           today.ok
-            ? `已加入 Today（${today.value.localDate}）。`
-            : '已加入 Today；日期事实将在下次刷新时显示。'
+            ? `已加入今天（${today.value.localDate}）。`
+            : '已加入今天；日期会在下次刷新时显示。'
         )
+        await refreshAfterMutation()
+        session.openAction(currentDraft.action.id)
+        return
       } else {
-        setNotice('已保存，并重新读取了最新事实。')
+        setNotice('已保存，并重新读取了最新内容。')
       }
       await refreshAfterMutation()
+      if (currentDraft.kind === 'create-current' || currentDraft.kind === 'set-current') {
+        requestAnimationFrame(() => revealStart(resumeRef.current))
+      }
     } catch {
-      setError('这次保存没有完成；请刷新事实后再试。')
+      setError('这次保存没有完成；请刷新后再试。')
     } finally {
       setBusy(false)
     }
@@ -208,7 +233,7 @@ export function RecoveryPanel(props: {
 
   const createActionDraft = (): void => {
     if (!newActionTitle.trim()) {
-      setError('请先写下一个小 Action。')
+      setError('请先写下一个小行动。')
       return
     }
     setError(null)
@@ -220,11 +245,11 @@ export function RecoveryPanel(props: {
   }
 
   return (
-    <article className="goal-card recovery-panel" aria-label="Recovery 页面">
+    <article className="goal-card recovery-panel" aria-label="恢复与整理页面">
       <div className="detail-title-row">
         <div>
-          <p className="eyebrow">Recovery</p>
-          <h2>{context?.goal.name ?? '正在读取事实…'}</h2>
+          <p className="eyebrow">恢复与整理</p>
+          <h2>{context?.goal.name ?? '正在读取…'}</h2>
         </div>
         <button className="secondary-button" type="button" disabled={busy} onClick={props.onClose}>
           返回目标
@@ -242,11 +267,44 @@ export function RecoveryPanel(props: {
       ) : null}
       {context ? (
         <>
+          <section ref={resumeRef} className="recovery-resume-card" aria-label="从这里继续">
+            <p className="eyebrow">从这里继续</p>
+            <h3>{context.currentNextAction?.title ?? '先选一个很小的下一步'}</h3>
+            <p>
+              {context.currentNextAction
+                ? '这是你上次为这个目标选定的当前下一步。'
+                : '当前下一步仍由你决定，下面可以从已有行动中选择或新建。'}
+            </p>
+            {context.goal.status === 'active' && context.currentNextAction ? (
+              todayActionIds.includes(context.currentNextAction.id) ? (
+                <button
+                  className="primary-button"
+                  type="button"
+                  disabled={busy}
+                  onClick={() => session.openAction(context.currentNextAction!.id)}
+                >
+                  继续今天的行动
+                </button>
+              ) : (
+                <button
+                  className="primary-button"
+                  type="button"
+                  disabled={busy}
+                  onClick={() =>
+                    setDraft({ kind: 'select-today', action: context.currentNextAction! })
+                  }
+                >
+                  加入今天并继续
+                </button>
+              )
+            ) : null}
+          </section>
+
           <div className="recovery-fact">
-            <span>距上次真实行动</span>
+            <span>距最近一次实际行动</span>
             <strong>
               {context.daysSinceLastRealAction === null
-                ? '尚无真实行动'
+                ? '还没有行动记录'
                 : `${context.daysSinceLastRealAction} 天`}
             </strong>
             <small>
@@ -255,66 +313,75 @@ export function RecoveryPanel(props: {
             </small>
           </div>
 
-          <section className="related-section recovery-actions" aria-label="整理目标">
-            <h3>整理仍重要的内容</h3>
-            <p className="empty-copy">先形成草稿；确认前可以随时返回或取消。</p>
-            <div className="lifecycle-actions">
-              {context.goal.status === 'active' ? (
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => setDraft({ kind: 'pause-goal' })}
-                >
-                  暂停目标
-                </button>
-              ) : null}
-              {context.goal.status !== 'ended' ? (
-                <button
-                  className="end-button"
-                  type="button"
-                  disabled={busy}
-                  onClick={() => setDraft({ kind: 'end-goal' })}
-                >
-                  结束目标
-                </button>
-              ) : null}
-            </div>
-            {routines.map((routine) => (
-              <div className="related-row recovery-operation-row" key={routine.id}>
-                <span>{routine.name}</span>
-                <small>
-                  {routine.status === 'active'
-                    ? '活跃'
-                    : routine.status === 'paused'
-                      ? '暂停'
-                      : '结束'}
-                </small>
-                <div className="compact-actions">
-                  {routine.status === 'active' ? (
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => setDraft({ kind: 'pause-routine', routine })}
-                    >
-                      暂停
-                    </button>
-                  ) : null}
-                  {routine.status !== 'ended' ? (
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => setDraft({ kind: 'end-routine', routine })}
-                    >
-                      结束
-                    </button>
-                  ) : null}
-                </div>
-              </div>
-            ))}
+          <section className="related-section">
+            <h3>上次做到哪里</h3>
+            {context.latestRealRecord ? (
+              <button
+                className="related-record-button"
+                type="button"
+                onClick={() =>
+                  session.openDataRecord(
+                    {
+                      type:
+                        context.latestRealRecord!.kind === 'action'
+                          ? 'action-record'
+                          : 'routine-record',
+                      id: context.latestRealRecord!.recordId
+                    },
+                    'goals'
+                  )
+                }
+              >
+                <span>
+                  <strong>{context.latestRealRecord.title}</strong>
+                  <small>
+                    {context.latestRealRecord.occurredOn} ·{' '}
+                    {factOutcomeText[context.latestRealRecord.outcome]}
+                  </small>
+                </span>
+                <span>
+                  {context.latestRealRecord.durationMinutes === null
+                    ? '时长未记录'
+                    : context.latestRealRecord.durationMinutes === 0
+                      ? '少于 1 分钟'
+                      : `${context.latestRealRecord.durationMinutes} 分钟`}
+                  <small>查看完整记录</small>
+                </span>
+              </button>
+            ) : (
+              <p className="empty-copy">还没有行动记录，可以从一个很小的下一步重新开始。</p>
+            )}
           </section>
 
+          <div className="recovery-fact-columns">
+            <section className="related-section">
+              <h3>已经确认的理解</h3>
+              {context.confirmedUnderstandings.length ? (
+                context.confirmedUnderstandings.map((item) => (
+                  <div className="related-row" key={item.id}>
+                    <span>{item.text}</span>
+                  </div>
+                ))
+              ) : (
+                <p className="empty-copy">暂时没有已确认的理解。</p>
+              )}
+            </section>
+            <section className="related-section">
+              <h3>还没有解决的困惑</h3>
+              {context.openConfusions.length ? (
+                context.openConfusions.map((item) => (
+                  <div className="related-row" key={item.id}>
+                    <span>{item.text}</span>
+                  </div>
+                ))
+              ) : (
+                <p className="empty-copy">目前没有待处理的困惑。</p>
+              )}
+            </section>
+          </div>
+
           <section className="related-section recovery-actions" aria-label="选择下一步">
-            <h3>选择一个小 Action</h3>
+            <h3>选择一个小行动</h3>
             {context.pendingActions.length ? (
               context.pendingActions.map((action) => (
                 <div className="related-row recovery-operation-row" key={action.id}>
@@ -333,37 +400,16 @@ export function RecoveryPanel(props: {
                         设为下一步
                       </button>
                     ) : null}
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => setDraft({ kind: 'complete-action', action })}
-                    >
-                      完成
-                    </button>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => setDraft({ kind: 'cancel-action', action })}
-                    >
-                      取消
-                    </button>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => setDraft({ kind: 'reschedule-action', action })}
-                    >
-                      重新安排
-                    </button>
                   </div>
                 </div>
               ))
             ) : (
-              <p className="empty-copy">目前没有待行动 Action。</p>
+              <p className="empty-copy">目前没有可继续的行动。</p>
             )}
             {context.goal.status === 'active' ? (
               <div className="recovery-create-action">
                 <label>
-                  新的小 Action
+                  新的小行动
                   <input
                     value={newActionTitle}
                     onChange={(event) => setNewActionTitle(event.target.value)}
@@ -387,66 +433,111 @@ export function RecoveryPanel(props: {
                 </button>
               </div>
             ) : null}
-            {context.goal.status === 'active' && context.currentNextAction ? (
-              <button
-                className="secondary-button"
-                type="button"
-                disabled={busy}
-                onClick={() =>
-                  setDraft({ kind: 'select-today', action: context.currentNextAction! })
-                }
-              >
-                将当前下一步加入 Today
-              </button>
-            ) : null}
           </section>
 
-          <section className="related-section">
-            <h3>此前真实行动</h3>
-            {context.latestRealRecord ? (
-              <div className="related-row">
-                <span>
-                  {context.latestRealRecord.title} ·{' '}
-                  {context.latestRealRecord.durationMinutes === null
-                    ? '未记录分钟'
-                    : `${context.latestRealRecord.durationMinutes} 分钟`}
-                </span>
-                <small>
-                  {context.latestRealRecord.occurredOn} · {context.latestRealRecord.outcome}
-                </small>
+          <details className="disclosure recovery-management">
+            <summary>整理目标、行动与例行</summary>
+            <p className="empty-copy">这些操作会先显示影响说明，由你确认后才保存。</p>
+            <div className="lifecycle-actions">
+              {context.goal.status === 'active' ? (
+                <button
+                  className="warning-button"
+                  type="button"
+                  disabled={busy}
+                  onClick={() => setDraft({ kind: 'pause-goal' })}
+                >
+                  暂停目标
+                </button>
+              ) : null}
+              {context.goal.status !== 'ended' ? (
+                <button
+                  className="danger-button"
+                  type="button"
+                  disabled={busy}
+                  onClick={() => setDraft({ kind: 'end-goal' })}
+                >
+                  结束目标
+                </button>
+              ) : null}
+            </div>
+            {context.pendingActions.map((action) => (
+              <div className="related-row recovery-operation-row" key={action.id}>
+                <span>{action.title}</span>
+                <small>待行动</small>
+                <div className="compact-actions">
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => setDraft({ kind: 'complete-action', action })}
+                  >
+                    完成
+                  </button>
+                  <button
+                    className="danger-button"
+                    type="button"
+                    disabled={busy}
+                    onClick={() => setDraft({ kind: 'cancel-action', action })}
+                  >
+                    取消
+                  </button>
+                  <button
+                    className="warning-button"
+                    type="button"
+                    disabled={busy}
+                    onClick={() => setDraft({ kind: 'reschedule-action', action })}
+                  >
+                    重新安排
+                  </button>
+                </div>
               </div>
-            ) : (
-              <p className="empty-copy">还没有真实行动记录。</p>
-            )}
-          </section>
-          <section className="related-section">
-            <h3>确认的理解</h3>
-            {context.confirmedUnderstandings.length ? (
-              context.confirmedUnderstandings.map((item) => (
-                <div className="related-row" key={item.id}>
-                  <span>{item.text}</span>
+            ))}
+            {routines.map((routine) => (
+              <div className="related-row recovery-operation-row" key={routine.id}>
+                <span>{routine.name}</span>
+                <small>
+                  {routine.status === 'active'
+                    ? '活跃'
+                    : routine.status === 'paused'
+                      ? '暂停'
+                      : '结束'}
+                </small>
+                <div className="compact-actions">
+                  {routine.status === 'active' ? (
+                    <button
+                      className="warning-button"
+                      type="button"
+                      disabled={busy}
+                      onClick={() => setDraft({ kind: 'pause-routine', routine })}
+                    >
+                      暂停
+                    </button>
+                  ) : null}
+                  {routine.status !== 'ended' ? (
+                    <button
+                      className="danger-button"
+                      type="button"
+                      disabled={busy}
+                      onClick={() => setDraft({ kind: 'end-routine', routine })}
+                    >
+                      结束
+                    </button>
+                  ) : null}
                 </div>
-              ))
-            ) : (
-              <p className="empty-copy">暂无已确认理解。</p>
-            )}
-          </section>
-          <section className="related-section">
-            <h3>开放困惑</h3>
-            {context.openConfusions.length ? (
-              context.openConfusions.map((item) => (
-                <div className="related-row" key={item.id}>
-                  <span>{item.text}</span>
-                </div>
-              ))
-            ) : (
-              <p className="empty-copy">暂无开放困惑。</p>
-            )}
-          </section>
+              </div>
+            ))}
+          </details>
 
           {draft ? (
             <div
-              className="transition-confirmation"
+              className={`transition-confirmation ${
+                draft.kind === 'end-goal' || draft.kind === 'end-routine'
+                  ? 'is-danger'
+                  : draft.kind.includes('pause') ||
+                      draft.kind.includes('cancel') ||
+                      draft.kind.includes('reschedule')
+                    ? 'is-warning'
+                    : ''
+              }`}
               role="alertdialog"
               aria-labelledby="recovery-draft-title"
             >

@@ -336,7 +336,7 @@ async function createMainWindow(): Promise<void> {
     minWidth: 820,
     minHeight: 600,
     show: false,
-    backgroundColor: '#f4f1ea',
+    backgroundColor: '#f5f2ea',
     title: 'MyTracer',
     webPreferences: {
       preload: join(__dirname, '../preload/index.cjs'),
