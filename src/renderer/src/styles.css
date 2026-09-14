@@ -2454,3 +2454,677 @@ h1 {
     font-size: 21px;
   }
 }
+
+/* Phase 4.2: extend the warm action notebook language across the remaining Renderer. */
+.goal-workspace,
+.routine-workspace,
+.progress-workspace,
+.review-workspace,
+.data-workspace {
+  width: 100%;
+  max-width: 1040px;
+  margin-inline: auto;
+}
+
+.goal-grid {
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: var(--space-6);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--color-line);
+}
+
+.goal-grid > .goal-column {
+  gap: var(--space-5);
+}
+
+.goal-grid > .goal-column:last-child {
+  min-height: 360px;
+  padding-left: 30px;
+  border-left: 1px solid var(--color-line);
+}
+
+.goal-grid .goal-card {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.goal-grid .goal-list-card {
+  padding: 0;
+}
+
+.goal-grid .card-heading {
+  margin-bottom: var(--space-3);
+}
+
+.goal-grid .card-heading h2 {
+  color: var(--color-text);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.goal-grid .goal-list {
+  gap: var(--space-1);
+  margin-top: var(--space-3);
+}
+
+.goal-grid .goal-list-item {
+  padding: 10px 12px;
+  border: 0;
+  border-left: 3px solid transparent;
+  border-radius: 0;
+  color: var(--color-text);
+  background: transparent;
+}
+
+.goal-grid .goal-list-item:hover {
+  background: var(--color-hover);
+}
+
+.goal-grid .goal-list-item.selected {
+  border-left-color: var(--color-action);
+  color: var(--color-action);
+  background: var(--color-support);
+}
+
+.goal-grid .goal-list-item span {
+  font-weight: 600;
+  line-height: 1.55;
+}
+
+.goal-grid .goal-list-item small {
+  color: var(--color-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.goal-grid .goal-detail > .detail-title-row h2,
+.goal-grid .recovery-panel > .detail-title-row h2 {
+  max-width: 28ch;
+  margin-top: var(--space-2);
+  color: var(--color-text);
+  font-size: 25px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-wrap: balance;
+}
+
+.goal-grid .status-badge {
+  padding: 3px 0;
+  border-radius: 0;
+  color: var(--color-muted);
+  background: transparent;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.goal-workspace > .goal-create,
+.goal-grid .goal-create {
+  padding: var(--space-5) 0;
+  border: 0;
+  border-top: 1px solid var(--color-line);
+  border-bottom: 1px solid var(--color-line);
+  border-radius: 0;
+  background: transparent;
+}
+
+.next-action-panel {
+  margin: var(--space-5) 0;
+  padding: var(--space-4) var(--space-5);
+  border-left: 3px solid var(--color-action);
+  border-radius: 0;
+  background: var(--color-support);
+}
+
+.next-action-panel span {
+  color: var(--color-muted);
+}
+
+.next-action-panel strong {
+  color: var(--color-text);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.goal-detail .related-section,
+.recovery-panel .related-section,
+.routine-workspace .disclosure,
+.routine-workspace .lifecycle-actions {
+  margin-top: var(--space-5);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--color-line);
+}
+
+.related-section h3 {
+  color: var(--color-text);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.related-row,
+.related-record-button {
+  border-bottom-color: var(--color-line);
+}
+
+.goal-grid .detail-empty,
+.goal-grid .empty-detail {
+  min-height: 260px;
+  align-content: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.goal-grid .detail-empty h2,
+.goal-grid .detail-empty p,
+.goal-grid .empty-detail h2,
+.goal-grid .empty-detail p {
+  margin: 0;
+}
+
+.recovery-panel {
+  min-height: 0;
+}
+
+.recovery-resume-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: var(--space-5);
+  margin-top: var(--space-5);
+  padding: var(--space-4) var(--space-5);
+  border: 0;
+  border-left: 3px solid var(--color-action);
+  border-radius: 0;
+  background: var(--color-support);
+}
+
+.recovery-resume-card > :not(button) {
+  grid-column: 1;
+}
+
+.recovery-resume-card > button {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  align-self: center;
+}
+
+.recovery-resume-card h3 {
+  color: var(--color-text);
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-wrap: balance;
+}
+
+.recovery-resume-card p:not(.eyebrow) {
+  color: var(--color-muted);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.recovery-fact {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 12px;
+  margin-top: var(--space-4);
+  padding: 0;
+  border-radius: 0;
+  color: var(--color-muted);
+  background: transparent;
+  font-size: 12px;
+}
+
+.recovery-fact strong {
+  color: var(--color-text);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.recovery-fact small {
+  color: var(--color-muted);
+}
+
+.recovery-fact-columns {
+  gap: var(--space-6);
+  padding-top: var(--space-1);
+}
+
+.recovery-fact-columns .related-section + .related-section {
+  padding-left: var(--space-6);
+  border-left: 1px solid var(--color-line);
+}
+
+.recovery-create-action {
+  padding: var(--space-4) 0 0;
+  border: 0;
+  border-radius: 0;
+}
+
+.routine-workspace .routine-recording-panel {
+  margin-top: var(--space-5);
+  padding: var(--space-5) 0;
+  border: 0;
+  border-top: 1px solid var(--color-line);
+  border-bottom: 1px solid var(--color-line);
+  border-radius: 0;
+  background: transparent;
+}
+
+.routine-workspace .create-disclosure-button {
+  justify-self: start;
+}
+
+.weekday-fieldset,
+.review-form fieldset {
+  border-color: var(--color-line);
+  border-radius: 8px;
+}
+
+.weekday-options label {
+  background: var(--color-hover);
+}
+
+.inline-confirm,
+.transition-confirmation {
+  border-radius: 0;
+  border-left: 3px solid #9a7b42;
+  background: #f6efe1;
+}
+
+.progress-workspace,
+.review-workspace,
+.data-workspace {
+  gap: var(--space-5);
+}
+
+.progress-filters {
+  gap: var(--space-3);
+  padding: 0 0 var(--space-5);
+  border: 0;
+  border-bottom: 1px solid var(--color-line);
+  border-radius: 0;
+  background: transparent;
+}
+
+.progress-summary,
+.review-summary {
+  gap: 0;
+  padding: var(--space-4) 0 var(--space-5);
+  border-bottom: 1px solid var(--color-line);
+}
+
+.progress-summary article,
+.review-summary article {
+  min-width: 0;
+  padding: 0 var(--space-4);
+  border: 0;
+  border-left: 1px solid var(--color-line);
+  border-radius: 0;
+  background: transparent;
+}
+
+.progress-summary article:first-child,
+.review-summary article:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+
+.progress-summary span,
+.review-summary span {
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+.progress-summary strong,
+.review-summary strong {
+  color: var(--color-text);
+  font-size: 22px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.progress-timeline-heading {
+  margin: var(--space-2) 0 0;
+}
+
+.progress-section-title,
+.review-section-heading h2 {
+  color: var(--color-text);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.record-kind {
+  padding: 0;
+  border-radius: 0;
+  color: var(--color-action);
+  background: transparent;
+  font-weight: 600;
+}
+
+.progress-records {
+  gap: 0;
+}
+
+.progress-records > li,
+.progress-empty {
+  padding: var(--space-5) 0;
+  border: 0;
+  border-top: 1px solid var(--color-line);
+  border-radius: 0;
+  background: transparent;
+}
+
+.progress-record-heading h2,
+.progress-record-heading h3 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.progress-record-heading > strong {
+  color: var(--color-text);
+  font-weight: 500;
+}
+
+.progress-fact-group {
+  margin-top: var(--space-4);
+  padding: 0 0 0 var(--space-4);
+  border: 0;
+  border-left: 1px solid rgba(49, 93, 80, 0.3);
+}
+
+.progress-empty {
+  min-height: 180px;
+  align-content: center;
+}
+
+.review-toolbar,
+.review-routine-grid > article,
+.review-learning-grid > section,
+.review-empty,
+.review-error {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.review-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: flex-end;
+  justify-content: initial;
+  gap: var(--space-3);
+  padding: 0 0 var(--space-5);
+  border-bottom: 1px solid var(--color-line);
+}
+
+.review-toolbar h2 {
+  color: var(--color-text);
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.review-kicker {
+  color: var(--color-action) !important;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.review-notice {
+  padding: var(--space-3) var(--space-4);
+  border: 0;
+  border-left: 3px solid var(--color-action);
+  border-radius: 0;
+  background: var(--color-support);
+}
+
+.review-workspace > section,
+.review-learning-grid,
+.review-form {
+  margin-top: var(--space-2);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--color-line);
+}
+
+.review-routine-grid {
+  gap: 0;
+}
+
+.review-routine-grid > article {
+  padding: var(--space-4) var(--space-5);
+  border-left: 1px solid var(--color-line);
+}
+
+.review-routine-grid > article:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+
+.review-routine-heading > strong {
+  color: var(--color-text);
+  font-size: 19px;
+  font-weight: 500;
+}
+
+.review-learning-grid {
+  gap: 0;
+}
+
+.review-learning-grid > section {
+  padding: 0 var(--space-5);
+  border-left: 1px solid var(--color-line);
+}
+
+.review-learning-grid > section:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+
+.review-form {
+  gap: var(--space-4);
+  padding: var(--space-5) 0 0;
+  border-right: 0;
+  border-bottom: 0;
+  border-left: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.review-error {
+  padding: var(--space-4);
+  border-left: 3px solid #a15a4d;
+  background: #fbf1ed;
+}
+
+.data-workspace > section,
+.data-workspace > .data-tool {
+  gap: var(--space-4);
+  padding: var(--space-5) 0 0;
+  border: 0;
+  border-top: 1px solid var(--color-line);
+  border-radius: 0;
+  background: transparent;
+}
+
+.data-workspace > .data-history {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.data-history-filters {
+  padding-bottom: var(--space-4);
+}
+
+.data-history-list {
+  border-top-color: var(--color-line);
+}
+
+.data-history-row,
+.related-record-button {
+  border-bottom-color: var(--color-line);
+}
+
+.data-history-row.selected {
+  box-shadow: inset 3px 0 var(--color-action);
+  background: var(--color-support);
+}
+
+.data-record-card,
+.selected-record-facts {
+  padding: var(--space-5) 0;
+  border: 0;
+  border-top: 1px solid var(--color-line);
+  border-bottom: 1px solid var(--color-line);
+  border-radius: 0;
+  background: transparent;
+}
+
+.data-backfill-grid {
+  gap: 0;
+}
+
+.data-backfill-grid .goal-card {
+  padding: 0 var(--space-5);
+  border: 0;
+  border-left: 1px solid var(--color-line);
+  border-radius: 0;
+  background: transparent;
+}
+
+.data-backfill-grid .goal-card:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+
+.data-tool > summary {
+  color: var(--color-action);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.data-workspace > .destructive-tool {
+  border-top-color: rgba(161, 79, 69, 0.35);
+}
+
+.destructive-tool > summary {
+  color: #8a443d;
+}
+
+.confirmation-dialog {
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
+  background: var(--color-surface);
+  box-shadow: 0 18px 60px rgba(18, 33, 28, 0.22);
+}
+
+.confirmation-dialog h2 {
+  font-size: 22px;
+  line-height: 1.45;
+  text-wrap: balance;
+}
+
+.next-action-panel > .primary-button,
+.routine-workspace .routine-recording-panel .primary-button {
+  justify-self: start;
+}
+
+@media (min-width: 1320px) {
+  .goal-grid {
+    grid-template-columns: 300px minmax(0, 1fr);
+    gap: 38px;
+  }
+
+  .goal-grid > .goal-column:last-child {
+    padding-left: 36px;
+  }
+}
+
+@media (max-width: 1099px) {
+  .goal-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .goal-grid > .goal-column:last-child {
+    min-height: 0;
+    padding-top: var(--space-6);
+    padding-left: 0;
+    border-top: 1px solid var(--color-line);
+    border-left: 0;
+  }
+
+  .goal-grid .detail-empty,
+  .goal-grid .empty-detail {
+    min-height: 180px;
+  }
+
+  .recovery-resume-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .recovery-resume-card > button {
+    grid-column: 1;
+    grid-row: auto;
+    justify-self: start;
+    margin-top: var(--space-2);
+  }
+}
+
+@media (max-width: 700px) {
+  .review-toolbar {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .review-toolbar > button {
+    justify-self: start;
+  }
+
+  .goal-grid .goal-detail > .detail-title-row h2,
+  .goal-grid .recovery-panel > .detail-title-row h2,
+  .recovery-resume-card h3 {
+    font-size: 21px;
+  }
+
+  .progress-summary,
+  .review-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: var(--space-4);
+  }
+
+  .progress-summary article:nth-child(3),
+  .review-summary article:nth-child(3) {
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .review-routine-grid,
+  .review-learning-grid,
+  .data-backfill-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .review-routine-grid > article,
+  .review-learning-grid > section,
+  .data-backfill-grid .goal-card {
+    padding: var(--space-4) 0;
+    border-left: 0;
+    border-top: 1px solid var(--color-line);
+  }
+
+  .review-routine-grid > article:first-child,
+  .review-learning-grid > section:first-child,
+  .data-backfill-grid .goal-card:first-child {
+    border-top: 0;
+  }
+
+  .recovery-fact-columns .related-section + .related-section {
+    padding-left: 0;
+    border-left: 0;
+  }
+}

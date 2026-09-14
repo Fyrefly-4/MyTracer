@@ -35,6 +35,18 @@ async function navigate(page: Page, name: string): Promise<void> {
   await page.getByRole('navigation').getByRole('button', { name, exact: true }).click()
 }
 
+async function expectStableWorkspace(page: Page, selector: string): Promise<void> {
+  const metrics = await page.locator(selector).evaluate((workspace) => {
+    const main = workspace.closest('main')
+    return {
+      width: workspace.getBoundingClientRect().width,
+      noHorizontalOverflow: Boolean(main && main.scrollWidth <= main.clientWidth)
+    }
+  })
+  expect(metrics.width).toBeLessThanOrEqual(1042)
+  expect(metrics.noHorizontalOverflow).toBe(true)
+}
+
 test('keeps existing work reachable, restores selection, and records without implicit changes', async () => {
   test.slow()
   const root = await createTemporaryTestRoot()
@@ -65,6 +77,21 @@ test('keeps existing work reachable, restores selection, and records without imp
     await page.getByLabel('目标名称').fill(goalName)
     await page.getByLabel('当前下一步（可选）').fill(actionName)
     await page.getByRole('button', { name: '创建目标', exact: true }).click()
+    await expect(page.getByLabel(`${goalName} 详情`)).toBeVisible()
+    await expectStableWorkspace(page, '.goal-workspace')
+    await page.getByRole('button', { name: '查看恢复与整理' }).click()
+    await expect(page.locator('.recovery-resume-card')).toBeVisible()
+    expect(
+      await page.locator('.recovery-panel').evaluate((recovery) => {
+        const resume = recovery.querySelector<HTMLElement>('.recovery-resume-card')
+        const fact = recovery.querySelector<HTMLElement>('.recovery-fact')
+        return Boolean(
+          resume && fact && resume.getBoundingClientRect().top < fact.getBoundingClientRect().top
+        )
+      })
+    ).toBe(true)
+    await expect(page.getByRole('button', { name: '加入今天并继续' })).toBeInViewport()
+    await page.getByRole('button', { name: '返回目标' }).click()
     await expect(page.getByLabel(`${goalName} 详情`)).toBeVisible()
     await page.getByRole('button', { name: '去今天处理' }).click()
     const detail = page.getByLabel(`${actionName} 行动详情`, { exact: true })
@@ -242,9 +269,11 @@ test('keeps existing work reachable, restores selection, and records without imp
     await page.getByRole('button', { name: '查看记录' }).click()
     await expect(page.getByLabel('进展汇总')).toContainText('累计行动分钟12')
     await expect(page.getByLabel('进展汇总')).toContainText('记录到的行动次数1')
+    await expectStableWorkspace(page, '.progress-workspace')
     await navigate(page, '复盘')
     await expect(page.getByLabel('周期汇总')).toContainText('投入时间12 分钟')
     await expect(page.getByLabel('周期汇总')).toContainText('真实行动次数1')
+    await expectStableWorkspace(page, '.review-workspace')
     await navigate(page, '进展')
     await expect(page.getByLabel('开始日期（包含）')).toHaveValue('2026-09-07')
     await expect(page.getByLabel('结束日期（包含）')).toHaveValue('2026-09-13')
@@ -252,6 +281,7 @@ test('keeps existing work reachable, restores selection, and records without imp
     await page.getByRole('button', { name: '查看完整记录或修改' }).click()
     await expect(page.getByLabel('所选记录')).toContainText(`行动 · ${actionName}`)
     await expect(page.getByLabel('行动分钟')).toHaveValue('12')
+    await expectStableWorkspace(page, '.data-workspace')
     await navigate(page, '目标')
     await expect(page.getByLabel(`${goalName} 详情`)).toBeVisible()
     await expect(page.getByLabel('状态', { exact: true })).toHaveValue('active')
@@ -271,6 +301,10 @@ test('keeps existing work reachable, restores selection, and records without imp
     await expect(routinePanel.getByLabel('本次结果')).toBeInViewport()
     await routinePanel.getByRole('button', { name: '放弃草稿', exact: true }).click()
     await expect(routinePanel.getByRole('button', { name: '记录例行' })).toBeFocused()
+    await navigate(page, '例行')
+    await page.locator('.goal-list-item').first().click()
+    await expect(page.getByLabel('散步 例行详情', { exact: true })).toBeVisible()
+    await expectStableWorkspace(page, '.routine-workspace')
     const afterCancel = await page.evaluate(() => window.myTracer.dataControl.list())
     expect(afterCancel).toMatchObject({
       ok: true,
@@ -293,6 +327,7 @@ test('labels historical facts, explains missing objects, and clears a deleted se
     application = await launch(root)
     const page = await application.firstWindow()
     await navigate(page, '数据')
+    await expectStableWorkspace(page, '.data-workspace')
     await page.getByText('补记历史记录', { exact: true }).click()
     await expect(page.getByText('还没有可补记的行动，请先在今天或目标页创建行动。')).toBeVisible()
     await expect(page.getByRole('button', { name: '补记行动记录', exact: true })).toBeDisabled()
@@ -365,6 +400,13 @@ test('labels historical facts, explains missing objects, and clears a deleted se
     await page.getByLabel('选择内容').selectOption({ label: '历史行动' })
     await page.getByRole('button', { name: '预览永久删除影响', exact: true }).click()
     const dialog = page.getByRole('dialog', { name: /确认永久删除行动“历史行动”/ })
+    await expect(dialog).toBeVisible()
+    expect(
+      await dialog.evaluate((element) => {
+        const box = element.getBoundingClientRect()
+        return box.width <= 522 && element.scrollWidth <= element.clientWidth
+      })
+    ).toBe(true)
     await dialog.getByRole('button', { name: '永久删除', exact: true }).click()
     await expect(dialog).toHaveCount(0)
     await navigate(page, '今天')
