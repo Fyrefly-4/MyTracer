@@ -47,6 +47,55 @@ async function expectStableWorkspace(page: Page, selector: string): Promise<void
   expect(metrics.noHorizontalOverflow).toBe(true)
 }
 
+async function expectReadableVisualFoundation(page: Page): Promise<void> {
+  const metrics = await page.evaluate(() => {
+    const rootStyle = getComputedStyle(document.documentElement)
+    const content = document.querySelector<HTMLElement>('.content')
+    const title = content?.querySelector<HTMLElement>('h1')
+    const visibleButtons = [...document.querySelectorAll<HTMLElement>('button')].filter(
+      (element) => element.getClientRects().length > 0
+    )
+    const visibleText = [...document.body.querySelectorAll<HTMLElement>('*')].filter((element) => {
+      const hasOwnText = [...element.childNodes].some(
+        (node) => node.nodeType === Node.TEXT_NODE && Boolean(node.textContent?.trim())
+      )
+      return hasOwnText && element.getClientRects().length > 0
+    })
+    return {
+      tokens: {
+        shell: rootStyle.getPropertyValue('--color-shell').trim().toLowerCase(),
+        surface: rootStyle.getPropertyValue('--color-surface').trim().toLowerCase(),
+        text: rootStyle.getPropertyValue('--color-text').trim().toLowerCase(),
+        muted: rootStyle.getPropertyValue('--color-muted').trim().toLowerCase(),
+        action: rootStyle.getPropertyValue('--color-action').trim().toLowerCase(),
+        line: rootStyle.getPropertyValue('--color-line').trim().toLowerCase()
+      },
+      rootFontSize: Number.parseFloat(rootStyle.fontSize),
+      contentBackground: content ? getComputedStyle(content).backgroundColor : '',
+      titleFontSize: title ? Number.parseFloat(getComputedStyle(title).fontSize) : 0,
+      smallestButtonFontSize: Math.min(
+        ...visibleButtons.map((element) => Number.parseFloat(getComputedStyle(element).fontSize))
+      ),
+      smallestVisibleText: Math.min(
+        ...visibleText.map((element) => Number.parseFloat(getComputedStyle(element).fontSize))
+      )
+    }
+  })
+  expect(metrics.tokens).toEqual({
+    shell: '#f4f2e9',
+    surface: '#fffefa',
+    text: '#293c38',
+    muted: '#65736d',
+    action: '#315e50',
+    line: '#dadfd7'
+  })
+  expect(metrics.rootFontSize).toBe(16)
+  expect(metrics.contentBackground).toBe('rgb(255, 254, 250)')
+  expect(metrics.titleFontSize).toBe(34)
+  expect(metrics.smallestButtonFontSize).toBeGreaterThanOrEqual(15)
+  expect(metrics.smallestVisibleText).toBeGreaterThanOrEqual(13)
+}
+
 test('keeps existing work reachable, restores selection, and records without implicit changes', async () => {
   test.slow()
   const root = await createTemporaryTestRoot()
@@ -60,6 +109,7 @@ test('keeps existing work reachable, restores selection, and records without imp
       BrowserWindow.getAllWindows()[0].setContentSize(1120, 760)
     })
     await navigate(page, '今天')
+    await expectReadableVisualFoundation(page)
     const emptyDetail = page.locator('.detail-empty')
     await expect(emptyDetail).toBeVisible()
     expect(
@@ -78,6 +128,7 @@ test('keeps existing work reachable, restores selection, and records without imp
     await page.getByLabel('当前下一步（可选）').fill(actionName)
     await page.getByRole('button', { name: '创建目标', exact: true }).click()
     await expect(page.getByLabel(`${goalName} 详情`)).toBeVisible()
+    await expectReadableVisualFoundation(page)
     await expectStableWorkspace(page, '.goal-workspace')
     await page.getByRole('button', { name: '查看恢复与整理' }).click()
     await expect(page.locator('.recovery-resume-card')).toBeVisible()
@@ -269,10 +320,12 @@ test('keeps existing work reachable, restores selection, and records without imp
     await page.getByRole('button', { name: '查看记录' }).click()
     await expect(page.getByLabel('进展汇总')).toContainText('累计行动分钟12')
     await expect(page.getByLabel('进展汇总')).toContainText('记录到的行动次数1')
+    await expectReadableVisualFoundation(page)
     await expectStableWorkspace(page, '.progress-workspace')
     await navigate(page, '复盘')
     await expect(page.getByLabel('周期汇总')).toContainText('投入时间12 分钟')
     await expect(page.getByLabel('周期汇总')).toContainText('真实行动次数1')
+    await expectReadableVisualFoundation(page)
     await expectStableWorkspace(page, '.review-workspace')
     await navigate(page, '进展')
     await expect(page.getByLabel('开始日期（包含）')).toHaveValue('2026-09-07')
@@ -281,6 +334,7 @@ test('keeps existing work reachable, restores selection, and records without imp
     await page.getByRole('button', { name: '查看完整记录或修改' }).click()
     await expect(page.getByLabel('所选记录')).toContainText(`行动 · ${actionName}`)
     await expect(page.getByLabel('行动分钟')).toHaveValue('12')
+    await expectReadableVisualFoundation(page)
     await expectStableWorkspace(page, '.data-workspace')
     await navigate(page, '目标')
     await expect(page.getByLabel(`${goalName} 详情`)).toBeVisible()
@@ -304,6 +358,7 @@ test('keeps existing work reachable, restores selection, and records without imp
     await navigate(page, '例行')
     await page.locator('.goal-list-item').first().click()
     await expect(page.getByLabel('散步 例行详情', { exact: true })).toBeVisible()
+    await expectReadableVisualFoundation(page)
     await expectStableWorkspace(page, '.routine-workspace')
     const afterCancel = await page.evaluate(() => window.myTracer.dataControl.list())
     expect(afterCancel).toMatchObject({

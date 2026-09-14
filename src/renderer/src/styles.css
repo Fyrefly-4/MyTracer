@@ -1,24 +1,24 @@
 :root {
-  --color-shell: #f5f2ea;
+  --color-shell: #f4f2e9;
   --color-surface: #fffefa;
-  --color-text: #293a34;
-  --color-muted: #68736d;
-  --color-action: #315d50;
+  --color-text: #293c38;
+  --color-muted: #65736d;
+  --color-action: #315e50;
   --color-support: #e3ebe1;
   --color-hover: #edf1eb;
-  --color-line: rgba(41, 58, 52, 0.14);
+  --color-line: #dadfd7;
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
   --space-4: 16px;
   --space-5: 24px;
-  --space-6: 32px;
-  --space-7: 40px;
+  --space-6: 30px;
+  --space-7: 38px;
   color: var(--color-text);
   background: var(--color-shell);
   font-family: "Segoe UI", "Microsoft YaHei UI", sans-serif;
   font-synthesis: none;
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1.5;
   text-rendering: optimizeLegibility;
 }
@@ -36,6 +36,7 @@ body {
 
 button {
   font: inherit;
+  font-size: 15px;
   min-height: 40px;
   padding: 8px 14px;
   border: 1px solid transparent;
@@ -169,7 +170,7 @@ button:focus-visible {
   align-items: center;
   gap: 8px;
   color: var(--color-muted);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
 }
 
@@ -206,7 +207,7 @@ button:focus-visible {
 .nav-label {
   padding: 0 12px 10px;
   color: var(--color-muted);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -258,13 +259,13 @@ button:focus-visible {
 .sidebar-note p {
   margin-bottom: 7px;
   color: var(--color-text);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
 }
 
 .sidebar-note span {
   color: var(--color-muted);
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1.75;
 }
 
@@ -281,7 +282,7 @@ button:focus-visible {
   max-width: 1160px;
   min-height: 100%;
   margin: 0 auto;
-  padding: 26px 28px 42px;
+  padding: 24px 28px 38px;
 }
 .hero {
   margin-bottom: 22px;
@@ -601,7 +602,7 @@ button:focus-visible {
   border: 0;
   border-radius: 11px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 750;
 }
 
@@ -821,7 +822,7 @@ button:disabled {
 
 .next-action-panel span {
   color: #71807a;
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 750;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1200,7 +1201,7 @@ h1 {
   padding: 0;
   color: #315d50;
   background: transparent;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 700;
   cursor: pointer;
 }
@@ -1427,7 +1428,7 @@ h1 {
 .ai-start-help-availability,
 .ai-start-help-waiting {
   color: #52665f;
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1.6;
 }
 
@@ -1570,7 +1571,7 @@ h1 {
   border-radius: 0;
   color: #60716a;
   background: transparent;
-  font-size: 13px;
+  font-size: 15px;
   text-decoration: underline;
   text-underline-offset: 3px;
 }
@@ -1957,7 +1958,7 @@ h1, h2, h3, p, strong, small, button, .related-row, .status-badge {
   border-radius: 999px;
   color: #42675a;
   background: #e8f1eb;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 750;
 }
 
@@ -2012,7 +2013,7 @@ h1, h2, h3, p, strong, small, button, .related-row, .status-badge {
 .data-history-row small,
 .related-record-button small {
   color: #748079;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .selected-data-record { scroll-margin-top: 16px; }
@@ -2084,7 +2085,7 @@ h1, h2, h3, p, strong, small, button, .related-row, .status-badge {
 
 h1 {
   color: var(--color-text);
-  font-size: 29px;
+  font-size: 34px;
   font-weight: 650;
   letter-spacing: -0.02em;
 }
@@ -2097,7 +2098,7 @@ h1 {
 
 .eyebrow {
   color: var(--color-action);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 650;
   letter-spacing: 0.08em;
 }
@@ -2112,7 +2113,7 @@ h1 {
   border-radius: 0;
   color: var(--color-muted);
   background: transparent;
-  font-size: 12px;
+  font-size: 13px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -2225,7 +2226,7 @@ h1 {
 .planned-routine-list span,
 .planned-routine-list small {
   color: var(--color-muted);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .quiet-button {
@@ -2234,7 +2235,7 @@ h1 {
   border-radius: 6px;
   color: var(--color-muted);
   background: transparent;
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 500;
 }
 
@@ -2291,7 +2292,7 @@ h1 {
   max-width: 28ch;
   margin-top: var(--space-2);
   color: var(--color-text);
-  font-size: 25px;
+  font-size: 26px;
   font-weight: 600;
   line-height: 1.35;
   letter-spacing: -0.01em;
@@ -2303,7 +2304,7 @@ h1 {
   border-radius: 0;
   color: var(--color-muted);
   background: transparent;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 400;
 }
 
@@ -2333,7 +2334,7 @@ h1 {
 .today-grid .recording-heading h3 {
   margin-top: var(--space-1);
   color: var(--color-text);
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 600;
 }
 
@@ -2343,7 +2344,7 @@ h1 {
 
 .today-grid .ai-start-help-heading h3 {
   color: var(--color-text);
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 600;
 }
 
@@ -2500,7 +2501,7 @@ h1 {
 
 .goal-grid .card-heading h2 {
   color: var(--color-text);
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 600;
 }
 
@@ -2535,7 +2536,7 @@ h1 {
 
 .goal-grid .goal-list-item small {
   color: var(--color-muted);
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.5;
 }
 
@@ -2544,7 +2545,7 @@ h1 {
   max-width: 28ch;
   margin-top: var(--space-2);
   color: var(--color-text);
-  font-size: 25px;
+  font-size: 26px;
   font-weight: 600;
   line-height: 1.4;
   text-wrap: balance;
@@ -2555,7 +2556,7 @@ h1 {
   border-radius: 0;
   color: var(--color-muted);
   background: transparent;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 400;
 }
 
@@ -2599,7 +2600,7 @@ h1 {
 
 .related-section h3 {
   color: var(--color-text);
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 600;
 }
 
@@ -2674,7 +2675,7 @@ h1 {
   border-radius: 0;
   color: var(--color-muted);
   background: transparent;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .recovery-fact strong {
@@ -2775,7 +2776,7 @@ h1 {
 .progress-summary span,
 .review-summary span {
   color: var(--color-muted);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .progress-summary strong,
@@ -2793,7 +2794,7 @@ h1 {
 .progress-section-title,
 .review-section-heading h2 {
   color: var(--color-text);
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 600;
 }
 
@@ -2822,7 +2823,7 @@ h1 {
 .progress-record-heading h3 {
   margin: 0;
   color: var(--color-text);
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 600;
   line-height: 1.5;
 }
@@ -2872,7 +2873,7 @@ h1 {
 
 .review-kicker {
   color: var(--color-action) !important;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
 }
 
@@ -3024,7 +3025,7 @@ h1 {
 }
 
 .confirmation-dialog h2 {
-  font-size: 22px;
+  font-size: 26px;
   line-height: 1.45;
   text-wrap: balance;
 }
@@ -3127,4 +3128,58 @@ h1 {
     padding-left: 0;
     border-left: 0;
   }
+}
+
+/* Phase 4.3: shared readability and rhythm calibration. */
+label,
+legend,
+.field,
+.status-badge {
+  color: var(--color-muted);
+  font-size: 13px;
+}
+
+input,
+textarea,
+select {
+  color: var(--color-text);
+  font-size: 16px;
+}
+
+small,
+.brand-note,
+.connection,
+.nav-label,
+.sidebar-note span,
+.lede,
+.eyebrow,
+.today-date-row,
+.empty-copy,
+.terminal-copy,
+.detail-empty p,
+.captured-date,
+.record-list time,
+.progress-record-heading p,
+.progress-empty p,
+.progress-fact-group p,
+.ai-start-help-intro,
+.ai-start-help-draft,
+.ai-start-help-feedback,
+.ai-start-help-availability,
+.ai-start-help-waiting,
+.review-toolbar p,
+.review-section-heading p,
+.review-empty p,
+.review-error p,
+.review-no-explicit-fact,
+.data-record-heading > span {
+  color: var(--color-muted);
+}
+
+small {
+  font-size: 13px;
+}
+
+button {
+  font-size: 15px !important;
 }
