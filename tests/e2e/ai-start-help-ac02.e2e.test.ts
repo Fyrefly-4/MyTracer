@@ -68,14 +68,14 @@ async function openTodayAction(page: Page, title: string, expectInput = true): P
 
 async function triggerDraft(page: Page, input: string, acknowledgement: string): Promise<void> {
   await page.getByLabel('现在最卡住你的是什么？').fill(input)
-  await page.getByRole('button', { name: '我现在不想开始' }).click()
+  await page.getByRole('button', { name: '帮我找一个小起点' }).click()
   await expect(page.getByText(acknowledgement)).toBeVisible()
   await expect(page.getByRole('group', { name: /选择一个临时建议/ })).toBeVisible()
 }
 
 async function triggerFailure(page: Page, input: string, error: RegExp): Promise<void> {
   await page.getByLabel('现在最卡住你的是什么？').fill(input)
-  await page.getByRole('button', { name: '我现在不想开始' }).click()
+  await page.getByRole('button', { name: '帮我找一个小起点' }).click()
   await expect(page.getByText(error)).toBeVisible()
 }
 
@@ -192,7 +192,8 @@ test('continuous E2E-AC-02 proves isolation, every temporary branch, confirmatio
 
     await page.reload()
     await openTodayAction(page, '__ac02_allowed_action__', false)
-    await expect(page.getByText('尚未配置 AI 服务')).toBeVisible()
+    await expect(page.getByText('AI 尚未配置')).toBeVisible()
+    await expect(page.getByText('AI 状态', { exact: true })).toHaveCount(0)
     const beforeConfigurationBranches = sqliteSnapshot(root)
     const notConfigured = await page.evaluate(
       (actionId) =>
@@ -211,8 +212,8 @@ test('continuous E2E-AC-02 proves isolation, every temporary branch, confirmatio
 
     await page.getByRole('button', { name: '从环境变量导入配置' }).click()
     await expect(page.getByLabel('现在最卡住你的是什么？')).toBeVisible()
-    await page.getByRole('button', { name: '关闭 AI' }).click()
-    await expect(page.getByText(/AI 已关闭/)).toBeVisible()
+    await page.getByRole('button', { name: '停用 AI 功能' }).click()
+    await expect(page.getByText('AI 功能已停用')).toBeVisible()
     const disabled = await page.evaluate(
       (actionId) =>
         window.myTracer.aiStartHelp.start({
@@ -248,19 +249,24 @@ test('continuous E2E-AC-02 proves isolation, every temporary branch, confirmatio
     const initialToday = await todayCommitments(page)
 
     await triggerDraft(page, '__ac02_close__', '__ac02_ack_close__')
+    await expect(page.getByLabel('现在最卡住你的是什么？')).toHaveCount(0)
+    const closeCandidates = page
+      .getByRole('group', { name: /选择一个临时建议/ })
+      .locator('.ai-start-help-candidate')
+    await expect(closeCandidates.first()).toHaveClass(/is-selected/)
     expect(sqliteSnapshot(root)).toEqual(initial)
     await page
       .getByRole('group', { name: /选择一个临时建议/ })
       .getByRole('textbox')
       .first()
       .fill('__ac02_unsubmitted_edit__')
-    await page.getByRole('button', { name: '关闭', exact: true }).click()
-    await expect(page.getByText(/未确认内容已丢弃/)).toBeVisible()
+    await page.getByRole('button', { name: '结束本次帮助' }).click()
+    await expect(page.getByText(/本次帮助已结束，未确认内容没有保存/)).toBeVisible()
     expect(sqliteSnapshot(root)).toEqual(initial)
 
     await triggerDraft(page, '__ac02_reject__', '__ac02_ack_reject__')
-    await page.getByRole('button', { name: '拒绝全部建议' }).click()
-    await expect(page.getByText(/建议已拒绝，没有保存任何内容/)).toBeVisible()
+    await page.getByRole('button', { name: '这次不采用建议' }).click()
+    await expect(page.getByText(/你没有采用这次建议，没有保存任何内容/)).toBeVisible()
     expect(sqliteSnapshot(root)).toEqual(initial)
 
     await triggerDraft(page, '__ac02_stale__', '__ac02_ack_stale__')
@@ -282,7 +288,7 @@ test('continuous E2E-AC-02 proves isolation, every temporary branch, confirmatio
 
     await triggerDraft(page, '__ac02_accept_original__', '__ac02_ack_accept_original__')
     await page.getByRole('button', { name: '确认并设为新的下一步' }).click()
-    await expect(page.getByText(/新的待行动已保存/)).toBeVisible()
+    await expect(page.getByText('已保存为新的下一步。')).toBeVisible()
     const afterOriginal = sqliteSnapshot(root)
     const afterOriginalData = await page.evaluate(() => window.myTracer.dataControl.list())
     expect(afterOriginalData).toMatchObject({
@@ -316,7 +322,7 @@ test('continuous E2E-AC-02 proves isolation, every temporary branch, confirmatio
       .first()
       .fill('__ac02_final_edited_action__')
     await page.getByRole('button', { name: '确认并设为新的下一步' }).click()
-    await expect(page.getByText(/新的待行动已保存/)).toBeVisible()
+    await expect(page.getByText('已保存为新的下一步。')).toBeVisible()
     const afterActions = sqliteSnapshot(root)
     const afterActionsData = await page.evaluate(() => window.myTracer.dataControl.list())
     expect(afterActionsData).toMatchObject({
@@ -360,20 +366,20 @@ test('continuous E2E-AC-02 proves isolation, every temporary branch, confirmatio
     expect(await todayCommitments(page)).toEqual(initialToday)
 
     await triggerDraft(page, '__ac02_understandings__', '__ac02_ack_understandings__')
-    const understandingGroup = page.getByRole('group', { name: /理解候选/ })
+    const understandingGroup = page.getByRole('group', { name: /可选：保存一条理解/ })
     const candidateBlocks = understandingGroup.locator('.ai-start-help-candidate')
     await expect(candidateBlocks).toHaveCount(3)
-    await expect(page.getByText(/这些只是临时候选/)).toBeVisible()
+    await expect(page.getByText(/确认前不会保存或改变当前行动/)).toBeVisible()
 
     await candidateBlocks.nth(0).getByRole('combobox').selectOption({ index: 1 })
-    await candidateBlocks.nth(0).getByRole('button', { name: '确认这一项' }).click()
+    await candidateBlocks.nth(0).getByRole('button', { name: '保存这条理解' }).click()
     await expect(candidateBlocks.nth(0).getByRole('button', { name: '已保存' })).toBeVisible()
     await candidateBlocks.nth(1).getByRole('textbox').fill('__ac02_final_understanding_2__')
     await candidateBlocks.nth(1).getByRole('combobox').selectOption({ index: 1 })
-    await candidateBlocks.nth(1).getByRole('button', { name: '确认这一项' }).click()
+    await candidateBlocks.nth(1).getByRole('button', { name: '保存这条理解' }).click()
     await expect(candidateBlocks.nth(1).getByRole('button', { name: '已保存' })).toBeVisible()
-    await page.getByRole('button', { name: '拒绝全部建议' }).click()
-    await expect(page.getByText(/建议已拒绝/)).toBeVisible()
+    await page.getByRole('button', { name: '这次不采用建议' }).click()
+    await expect(page.getByText(/你没有采用这次建议/)).toBeVisible()
 
     const afterUnderstandings = sqliteSnapshot(root)
     const confirmedFacts = await page.evaluate(() => window.myTracer.dataControl.list())
@@ -414,13 +420,13 @@ test('continuous E2E-AC-02 proves isolation, every temporary branch, confirmatio
     await triggerDraft(page, '__ac02_no_record__', '__ac02_ack_no_record__')
     await expect(page.getByText(/没有可关联的真实行动记录/)).toBeVisible()
     const noRecordCandidates = page
-      .getByRole('group', { name: /理解候选/ })
+      .getByRole('group', { name: /可选：保存一条理解/ })
       .locator('.ai-start-help-candidate')
     await expect(noRecordCandidates).toHaveCount(3)
     await expect(
-      noRecordCandidates.first().getByRole('button', { name: '确认这一项' })
+      noRecordCandidates.first().getByRole('button', { name: '保存这条理解' })
     ).toBeDisabled()
-    await page.getByRole('button', { name: '拒绝全部建议' }).click()
+    await page.getByRole('button', { name: '这次不采用建议' }).click()
     expect(sqliteSnapshot(root)).toEqual(beforeNoRecord)
 
     await openTodayAction(page, '__ac02_allowed_action__')
@@ -437,21 +443,22 @@ test('continuous E2E-AC-02 proves isolation, every temporary branch, confirmatio
     await expect(page.getByRole('button', { name: '开始记录' })).toBeVisible()
 
     await page.getByLabel('现在最卡住你的是什么？').fill('__ac02_cancel__')
-    await page.getByRole('button', { name: '我现在不想开始' }).click()
-    await expect(page.getByRole('button', { name: '取消', exact: true })).toBeVisible()
-    await page.getByRole('button', { name: '取消', exact: true }).click()
-    await expect(page.getByText('已取消这次请求。')).toBeVisible()
+    await page.getByRole('button', { name: '帮我找一个小起点' }).click()
+    await expect(page.getByText(/正在根据当前行动整理一个小起点/)).toBeVisible()
+    await expect(page.getByRole('button', { name: '取消整理' })).toBeVisible()
+    await page.getByRole('button', { name: '取消整理' }).click()
+    await expect(page.getByText('已取消这次整理，没有保存任何内容。')).toBeVisible()
     expect(sqliteSnapshot(root)).toEqual(beforeFailures)
 
     await triggerFailure(page, '__ac02_timeout_retry__', /等待时间较长/)
     expect(sqliteSnapshot(root)).toEqual(beforeFailures)
-    await page.getByRole('button', { name: '主动重试' }).click()
+    await page.getByRole('button', { name: '重新整理建议' }).click()
     await expect(page.getByText('__ac02_ack_retry_new_generation__')).toBeVisible()
     await page.waitForTimeout(1_000)
     await expect(page.getByText('__ac02_ack_retry_new_generation__')).toBeVisible()
     await expect(page.getByText('__ac02_ack_late_old_generation__')).toHaveCount(0)
     expect(sqliteSnapshot(root)).toEqual(beforeFailures)
-    await page.getByRole('button', { name: '关闭', exact: true }).click()
+    await page.getByRole('button', { name: '结束本次帮助' }).click()
     expect(sqliteSnapshot(root)).toEqual(beforeFailures)
 
     await application.evaluate(({ dialog }, target) => {

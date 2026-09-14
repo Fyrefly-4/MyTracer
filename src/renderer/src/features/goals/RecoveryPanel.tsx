@@ -267,19 +267,6 @@ export function RecoveryPanel(props: {
       ) : null}
       {context ? (
         <>
-          <div className="recovery-fact">
-            <span>距最近一次实际行动</span>
-            <strong>
-              {context.daysSinceLastRealAction === null
-                ? '还没有行动记录'
-                : `${context.daysSinceLastRealAction} 天`}
-            </strong>
-            <small>
-              截至 {context.asOfLocalDate}
-              {context.lastRealActionOn ? ` · 上次行动 ${context.lastRealActionOn}` : ''}
-            </small>
-          </div>
-
           <section ref={resumeRef} className="recovery-resume-card" aria-label="从这里继续">
             <p className="eyebrow">从这里继续</p>
             <h3>{context.currentNextAction?.title ?? '先选一个很小的下一步'}</h3>
@@ -312,6 +299,19 @@ export function RecoveryPanel(props: {
               )
             ) : null}
           </section>
+
+          <div className="recovery-fact">
+            <span>距最近一次实际行动</span>
+            <strong>
+              {context.daysSinceLastRealAction === null
+                ? '还没有行动记录'
+                : `${context.daysSinceLastRealAction} 天`}
+            </strong>
+            <small>
+              截至 {context.asOfLocalDate}
+              {context.lastRealActionOn ? ` · 上次行动 ${context.lastRealActionOn}` : ''}
+            </small>
+          </div>
 
           <section className="related-section">
             <h3>上次做到哪里</h3>

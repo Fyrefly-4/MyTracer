@@ -1130,8 +1130,15 @@ function TodayWorkspace(): ReactNode {
             <div className="action-list">
               {today?.focuses.length ? (
                 today.focuses.map((action) => (
-                  <div className="focus-row" key={action.id}>
-                    <button type="button" onClick={() => selectAction(action)}>
+                  <div
+                    className={`focus-row ${detail?.id === action.id ? 'selected' : ''}`}
+                    key={action.id}
+                  >
+                    <button
+                      type="button"
+                      aria-pressed={detail?.id === action.id}
+                      onClick={() => selectAction(action)}
+                    >
                       <span>{action.title}</span>
                       <small>
                         {actionStatusText[action.status]}
@@ -1206,8 +1213,15 @@ function TodayWorkspace(): ReactNode {
               <div className="action-list">
                 {today?.intentions.length ? (
                   today.intentions.map((action) => (
-                    <div className="focus-row intention-row" key={action.id}>
-                      <button type="button" onClick={() => selectAction(action)}>
+                    <div
+                      className={`focus-row intention-row ${detail?.id === action.id ? 'selected' : ''}`}
+                      key={action.id}
+                    >
+                      <button
+                        type="button"
+                        aria-pressed={detail?.id === action.id}
+                        onClick={() => selectAction(action)}
+                      >
                         <span>{action.title}</span>
                         <small>
                           {actionStatusText[action.status]}
