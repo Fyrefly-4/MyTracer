@@ -12,6 +12,9 @@ import {
   type ProgressQuerySnapshotPersistence,
   type RepositoryPort
 } from './ports/persistence'
+import type { GoalActivityRepositoryPort } from './ports/persistence'
+import type { ClockPort } from './ports/clock'
+import { buildGoalActivity, buildWeekComparison, comparisonPeriods } from '../domain/should-facts'
 
 export type ProgressApplicationErrorCode = 'validation' | 'not-found'
 
@@ -27,6 +30,7 @@ export class ProgressApplicationError extends Error {
 
 export interface ProgressServiceDependencies {
   readonly repository: RepositoryPort
+  readonly clock?: ClockPort
 }
 
 function pushUnique<T extends { readonly id: string }>(items: T[], item: T): void {
@@ -111,6 +115,29 @@ export function buildProgressViewFromSnapshot(
 
 export class ProgressService {
   public constructor(private readonly dependencies: ProgressServiceDependencies) {}
+
+  private currentLocalDate(): string {
+    if (!this.dependencies.clock) throw new Error('A ClockPort is required for dated facts.')
+    return this.dependencies.clock.snapshot().localDate
+  }
+
+  public getGoalActivity() {
+    const asOf = this.currentLocalDate()
+    const repository = this.dependencies.repository as GoalActivityRepositoryPort
+    return buildGoalActivity(asOf, repository.queryGoalActivityDates())
+  }
+
+  public compareWeeks(input: { readonly goalId?: string | null }) {
+    const asOf = this.currentLocalDate()
+    const periods = comparisonPeriods(asOf)
+    // Both periods are derived from one repository snapshot, never two independent reads.
+    const progress = this.getProgress({
+      goalId: input.goalId,
+      from: periods.previous.from,
+      through: periods.current.through
+    })
+    return buildWeekComparison(asOf, progress)
+  }
 
   public getProgress(input: {
     readonly goalId?: string | null

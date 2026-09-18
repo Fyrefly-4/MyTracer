@@ -1,0 +1,104 @@
+{
+  "schemaVersion": 1,
+  "task": "T071",
+  "task_kind": "implementation",
+  "dependencies": {
+    "requires": [
+      "T011",
+      "T012",
+      "T013",
+      "T014",
+      "T021",
+      "T022",
+      "T023",
+      "T031",
+      "T032",
+      "T033",
+      "T041",
+      "T042",
+      "T051",
+      "T052",
+      "T061",
+      "T062",
+      "T063"
+    ],
+    "blocks": ["T072"],
+    "can_parallel": [],
+    "prefer_after": [],
+    "conflicts_with": []
+  },
+  "conflict_basis": {},
+  "shared_surfaces": [
+    {
+      "files": [
+        "src/domain/progress.ts",
+        "src/domain/recovery.ts",
+        "src/domain/local-date.ts",
+        "src/application/progress.ts",
+        "src/application/goals.ts",
+        "src/application/today.ts",
+        "src/application/ports/persistence.ts",
+        "src/infrastructure/sqlite/sqlite-repository.ts"
+      ],
+      "modules": ["real-action-date-facts", "read-only-week-comparison"],
+      "schema_tables": ["goals", "actions", "action_records", "routines", "routine_records"],
+      "ipc_contracts": ["goals", "today", "progress"],
+      "domain_invariants": [
+        "query-does-not-mutate",
+        "absence-remains-unknown",
+        "record-outcome-defines-real-action",
+        "explicit-local-date-and-monday-sunday-week",
+        "no-threshold-or-score"
+      ],
+      "risk": "high",
+      "integration_policy": "serial"
+    },
+    {
+      "files": [
+        "src/renderer/src/features/goals/GoalsPage.tsx",
+        "src/renderer/src/features/today/TodayPage.tsx",
+        "src/renderer/src/features/progress/ProgressPage.tsx",
+        "src/renderer/src/app/ui-session.ts",
+        "src/renderer/src/styles.css"
+      ],
+      "modules": [
+        "non-blocking-soft-guidance",
+        "existing-candidates-and-goal-facts",
+        "current-renderer-session-and-navigation"
+      ],
+      "schema_tables": [],
+      "ipc_contracts": ["goals", "today", "progress"],
+      "domain_invariants": [
+        "user-selects-today",
+        "no-goal-or-focus-cap",
+        "renderer-displays-domain-query-facts",
+        "ai-context-and-permissions-unchanged"
+      ],
+      "risk": "medium",
+      "integration_policy": "serial"
+    },
+    {
+      "files": [
+        "docs/implementation/T071_SHOULD_CONVERGENCE.md",
+        "docs/implementation/metadata/T071.json",
+        "docs/implementation/TASK_INDEX_V0.1.md",
+        "docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md"
+      ],
+      "modules": [
+        "eleven-should-requirements-and-current-candidate-evidence",
+        "contract-draft-and-owner-activation"
+      ],
+      "schema_tables": [],
+      "ipc_contracts": [],
+      "domain_invariants": [
+        "draft-does-not-authorize-implementation-or-publication",
+        "historical-pass-is-not-current-head-proof",
+        "manual-acceptance-owner-only",
+        "no-automatic-t072-or-release"
+      ],
+      "risk": "medium",
+      "integration_policy": "owner-review"
+    }
+  ],
+  "external": []
+}

@@ -67,12 +67,15 @@ function optionalDate(value: unknown): string | null | undefined {
   return value
 }
 
-function parseGet(args: readonly unknown[]): GetProgressInputDto {
+function parseGet(
+  args: readonly unknown[],
+  allowed = ['goalId', 'from', 'through']
+): GetProgressInputDto {
   if (args.length !== 1 || !args[0] || typeof args[0] !== 'object' || Array.isArray(args[0])) {
     throw new ProgressIpcValidationError('Expected one input object.')
   }
   const record = args[0] as Record<string, unknown>
-  if (Object.keys(record).some((key) => !['goalId', 'from', 'through'].includes(key))) {
+  if (Object.keys(record).some((key) => !allowed.includes(key))) {
     throw new ProgressIpcValidationError('Unexpected input field.')
   }
   if (record.goalId !== undefined && record.goalId !== null && typeof record.goalId !== 'string') {
@@ -89,6 +92,22 @@ function parseGet(args: readonly unknown[]): GetProgressInputDto {
 }
 
 export function registerProgressIpc(options: RegisterProgressIpcOptions): void {
+  options.ipc.removeHandler(PROGRESS_CHANNELS.goalActivity)
+  options.ipc.handle(PROGRESS_CHANNELS.goalActivity, (event, ...args) => {
+    options.assertSender(event)
+    return execute(() => {
+      parseGet(args, [])
+      return options.service.getGoalActivity()
+    })
+  })
+  options.ipc.removeHandler(PROGRESS_CHANNELS.compareWeeks)
+  options.ipc.handle(PROGRESS_CHANNELS.compareWeeks, (event, ...args) => {
+    options.assertSender(event)
+    return execute(() => {
+      const { goalId } = parseGet(args, ['goalId'])
+      return options.service.compareWeeks({ goalId })
+    })
+  })
   options.ipc.removeHandler(PROGRESS_CHANNELS.get)
   options.ipc.handle(PROGRESS_CHANNELS.get, (event, ...args) => {
     options.assertSender(event)

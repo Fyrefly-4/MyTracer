@@ -43,6 +43,8 @@ import {
 import {
   PROGRESS_CHANNELS,
   type GetProgressInputDto,
+  type GoalActivityViewDto,
+  type WeekComparisonDto,
   type ProgressResult,
   type ProgressViewDto
 } from '../contracts/progress'
@@ -190,6 +192,14 @@ const api: MyTracerApi = Object.freeze({
       ipcRenderer.invoke(RECORD_CHANNELS.getDetail, input)
   }),
   progress: Object.freeze({
+    goalActivity: (
+      input: Readonly<Record<string, never>>
+    ): Promise<ProgressResult<GoalActivityViewDto>> =>
+      ipcRenderer.invoke(PROGRESS_CHANNELS.goalActivity, input),
+    compareWeeks: (input: {
+      readonly goalId?: string | null
+    }): Promise<ProgressResult<WeekComparisonDto>> =>
+      ipcRenderer.invoke(PROGRESS_CHANNELS.compareWeeks, input),
     get: (input: GetProgressInputDto): Promise<ProgressResult<ProgressViewDto>> =>
       ipcRenderer.invoke(PROGRESS_CHANNELS.get, input)
   }),
