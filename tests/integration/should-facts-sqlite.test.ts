@@ -126,6 +126,36 @@ it('queries isolated Goal dates and weekly facts without writes, recalculates co
       current: { realActionCount: 1, totalDurationMinutes: 15 },
       previous: { realActionCount: 0 }
     })
+    connection.repository.saveActionRecord({
+      id: 'ar2',
+      actionId: 'a1',
+      occurredOn: '2026-09-20',
+      durationMinutes: 40,
+      outcome: 'completed',
+      nextStep: null,
+      note: null,
+      createdAt: timestamp,
+      updatedAt: timestamp
+    })
+    expect(service.getGoalActivity().goals[0]).toMatchObject({
+      lastRealActionOn: '2026-09-20',
+      daysSinceLastRealAction: -1
+    })
+    expect(service.compareWeeks({ goalId: 'g1' }).current.totalDurationMinutes).toBe(15)
+    asDataControlRepository(connection.repository).deleteRoot({ type: 'action-record', id: 'ar2' })
+    expect(service.getGoalActivity().goals[0].lastRealActionOn).toBe('2026-09-19')
+    asDataControlRepository(connection.repository).deleteRoot({ type: 'action-record', id: 'ar1' })
+    expect(service.getGoalActivity().goals[0].lastRealActionOn).toBeNull()
+    expect(service.compareWeeks({ goalId: 'g1' }).current.realActionCount).toBe(0)
+    // Goal deletion retains the Routine but detaches it under the existing schema contract.
+    asDataControlRepository(connection.repository).deleteRoot({ type: 'goal', id: 'g2' })
+    expect(service.getGoalActivity().goals.map((fact) => fact.goalId)).toEqual(['g1', 'g3'])
+    expect(service.compareWeeks({}).current.realActionCount).toBe(1)
+    expect(() => service.compareWeeks({ goalId: 'g2' })).toThrow('not found')
+    const afterChanges = snapshot()
+    service.getGoalActivity()
+    service.compareWeeks({})
+    expect(snapshot()).toEqual(afterChanges)
   } finally {
     connection.close()
     await removeTemporaryTestRoot(root)

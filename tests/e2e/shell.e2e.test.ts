@@ -123,7 +123,11 @@ test('runs the Electron shell with an isolated userData root', async () => {
       'listForAction',
       'getDetail'
     ])
-    expect(await page.evaluate(() => Object.keys(window.myTracer.progress))).toEqual(['get'])
+    expect(await page.evaluate(() => Object.keys(window.myTracer.progress))).toEqual([
+      'goalActivity',
+      'compareWeeks',
+      'get'
+    ])
     expect(await page.evaluate(() => Object.keys(window.myTracer.recovery))).toEqual(['getContext'])
     expect(await page.evaluate(() => Object.keys(window.myTracer.review))).toEqual([
       'begin',

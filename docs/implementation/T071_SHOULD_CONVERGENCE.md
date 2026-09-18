@@ -1,7 +1,7 @@
 # T071 — 11 条 SHOULD 既定处理结论收敛
 
-> 合同版本：approved-1，2026-09-19（保留 §14 的草案检查历史）  
-> 项目所有者已批准合同并授权 checkout 分支、提交、推送，开始按合同开发。§5 本地实现/验证及 §11 任务分支 publication 生效。  
+> 合同版本：approved-1，2026-09-19（保留 §14 的草案检查历史）
+> 项目所有者已批准合同并授权 checkout 分支、提交、推送，开始按合同开发。§5 本地实现/验证及 §11 任务分支 publication 生效。
 > 不声明 Automation Profile；docs closeout、人工验收、Ready、merge、tag/release 仍遵守独立 owner gate。
 
 ## 1. 任务信息
@@ -24,8 +24,8 @@
 | T806 / PR #43 | [PR #43](https://github.com/Fyrefly-4/MyTracer/pull/43) 已于 2026-08-30 合并；final head `605cb5433ca93d8f8353b93ca12e8596e16112f5`；集成 `1d02fd7a0a7b0bf29a5e39720d5818c9d68fdbc2` | [run 33323763973](https://github.com/Fyrefly-4/MyTracer/actions/runs/33323763973) 为该 head 的成功 pull_request run；compare 确认编写基线包含其集成提交 |
 | T807 / PR #49 | [PR #49](https://github.com/Fyrefly-4/MyTracer/pull/49) 已于 2026-09-05 合并；final head `523be0a94a43a5bcfd0300f2abc4ec5d34d7abdb`；集成 `fa3ac0a2ac9ec0854615478a14886d764f21c3fc` | [run 33955746084](https://github.com/Fyrefly-4/MyTracer/actions/runs/33955746084) 为该 head 的成功 pull_request run；本地提交历史包含该集成提交 |
 | 后续界面基线 | #51 `a9bfac7`、#52 `b1db74b`、#53 `a37c0eb` 已进入 dev | 保留当前布局、会话草稿、筛选和导航体验，不能按旧阶段 UI 覆盖当前实现 |
-| 账本漂移 | TASK_INDEX、Evidence、README 仍含 T806/T807 等待 final-head/merge 的历史描述 | 此处记录新观察，不替历史任务签署 `done`；启动前需确认该差异的处理，不自行扩大为 S4～S6 文档收口 |
-| S7 输入 | 已批准的总体 Plan §10.1 与 Traceability §3 给出 11 条处理结论；未找到独立 S7 设计文件 | 本合同提出 T071 最小实现细节，需 owner 批准；不自行设立新阶段任务或重写架构 |
+| 账本漂移 | TASK_INDEX、Evidence、README 仍含 T806/T807 等待 final-head/merge 的历史描述 | owner 已批准采用本合同核实基线；保留漂移说明，不替历史任务签署 `done` 或扩大为 S4～S6 文档收口 |
+| S7 输入 | 已批准的总体 Plan §10.1 与 Traceability §3 给出 11 条处理结论；未找到独立 S7 设计文件 | 本合同的最小实现细节已获 owner 批准；不自行设立新阶段任务或重写架构 |
 
 上述 CI 查询只核实 run/head/result，未重新下载历史 artifact，也未恢复 test-merge SHA；不据此重签聚合验收或人工结果。T806/T807 的旧失败、取消执行和 live-contract 限制仍保留。
 
@@ -133,7 +133,7 @@ dependencies:
 - Sidecar 只声明有限任务类型、依赖及共享面，不授权执行；必须通过 `npm.cmd run governance:metadata:check`。
 - 本合同不填写 `execution`、激活时间或有效期。未来启用 Profile 须单独批准并同步 sidecar，不能借用已过期的历史授权。
 
-## 5. 允许修改范围（实现获批后）
+## 5. 已批准的允许修改范围
 
 | 模块 | 文件/边界 |
 | --- | --- |
@@ -196,6 +196,9 @@ dependencies:
 
 ```powershell
 npm.cmd run governance:metadata:check
+npm.cmd run test:unit -- tests/unit/should-facts.test.ts
+npm.cmd run test:integration -- tests/integration/should-facts-sqlite.test.ts tests/integration/progress-ipc.test.ts
+npm.cmd run test:e2e -- tests/e2e/should-convergence.e2e.test.ts
 npm.cmd run test:unit -- tests/unit/goal-application.test.ts tests/unit/today-application.test.ts tests/unit/progress-application.test.ts tests/unit/recovery-domain.test.ts tests/unit/local-date.test.ts
 npm.cmd run test:integration -- tests/integration/goal-ipc.test.ts tests/integration/action-today-ipc.test.ts tests/integration/progress-ipc.test.ts tests/integration/progress-sqlite.test.ts tests/integration/recovery-sqlite.test.ts
 npm.cmd run test:e2e -- tests/e2e/goal-lifecycle.e2e.test.ts tests/e2e/action-today.e2e.test.ts tests/e2e/progress-core-loop.e2e.test.ts tests/e2e/ux-refinement.e2e.test.ts
@@ -303,8 +306,8 @@ Candidate CI 通过后按 Skill §10 提交精确影响矩阵，owner 批准后�
 
 - 发现冻结 MUST/SHOULD、D/ED 矛盾，或本方案无法保持其意义时，停止受影响部分。
 - 遇到真正需要阶段架构变化、文件/权限扩张、依赖/迁移、AI 上下文改变、真实数据访问或不可靠证据时，使用 [Escalation Proposal](ESCALATION_PROPOSAL_TEMPLATE.md)，不以实现便利绕过批准。
-- 当前账本与 GitHub 状态时差、工具链环境未核验均已报告；本步只准备合同，不因此开始实现或签署历史任务完成。
-- §2.1 的当前周/上周及未来日期表达是本合同的待批准工程选择；若 owner 选择其他口径，先修订合同及测试矩阵，不静默切换。
+- 当前账本与 GitHub 状态时差已随合同批准采用既有集成基线；工具链已在 §14.2 核验，不签署历史任务完成。
+- §2.1 的当前周/上周及未来日期表达已获批准；若 owner 选择其他口径，先修订合同及测试矩阵，不静默切换。
 - 现有六条 SHOULD 发现源码缺口时保留失败事实；超出 §5 的修复先提交具体扩围。
 - 若无其他有效工作，外部 CI 依 AGENTS §6.4 HANDOFF，不连续轮询，不自动启动 T072。
 

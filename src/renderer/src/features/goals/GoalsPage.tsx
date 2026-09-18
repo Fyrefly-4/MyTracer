@@ -8,6 +8,7 @@ import type {
 import { useUiSession, usePagePosition, revealStart, useUiLifetime } from '../../app/ui-session'
 import { goalStatusText, actionStatusText, recordOutcomeText } from '../../app/ui-text'
 import { RecoveryPanel } from './RecoveryPanel'
+import type { GoalActivityViewDto } from '../../../../contracts/progress'
 
 const goalErrorText: Record<GoalErrorCode, string> = {
   validation: '请检查必填内容。',
@@ -34,6 +35,8 @@ function GoalWorkspace(): ReactNode {
   usePagePosition('goals', loaded && selectionLoaded)
   const [refreshVersion, setRefreshVersion] = useState(0)
   const [goals, setGoals] = useState<readonly GoalSummaryDto[]>([])
+  const [activity, setActivity] = useState<GoalActivityViewDto | null>(null)
+  const [activityError, setActivityError] = useState(false)
   const [detail, setDetail] = useState<GoalDetailDto | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -46,6 +49,35 @@ function GoalWorkspace(): ReactNode {
   const [pendingGoalEnd, setPendingGoalEnd] = useState<PendingGoalEnd | null>(null)
   const [recoveryGoalId, setRecoveryGoalId] = useState<string | null>(session.recoveryGoalId)
   const goalEndTriggerRef = useRef<HTMLButtonElement | null>(null)
+
+  useEffect(() => {
+    let active = true
+    void window.myTracer.progress
+      .goalActivity({})
+      .then((result) => {
+        if (!active) return
+        setActivity(result.ok ? result.value : null)
+        setActivityError(!result.ok)
+      })
+      .catch(() => {
+        if (active) {
+          setActivity(null)
+          setActivityError(true)
+        }
+      })
+    return () => {
+      active = false
+    }
+  }, [refreshVersion])
+
+  const activityText = (goalId: string): string => {
+    const fact = activity?.goals.find((item) => item.goalId === goalId)
+    if (!fact) return activityError ? '行动日期暂时无法读取' : '正在读取行动日期…'
+    if (fact.daysSinceLastRealAction === null) return '尚无行动记录'
+    return fact.daysSinceLastRealAction < 0
+      ? `最近行动记录日期 ${fact.lastRealActionOn}（晚于今天）`
+      : `距上次真实行动 ${fact.daysSinceLastRealAction} 天`
+  }
 
   useEffect(() => {
     let active = true
@@ -342,6 +374,18 @@ function GoalWorkspace(): ReactNode {
                 </select>
               </label>
             </div>
+            <p className="empty-copy">
+              可以先保留少量活跃目标，把注意力留给现在想做的事；数量由你决定。
+            </p>
+            {activity ? <p className="empty-copy">行动日期截至 {activity.asOfLocalDate}</p> : null}
+            {activityError ? (
+              <p role="status">
+                行动日期暂时无法读取。
+                <button type="button" onClick={() => setRefreshVersion((version) => version + 1)}>
+                  重试行动日期
+                </button>
+              </p>
+            ) : null}
             {goals.length ? (
               <div className="goal-list">
                 {goals.map((goal) => (
@@ -356,6 +400,7 @@ function GoalWorkspace(): ReactNode {
                       {goalStatusText[goal.status]} ·{' '}
                       {goal.currentNextActionId ? '有下一步' : '下一步为空'}
                     </small>
+                    <small>{activityText(goal.id)}</small>
                   </button>
                 ))}
               </div>

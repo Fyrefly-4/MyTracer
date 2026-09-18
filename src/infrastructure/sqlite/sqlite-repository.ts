@@ -583,6 +583,15 @@ export class SqliteRepository
     return row ? this.actionFromRow(row) : null
   }
 
+  queryProgressSnapshot(filter: ProgressQueryFilterPersistence): ProgressQuerySnapshotPersistence {
+    return this.database.transaction(() =>
+      Object.freeze({
+        actionRows: this.queryActionProgressRows(filter),
+        routineRecords: this.queryRoutineProgressRecords(filter)
+      })
+    )()
+  }
+
   queryGoalActivityDates(): readonly {
     readonly goalId: string
     readonly lastRealActionOn: string | null
@@ -613,15 +622,6 @@ export class SqliteRepository
         })
       )
     )
-  }
-
-  queryProgressSnapshot(filter: ProgressQueryFilterPersistence): ProgressQuerySnapshotPersistence {
-    return this.database.transaction(() =>
-      Object.freeze({
-        actionRows: this.queryActionProgressRows(filter),
-        routineRecords: this.queryRoutineProgressRecords(filter)
-      })
-    )()
   }
 
   queryRecoverySnapshot(goalId: string): RecoveryQuerySnapshotPersistence {
