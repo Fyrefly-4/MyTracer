@@ -22,8 +22,11 @@
 - **Diff / boundaries**：完整 task diff 已自查；无依赖、migration/schema/export、AI context/权限、自动 Today 写入或 T072 范围变化。新增 fixed API 为 `progress.goalActivity({})` 与 `progress.compareWeeks({goalId?})`，Main DTO/sender 校验，Renderer 仅展示。
 - **Exact local source pass**：实现提交 `6aea65156decc7b3c2f0c85333b883170724b24c` 在干净工作树执行 `node tools/evidence/capture-command.mjs --task T071 --gate local-candidate --base-revision a37c0eb00d4e3675769ba5e291133de341bfe517 --output .tmp/evidence -- npm.cmd run verify`，exit 0：format/lint/typecheck、Unit 255/255、Integration 130 pass + 1 live-only skip、Electron E2E 27 pass + 1 package-only skip。artifact `.tmp/evidence/T071-local-candidate-6aea65156dec-20260918191201.json` 的 source/base、Win32/Node/Electron、真实 argv、exit code 与 complete capture 均已核对；无原始日志/正文/凭据。本条之后只有证据文档补记，不把未完成 independent/hosted/manual gates 记为通过。
 - **Integration Freshness**：只读复核远端 dev 仍为 `a37c0eb00d4e3675769ba5e291133de341bfe517`；`original_base_revision`、`latest_authorized_dev_revision`、`verified_against_revision` 均为此 SHA；`status=fresh`、`refresh_method=none`，仅绑定上述本地 source 和核对时点，发布前仍须重查。
-- **Pending**：独立只读 review、hosted early/candidate CI、owner 人工、docs closeout、final-head CI。首次推送被自动审批以未确认具体远端目的地拒绝；已请求 owner 明确授权 `https://github.com/Fyrefly-4/MyTracer`。尚无任务 PR/remote branch 发布成功证据；未开始任何 CI 监控。独立 Agent 委派也等待明确授权，不以实现者自查替代。
-- **Revisions**：`task_delivery_revision=null`；`dev_integration_revision=null`；`stage_final_integration_revision=null`。手工验收 `pending`；T072、Ready、merge/tag/release 未执行。
+- **Publication history**：首次推送被自动审批以未确认具体远端目的地拒绝，未执行。2026-09-19 owner 明确批准向 `https://github.com/Fyrefly-4/MyTracer` 推送及创建目标为 dev 的 Draft PR，并批准独立只读 Agent。随后 `561fe74a2cab35addaa781aa87327e4dbb16680d` 正常推送成功，创建 [Draft PR #55](https://github.com/Fyrefly-4/MyTracer/pull/55)。首次 hosted run [35416489977](https://github.com/Fyrefly-4/MyTracer/actions/runs/35416489977) 已启动，绑定该 PR head；仅记录启动事实，不声明通过，也不能替代后续新 head CI。
+- **Independent review**：owner 授权的独立只读 Agent 检查 `a37c0eb00d4e3675769ba5e291133de341bfe517..561fe74a2cab35addaa781aa87327e4dbb16680d` 全部 21 个变更文件及相关规范/既有回归断言，结论 `No findings`；独立 `git diff --check` 通过，并核对 exact-source JSON 的 exit 0 / capture complete。审查未重跑全套测试或代做人工验收。
+- **Manual acceptance**：pass（owner-reported，2026-09-19）。项目所有者在本任务说明后明确报告“人工验收 通过”，绑定当时本地 head `561fe74a2cab35addaa781aa87327e4dbb16680d` 的实现内容（产品 revision `6aea65156decc7b3c2f0c85333b883170724b24c`）；未补造逐步观察或扩大为 T072/完整阶段验收。
+- **Pending**：hosted candidate CI、owner-approved docs closeout、final-head CI。后续证据更新仅补记真实结果，不提前执行最终文档收口。
+- **Revisions**：`task_delivery_revision=null`；`dev_integration_revision=null`；`stage_final_integration_revision=null`。T072、Ready、merge/tag/release 未执行。
 - **Recorded at**：2026-09-19，+08:00。
 
 ## 1. 证据原则
