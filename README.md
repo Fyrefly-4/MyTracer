@@ -29,6 +29,8 @@ MyTracer 是一个面向个人本地使用的 Windows 桌面应用，用于帮�
 - T806 正在 PR #43 完成 S4/S5 聚合证据与合同归档；固定产品 source 不因后续测试/文档 revision 改变。final-head hosted CI、Ready、合入 `dev` 和 main 晋升仍需独立 Gate。
 - T061～T063 已进入 `dev@f06b1e97da07dffc05814518ad8ad83ed3e051b9`，形成用户主动触发、最小上下文、Main-only Provider/凭据/网络、临时建议和确认后普通 Command 写入的 AI Start Help 纵向路径。T807 的 continuous AC-02、受影响回归、Windows package、安全边界、独立复核和项目所有者完整人工 AC-02/真实 UI + LiteLLM 体验已通过；PR #49 仍为 Draft，文档 final-head CI、Ready、merge 和发布仍是独立 Gate。
 
+- T071 补齐目标/今日重点的非阻塞软提示、最近真实行动日期与间隔、本周截至今天和上周完整周的分钟/行动次数比较，并回归六条既有 SHOULD。功能不设数量硬上限、停滞阈值或评价分数；实现与验证见 [T071 合同](docs/implementation/T071_SHOULD_CONVERGENCE.md) 和 [EV-T071-001](docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md#ev-t071-001)，任务状态以索引为准。T072 的全量聚合验收仍是独立入口。
+
 不要把任务实现或验收候选理解为已合入 `main` 或已发布。
 
 ## 已批准的总体架构

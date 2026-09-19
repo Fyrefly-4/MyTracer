@@ -4,11 +4,11 @@
 > 作用：记录可复核的命令、版本、环境、产物和人工观察  
 > 禁止：用任务状态、测试名称、关键词存在或 Agent 自述替代实际结果
 
-## T071 开发中证据
+## T071 交付证据
 
 ### EV-T071-001
 
-- **Status**：provisional / partial；本地实现与回归结果，不是任务完成或 S7 验收。
+- **Status**：pass；T071 实现候选的本地验证、独立审查、owner 人工验收和 hosted candidate CI 通过；owner 已批准文档收口。文档提交后的 final-head CI 与 merge 属于后续 PR 集成门禁，不声明 S7/T072 聚合验收。
 - **Task / requirements**：T071；FR-G07/A08/R08/T06/T07/L06/C04/P05/P06/REC05/RV05；D-004/008/009/010/106；ED-004/008/012/013/016/017/019。AC-01～07 仅为受影响自动回归，不代签 owner 人工或 T072 聚合。
 - **Base / source**：`dev@a37c0eb00d4e3675769ba5e291133de341bfe517`；首个查询提交 `ebbbce295cf6de01ec7ef19986c22f29f19f9927`。以下 implementation-regression artifacts 的 sourceRevision 是该 HEAD，但执行对象是该 HEAD 加 2026-09-19 03:01～03:08 +08:00 的未提交 Renderer、测试和方法位置调整；不能误称裸 `ebbbce2` 完整通过。
 - **Environment**：Windows，既有 Node `24.18.0` / npm `11.16.0` / Electron `43.3.0`；每项 SQLite/Electron 测试使用唯一临时根，普通 AI 用 Fake Provider；无安装、版本升级或真实 userData/credential 访问。
@@ -25,8 +25,9 @@
 - **Publication history**：首次推送被自动审批以未确认具体远端目的地拒绝，未执行。2026-09-19 owner 明确批准向 `https://github.com/Fyrefly-4/MyTracer` 推送及创建目标为 dev 的 Draft PR，并批准独立只读 Agent。随后 `561fe74a2cab35addaa781aa87327e4dbb16680d` 正常推送成功，创建 [Draft PR #55](https://github.com/Fyrefly-4/MyTracer/pull/55)。首次 hosted run [35416489977](https://github.com/Fyrefly-4/MyTracer/actions/runs/35416489977) 已启动，绑定该 PR head；仅记录启动事实，不声明通过，也不能替代后续新 head CI。
 - **Independent review**：owner 授权的独立只读 Agent 检查 `a37c0eb00d4e3675769ba5e291133de341bfe517..561fe74a2cab35addaa781aa87327e4dbb16680d` 全部 21 个变更文件及相关规范/既有回归断言，结论 `No findings`；独立 `git diff --check` 通过，并核对 exact-source JSON 的 exit 0 / capture complete。审查未重跑全套测试或代做人工验收。
 - **Manual acceptance**：pass（owner-reported，2026-09-19）。项目所有者在本任务说明后明确报告“人工验收 通过”，绑定当时本地 head `561fe74a2cab35addaa781aa87327e4dbb16680d` 的实现内容（产品 revision `6aea65156decc7b3c2f0c85333b883170724b24c`）；未补造逐步观察或扩大为 T072/完整阶段验收。
-- **Pending**：hosted candidate CI、owner-approved docs closeout、final-head CI。后续证据更新仅补记真实结果，不提前执行最终文档收口。
-- **Revisions**：`task_delivery_revision=null`；`dev_integration_revision=null`；`stage_final_integration_revision=null`。T072、Ready、merge/tag/release 未执行。
+- **Hosted candidate CI**：[run 35416556236](https://github.com/Fyrefly-4/MyTracer/actions/runs/35416556236) 成功，PR head `f626f854ba85106fc65abedf8479649f68093948`，test-merge `01d9bb1a86b7c6452b4d187f47331dbaf274c7c2`，base `a37c0eb00d4e3675769ba5e291133de341bfe517`。PR quality、Governance、Full Windows verification、CI Gate 和兼容 Windows required gate 均通过；Documentation 与 Milestone packaging 按分类跳过。下载并核对 artifact `verification-evidence-35416556236-1`（id `10576641131`），其 `unscoped-aggregate-01d9bb1a86b7-20260919024753.json` 记录 Windows/Node 24.18.0/Electron 43.3.0、`npm.cmd run verify` exit 0、capture complete、无 captureErrors，ci.headRevision 与 ci.mergeRevision 分离。同 head 的 run `35416538928` 已取消，由此成功 run supersede；保留取消事实，不算作产品测试失败。
+- **Documentation closeout**：2026-09-19 owner 批准合同、任务索引、证据、需求追踪、README、用户指南与 Draft PR 正文的精确收口范围，以及独立 `docs: close T071 delivery records` commit 和普通 push。本次只改说明与追踪，不改产品代码、依赖、schema、命令、CI 或冻结语义。任务索引在文档检查通过后记为 done；最新文档 head 的 CI/merge 状态仅在 PR #55 维护。T806/T807 历史漂移不在本次收口范围。
+- **Revisions / remaining integration gates**：`task_delivery_revision=f626f854ba85106fc65abedf8479649f68093948`，绑定上述实现候选；`dev_integration_revision=null`；`stage_final_integration_revision=null`。文档 final-head CI 仍须针对推送后的新 revision 验证；本条不预先声明通过。T072、Ready、merge/tag/release 未执行，无需求冲突或实现范围扩张。
 - **Recorded at**：2026-09-19，+08:00。
 
 ## 1. 证据原则

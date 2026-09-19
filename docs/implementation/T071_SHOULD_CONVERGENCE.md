@@ -1,6 +1,6 @@
 # T071 — 11 条 SHOULD 既定处理结论收敛
 
-> 合同版本：approved-1，2026-09-19（保留 §14 的草案检查历史）
+> 合同版本：approved-1 / owner-approved closeout，2026-09-19（保留 §14 的草案检查历史）
 > 项目所有者已批准合同并授权 checkout 分支、提交、推送，开始按合同开发。§5 本地实现/验证及 §11 任务分支 publication 生效。
 > 不声明 Automation Profile；docs closeout、人工验收、Ready、merge、tag/release 仍遵守独立 owner gate。
 
@@ -169,12 +169,13 @@ dependencies:
 
 ## 8. 交付物
 
-- [ ] 五条 S7 SHOULD 的最小纵向实现及空态/失败路径。
-- [ ] 六条既有 SHOULD 的当前 Candidate 回归结果；11 条逐项追踪与未完成项说明。
-- [ ] 对应 Domain/Application、SQLite/IPC 和 Electron E2E 验证。
-- [ ] 完整 diff 检查与独立只读 review，问题闭合或明确阻塞。
-- [ ] revision-bound 本地 evidence、early/candidate/final-head CI 和文档影响矩阵（在相应授权后）。
-- [ ] owner 人工体验结果；未执行保持 `pending`，不代签。
+- [x] 五条 S7 SHOULD 的最小纵向实现及空态/失败路径。
+- [x] 六条既有 SHOULD 的当前 Candidate 回归结果；11 条逐项追踪见 EV-T071-001。
+- [x] 对应 Domain/Application、SQLite/IPC 和 Electron E2E 验证。
+- [x] 完整 diff 检查与独立只读 review，结论 No findings。
+- [x] revision-bound 本地 evidence、首次 hosted 启动记录、成功 candidate CI 和 owner 批准的文档影响矩阵。
+- [ ] 文档提交后的 final-head CI；作为 PR 集成门禁在 PR #55 维护，不由 candidate CI 替代。
+- [x] owner 于 2026-09-19 明确报告人工验收通过，绑定当时实现内容。
 
 ## 9. 验收标准
 
@@ -281,26 +282,26 @@ integration:
   base_revision: dev@a37c0eb00d4e3675769ba5e291133de341bfe517
   freshness_required: true
   affected_regression_required: true
-  task_delivery_revision: null
+  task_delivery_revision: f626f854ba85106fc65abedf8479649f68093948
   dev_integration_revision: null
   stage_final_integration_revision: null
 ```
 
-当前未执行 Candidate validation，不声明 Integration Freshness `fresh`。实施前复核最新获准 dev；旧基线通过普通 merge 刷新，完成受影响回归及必要的重新 review，记录 `fresh` / `refreshed-and-passed` / `blocked` 的真实结果。本任务拟进入 dev，不适用 `not-required`。
+Candidate validation 已完成。收口前核对最新 dev 仍为 `a37c0eb00d4e3675769ba5e291133de341bfe517`，与 original_base_revision、verified_against_revision 一致；Integration Freshness 为 `fresh`，refresh_method 为 `none`。具体 source、test-merge 与验证结果见 EV-T071-001；后续合入仍须核对当时基线。
 
-### 12.1 文档收口候选（尚未授权）
+### 12.1 Owner 批准的文档收口范围
 
 | 文件 | 候选事实与边界 |
 | --- | --- |
-| 本合同 / metadata / TASK_INDEX | 实际范围、依赖、权限、验证与任务状态，保留初始草案/批准记录 |
+| 本合同 / TASK_INDEX | 核销实际交付、记录候选 revision；文档检查通过后仅 T071 记为 done，T072 保持 pending；metadata 无需变化 |
 | ACCEPTANCE_EVIDENCE | 新增 T071 revision-bound 11 条 SHOULD 覆盖、失败/成功、人工状态和 CI 链 |
 | REQUIREMENTS_TRACEABILITY | 更新本任务实际实现/测试位置，不改变 FR 优先级或 AC |
-| README | 若确有新增长期用户能力，仅补实际能力和已知限制 |
+| README / 用户指南 | 补充软提示、最近行动事实、周比较的实际能力与使用口径；用户指南只作派生说明 |
 | 实施计划、相关架构 | 评估是否需反映经批准的实现落点；无变化则不写 |
 | T806/T807 历史账本、归档、README 旧状态 | 已发现漂移；单列事实与精确影响范围供 owner 决定，不在 T071 自动批量改写 |
-| PR 正文 | 仅在 Draft publication 授权后维护；当前不创建 |
+| PR #55 正文 | 汇总候选验证与文档收口，维护最新 head 和 final-head CI 状态 |
 
-Candidate CI 通过后按 Skill §10 提交精确影响矩阵，owner 批准后才能最终 closeout/commit/push，再核实 final-head CI。PRD、DECISIONS、AGENTS、任务模板和 CI 配置不属于本任务收口。
+Candidate CI 通过后已按 Skill §10 提交精确影响矩阵，owner 于 2026-09-19 明确批准上述文档、PR 正文、独立 `docs: close T071 delivery records` commit 和 push，并要求随后结束任务。执行 metadata、format、diff 及文档链接检查后提交；推送后确认 final-head CI 启动并交接，不连续监控。PRD、DECISIONS、AGENTS、任务模板和 CI 配置不属于本任务收口。
 
 ## 13. 风险与停止条件
 
@@ -319,6 +320,12 @@ Candidate CI 通过后按 Skill §10 提交精确影响矩阵，owner 批准后�
 | --- | --- | --- |
 | 2026-09-19 | “为我着手 T071 的开发，本步先同步当前状态，进行合同编写” | 当时仅本地合同准备及状态核对 |
 | 2026-09-19 | “同意并批准合同内容，给予checkout分支，提交，推送的git权限，开始按合同内容进行T071开发” | 激活 §2.1/§5 实施，checkout、提交、普通 push 和合同约定的同任务 Draft PR；不激活 Profile 或免除独立 owner gates |
+| 2026-09-19 | “人工验收 通过”，明确批准 Fyrefly-4/MyTracer 推送、dev Draft PR 与独立只读 Agent | 人工验收绑定实现 revision `6aea651`；独立审查完整 diff 至 `561fe74`，No findings；不授权 Ready 或 merge |
+| 2026-09-19 | “批准上述文档范围、Draft PR 正文更新，以及该独立提交和推送。随后你的任务结束。” | 执行 §12.1 精确收口；推送后确认新 head CI 启动即交接 |
+
+### 14.3 交付结论
+
+五条新增 SHOULD 和六条既有 SHOULD 回归已闭合，完整映射见 [需求追踪 §3](../architecture/REQUIREMENTS_TRACEABILITY_V0.1.md#3-should-结论汇总) 和 [EV-T071-001](ACCEPTANCE_EVIDENCE_V0.1.md#ev-t071-001)。本地 Windows `verify` 在产品 revision `6aea65156decc7b3c2f0c85333b883170724b24c` 通过（255 unit、130 integration、27 E2E；live-only/package-only 各一项按配置跳过）。候选 `f626f854ba85106fc65abedf8479649f68093948` 的 hosted run `35416556236` 和 required gates 通过，人工验收为 owner-reported pass。未发现需求冲突或范围扩张；无依赖、migration、AI 权限或写规则变化。文档 final-head CI 和 owner-controlled merge 是剩余集成门禁，T072/G4 与发布不属于本任务。
 
 合同准备时未运行产品测试或执行 Git 写入；该历史不代表获批后的执行状态。11 条 SHOULD 的当前 Candidate 自动化/人工验收据后续实际结果登记。
 
