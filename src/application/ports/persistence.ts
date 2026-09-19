@@ -284,6 +284,13 @@ export interface ProgressRepositoryPort extends RepositoryPort {
   queryProgressSnapshot(filter: ProgressQueryFilterPersistence): ProgressQuerySnapshotPersistence
 }
 
+export interface GoalActivityRepositoryPort extends RepositoryPort {
+  queryGoalActivityDates(): readonly {
+    readonly goalId: string
+    readonly lastRealActionOn: string | null
+  }[]
+}
+
 export interface RecoveryRepositoryPort extends RepositoryPort {
   queryRecoverySnapshot(goalId: string): RecoveryQuerySnapshotPersistence
 }

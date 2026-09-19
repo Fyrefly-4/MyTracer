@@ -173,6 +173,24 @@
 | FR-REC05 | S4 提供小行动入口 | 用户最终选择 |
 | FR-RV05 | S5 可显式更新下一步 | Review 不自动写入 |
 
+### 3.1 T071 实现与验证定位
+
+以下为 11 条 SHOULD 的交付定位；同版本自动化、独立审查和 owner 人工结果见 [EV-T071-001](../implementation/ACCEPTANCE_EVIDENCE_V0.1.md#ev-t071-001)。需求优先级与上述处理结论不变；本表不替代 T072 全量聚合。
+
+| ID | 实现位置 | 验证位置 |
+| --- | --- | --- |
+| FR-G07 | `src/renderer/src/features/goals/GoalsPage.tsx` 软提示 | `tests/e2e/should-convergence.e2e.test.ts` 多目标不受硬限制；owner 人工 |
+| FR-A08 | Today 记录表单与 ActionRecord Application 的显式下一步命令 | `tests/unit/action-record-application.test.ts`、`tests/e2e/action-record.e2e.test.ts` |
+| FR-R08 | DataControl 与 SQLite 的例行补记/修正路径 | `tests/e2e/data-control.e2e.test.ts`、`tests/integration/should-facts-sqlite.test.ts` |
+| FR-T06 | `src/renderer/src/features/today/TodayPage.tsx` 今日重点软提示 | `tests/e2e/should-convergence.e2e.test.ts` 多 focus 不受硬限制；owner 人工 |
+| FR-T07 | Today 候选读取 `progress.goalActivity` | `tests/e2e/should-convergence.e2e.test.ts` Goal 事实一致与查询零写 |
+| FR-L06 | Today 深入记录的可选 note 与 ActionRecord 持久化 | `tests/e2e/action-record.e2e.test.ts` 保存/重开与快速记录 |
+| FR-C04 | DataControl 的 Understanding 修改/撤销 | `tests/e2e/data-control.e2e.test.ts` 子事实和投影 |
+| FR-P05 | `src/domain/should-facts.ts`、SQLite `queryGoalActivityDates`、GoalsPage | `tests/unit/should-facts.test.ts`、`tests/integration/should-facts-sqlite.test.ts`、SHOULD E2E |
+| FR-P06 | `src/application/progress.ts` / `src/domain/should-facts.ts` 周快照与 ProgressPage | `tests/unit/should-facts.test.ts`、`tests/integration/progress-ipc.test.ts`、SHOULD E2E |
+| FR-REC05 | Recovery 显式选择/创建小行动与 Today 选择路径 | `tests/e2e/recovery-restart.e2e.test.ts` 历史守恒与重开 |
+| FR-RV05 | ReviewResult 显式下一步更新命令 | `tests/e2e/review-result.e2e.test.ts` 显式更新、取消零写和重开 |
+
 ## 4. 验收场景 AC
 
 | ID | 主要模块 | 切片 | 自动化 | 人工重点 |

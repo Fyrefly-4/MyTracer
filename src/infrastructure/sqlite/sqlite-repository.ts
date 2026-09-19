@@ -592,6 +592,38 @@ export class SqliteRepository
     )()
   }
 
+  queryGoalActivityDates(): readonly {
+    readonly goalId: string
+    readonly lastRealActionOn: string | null
+  }[] {
+    const rows = this.database
+      .prepare(
+        `
+      SELECT goals.id AS goal_id, MAX(facts.occurred_on) AS last_real_action_on
+      FROM goals
+      LEFT JOIN (
+        SELECT actions.goal_id, action_records.occurred_on
+        FROM action_records INNER JOIN actions ON actions.id = action_records.action_id
+        UNION ALL
+        SELECT routines.goal_id, routine_records.occurred_on
+        FROM routine_records INNER JOIN routines ON routines.id = routine_records.routine_id
+        WHERE routine_records.outcome IN ('acted', 'target_met')
+      ) AS facts ON facts.goal_id = goals.id
+      GROUP BY goals.id
+      ORDER BY goals.created_at, goals.id
+    `
+      )
+      .all() as readonly Row[]
+    return Object.freeze(
+      rows.map((row) =>
+        Object.freeze({
+          goalId: asString(row, 'goal_id'),
+          lastRealActionOn: asNullableString(row, 'last_real_action_on')
+        })
+      )
+    )
+  }
+
   queryRecoverySnapshot(goalId: string): RecoveryQuerySnapshotPersistence {
     return this.database.transaction(() => {
       const goal = this.findGoalById(goalId)

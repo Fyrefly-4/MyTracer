@@ -26,6 +26,8 @@ function setup() {
     handle: vi.fn((channel: string, handler: Handler) => handlers.set(channel, handler))
   }
   const service = {
+    getGoalActivity: vi.fn(() => ({ asOfLocalDate: '2026-09-19', goals: [] })),
+    compareWeeks: vi.fn(() => ({ goalId: null })),
     getProgress: vi.fn(() => ({
       filter: { goalId: null, from: null, through: null },
       totalDurationMinutes: 0,
@@ -41,13 +43,51 @@ function setup() {
   })
   const event = { sender: { id: 7 } } as unknown as IpcMainInvokeEvent
   const invoke = (...args: unknown[]) => handlers.get(PROGRESS_CHANNELS.get)!(event, ...args)
-  return { assertSender, handlers, invoke, service }
+  const invokeChannel = (channel: string, ...args: unknown[]) =>
+    handlers.get(channel)!(event, ...args)
+  return { assertSender, handlers, invoke, invokeChannel, service }
 }
 
 describe('Progress IPC boundary', () => {
-  it('registers one fixed channel and forwards narrow validated filters', () => {
+  it('validates new query DTOs, preserves sender checks, and redacts failures', () => {
+    const { invokeChannel, service, assertSender } = setup()
+    expect(invokeChannel(PROGRESS_CHANNELS.goalActivity, {})).toMatchObject({ ok: true })
+    expect(invokeChannel(PROGRESS_CHANNELS.compareWeeks, { goalId })).toMatchObject({ ok: true })
+    expect(service.compareWeeks).toHaveBeenCalledWith({ goalId })
+    for (const channel of [PROGRESS_CHANNELS.goalActivity, PROGRESS_CHANNELS.compareWeeks]) {
+      for (const args of [
+        [],
+        [null],
+        [[]],
+        [{}, {}],
+        [{ from: '2026-09-01' }],
+        [{ sql: 'SELECT' }],
+        [{ goalId: 'bad' }]
+      ]) {
+        expect(invokeChannel(channel, ...args)).toMatchObject({
+          ok: false,
+          error: { code: 'validation' }
+        })
+      }
+    }
+    expect(invokeChannel(PROGRESS_CHANNELS.goalActivity, { goalId })).toMatchObject({ ok: false })
+    service.getGoalActivity.mockImplementationOnce(() => {
+      throw new Error('private SQLite path')
+    })
+    expect(invokeChannel(PROGRESS_CHANNELS.goalActivity, {})).toEqual({
+      ok: false,
+      error: { code: 'persistence-failed', message: 'MyTracer could not load Progress facts.' }
+    })
+    assertSender.mockImplementation(() => {
+      throw new Error('untrusted sender')
+    })
+    expect(() => invokeChannel(PROGRESS_CHANNELS.goalActivity, {})).toThrow('untrusted sender')
+    expect(() => invokeChannel(PROGRESS_CHANNELS.compareWeeks, {})).toThrow('untrusted sender')
+  })
+
+  it('registers fixed query channels and forwards narrow validated filters', () => {
     const { assertSender, handlers, invoke, service } = setup()
-    expect([...handlers.keys()]).toEqual([PROGRESS_CHANNELS.get])
+    expect([...handlers.keys()].sort()).toEqual(Object.values(PROGRESS_CHANNELS).sort())
     expect(invoke({ goalId, from: '2026-08-01', through: '2026-08-12' })).toMatchObject({
       ok: true,
       value: { realActionCount: 0 }

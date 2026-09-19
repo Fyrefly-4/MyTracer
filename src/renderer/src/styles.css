@@ -1280,6 +1280,37 @@ h1 {
   gap: 22px;
 }
 
+.week-comparison-scroll {
+  overflow-x: auto;
+}
+
+.week-comparison table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.week-comparison th,
+.week-comparison td {
+  padding: 0.65rem;
+  border-bottom: 1px solid rgba(44, 74, 65, 0.1);
+  vertical-align: top;
+}
+
+.week-comparison caption {
+  text-align: left;
+  padding: 0.5rem 0;
+}
+
+.week-comparison th:first-child {
+  min-width: 8em;
+}
+
+.week-comparison th:last-child,
+.week-comparison td:last-child {
+  white-space: nowrap;
+}
+
 .progress-filters {
   display: grid;
   grid-template-columns: minmax(180px, 1.35fr) minmax(150px, 1fr) minmax(150px, 1fr) auto;

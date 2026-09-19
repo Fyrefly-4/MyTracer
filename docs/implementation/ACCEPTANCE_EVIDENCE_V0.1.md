@@ -4,6 +4,32 @@
 > 作用：记录可复核的命令、版本、环境、产物和人工观察  
 > 禁止：用任务状态、测试名称、关键词存在或 Agent 自述替代实际结果
 
+## T071 交付证据
+
+### EV-T071-001
+
+- **Status**：pass；T071 实现候选的本地验证、独立审查、owner 人工验收和 hosted candidate CI 通过；owner 已批准文档收口。文档提交后的 final-head CI 与 merge 属于后续 PR 集成门禁，不声明 S7/T072 聚合验收。
+- **Task / requirements**：T071；FR-G07/A08/R08/T06/T07/L06/C04/P05/P06/REC05/RV05；D-004/008/009/010/106；ED-004/008/012/013/016/017/019。AC-01～07 仅为受影响自动回归，不代签 owner 人工或 T072 聚合。
+- **Base / source**：`dev@a37c0eb00d4e3675769ba5e291133de341bfe517`；首个查询提交 `ebbbce295cf6de01ec7ef19986c22f29f19f9927`。以下 implementation-regression artifacts 的 sourceRevision 是该 HEAD，但执行对象是该 HEAD 加 2026-09-19 03:01～03:08 +08:00 的未提交 Renderer、测试和方法位置调整；不能误称裸 `ebbbce2` 完整通过。
+- **Environment**：Windows，既有 Node `24.18.0` / npm `11.16.0` / Electron `43.3.0`；每项 SQLite/Electron 测试使用唯一临时根，普通 AI 用 Fake Provider；无安装、版本升级或真实 userData/credential 访问。
+- **Targeted**：`npm.cmd run typecheck`、`npm.cmd run lint`、`npm.cmd run governance:metadata:check` 通过；初始 SHOULD/Progress unit 12/12、SQLite/IPC integration 5/5；后续扩展 SQLite correction/delete/detach/reopen 测试通过。新增 `should-convergence.e2e.test.ts` 3/3：软提示/多目标/6 个 focus、Goal/Today 日期一致、查询零写、周比较过滤、重开、晚返回不串 Goal、未来日显示、失败重试。
+- **Aggregate command**：`node tools/evidence/capture-command.mjs --task T071 --gate implementation-regression --base-revision a37c0eb00d4e3675769ba5e291133de341bfe517 --output .tmp/evidence -- npm.cmd run verify`。
+- **Preserved failures**：`.tmp/evidence/T071-implementation-regression-ebbbce295cf6-20260918190114.json` exit 1：旧静态 AI 测试以 `queryProgressSnapshot` 为截取终点，把新独立方法包括进来；把新方法移到该终点之后，不改 AI 查询或测试断言，定向 process-governance 24/24 通过。`...-20260918190441.json` exit 1：shell 仍断言只有 `progress.get`，已精确加入两个获批 Query，未放宽其他 Preload 安全断言。`...-20260918190616.json` exit 1：该测试格式未通过，已按现有 Prettier 修正。
+- **Aggregate pass / supersedes**：`.tmp/evidence/T071-implementation-regression-ebbbce295cf6-20260918190704.json`，UTC `2026-09-18T19:07:04.678Z`～`19:08:22.333Z`，exit 0、capture complete。format/lint/typecheck 通过，Unit 255/255，Integration 130 pass + 1 live-only skip，Electron E2E 27 pass + 1 package-only skip。该成功 supersedes 上述三次失败，但保留原 artifact。
+- **Later presentation adjustment**：为保留原有汇总优先级，将周比较放在既有汇总之后并改善窄窗列宽；`npm.cmd run test:e2e -- tests/e2e/should-convergence.e2e.test.ts tests/e2e/progress-core-loop.e2e.test.ts` 在该调整后的未提交状态 4/4 通过。精确新提交的 aggregate 验证将在后续记录，不以调整前 aggregate 替代。
+- **11 SHOULD 实际验证映射**：G07/T06/T07/P05/P06 → `should-facts.test.ts`、`should-facts-sqlite.test.ts`、`progress-ipc.test.ts`、`should-convergence.e2e.test.ts`，含 0 分钟/partial/stopped、非计划 acted、休息/not_done/缺行、未来日期、空周、跨月跨年闰日、周一/周日、Goal isolation、修正/删除/解绑与只读快照。A08/L06 → action-record unit/application/E2E，明确 partial 下一步选择、note 可选、快速记录及重开；R08/C04 → data-control SQLite/E2E，历史补记/日期修正、理解修改/撤销及投影；REC05 → recovery-restart E2E 的用户显式小行动/Today 与历史守恒；RV05 → review-result unit/SQLite/E2E 的显式下一步、取消零写、重开。以上命令均含在成功 aggregate 中；不是仅以测试名称声明覆盖。
+- **Visual inspection**：用 `.tmp/T071-visual.mjs` 和独立虚构数据检查 desktop / 820px 窗口；截图 `.tmp/T071-progress.png`、`.tmp/T071-progress-narrow.png`、`.tmp/T071-goals.png`。Agent 检查仅证明所见布局，不等于 owner 人工接受。
+- **Diff / boundaries**：完整 task diff 已自查；无依赖、migration/schema/export、AI context/权限、自动 Today 写入或 T072 范围变化。新增 fixed API 为 `progress.goalActivity({})` 与 `progress.compareWeeks({goalId?})`，Main DTO/sender 校验，Renderer 仅展示。
+- **Exact local source pass**：实现提交 `6aea65156decc7b3c2f0c85333b883170724b24c` 在干净工作树执行 `node tools/evidence/capture-command.mjs --task T071 --gate local-candidate --base-revision a37c0eb00d4e3675769ba5e291133de341bfe517 --output .tmp/evidence -- npm.cmd run verify`，exit 0：format/lint/typecheck、Unit 255/255、Integration 130 pass + 1 live-only skip、Electron E2E 27 pass + 1 package-only skip。artifact `.tmp/evidence/T071-local-candidate-6aea65156dec-20260918191201.json` 的 source/base、Win32/Node/Electron、真实 argv、exit code 与 complete capture 均已核对；无原始日志/正文/凭据。本条之后只有证据文档补记，不把未完成 independent/hosted/manual gates 记为通过。
+- **Integration Freshness**：只读复核远端 dev 仍为 `a37c0eb00d4e3675769ba5e291133de341bfe517`；`original_base_revision`、`latest_authorized_dev_revision`、`verified_against_revision` 均为此 SHA；`status=fresh`、`refresh_method=none`，仅绑定上述本地 source 和核对时点，发布前仍须重查。
+- **Publication history**：首次推送被自动审批以未确认具体远端目的地拒绝，未执行。2026-09-19 owner 明确批准向 `https://github.com/Fyrefly-4/MyTracer` 推送及创建目标为 dev 的 Draft PR，并批准独立只读 Agent。随后 `561fe74a2cab35addaa781aa87327e4dbb16680d` 正常推送成功，创建 [Draft PR #55](https://github.com/Fyrefly-4/MyTracer/pull/55)。首次 hosted run [35416489977](https://github.com/Fyrefly-4/MyTracer/actions/runs/35416489977) 已启动，绑定该 PR head；仅记录启动事实，不声明通过，也不能替代后续新 head CI。
+- **Independent review**：owner 授权的独立只读 Agent 检查 `a37c0eb00d4e3675769ba5e291133de341bfe517..561fe74a2cab35addaa781aa87327e4dbb16680d` 全部 21 个变更文件及相关规范/既有回归断言，结论 `No findings`；独立 `git diff --check` 通过，并核对 exact-source JSON 的 exit 0 / capture complete。审查未重跑全套测试或代做人工验收。
+- **Manual acceptance**：pass（owner-reported，2026-09-19）。项目所有者在本任务说明后明确报告“人工验收 通过”，绑定当时本地 head `561fe74a2cab35addaa781aa87327e4dbb16680d` 的实现内容（产品 revision `6aea65156decc7b3c2f0c85333b883170724b24c`）；未补造逐步观察或扩大为 T072/完整阶段验收。
+- **Hosted candidate CI**：[run 35416556236](https://github.com/Fyrefly-4/MyTracer/actions/runs/35416556236) 成功，PR head `f626f854ba85106fc65abedf8479649f68093948`，test-merge `01d9bb1a86b7c6452b4d187f47331dbaf274c7c2`，base `a37c0eb00d4e3675769ba5e291133de341bfe517`。PR quality、Governance、Full Windows verification、CI Gate 和兼容 Windows required gate 均通过；Documentation 与 Milestone packaging 按分类跳过。下载并核对 artifact `verification-evidence-35416556236-1`（id `10576641131`），其 `unscoped-aggregate-01d9bb1a86b7-20260919024753.json` 记录 Windows/Node 24.18.0/Electron 43.3.0、`npm.cmd run verify` exit 0、capture complete、无 captureErrors，ci.headRevision 与 ci.mergeRevision 分离。同 head 的 run `35416538928` 已取消，由此成功 run supersede；保留取消事实，不算作产品测试失败。
+- **Documentation closeout**：2026-09-19 owner 批准合同、任务索引、证据、需求追踪、README、用户指南与 Draft PR 正文的精确收口范围，以及独立 `docs: close T071 delivery records` commit 和普通 push。本次只改说明与追踪，不改产品代码、依赖、schema、命令、CI 或冻结语义。任务索引在文档检查通过后记为 done；最新文档 head 的 CI/merge 状态仅在 PR #55 维护。T806/T807 历史漂移不在本次收口范围。
+- **Revisions / remaining integration gates**：`task_delivery_revision=f626f854ba85106fc65abedf8479649f68093948`，绑定上述实现候选；`dev_integration_revision=null`；`stage_final_integration_revision=null`。文档 final-head CI 仍须针对推送后的新 revision 验证；本条不预先声明通过。T072、Ready、merge/tag/release 未执行，无需求冲突或实现范围扩张。
+- **Recorded at**：2026-09-19，+08:00。
+
 ## 1. 证据原则
 
 每条完成声明必须绑定到：

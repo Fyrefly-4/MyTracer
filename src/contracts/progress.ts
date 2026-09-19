@@ -1,5 +1,7 @@
 export const PROGRESS_CHANNELS = Object.freeze({
-  get: 'progress:get'
+  get: 'progress:get',
+  goalActivity: 'progress:goal-activity',
+  compareWeeks: 'progress:compare-weeks'
 } as const)
 
 export interface GetProgressInputDto {
@@ -67,4 +69,39 @@ export type ProgressResult<T> =
 
 export interface ProgressApi {
   readonly get: (input: GetProgressInputDto) => Promise<ProgressResult<ProgressViewDto>>
+  readonly goalActivity: (
+    input: Readonly<Record<string, never>>
+  ) => Promise<ProgressResult<GoalActivityViewDto>>
+  readonly compareWeeks: (input: {
+    readonly goalId?: string | null
+  }) => Promise<ProgressResult<WeekComparisonDto>>
+}
+
+export interface GoalActivityViewDto {
+  readonly asOfLocalDate: string
+  readonly goals: readonly {
+    readonly goalId: string
+    readonly lastRealActionOn: string | null
+    readonly daysSinceLastRealAction: number | null
+  }[]
+}
+
+export interface WeekFactDto {
+  readonly from: string
+  readonly through: string
+  readonly totalDurationMinutes: number
+  readonly realActionCount: number
+  readonly hasRecordedFacts: boolean
+}
+
+export interface WeekComparisonDto {
+  readonly goalId: string | null
+  readonly asOfLocalDate: string
+  readonly currentWeekEndedOn: string
+  readonly current: WeekFactDto
+  readonly previous: WeekFactDto
+  readonly difference: {
+    readonly totalDurationMinutes: number
+    readonly realActionCount: number
+  }
 }
