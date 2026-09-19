@@ -22,8 +22,8 @@ export class AppErrorBoundary extends Component<
       return (
         <main className="fatal-state">
           <p className="eyebrow">界面暂时不可用</p>
-          <h1>MyTracer 没有修改任何数据</h1>
-          <p>请关闭并重新打开应用。此状态不会绕过应用命令写入业务数据。</p>
+          <h1>请重新打开 MyTracer</h1>
+          <p>请关闭并重新打开应用，确认最近操作的保存结果。</p>
         </main>
       )
     }

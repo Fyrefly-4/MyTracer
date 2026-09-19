@@ -358,6 +358,7 @@ function ActionRecordingPanel(props: {
       return
     }
     const saved = result.value
+    restoreBeginFocus.current = saved.action.status === 'pending'
     resetForm()
     const actionState = `行动现在为${actionStatusText[saved.action.status]}`
     const nextState = changingCurrentAction
