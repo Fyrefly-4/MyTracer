@@ -4,6 +4,139 @@
 > 作用：记录可复核的命令、版本、环境、产物和人工观察  
 > 禁止：用任务状态、测试名称、关键词存在或 Agent 自述替代实际结果
 
+## T072 provisional evidence
+
+### EV-T072-001
+
+- **Status**：provisional，非验收通过。T072 已获 owner 合同实施及任务 Git 授权；独立 review 已完成，候选提交、hosted CI、owner 人工、docs closeout 和 final-head CI 尚未闭合。
+- **Source**：`task/T072-demo-convergence`，base/HEAD `248350409927923016de18f7c5d967aa064964ca` 加未提交实现；不能把下述结果归给裸 HEAD。`.tmp/evidence/T072-local-candidate-source.json` 于 `2026-09-19T04:07:35.2866157Z` 记录 8 个改动实现/测试文件的 SHA-256；其余实现继承 base。合同、sidecar、任务索引及本 provisional 记录另属文档变化。`task_delivery_revision`、`dev_integration_revision`、`stage_final_integration_revision` 均未形成。
+- **Environment**：Windows x64，Node `24.18.0`、npm `11.16.0`、Electron `43.3.0`；使用现有依赖，每例唯一临时 SQLite/userData，fake Clock/Provider。未访问真实用户数据、credential 或 live Provider，未安装或升级依赖。
+- **Observed fixes**：删除预览改用 native modal dialog，取消初始焦点、Tab 环绕、Escape/Space 取消及返回触发按钮；保存 pending Action 记录后恢复“开始记录”焦点；异常页提示重新打开并核实保存结果，移除无法保证的零写入声明。package smoke 精确补齐既有 progress API。AC-02 增补确认后真实记录、进展与重开；offline Provider contract 检查实际发送的 system/user messages。
+- **Preserved failures**：`T072-usability-reproduction-248350409927-20260919035427.json` exit 1，包含删除初始焦点、异常页误导文案及新增测试启动时序问题；`T072-usability-fix-248350409927-20260919035737.json` exit 1，5 pass / 1 fail，发现快速记录保存后焦点丢失；`T072-targeted-ac02-usability-248350409927-20260919035952.json` exit 1，6 pass / 1 fail，新增 AC-02 步骤点击仍折叠的候选。均保留于 `.tmp/evidence/`，没有削弱断言或增加全局 timeout/retry。
+- **Targeted pass**：修正候选展开及 Today 比较基准后，`T072-targeted-ac02-248350409927-20260919040225.json` exit 0，连续 AC-02 1/1，UTC `04:02:25.591Z`～`04:02:33.952Z`；`T072-targeted-provider-contract-248350409927-20260919040222.json` exit 0，6 pass / 1 live-only skip。前者 supersedes 上述 AC-02 定位失败；此前 mixed run 的 windows-usability 3/3 与 action-record/data-control 3/3 已通过，但不把整个失败命令记为 pass。
+- **Early package**：`T072-early-package-248350409927-20260919035145.json` 与 `T072-early-package-smoke-248350409927-20260919035512.json` exit 0；unpacked/隔离 NSIS 1/1。该构建早于 Renderer 修复，不作为当前候选 package 证据。
+- **Current package / smoke**：相同未提交源码 manifest 上执行 `npm.cmd run package -- --publish never` 与 `npm.cmd run test:package-smoke`，通过 artifacts 分别为 `T072-package-248350409927-20260919041114.json`、`T072-package-smoke-248350409927-20260919041351.json`。前者 UTC `04:11:14.479Z`～`04:13:05.446Z` exit 0；后者 1/1（unpacked 与隔离 NSIS 安装/卸载），exit 0。验证临时 userData、SQLite、精确窄 API、Renderer 无特权接口。没有发布；保留默认 Electron icon 与 package author 缺失提示，不新增签名配置或声称发布签名可信。
+- **Package identity**：`.tmp/evidence/T072-package-artifacts.json` 记录 `release/MyTracer-0.1.0-x64-setup.exe`（110478090 bytes，SHA-256 `1d91fdc61cd464ec414fb8c2a0ac1dad90b63579196c6b7a3dee4c8906ed4ef4`）、`release/win-unpacked/MyTracer.exe`（`1c98e0a14a4edb395278c538c7a9b48b1062b8f7720273bb7b5a0b5786e8463b`）、`resources/app.asar`（`b547db44cfc6e44b1b849284df45538151b052f90e56857ce199cc75a7b47e01`）。产物仅为本地候选，后续源码改变须重建，不能作为未形成的 task delivery revision 产物。
+- **Aggregate pass**：`node tools/evidence/capture-command.mjs --task T072 --gate local-candidate --base-revision 248350409927923016de18f7c5d967aa064964ca --output .tmp/evidence -- npm.cmd run verify`，artifact `T072-local-candidate-248350409927-20260919040602.json`，UTC `04:06:02.382Z`～`04:08:28.656Z`，exit 0、capture complete、无 capture error。format/lint/typecheck 通过；Unit 255/255（39 files）、Integration 130 pass / 1 live-only skip（33 files）、Electron E2E 30 pass / 1 package-only skip。该 run 的 Windows usability 3/3 与 AC-02 通过 supersede 上述失败；所有失败 artifacts 保留。修复后 package/smoke 另记，不能用此 aggregate 的 package skip 证明打包通过。
+- **Visual inspection**：Agent 用 `.tmp/T072-visual.mjs` 与临时合成 Goal 检查 `.tmp/evidence/T072-delete-minimum.png` 和 `T072-record-minimum.png`：删除对话框标题、影响、说明、两个按钮均可见，取消按钮焦点明显；快速记录保持可滚动布局、时长焦点清楚、深入字段默认隐藏。`T072-visual-geometry.json` 实测 window 822×600、content 808×537、scaleFactor 1.25（调用 setSize 820×600 后 Windows 实际取整）；不声称所有 DPI/屏幕通过。页面下方需滚动，键盘保存路径由同 build E2E 证明。
+- **Independent review**：初次自动审批以源码传输未明确获准拒绝 `codex review --uncommitted`，未绕过。owner 于 2026-09-19 随后明确授权本任务差异传输，命令 `codex review --uncommitted -c 'sandbox_mode="read-only"' -c 'approval_policy="never"'` 成功完成（review session `01a0b7ea-cd44-7203-97e9-32da003539a7`，CLI `0.155.1`，gpt-6-astra）。审查 tracked/untracked 全部候选变化，结论“No actionable regressions were identified”；定向 lint/format/metadata/diff 和源码 manifest 核对通过，没有重跑 runtime tests。审查环境默认 Node `24.19.0` 仅用于静态检查，不替代批准 Node `24.18.0` 上的正式验证。之后仅补记本次授权及审查事实，没有改动被审源码。
+- **Manual / limits**：所有本轮 owner AC/UX 为 `pending`；自动键盘检查不是 owner 的实际屏幕/DPI 判断。AI system 指令、严格 schema、fake 数据隔离不能证明任意真实模型输出的语气或真实性；live 未授权。历史 T071/T807 人工结果不代替本轮。
+- **Scope audit**：已检查当前完整实现 diff；仅合同允许的 Renderer、测试及任务文档变化，无 Domain/Application/Main/Preload、schema、依赖、Provider/context 或写权限变更。历史 T806/T807 文档漂移按合同保留待授权收口，不修改冻结需求或代签历史完成。
+- **Record validation**：新增 provisional 后 metadata 20 sidecar / 1 Profile、format 与 `git diff --check` 通过；8 个实现/测试 SHA-256 与验证前 manifest 一致。独立审查已完成，下一步分关切提交并创建授权 Draft PR，执行 exact-head 验证和 milestone CI；未形成候选 CI 前不启动最终 docs closeout。
+
+#### 当前候选断言映射（69 MUST）
+
+路径简写：U=`tests/unit/`，I=`tests/integration/`，E=`tests/e2e/`；下表文件省略 `.test.ts` 后缀（E 文件保留 `.e2e`）。映射以源码中的输入、结果和快照断言为依据。所有行所列自动断言均纳入上述成功 aggregate，主观体验仍需人工；该结论不包含 live-only skip。结构核对 87 行/87 唯一 FR，无 PRD 编号遗漏或额外编号；数量核对本身不作为行为证据。
+
+| FR | 实际断言与文件 |
+| --- | --- |
+| FR-G01 | E/goal-lifecycle.e2e：UI 创建并重开；U/goal-application：Goal 与初始 Action 原子创建 |
+| FR-G02 | E/goal-lifecycle.e2e、I/goal-sqlite：修改名称/说明，保持 id 和关系 |
+| FR-G03 | E/goal-lifecycle.e2e：暂停、恢复、结束状态 |
+| FR-G04 | I/goal-sqlite：暂停/结束前后历史快照相等并重开 |
+| FR-G05 | U/goal-application、U/action-application：唯一 currentNextAction 与显式解析 |
+| FR-G06 | E/progress-core-loop.e2e、I/goal-sqlite：关联行动、记录及 Goal 过滤 |
+| FR-A01 | E/action-today.e2e、U/action-application：创建、更新、取消及下一步解析 |
+| FR-A02 | U/action-application、I/action-today-sqlite：独立或单 Goal 关联，不允许偷换关系 |
+| FR-A03 | E/action-today.e2e：用户显式选入今日重点 |
+| FR-A04 | E/action-today.e2e、U/action-application：完成状态与当前下一步处理 |
+| FR-A05 | E/progress-core-loop.e2e、U/action-record-application：partial 记录保留、Action 不自动完成 |
+| FR-A06 | U/action-application、I/action-today-sqlite：reschedule 同一 Action，保留历史并移除当前选择 |
+| FR-A07 | E/action-intention.e2e：非强制意向与显式重点转换 |
+| FR-R01 | E/routine-lifecycle.e2e：创建、改名/最低行动、暂停/恢复/结束与重开 |
+| FR-R02 | E/routine-lifecycle.e2e：每天/工作日和实际 weekdays；I/routine-record-sqlite：历史计划事实 |
+| FR-R03 | E/routine-lifecycle.e2e：最低行动输入与 Today 展示 |
+| FR-R04 | E/routine-record.e2e：四种显式 outcome 与数据库事实 |
+| FR-R05 | E/routine-record.e2e、U/routine-record-domain：缺行 unknown，没有制造 not_done |
+| FR-R06 | E/routine-record.e2e、U/progress-application：acted 计次，与 planned target 数分离 |
+| FR-R07 | U/progress-application、U/review-domain：rest 不计真实行动，不出现失败评价指标 |
+| FR-R09 | E/routine-record.e2e：非计划日 target/acted 计事实，plannedForDate=false；后改计划不改历史 |
+| FR-T01 | E/action-today.e2e：显式选择后的 focus 列表 |
+| FR-T02 | E/routine-lifecycle.e2e、E/routine-record.e2e：计划 Routine 与记录事实投影 |
+| FR-T03 | E/action-intention.e2e：独立 intention 区域及 generic Action |
+| FR-T04 | U/today-application、E/should-convergence.e2e：selectedBy=user、6 个 focus 均可保留 |
+| FR-T05 | E/action-intention.e2e、U/today-application：次日不自动滚动，旧选择留存、零额外记录 |
+| FR-T08 | E/action-intention.e2e：通用自由文本意向；U/today-application：同一 focus/intention 模型 |
+| FR-L01 | E/action-record.e2e：时长与 outcome 快速保存 |
+| FR-L02 | E/windows-usability.e2e：深入字段未挂载，仅 0 分钟 partial 保存并返焦 |
+| FR-L03 | E/progress-core-loop.e2e：可选理解文本保存并进入进展 |
+| FR-L04 | E/progress-core-loop.e2e：困惑保存并在进展可见 |
+| FR-L05 | E/action-record.e2e：记录下一步与显式 Goal 下一步决定 |
+| FR-L07 | E/data-control.e2e、I/data-control-sqlite：补记、修改、预览/取消/删除/回滚与重开 |
+| FR-L08 | E/progress-core-loop.e2e：25 分钟 partial 作为真实记录保持到重开 |
+| FR-L09 | E/progress-core-loop.e2e、U/progress-application：只有事实指标，无质量/掌握度推导 |
+| FR-C01 | E/progress-core-loop.e2e、U/action-record-domain：自由文本理解成果 |
+| FR-C02 | E/ai-start-help-ac02.e2e：Understanding 候选单独确认；确认前 SQLite 不变 |
+| FR-C03 | I/ai-start-help-provider-contract：实际 system 禁止自行宣称掌握；E/ai-start-help-ac02.e2e：确认前零写 |
+| FR-P01 | U/progress-application、E/progress-core-loop.e2e：Goal/日期范围、分钟累计与空范围 |
+| FR-P02 | U/progress-application、E/routine-record.e2e：0 分钟/partial/stopped/acted 真实计次，关联去重 |
+| FR-P03 | E/progress-core-loop.e2e、E/ai-start-help-ac02.e2e：只显示已确认成果 |
+| FR-P04 | U/progress-application、E/progress-core-loop.e2e：未解决困惑结果 |
+| FR-P07 | E/progress-core-loop.e2e：四个事实汇总；U/progress-application：返回 key 集不含 streak |
+| FR-P08 | E/progress-core-loop.e2e、E/should-convergence.e2e：中性空态、简单差值，无评分/人格判断 |
+| FR-AI01 | E/ai-start-help-degradation.e2e、U/ai-start-help-context：未主动触发不调用 Provider |
+| FR-AI02 | I/ai-start-help-provider-contract：温和非评判 system；真实体验 pending |
+| FR-AI03 | U/ai-start-help-context、E/ai-start-help-ac02.e2e：当前目标/近期事实/本次阻力与小行动 |
+| FR-AI04 | I/ai-start-help-provider-contract、U/ai-start-help-response：1～3 小建议指令与数量校验 |
+| FR-AI05 | E/ai-start-help-ac02.e2e：拒绝、修改、接受、显式确认后普通写入 |
+| FR-AI06 | E/ai-start-help-ac02.e2e、I/ai-start-help-confirmation-sqlite：未确认/取消/关闭/迟到零核心写入 |
+| FR-AI07 | I/ai-start-help-provider-contract：system 明确不将合理休息当拖延；真实体验 pending |
+| FR-AI08 | E/ai-start-help-ac02.e2e、I/ai-start-help-context-isolation：唯一标记与 manifest 限定；system 禁止虚构完成 |
+| FR-AI09 | E/ai-data-capability.e2e、E/ai-start-help-degradation.e2e：禁用/未配置/失败时核心程序可用 |
+| FR-AI10 | I/ai-start-help-context-isolation、E/ai-start-help-ac02.e2e：无关 Goal/敏感数据排除、最多 5 近期记录、预算 |
+| FR-REC01 | E/recovery-restart.e2e、I/recovery-sqlite：中断前后历史事实守恒 |
+| FR-REC02 | E/recovery-context.e2e：只读上次行动、理解、困惑与当前下一步 |
+| FR-REC03 | E/recovery-restart.e2e：直接恢复小行动，中断日不补记录 |
+| FR-REC04 | E/recovery-restart.e2e：显式暂停/结束/整理过时内容 |
+| FR-REC06 | E/recovery-context.e2e、E/recovery-restart.e2e：事实式恢复，无补齐/失败率施压 |
+| FR-RV01 | E/review-summary.e2e、U/review-domain：周一至周日复用 Progress 事实 |
+| FR-RV02 | E/review-result.e2e：用户输入真实进展，保存后稳定 id |
+| FR-RV03 | E/review-result.e2e：主要阻力保存与修改 |
+| FR-RV04 | E/review-result.e2e：下一周期调整保存、取消零写 |
+| FR-RV06 | U/review-domain、E/review-summary.e2e：自动摘要与既有 Progress 相等，无重复录入统计 |
+| FR-D01 | E/ai-data-capability.e2e、I/sqlite-persistence：核心 CRUD 后完整进程/SQLite 重开 |
+| FR-D02 | E/data-control.e2e、E/windows-usability.e2e、I/data-control-sqlite：修改/预览/取消/确认、级联/解除关联及回滚 |
+| FR-D03 | E/complete-export.e2e：UI 导出到隔离临时目标并验证 JSON |
+| FR-D04 | I/complete-export-sqlite、U/complete-export：完整集合/引用/状态、schema 3、既有 v1/v2 兼容契约 |
+| FR-D05 | E/ai-data-capability.e2e：三种不可用模式执行相同核心数据程序并比较结果 |
+
+#### 11 SHOULD 与 7 延期项
+
+| FR | 实际断言 / 审查范围 |
+| --- | --- |
+| FR-G07 | E/should-convergence.e2e：少量活跃目标软提示、6 Goal 无硬上限 |
+| FR-A08 | E/action-record.e2e、U/action-record-application：完成/partial 后显式下一步决定 |
+| FR-R08 | E/data-control.e2e、I/data-control-sqlite：历史 Routine 补记和修正 |
+| FR-T06 | E/should-convergence.e2e：软提示且 6 focus 可保留 |
+| FR-T07 | E/should-convergence.e2e：候选事实日期、无自动 Today 写入；未来日期不显示负天数 |
+| FR-L06 | E/action-record.e2e、U/action-record-domain：自由 note 可选，重开保留 |
+| FR-C04 | E/data-control.e2e、I/data-control-sqlite：理解修改/撤销及投影同步 |
+| FR-P05 | U/should-facts、I/should-facts-sqlite、E/should-convergence.e2e：last real action/null/0 分钟及修正删除后重算 |
+| FR-P06 | 同上：本周/上周事实差值、日期边界、过滤与迟到响应不串 Goal |
+| FR-REC05 | E/recovery-restart.e2e：显式选择可重启小行动，Today 需另行选择 |
+| FR-RV05 | E/review-result.e2e：显式更新下一步，保留 Today 与历史 |
+| FR-C05 | 当前完整 diff 无概念图谱/知识层级/掌握度接口、数据模型或页面新增；不实现延期项 |
+| FR-AI11 | 当前 diff 无整日/整周计划生成或新 Provider 请求入口 |
+| FR-AI12 | 当前 diff 无后台 AI 调度、监督或主动弹出 |
+| FR-AI13 | 当前 diff 无跨会话 AI 记忆/画像表；AC-02 重开后临时 session/draft 清空 |
+| FR-RV07 | 当前 diff 无 AI 周计划；Review 保持用户三项文本与事实摘要 |
+| FR-D06 | 当前 diff 无账号/同步依赖、接口或存储变化 |
+| FR-D07 | 当前 diff 无导入恢复入口或格式变化；导出测试不等于恢复能力 |
+
+#### 同版本 AC 批次与人工待办
+
+| AC | 自动程序与关键事实 | 本轮 owner |
+| --- | --- | --- |
+| AC-01 | E/progress-core-loop.e2e：UI Goal→Today→25 分钟 partial/理解/困惑→进展→重开；E/action-record.e2e 补快速记录与跨午夜 | pending |
+| AC-02 | E/ai-start-help-ac02.e2e：fake 最小上下文→拒绝/修改/接受→独立 Understanding 确认→真实 2 分钟记录→进展/重开；不等价于真实 Provider 体验 | pending |
+| AC-03 | E/routine-lifecycle.e2e 的 UI 创建/节奏/最低行动，与 E/routine-record.e2e 五态/非计划事实/重开在同 build 执行 | pending |
+| AC-04 | E/action-intention.e2e：通用意向→显式转换→次日零自动事实→真实记录 | pending |
+| AC-05 | E/recovery-context.e2e、E/recovery-restart.e2e：中断后事实恢复、整理过时内容、选小行动不补空白日 | pending |
+| AC-06 | E/review-summary.e2e、E/review-result.e2e、E/recovery-review-aggregate.e2e：保留恢复前后事实，三项复盘、显式下一步与重开 | pending |
+| AC-07 | E/ai-data-capability.e2e 核心数据三模式程序，加 E/data-control.e2e、E/complete-export.e2e 的修改删除/UI 导出、引用状态和重开 | pending |
+
+上述 AC 是同一 build 上各自隔离的连续程序，AC-02 与 AC-05→06 另检查跨功能接缝；不是同一个共享数据库贯穿七个场景。owner 尚需在实际 Windows 屏幕/DPI 下按合同 §10.4 完成人工 AC/UX，并记录常用与最小窗口、键盘、五态中性文案、快速/深入披露和导出限制。当前不签 G4、不声明 Demo 最终就绪。
+
 ## T071 交付证据
 
 ### EV-T071-001
