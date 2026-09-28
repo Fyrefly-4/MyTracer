@@ -78,9 +78,9 @@ references:
     - docs/architecture/S6_AI_START_HELP_DESIGN_V0.1.md
 ```
 
-### 3.2 AC 验证定位与待执行矩阵
+### 3.2 AC 验证定位与结果入口
 
-下表定位程序与预期；合同准备时自动/人工为 `not-run / pending`。激活后的当前未提交候选已完成完整自动回归与 Windows package/smoke，实际 source manifest、命令、结果及缺口见 [EV-T072-001](ACCEPTANCE_EVIDENCE_V0.1.md#ev-t072-001)；owner 人工仍为 `pending`，不能把历史 Evidence 拼接成当前版本通过。
+下表定位程序与预期；合同准备时自动/人工为 `not-run / pending`。实现候选 `a78a31f` 已完成完整自动回归与 Windows package/smoke，实际 source manifest、命令、结果及限制见 [EV-T072-001](ACCEPTANCE_EVIDENCE_V0.1.md#ev-t072-001)；owner 已于 2026-09-28 报告人工验收全部通过，不能把历史 Evidence 拼接成当前版本通过。
 
 | AC | 现有自动化入口（tests/e2e/ 下） | 当前候选必须证明的完整结果 |
 | --- | --- | --- |
@@ -174,12 +174,13 @@ Sidecar 为 [metadata/T072.json](metadata/T072.json)，任务类型 `aggregate`�
 
 ## 8. 交付物
 
-- [ ] 覆盖矩阵：69 MUST、11 SHOULD、7 延期 FR、7 AC，逐项绑定实际断言/手工步骤、revision 与结果。
-- [ ] package smoke 精确契约修复，以及由实际缺口产生的测试或限定 Renderer 收敛修复；无缺陷的模块不改动。
-- [ ] 同版本完整 verify、AC 批次、Windows package、unpacked/隔离 NSIS smoke 的脱敏证据。
-- [ ] Windows 人工体验记录：实际显示/缩放/窗口、键盘与焦点、快速记录、五态、恢复、AI 和导出说明；由 owner 判断。
-- [ ] 完整 diff 自查、独立只读 review、Integration Freshness、candidate/final-head CI 与 owner-approved docs closeout。
-- [ ] Demo 候选交接：source/产物 revision、SHA-256、数据兼容/导出限制、已知问题和自用观察入口；不发布或预签 G4。
+- [x] 覆盖矩阵：69 MUST、11 SHOULD、7 延期 FR、7 AC，逐项绑定实际断言/手工步骤、revision 与结果。
+- [x] package smoke 精确契约修复，以及由实际缺口产生的测试或限定 Renderer 收敛修复；无缺陷的模块不改动。
+- [x] 同版本完整 verify、AC 批次、Windows package、unpacked/隔离 NSIS smoke 的脱敏证据。
+- [x] Windows 人工体验：owner 报告上述 AC/UX 全部通过；实际显示/缩放/窗口数值未单独报告，记录此证据粒度限制，不以 Agent 环境代填。
+- [x] 完整 diff 自查、独立只读 review、Integration Freshness、candidate CI 与 owner-approved docs closeout；文档提交的 final-head CI 仍作为 PR 集成门禁。
+- [ ] 文档提交的 exact final-head full/milestone CI；不得以 candidate CI 替代，实时结果在 PR #56 记录。
+- [x] Demo 候选交接：source/产物 revision、SHA-256、数据兼容/导出限制、已知问题和自用观察入口；不发布或预签 G4。
 
 ## 9. 可判定验收条件
 
@@ -376,9 +377,11 @@ recommended_resume_point: 合同和权限获批后，从最新授权 dev 完成 
 - `git diff --check` 通过；对未跟踪新文件另作完整内容与空白检查。`git diff --no-index --check -- NUL <new-file>` 的内容差异退出码不视作产品测试失败或验收结果。
 - 上述结果绑定 `248350409927923016de18f7c5d967aa064964ca` 加 §5.1 三个文件的 2026-09-19 未提交草案；未运行产品测试、打包或人工验收，未新增 Acceptance Evidence 的通过声明。完整改动自查完成，后续 Implementation Candidate 独立 review 仍未执行。
 
+- 2026-09-28 owner 明确“人工验收均通过”；随后“批准上述文档收口、提交及推送”。记录当前候选 owner AC/UX 通过；批准本合同、证据、任务索引、追踪及 README/两份历史归档的精确收口，独立提交并推送；不授权 Ready/merge/release。
+
 ## 15. 文档收口与最终交接
 
-实施中间记录：当前分支 `task/T072-demo-convergence`，未提交候选已完成本地完整 verify（255 unit、130 integration、30 E2E；另 live/package 各一项按配置 skip）、独立 package 与 unpacked/隔离 NSIS smoke（1/1），详见 EV-T072-001。独立 review 初次因源码传输授权缺失被自动审批拒绝；owner 随后明确授权，2026-09-19 的只读审查完成，无 actionable regression。此记录不是最终收口或完成状态；后续提交、exact-head 验证和 Draft CI 仍按合同执行。
+实施中间记录：当前分支 `task/T072-demo-convergence`，未提交候选已完成本地完整 verify（255 unit、130 integration、30 E2E；另 live/package 各一项按配置 skip）、独立 package 与 unpacked/隔离 NSIS smoke（1/1），详见 EV-T072-001。独立 review 初次因源码传输授权缺失被自动审批拒绝；owner 随后明确授权，2026-09-19 的只读审查完成，无 actionable regression。后续实现提交 `a78a31f335b95296df9c942912aa79f8eb9f725d` 的 exact-source verify 与 hosted run `35421739454` full/milestone CI 均已通过。owner 于 2026-09-28 报告人工全部通过并批准文档收口；本次文档 final-head CI 推送后独立核对，详见 EV-T072-001 和 PR #56。
 
 候选完成本地验证、独立 review、freshness 和 required candidate CI 后，先形成精确文档影响矩阵，按 Development Skill §10 获取 owner 的 docs closeout 授权；本合同批准不代替后续收口批准。
 

@@ -4,29 +4,36 @@
 > 作用：记录可复核的命令、版本、环境、产物和人工观察  
 > 禁止：用任务状态、测试名称、关键词存在或 Agent 自述替代实际结果
 
-## T072 provisional evidence
+## T072 交付证据
 
 ### EV-T072-001
 
-- **Status**：provisional，非验收通过。T072 已获 owner 合同实施及任务 Git 授权；独立 review 已完成，候选提交、hosted CI、owner 人工、docs closeout 和 final-head CI 尚未闭合。
-- **Source**：`task/T072-demo-convergence`，base/HEAD `248350409927923016de18f7c5d967aa064964ca` 加未提交实现；不能把下述结果归给裸 HEAD。`.tmp/evidence/T072-local-candidate-source.json` 于 `2026-09-19T04:07:35.2866157Z` 记录 8 个改动实现/测试文件的 SHA-256；其余实现继承 base。合同、sidecar、任务索引及本 provisional 记录另属文档变化。`task_delivery_revision`、`dev_integration_revision`、`stage_final_integration_revision` 均未形成。
+- **Status**：pass；实现候选的本地完整验证、独立 review、hosted full/milestone CI 与 owner 人工 AC/UX 均通过，owner 已批准本次文档收口。文档提交后的 final-head CI 属于后续 PR 集成门禁，不能由 candidate green 替代；不声明 G4、Ready、merge 或 release。
+- **Source**：`task/T072-demo-convergence`，早期结果绑定 base/HEAD `248350409927923016de18f7c5d967aa064964ca` 加未提交实现，不能归给裸 HEAD。`.tmp/evidence/T072-local-candidate-source.json` 于 `2026-09-19T04:07:35.2866157Z` 记录 8 个改动实现/测试文件的 SHA-256；其余实现继承 base。上述源码映射到 `implementation_candidate=a78a31f335b95296df9c942912aa79f8eb9f725d`，并有下述干净 exact-source 复验。`task_delivery_revision` 等文档 final-head CI 后在 PR #56 绑定；`dev_integration_revision=null`、`stage_final_integration_revision=null`。
 - **Environment**：Windows x64，Node `24.18.0`、npm `11.16.0`、Electron `43.3.0`；使用现有依赖，每例唯一临时 SQLite/userData，fake Clock/Provider。未访问真实用户数据、credential 或 live Provider，未安装或升级依赖。
 - **Observed fixes**：删除预览改用 native modal dialog，取消初始焦点、Tab 环绕、Escape/Space 取消及返回触发按钮；保存 pending Action 记录后恢复“开始记录”焦点；异常页提示重新打开并核实保存结果，移除无法保证的零写入声明。package smoke 精确补齐既有 progress API。AC-02 增补确认后真实记录、进展与重开；offline Provider contract 检查实际发送的 system/user messages。
 - **Preserved failures**：`T072-usability-reproduction-248350409927-20260919035427.json` exit 1，包含删除初始焦点、异常页误导文案及新增测试启动时序问题；`T072-usability-fix-248350409927-20260919035737.json` exit 1，5 pass / 1 fail，发现快速记录保存后焦点丢失；`T072-targeted-ac02-usability-248350409927-20260919035952.json` exit 1，6 pass / 1 fail，新增 AC-02 步骤点击仍折叠的候选。均保留于 `.tmp/evidence/`，没有削弱断言或增加全局 timeout/retry。
 - **Targeted pass**：修正候选展开及 Today 比较基准后，`T072-targeted-ac02-248350409927-20260919040225.json` exit 0，连续 AC-02 1/1，UTC `04:02:25.591Z`～`04:02:33.952Z`；`T072-targeted-provider-contract-248350409927-20260919040222.json` exit 0，6 pass / 1 live-only skip。前者 supersedes 上述 AC-02 定位失败；此前 mixed run 的 windows-usability 3/3 与 action-record/data-control 3/3 已通过，但不把整个失败命令记为 pass。
 - **Early package**：`T072-early-package-248350409927-20260919035145.json` 与 `T072-early-package-smoke-248350409927-20260919035512.json` exit 0；unpacked/隔离 NSIS 1/1。该构建早于 Renderer 修复，不作为当前候选 package 证据。
 - **Current package / smoke**：相同未提交源码 manifest 上执行 `npm.cmd run package -- --publish never` 与 `npm.cmd run test:package-smoke`，通过 artifacts 分别为 `T072-package-248350409927-20260919041114.json`、`T072-package-smoke-248350409927-20260919041351.json`。前者 UTC `04:11:14.479Z`～`04:13:05.446Z` exit 0；后者 1/1（unpacked 与隔离 NSIS 安装/卸载），exit 0。验证临时 userData、SQLite、精确窄 API、Renderer 无特权接口。没有发布；保留默认 Electron icon 与 package author 缺失提示，不新增签名配置或声称发布签名可信。
-- **Package identity**：`.tmp/evidence/T072-package-artifacts.json` 记录 `release/MyTracer-0.1.0-x64-setup.exe`（110478090 bytes，SHA-256 `1d91fdc61cd464ec414fb8c2a0ac1dad90b63579196c6b7a3dee4c8906ed4ef4`）、`release/win-unpacked/MyTracer.exe`（`1c98e0a14a4edb395278c538c7a9b48b1062b8f7720273bb7b5a0b5786e8463b`）、`resources/app.asar`（`b547db44cfc6e44b1b849284df45538151b052f90e56857ce199cc75a7b47e01`）。产物仅为本地候选，后续源码改变须重建，不能作为未形成的 task delivery revision 产物。
+- **Package identity**：`.tmp/evidence/T072-package-artifacts.json` 记录 `release/MyTracer-0.1.0-x64-setup.exe`（110478090 bytes，SHA-256 `1d91fdc61cd464ec414fb8c2a0ac1dad90b63579196c6b7a3dee4c8906ed4ef4`）、`release/win-unpacked/MyTracer.exe`（`1c98e0a14a4edb395278c538c7a9b48b1062b8f7720273bb7b5a0b5786e8463b`）、`resources/app.asar`（`b547db44cfc6e44b1b849284df45538151b052f90e56857ce199cc75a7b47e01`）。产物仅为本地候选，8 个实现/测试文件 SHA-256 与 `a78a31f` 一致，绑定见 `T072-candidate-binding.json`；后续实现改变须重建。
 - **Aggregate pass**：`node tools/evidence/capture-command.mjs --task T072 --gate local-candidate --base-revision 248350409927923016de18f7c5d967aa064964ca --output .tmp/evidence -- npm.cmd run verify`，artifact `T072-local-candidate-248350409927-20260919040602.json`，UTC `04:06:02.382Z`～`04:08:28.656Z`，exit 0、capture complete、无 capture error。format/lint/typecheck 通过；Unit 255/255（39 files）、Integration 130 pass / 1 live-only skip（33 files）、Electron E2E 30 pass / 1 package-only skip。该 run 的 Windows usability 3/3 与 AC-02 通过 supersede 上述失败；所有失败 artifacts 保留。修复后 package/smoke 另记，不能用此 aggregate 的 package skip 证明打包通过。
 - **Visual inspection**：Agent 用 `.tmp/T072-visual.mjs` 与临时合成 Goal 检查 `.tmp/evidence/T072-delete-minimum.png` 和 `T072-record-minimum.png`：删除对话框标题、影响、说明、两个按钮均可见，取消按钮焦点明显；快速记录保持可滚动布局、时长焦点清楚、深入字段默认隐藏。`T072-visual-geometry.json` 实测 window 822×600、content 808×537、scaleFactor 1.25（调用 setSize 820×600 后 Windows 实际取整）；不声称所有 DPI/屏幕通过。页面下方需滚动，键盘保存路径由同 build E2E 证明。
 - **Independent review**：初次自动审批以源码传输未明确获准拒绝 `codex review --uncommitted`，未绕过。owner 于 2026-09-19 随后明确授权本任务差异传输，命令 `codex review --uncommitted -c 'sandbox_mode="read-only"' -c 'approval_policy="never"'` 成功完成（review session `01a0b7ea-cd44-7203-97e9-32da003539a7`，CLI `0.155.1`，gpt-6-astra）。审查 tracked/untracked 全部候选变化，结论“No actionable regressions were identified”；定向 lint/format/metadata/diff 和源码 manifest 核对通过，没有重跑 runtime tests。审查环境默认 Node `24.19.0` 仅用于静态检查，不替代批准 Node `24.18.0` 上的正式验证。之后仅补记本次授权及审查事实，没有改动被审源码。
-- **Manual / limits**：所有本轮 owner AC/UX 为 `pending`；自动键盘检查不是 owner 的实际屏幕/DPI 判断。AI system 指令、严格 schema、fake 数据隔离不能证明任意真实模型输出的语气或真实性；live 未授权。历史 T071/T807 人工结果不代替本轮。
-- **Scope audit**：已检查当前完整实现 diff；仅合同允许的 Renderer、测试及任务文档变化，无 Domain/Application/Main/Preload、schema、依赖、Provider/context 或写权限变更。历史 T806/T807 文档漂移按合同保留待授权收口，不修改冻结需求或代签历史完成。
-- **Record validation**：新增 provisional 后 metadata 20 sidecar / 1 Profile、format 与 `git diff --check` 通过；8 个实现/测试 SHA-256 与验证前 manifest 一致。独立审查已完成，下一步分关切提交并创建授权 Draft PR，执行 exact-head 验证和 milestone CI；未形成候选 CI 前不启动最终 docs closeout。
+- **Manual / limits**：pass（owner-reported，2026-09-28）。项目所有者针对此前请求的 AC-01～07 与键盘/日常体验明确回复“人工验收均通过”；当时本地和 PR head 均为 `a78a31f`，未发生实现变化。owner 未另报实际屏幕/DPI 数值，不能以 Agent 截图条件替代；仅记录实际报告，不推断覆盖所有设备。AI system 指令、严格 schema、fake 数据隔离不能证明任意真实模型输出的语气或真实性；live 未授权。历史 T071/T807 人工结果不代替本轮。
+- **Scope audit**：已检查当前完整实现 diff；仅合同允许的 Renderer、测试及任务文档变化，无 Domain/Application/Main/Preload、schema、依赖、Provider/context 或写权限变更。owner 本次批准补记 T806/T807 已核实 CI/集成事实；不修改冻结需求或代签历史任务完成。
+- **Record validation**：新增 provisional 后 metadata 20 sidecar / 1 Profile、format 与 `git diff --check` 通过；8 个实现/测试 SHA-256 与验证前 manifest 一致。三次有意义提交为 `9cb2ebc`（合同/package）、`8803716`（Renderer/可用性）、`a78a31f`（覆盖/证据）；owner 于 2026-09-28 明确“批准上述文档收口、提交及推送”。本次仅收口获批文档，独立提交并在推送后验证最新 head；实时状态以 PR #56 为准。
+
+- **Exact source verification**：干净 `a78a31f335b95296df9c942912aa79f8eb9f725d` 执行 `npm.cmd run verify`，artifact `T072-exact-candidate-a78a31f335b9-20260919043356.json`，UTC 2026-09-19 04:33:56.494～04:35:38.171，exit 0/capture complete；255 unit、130 integration（1 live skip）、30 E2E（1 package-only skip），format/lint/typecheck 均通过。
+- **Candidate hosted CI**：[run 35421739454](https://github.com/Fyrefly-4/MyTracer/actions/runs/35421739454) success；source head `a78a31f335b95296df9c942912aa79f8eb9f725d`、test-merge `5b9e9bb136cd4e1fe296c42a7435e722606a64ff`、base `248350409927923016de18f7c5d967aa064964ca`。Full Windows verification、Milestone packaging checks、Governance、PR quality、CI Gate、Windows required gate 成功；documentation 分类跳过。
+- **Hosted artifacts inspected**：`verification-evidence-35421739454-1`（id `10576769314`，digest `sha256:2a46cfdaa66e859458c4b6e3674899f04791b33e44f001cbd2ccb66017f8dc8d`）与 `milestone-evidence-35421739454-1`（id `10577879453`，digest `sha256:e126f08ed42058a7d12a33721256d3a5bda8a6df2022547a41e66a93dfa4871e`）已下载核对；aggregate/package/package-smoke 三份 JSON 均 exit 0、capture complete，head/merge/base 与上文相符。
+- **Earlier CI preserved**：early head `9cb2ebc02e8c90952b2970f1b58e109fc624f45b` 的 run `35421583975` 及 candidate head 的 run `35421735313` 均 cancelled；后者由成功 run `35421739454` supersede，不把取消或旧 head 作为通过。
+- **Integration Freshness**：original/latest authorized/verified dev base 均为 `248350409927923016de18f7c5d967aa064964ca`，2026-09-28 收口前再次核实，`status=fresh`、`refresh_method=none`。
+- **Closeout review / checks**：只读文档 review session `01a0e720-3635-7750-9404-2b9a1d03eb78` 提出 final-head CI 前不应记录 Task Delivery Revision/任务完成；已改为 Implementation Candidate，T072 保持 review，交付 revision 待 final-head CI 后绑定。metadata、仓库 `format:check`、diff 检查通过；额外 `classify-changes.mjs docs --paths-file .tmp/T072-doc-paths.txt` 退出 1，仅报告六份文档的 Prettier 整文件格式问题，链接/结构无错误。对照 `a78a31f` 确认六份基线同样不符合该直接格式检查，README 前后均通过；比较记录为 `.tmp/evidence/T072-doc-format-audit.json`。不把此失败记为通过，不为消除历史格式问题扩大为整文件重排；PR 仍按原 milestone 分类执行最终门禁。
 
 #### 当前候选断言映射（69 MUST）
 
-路径简写：U=`tests/unit/`，I=`tests/integration/`，E=`tests/e2e/`；下表文件省略 `.test.ts` 后缀（E 文件保留 `.e2e`）。映射以源码中的输入、结果和快照断言为依据。所有行所列自动断言均纳入上述成功 aggregate，主观体验仍需人工；该结论不包含 live-only skip。结构核对 87 行/87 唯一 FR，无 PRD 编号遗漏或额外编号；数量核对本身不作为行为证据。
+路径简写：U=`tests/unit/`，I=`tests/integration/`，E=`tests/e2e/`；下表文件省略 `.test.ts` 后缀（E 文件保留 `.e2e`）。映射以源码中的输入、结果和快照断言为依据。所有行所列自动断言均纳入上述成功 aggregate，主观体验由下述 owner 报告独立记录；该结论不包含 live-only skip。结构核对 87 行/87 唯一 FR，无 PRD 编号遗漏或额外编号；数量核对本身不作为行为证据。
 
 | FR | 实际断言与文件 |
 | --- | --- |
@@ -75,12 +82,12 @@
 | FR-P07 | E/progress-core-loop.e2e：四个事实汇总；U/progress-application：返回 key 集不含 streak |
 | FR-P08 | E/progress-core-loop.e2e、E/should-convergence.e2e：中性空态、简单差值，无评分/人格判断 |
 | FR-AI01 | E/ai-start-help-degradation.e2e、U/ai-start-help-context：未主动触发不调用 Provider |
-| FR-AI02 | I/ai-start-help-provider-contract：温和非评判 system；真实体验 pending |
+| FR-AI02 | I/ai-start-help-provider-contract：温和非评判 system；真实 Provider 输出不由此证明 |
 | FR-AI03 | U/ai-start-help-context、E/ai-start-help-ac02.e2e：当前目标/近期事实/本次阻力与小行动 |
 | FR-AI04 | I/ai-start-help-provider-contract、U/ai-start-help-response：1～3 小建议指令与数量校验 |
 | FR-AI05 | E/ai-start-help-ac02.e2e：拒绝、修改、接受、显式确认后普通写入 |
 | FR-AI06 | E/ai-start-help-ac02.e2e、I/ai-start-help-confirmation-sqlite：未确认/取消/关闭/迟到零核心写入 |
-| FR-AI07 | I/ai-start-help-provider-contract：system 明确不将合理休息当拖延；真实体验 pending |
+| FR-AI07 | I/ai-start-help-provider-contract：system 明确不将合理休息当拖延；真实 Provider 输出不由此证明 |
 | FR-AI08 | E/ai-start-help-ac02.e2e、I/ai-start-help-context-isolation：唯一标记与 manifest 限定；system 禁止虚构完成 |
 | FR-AI09 | E/ai-data-capability.e2e、E/ai-start-help-degradation.e2e：禁用/未配置/失败时核心程序可用 |
 | FR-AI10 | I/ai-start-help-context-isolation、E/ai-start-help-ac02.e2e：无关 Goal/敏感数据排除、最多 5 近期记录、预算 |
@@ -123,19 +130,19 @@
 | FR-D06 | 当前 diff 无账号/同步依赖、接口或存储变化 |
 | FR-D07 | 当前 diff 无导入恢复入口或格式变化；导出测试不等于恢复能力 |
 
-#### 同版本 AC 批次与人工待办
+#### 同版本 AC 批次与人工结果
 
 | AC | 自动程序与关键事实 | 本轮 owner |
 | --- | --- | --- |
-| AC-01 | E/progress-core-loop.e2e：UI Goal→Today→25 分钟 partial/理解/困惑→进展→重开；E/action-record.e2e 补快速记录与跨午夜 | pending |
-| AC-02 | E/ai-start-help-ac02.e2e：fake 最小上下文→拒绝/修改/接受→独立 Understanding 确认→真实 2 分钟记录→进展/重开；不等价于真实 Provider 体验 | pending |
-| AC-03 | E/routine-lifecycle.e2e 的 UI 创建/节奏/最低行动，与 E/routine-record.e2e 五态/非计划事实/重开在同 build 执行 | pending |
-| AC-04 | E/action-intention.e2e：通用意向→显式转换→次日零自动事实→真实记录 | pending |
-| AC-05 | E/recovery-context.e2e、E/recovery-restart.e2e：中断后事实恢复、整理过时内容、选小行动不补空白日 | pending |
-| AC-06 | E/review-summary.e2e、E/review-result.e2e、E/recovery-review-aggregate.e2e：保留恢复前后事实，三项复盘、显式下一步与重开 | pending |
-| AC-07 | E/ai-data-capability.e2e 核心数据三模式程序，加 E/data-control.e2e、E/complete-export.e2e 的修改删除/UI 导出、引用状态和重开 | pending |
+| AC-01 | E/progress-core-loop.e2e：UI Goal→Today→25 分钟 partial/理解/困惑→进展→重开；E/action-record.e2e 补快速记录与跨午夜 | pass（owner-reported，2026-09-28） |
+| AC-02 | E/ai-start-help-ac02.e2e：fake 最小上下文→拒绝/修改/接受→独立 Understanding 确认→真实 2 分钟记录→进展/重开；不等价于真实 Provider 体验 | pass（owner-reported，2026-09-28） |
+| AC-03 | E/routine-lifecycle.e2e 的 UI 创建/节奏/最低行动，与 E/routine-record.e2e 五态/非计划事实/重开在同 build 执行 | pass（owner-reported，2026-09-28） |
+| AC-04 | E/action-intention.e2e：通用意向→显式转换→次日零自动事实→真实记录 | pass（owner-reported，2026-09-28） |
+| AC-05 | E/recovery-context.e2e、E/recovery-restart.e2e：中断后事实恢复、整理过时内容、选小行动不补空白日 | pass（owner-reported，2026-09-28） |
+| AC-06 | E/review-summary.e2e、E/review-result.e2e、E/recovery-review-aggregate.e2e：保留恢复前后事实，三项复盘、显式下一步与重开 | pass（owner-reported，2026-09-28） |
+| AC-07 | E/ai-data-capability.e2e 核心数据三模式程序，加 E/data-control.e2e、E/complete-export.e2e 的修改删除/UI 导出、引用状态和重开 | pass（owner-reported，2026-09-28） |
 
-上述 AC 是同一 build 上各自隔离的连续程序，AC-02 与 AC-05→06 另检查跨功能接缝；不是同一个共享数据库贯穿七个场景。owner 尚需在实际 Windows 屏幕/DPI 下按合同 §10.4 完成人工 AC/UX，并记录常用与最小窗口、键盘、五态中性文案、快速/深入披露和导出限制。当前不签 G4、不声明 Demo 最终就绪。
+上述 AC 是同一 build 上各自隔离的连续程序，AC-02 与 AC-05→06 另检查跨功能接缝；不是同一个共享数据库贯穿七个场景。owner 已报告本轮完整人工 AC/UX 通过；具体硬件/DPI 数值未另报，保留此证据粒度限制。本候选供 G4 决策，不代签 G4 或发布。
 
 ## T071 交付证据
 
@@ -1529,7 +1536,7 @@ Agent 只提供步骤和观察位置，不得替项目所有者签署人工验�
 
 ### EV-S4-S5-001
 
-- **Status**：partial；固定产品 source 的本地聚合、package、人工 AC-05/06 绑定和文档收口已完成。PR #43 candidate hosted CI 的 cloud-only timeout 已作 test-only 窄修复；精确 final docs head 的 hosted milestone CI 尚待实际结果，因此不声明 T806 `done` 或 S4/S5 已合入 `dev`
+- **Status**：原收口时为 partial；后续 final-head CI 与 dev 集成已核实，见下方补记。本次不以 merge 自动重签 T806 任务或阶段接受。
 - **Task / Gate**：T806 / S4-S5 aggregate；聚合 T041～T052、FR-REC01～REC06、FR-RV01～RV06、AC-05/06，并回归 AC-01/03/04/07；不声明 AC-02、G4、AI、S6、S7、自动导入/恢复、Ready、merge、tag 或 Release
 - **Stage final integration revision**：`84b596e12e54db098857004497a4d1964dcdc23c`。该固定产品 source 包含 T041 `695e7bc...`、T042 `3f343b8...`、T051 `3e5a14f...`、T052 `84b596e...`；T806 后续测试/文档 revision 不替代它
 - **Task delivery / integration map**：T041 `1e9ab2b...` / `695e7bc...`；T042 `b323a9f...` / `3f343b8...`；T051 `eccd001...` / `3e5a14f...`；T052 `7aced4f...` / `84b596e...`。各 final task head 与对应 squash integration tree 相同
@@ -1542,14 +1549,15 @@ Agent 只提供步骤和观察位置，不得替项目所有者签署人工验�
 - **Manual acceptance**：pass（owner-reported）。项目所有者于 2026-08-29 报告完整 AC-05 通过；T042 后只有 Review 专用产品变化和 T806 测试/文档变化，没有 Recovery UI/IPC/数据语义变化。项目所有者于 2026-08-30 报告完整 AC-06 通过；T052 final tree 与 integration tree 相同，之后只有 T806 测试/文档变化。此绑定是 revision 审计推论，Agent 不代签
 - **Result / invariants**：RecoveryContext 只读且可解释，用户确认后才执行普通 Application Command，历史 Record/Understanding/Confusion/LocalDate 守恒；Review 只汇总当前事实并保存三项用户输入，`unknown`、`not_done`、`intentional_rest`、`acted`、`target_met` 分离，取消零写入，可选下一步原子执行，重开/migration/export 一致，无评分、掌握度、推断失败、压力 streak 或 AI 总结
 - **Documentation closeout**：统一归档 `archive/S4_S5_T041_T052_ARCHIVE.md`，四任务 metadata 指向归档，原四份合同按项目所有者批准删除并可从固定 Git source 恢复；T052 Escalation Proposal、所有失败 Evidence 与 supersede 历史保留
-- **Known limitations / owner gates**：final-head hosted CI pending；PR #43 仍为 Draft。Ready、合入 `dev`、创建或合入 `dev → main`、tag 和 Release 均未授权。真实 `userData` 未迁移；包未签名且使用默认图标；AC-02、S6、S7、G4 未完成，`v0.1.0-beta.1` 仍是最近发布版本
+- **Known limitations / owner gates**：原候选未签名、默认图标，未迁移真实 userData；T806 范围不包含 AC-02/S6/S7/G4。后续 final-head CI 与 dev 集成见补记，main/tag/release 不由本记录授权。
+- **Subsequent integration**：2026-09-28 补核：PR #43 final head `605cb5433ca93d8f8353b93ca12e8596e16112f5` 的 [run 33323763973](https://github.com/Fyrefly-4/MyTracer/actions/runs/33323763973) 成功，supersedes candidate run `33314322219` 的失败；PR 于 2026-08-30 合入 `dev_integration_revision=1d02fd7a0a7b0bf29a5e39720d5818c9d68fdbc2`。原固定产品 source 与失败记录保留，不由集成事实推断新的人工或阶段接受。
 - **Recorded at**：2026-08-31
 
 ### EV-T807-001
 
-- **Status**：partial；固定产品 source 的 continuous AC-02、受影响回归、完整 hosted verify/package、安全边界、再次独立复核和项目所有者人工 AC-02 均通过，owner-approved 文档收口已执行。文档 final-head hosted CI 与 T807 到 `dev` 的 owner-controlled merge 尚未完成，因此不声明 T807 `done`、已集成或已发布
+- **Status**：原收口时为 partial；后续文档 final-head CI 与 dev 集成已核实，见下方补记。本次不以 merge 自动重签 T807 任务或阶段接受。
 - **Task / Gate**：T807 / S6 aggregate acceptance；聚合 T061～T063、FR-AI01～AI10、FR-C02/C03、AC-02 与 AC-01/03/04/05/06/07 受影响回归；真实 LiteLLM 仅声明 owner-reported UI 人工结果，不声明专用自动 contract pass、Ready、merge、`dev → main`、tag 或 Release
-- **Fixed product source**：`stage_final_integration_revision=f06b1e97da07dffc05814518ad8ad83ed3e051b9`；T807 分支为 `codex/s6-final-acceptance`，目标 `dev`，Draft PR #49
+- **Fixed product source**：`stage_final_integration_revision=f06b1e97da07dffc05814518ad8ad83ed3e051b9`；T807 分支为 `codex/s6-final-acceptance`，目标 `dev`，PR #49（原以 Draft 创建，后续集成见补记）
 - **Historical hosted attempts**：head `64141b6...` 的 run `33595663669` 因 continuous E2E 首次编排在配置前寻找 AI 输入而失败；修正测试编排后，head `0f85a011064233a1039384edd96870e28fd79bd5` 的 superseding run `33596122427` 成功，PR head 与 test-merge `63646c97b7240c6a83b57e9de696f1a8095fc45d` 分开记录，Full Windows verify、244 unit、128 integration（1 live skip）、22 E2E（1 package-only skip）、package 与 package smoke 通过。该 green 不证明之后的边界修复 head
 - **Independent review findings**：OpenAI SDK 未显式关闭日志，可受 `OPENAI_LOG` 影响泄漏 prompt/response；Provider `capabilities()` 或 session `execute()` 意外异常可能绕过 `internal` 降级；live contract 仅依赖 flag，普通 integration/`verify` 在残留 flag 与 key 并存时可能访问真实 Gateway。三项均为 material finding，因此旧 candidate 未通过独立 review gate
 - **Owner-authorized boundary repair**：合同扩展 revision `d8b0b79...`；实现 revision `34454b557b43a872db616f5cff03fb030dcfb336` 固定 SDK `logLevel: 'off'`，把意外 capabilities/execute failure 归一化为 retryable `internal`，并要求 live contract 同时满足 `npm_lifecycle_event=test:ai-contract` 与 `MYTRACER_AI_LIVE_CONTRACT=1`。未更改依赖、package scripts、公开 IPC/Preload、Renderer、schema、配置格式、AI 上下文、自动 retry 或写权限
@@ -1564,7 +1572,8 @@ Agent 只提供步骤和观察位置，不得替项目所有者签署人工验�
 - **Trust-boundary conclusion**：Provider/SDK/network/credential 保持 Main-only，Provider 无 Repository/UnitOfWork/Command 能力；draft/session/prompt/response/manifest 不持久化、不导出；AI unavailable/failure 时核心功能继续工作。schema v3、export v2、依赖和生产写权限均未扩大
 - **Documentation closeout**：项目所有者于 2026-09-05 批准并执行精确 impact matrix；统一归档为 `archive/S6_T061_T063_ARCHIVE.md`，T061～T063 metadata 指向归档，三份原合同按授权删除且可从 `f06b1e9...` 恢复。T807 `task_delivery_revision=449ad4f36ffbace59e19f55c53fa4ce9dcb02b4c`；文档 final head 不替代固定产品 revision
 - **Final-docs local attempt**：文档收口提交 `18a2e4f2021f44eea1d9b0999b8e7cb448378f71` 上 metadata 18 sidecar 与 format check 通过；随后定向 continuous AC-02 E2E 在受限本地环境于产品断言前因 Electron `Target crashed` 退出 1。项目所有者明确要求不在本地重复测试、直接推送云端，因此未在本地重跑该 E2E、`verify`、package 或 package smoke；该环境失败保留，不解释为产品失败，最终文档 head 以 hosted CI 判定
-- **Pending gates**：文档 final-head hosted CI；PR #49 仍为 Draft；Ready、merge 到 `dev`、创建/合入 `dev → main`、候选版本 `v0.1.0-beta.3`、tag 和 Release均由项目所有者另行批准
+- **Subsequent integration**：2026-09-28 补核：PR #49 final head `523be0a94a43a5bcfd0300f2abc4ec5d34d7abdb` 的 [run 33955746084](https://github.com/Fyrefly-4/MyTracer/actions/runs/33955746084) 成功，PR 于 2026-09-05 合入 `dev_integration_revision=fa3ac0a2ac9ec0854615478a14886d764f21c3fc`。原固定产品 source、delivery revision、失败与 live 限制保留；本次仅补记后续 CI/集成事实。
+- **Owner gates**：G4、main 晋升、tag/Release 不由本记录授权；专用自动 live contract 未形成通过证据。
 - **Supersedes / superseded by**：成功 run `33596122427` supersede 失败 run `33595663669`；边界修复使旧 head `0f85a01...` 的成功不足以证明新内容，随后 exact delivery run `33599620345` 给出新 head 成功证据。历史失败和三项独立 review finding 均保留
 - **Recorded at**：2026-09-05
 
