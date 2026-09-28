@@ -58,6 +58,17 @@ describe('AiStartHelpProvider shared offline contract', () => {
       response_format: { type: 'json_schema' }
     })
     expect(create.mock.calls[0]?.[1]).toBe(signal)
+    const messages = create.mock.calls[0]?.[0].messages as {
+      readonly role: string
+      readonly content: string
+    }[]
+    expect(messages).toHaveLength(2)
+    expect(messages[0].role).toBe('system')
+    expect(messages[0].content).toContain('gentle, non-judgmental start help')
+    expect(messages[0].content).toContain('one to three concrete small suggestions')
+    expect(messages[0].content).toContain('Never claim the user completed or mastered anything')
+    expect(messages[0].content).toContain('never treat reasonable rest as procrastination')
+    expect(messages[1]).toEqual({ role: 'user', content: JSON.stringify(request) })
   })
 
   it.each([

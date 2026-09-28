@@ -499,6 +499,43 @@ test('continuous E2E-AC-02 proves isolation, every temporary branch, confirmatio
       generation: 0
     })
     expect(sqliteSnapshot(root)).toEqual(beforeRestart)
+
+    const beforeRecording = await page.evaluate(() => window.myTracer.progress.get({}))
+    const beforeRecordingToday = await todayCommitments(page)
+    if (!beforeRecording.ok) throw new Error('Progress query failed before confirmed Action record')
+    const candidates = page.locator('details.action-candidates')
+    if ((await candidates.getAttribute('open')) === null)
+      await candidates.locator('summary').click()
+    await page.getByRole('button', { name: /__ac02_final_edited_action__.*待行动/ }).click()
+    const recordingPanel = page.getByLabel('__ac02_final_edited_action__ 行动记录')
+    await recordingPanel.getByRole('button', { name: '开始记录' }).click()
+    await recordingPanel.getByLabel('投入时长（分钟，必填）').fill('2')
+    await recordingPanel.getByLabel('本次结果').selectOption('partial')
+    await recordingPanel.getByRole('button', { name: '保存记录' }).click()
+    await expect(recordingPanel).toContainText('记录已保存')
+    const afterRecording = await page.evaluate(() => window.myTracer.progress.get({}))
+    expect(afterRecording).toMatchObject({
+      ok: true,
+      value: {
+        totalDurationMinutes: beforeRecording.value.totalDurationMinutes + 2,
+        realActionCount: beforeRecording.value.realActionCount + 1,
+        records: expect.arrayContaining([
+          expect.objectContaining({
+            actionTitle: '__ac02_final_edited_action__',
+            durationMinutes: 2,
+            outcome: 'partial'
+          })
+        ])
+      }
+    })
+    expect(await todayCommitments(page)).toEqual(beforeRecordingToday)
+    const confirmedActionFacts = sqliteSnapshot(root)
+    await application.close()
+    application = undefined
+    application = await launch(root)
+    page = await application.firstWindow()
+    expect(await page.evaluate(() => window.myTracer.progress.get({}))).toEqual(afterRecording)
+    expect(sqliteSnapshot(root)).toEqual(confirmedActionFacts)
   } finally {
     await application?.close().catch(() => undefined)
     await removeTemporaryTestRoot(root)

@@ -1,6 +1,6 @@
 # MyTracer S6 / T061～T063 开发合同归档
 
-> 状态：已归档；三个任务均已进入 `dev@f06b1e97da07dffc05814518ad8ad83ed3e051b9`，项目所有者已报告完整人工 AC-02 与真实 MyTracer UI + LiteLLM 体验通过；T807 聚合 PR #49 的文档 final-head hosted CI、Ready 与 merge 仍为后续 Gate
+> 状态：已归档；固定产品 source、原人工 AC-02 与真实 UI/Provider 体验证据保留；T807 后续 final-head CI 与 dev 集成已补记于下文。
 >
 > 归档日期：2026-09-05
 
@@ -44,7 +44,7 @@
 - 项目所有者于 2026-09-05 报告人工测试和验收通过，确认当前相关功能符合要求；该结果绑定未再发生产品语义变化的固定 S6 内容和 T807 边界修复内容。
 - 项目所有者另行授权并完成真实 MyTracer UI + LiteLLM 体验，结果为通过。专用 `test:ai-contract` 自动尝试因 Vitest 默认 5 秒 harness timeout 退出 1；该事实不证明 Provider 失败，也不记为自动 live contract 通过。未记录 API key、Provider request/response 或真实用户数据。
 - schema 保持 v3、export 保持 v2，S6 无 migration 或 AI 核心表。Windows 包未签名并仍使用默认 Electron 图标。
-- T807 文档 final-head CI、PR #49 Ready/merge、`dev → main`、候选版本 `v0.1.0-beta.3`、tag 和 Release 均为独立后续 Gate。
+- T807 后续文档 final-head CI 与 dev 集成见下方补记；main 晋升、tag 和 Release 不由本记录授权。
 
 ## 6. 原合同恢复入口
 
@@ -55,3 +55,7 @@ git show f06b1e97da07dffc05814518ad8ad83ed3e051b9:docs/implementation/T063_AI_SU
 ```
 
 历史合同中的候选、Draft、Ready、merge、Provider 和逐文件执行权限仅供审计，不再作为当前开发授权。
+
+## 后续集成事实补记
+
+2026-09-28 补核：PR #49 final head `523be0a94a43a5bcfd0300f2abc4ec5d34d7abdb` 的 [run 33955746084](https://github.com/Fyrefly-4/MyTracer/actions/runs/33955746084) 成功，PR 于 2026-09-05 合入 `dev_integration_revision=fa3ac0a2ac9ec0854615478a14886d764f21c3fc`。原固定产品 source、delivery revision、失败与 live 限制保留；本次仅补记后续 CI/集成事实。

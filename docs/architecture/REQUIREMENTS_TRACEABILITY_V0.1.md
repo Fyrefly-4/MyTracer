@@ -268,3 +268,7 @@
 - 冲突：截至本提案未发现 MUST 冲突。
 - 工程决定：ED-001～019 已批准；具体依赖版本和首个 AI Provider 留在工程初始化审批。
 - 范围变化：无；工程选择没有写回或改变需求基线。
+
+## T072 同版本聚合证据
+
+实现候选 `a78a31f335b95296df9c942912aa79f8eb9f725d` 的 69 MUST、11 SHOULD、7 延期排除及 AC-01～07 逐项断言映射见 [EV-T072-001](../implementation/ACCEPTANCE_EVIDENCE_V0.1.md#ev-t072-001)。本地 exact-source verify、hosted full/milestone CI 和 owner 2026-09-28 人工验收均通过。新增 `tests/e2e/windows-usability.e2e.test.ts` 覆盖删除对话框键盘/取消守恒、异常后已保存事实、最小窗口快速记录；AC-02 增补确认建议后的真实记录与重开。未改变任何需求优先级或冻结语义，G4 和发布仍由 owner 决定。

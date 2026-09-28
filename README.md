@@ -26,10 +26,10 @@ MyTracer 是一个面向个人本地使用的 Windows 桌面应用，用于帮�
 - T033 已证明 AI disabled、not-configured、failure 时 CRUD、Progress、删除、导出和重开继续可用；PR #28 已合入 `dev`，项目所有者于 2026-08-22 报告完整人工 AC-07 通过。
 - T803 已完成 T031～T033 的同 revision 聚合验收与归档；PR #29 合入 `dev@eec093924ae061876805c657742283097824df2c`，里程碑 PR #30 合入 `main@75e51b4e63f8c9df960cccb444515b9e89be5fbd`，并发布 `v0.1.0-beta.1` prerelease。
 - T041～T052 已进入 `dev@84b596e12e54db098857004497a4d1964dcdc23c`，形成完整 Recovery/Review 纵向路径：Recovery 只读解释事实，所有恢复操作经用户确认且不改写历史；Review 只汇总事实并保存三项用户输入，五种 Routine 语义保持分离。schema v3、严格 export v2/v1、重开、原子更新及项目所有者完整人工 AC-05/06 均已验证。
-- T806 正在 PR #43 完成 S4/S5 聚合证据与合同归档；固定产品 source 不因后续测试/文档 revision 改变。final-head hosted CI、Ready、合入 `dev` 和 main 晋升仍需独立 Gate。
-- T061～T063 已进入 `dev@f06b1e97da07dffc05814518ad8ad83ed3e051b9`，形成用户主动触发、最小上下文、Main-only Provider/凭据/网络、临时建议和确认后普通 Command 写入的 AI Start Help 纵向路径。T807 的 continuous AC-02、受影响回归、Windows package、安全边界、独立复核和项目所有者完整人工 AC-02/真实 UI + LiteLLM 体验已通过；PR #49 仍为 Draft，文档 final-head CI、Ready、merge 和发布仍是独立 Gate。
+- T806 的 S4/S5 聚合证据与合同已归档，PR #43 已通过 final-head CI 并合入 dev；固定产品 source 不因后续测试/文档 revision 改变。后续集成事实见 EV-S4-S5-001，main 晋升仍独立受控。
+- T061～T063 已进入 `dev@f06b1e97da07dffc05814518ad8ad83ed3e051b9`，形成用户主动触发、最小上下文、Main-only Provider/凭据/网络、临时建议和确认后普通 Command 写入的 AI Start Help 纵向路径。T807 的 continuous AC-02、受影响回归、Windows package、安全边界、独立复核和项目所有者完整人工 AC-02/真实 UI + LiteLLM 体验已通过；PR #49 后续已通过文档 final-head CI 并合入 dev，详见 EV-T807-001；发布仍独立受控。
 
-- T071 补齐目标/今日重点的非阻塞软提示、最近真实行动日期与间隔、本周截至今天和上周完整周的分钟/行动次数比较，并回归六条既有 SHOULD。功能不设数量硬上限、停滞阈值或评价分数；实现与验证见 [T071 合同](docs/implementation/T071_SHOULD_CONVERGENCE.md) 和 [EV-T071-001](docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md#ev-t071-001)，任务状态以索引为准。T072 的全量聚合验收仍是独立入口。
+- T071 补齐目标/今日重点的非阻塞软提示、最近真实行动日期与间隔、本周截至今天和上周完整周的分钟/行动次数比较，并回归六条既有 SHOULD。功能不设数量硬上限、停滞阈值或评价分数；实现与验证见 [T071 合同](docs/implementation/T071_SHOULD_CONVERGENCE.md) 和 [EV-T071-001](docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md#ev-t071-001)，任务状态以索引为准。T072 已完成当前候选的全量自动回归、Windows package/隔离安装冒烟及 owner 人工 AC/UX；修正删除对话框键盘焦点、记录后返焦及错误反馈。结果见 [EV-T072-001](docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md#ev-t072-001)；文档 final-head CI、G4 和发布各自受控。
 
 不要把任务实现或验收候选理解为已合入 `main` 或已发布。
 

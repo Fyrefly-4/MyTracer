@@ -379,6 +379,10 @@ function DataControlWorkspace(): ReactNode {
   const [savingBackfill, setSavingBackfill] = useState(false)
   const [preview, setPreview] = useState<DeletePreviewDto | null>(null)
   const [previewName, setPreviewName] = useState('')
+  const deleteDialogRef = useRef<HTMLDialogElement | null>(null)
+  const deleteTriggerRef = useRef<HTMLElement | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
   const [selectedRecord, setSelectedRecord] = useState(session.dataRecord)
   const [recordKind, setRecordKind] = useState<'all' | 'action-record' | 'routine-record'>('all')
   const [recordGoalId, setRecordGoalId] = useState('all')
@@ -506,6 +510,17 @@ function DataControlWorkspace(): ReactNode {
     return () => cancelAnimationFrame(frame)
   }, [data, selectedRecord])
 
+  const previewId = preview?.previewId
+  useEffect(() => {
+    const dialog = deleteDialogRef.current
+    if (!previewId || !dialog) return
+    dialog.showModal()
+    return () => {
+      dialog.close()
+      if (deleteTriggerRef.current?.isConnected) deleteTriggerRef.current.focus()
+    }
+  }, [previewId])
+
   const describeDeleteTarget = (target: DeleteTargetDto): string => {
     if (!data) return '所选内容'
     if (target.type === 'goal')
@@ -525,29 +540,51 @@ function DataControlWorkspace(): ReactNode {
   }
 
   const requestDelete = async (target: DeleteTargetDto): Promise<void> => {
+    deleteTriggerRef.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null
     const result = await window.myTracer.dataControl.previewDelete({ target })
     if (!result.ok) return setError(dataControlErrorText[result.error.code])
+    setDeleteError(null)
     setPreviewName(describeDeleteTarget(target))
     setPreview(result.value)
     setError(null)
   }
   const cancelDelete = async (): Promise<void> => {
-    if (!preview) return
-    await window.myTracer.dataControl.cancelDelete({ previewId: preview.previewId })
-    setPreview(null)
-    setPreviewName('')
+    if (!preview || deleting) return
+    setDeleting(true)
+    try {
+      const result = await window.myTracer.dataControl.cancelDelete({
+        previewId: preview.previewId
+      })
+      if (!result.ok) return setDeleteError(dataControlErrorText[result.error.code])
+      setPreview(null)
+      setPreviewName('')
+    } catch {
+      setDeleteError('暂时无法关闭删除预览，请重试。')
+    } finally {
+      setDeleting(false)
+    }
   }
   const confirmDelete = async (): Promise<void> => {
-    if (!preview) return
-    const result = await window.myTracer.dataControl.confirmDelete({
-      previewId: preview.previewId,
-      target: preview.target,
-      confirmation: 'permanently-delete'
-    })
-    setPreview(null)
-    setPreviewName('')
-    if (!result.ok) return setError(dataControlErrorText[result.error.code])
-    await refreshAfterMutation()
+    if (!preview || deleting) return
+    setDeleting(true)
+    try {
+      const result = await window.myTracer.dataControl.confirmDelete({
+        previewId: preview.previewId,
+        target: preview.target,
+        confirmation: 'permanently-delete'
+      })
+      setPreview(null)
+      setPreviewName('')
+      if (!result.ok) return setError(dataControlErrorText[result.error.code])
+      await refreshAfterMutation()
+    } catch {
+      setPreview(null)
+      setPreviewName('')
+      setError('暂时无法确认删除结果，请刷新后查看。')
+    } finally {
+      setDeleting(false)
+    }
   }
   const backfillAction = async (): Promise<void> => {
     if (savingBackfill) return
@@ -1103,35 +1140,43 @@ function DataControlWorkspace(): ReactNode {
       </details>
 
       {preview ? (
-        <div className="modal-backdrop" role="presentation">
-          <section
-            className="confirmation-dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="delete-preview-title"
-          >
-            <p className="eyebrow">永久删除影响预览</p>
-            <h2 id="delete-preview-title">确认永久删除{previewName}</h2>
-            <ul>
-              {Object.entries(preview.counts)
-                .filter(([, count]) => count > 0)
-                .map(([key, count]) => (
-                  <li key={key}>
-                    {impactLabels[key] ?? key}：{count}
-                  </li>
-                ))}
-            </ul>
-            <p>以下内容会一并受到影响。若预览后数据发生变化，本次确认会被拒绝。</p>
-            <div className="dialog-actions">
-              <button type="button" onClick={() => void cancelDelete()}>
-                取消
-              </button>
-              <button className="danger-button" type="button" onClick={() => void confirmDelete()}>
-                永久删除
-              </button>
-            </div>
-          </section>
-        </div>
+        <dialog
+          ref={deleteDialogRef}
+          className="confirmation-dialog"
+          aria-modal="true"
+          aria-labelledby="delete-preview-title"
+          onCancel={(event) => {
+            event.preventDefault()
+            void cancelDelete()
+          }}
+        >
+          <p className="eyebrow">永久删除影响预览</p>
+          <h2 id="delete-preview-title">确认永久删除{previewName}</h2>
+          <ul>
+            {Object.entries(preview.counts)
+              .filter(([, count]) => count > 0)
+              .map(([key, count]) => (
+                <li key={key}>
+                  {impactLabels[key] ?? key}：{count}
+                </li>
+              ))}
+          </ul>
+          <p>以下内容会一并受到影响。若预览后数据发生变化，本次确认会被拒绝。</p>
+          {deleteError ? <p role="alert">{deleteError}</p> : null}
+          <div className="dialog-actions">
+            <button type="button" autoFocus disabled={deleting} onClick={() => void cancelDelete()}>
+              取消
+            </button>
+            <button
+              className="danger-button"
+              type="button"
+              disabled={deleting}
+              onClick={() => void confirmDelete()}
+            >
+              永久删除
+            </button>
+          </div>
+        </dialog>
       ) : null}
     </section>
   )
