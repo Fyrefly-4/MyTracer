@@ -1,6 +1,6 @@
 # T081 — Windows 原位升级与数据保留基线
 
-> 合同状态：approved-1，2026-09-29。项目所有者已批准本合同范围、激活 T081，并授权本地任务分支、提交、普通 push、目标为 `dev` 的 Draft PR 与 Ready 操作；明确不创建 worktree。本次只完成激活与合同提交，不开始产品实现。
+> 合同状态：approved-2，2026-09-29。项目所有者已批准本合同范围、激活 T081，并授权本地任务分支、提交、普通 push、目标为 `dev` 的 Draft PR 与 Ready 操作；明确不创建 worktree。后续另行批准了 S8 Development Skill 窄范围同步和 [T081 扩围提案](T081_ESCALATION_PROPOSAL.md)中的版本文件、hash 记录时点及隔离验证门槛调整；真实安装验收仍须等待隔离 Windows 环境。
 >
 > 本合同只覆盖 [S8 设计](../architecture/S8_UPDATE_MAINTENANCE_DESIGN.md) §4 的 A 节点。T082～T084 的编号与顺序已获批准，但不由本合同启动。采用 V2 显式权限流程；不声明 Automation Profile。
 
@@ -8,7 +8,7 @@
 
 - **Task ID / Title**：T081 / Windows 原位升级与数据保留基线。
 - **Slice / Plan item**：S8-A；[Implementation Plan](../architecture/IMPLEMENTATION_PLAN_V0.1.md) §13 将后续维护任务导向 S8 设计 §3.1、§3.2、§4、§5～7，不改变 S0～S7 历史范围。
-- **Status**：`active`；任务执行状态以 [TASK_INDEX_V0.1.md](TASK_INDEX_V0.1.md) 为准。本次停在合同与治理提交点，产品实现仍未开始。
+- **Status**：`active`；任务执行状态以 [TASK_INDEX_V0.1.md](TASK_INDEX_V0.1.md) 为准。合同与治理基线已提交，后续实施及证据以实际 revision 为准。
 - **编写基线**：`dev@d8b211b3c184cff8d0afdb09ff4b13164704290b`；激活时已核对本地 `dev`、`origin/dev` 与远端 `dev` 为该 revision。S8 设计原为未跟踪文件，本次与合同一起纳入提交。
 - **目标分支**：`task/T081-in-place-upgrade`，已从核实的 `dev@d8b211b3c184cff8d0afdb09ff4b13164704290b` 创建；本任务不创建 worktree。
 - **任务类型**：`implementation`，只建立原位升级兼容与跨版本验证基线。
@@ -53,12 +53,12 @@ references:
 
 - [x] 项目所有者批准本合同范围与明确权限，并激活 T081；任务索引登记相同状态，S8 计划引用与仓库规则一致。本次尚未执行安装测试。
 - [x] S8 设计与合同纳入本任务提交候选；远端与本地 `dev` 已核对为编写基线。
-- [ ] 开始产品实现前复核 T072 最终证据、当前工作区和其他 worktree，并确认无重叠用户修改。
-- [ ] 开发 Skill 对 S8 的适用边界已同步确认；不能从其当前 S0～S7 描述推断 T081 自动获准。
-- [ ] 选定来源安装包 A 与目标安装包 B 的真实版本、不可变 source revision、同一 `appId`/数据目录规则和 SHA-256；A 的版本低于 B，且来源版本列入本次兼容矩阵。可评估已有版本标签，不能仅凭标签名假定包内容兼容。不得用界面文字或临时改名模拟版本差异。
-- [ ] 一次性 Windows VM 或独立测试账户及其安装注册状态、数据根、清理/恢复路径已就绪；不能在真实用户的相同 `appId` 安装身份上运行自动安装/卸载。
+- [x] 开始产品实现前已复核 T072 最终证据、当前工作区和其他 worktree，并确认无重叠用户修改。
+- [x] Owner 已单独批准仅把 Development Skill 的适用说明扩展至 S8；`.agents/skills/mytracer-stage-development/SKILL.md` 已作窄范围同步，不激活 T082～T084 或扩大其他权限。
+- [x] A 的 source 固定为 `dev@d8b211b3c184cff8d0afdb09ff4b13164704290b`，真实应用版本 `0.1.0`；B 在本任务分支将应用版本升至 `0.1.1`，具体 source revision 由实现候选提交固定。A/B 的安装包 SHA-256 必须在各自真实构建后记录，不能提前填造。已核对六个现有版本标签中的应用版本均为 `0.1.0`；标签名不代替包内版本。
+- [ ] 一次性 Windows VM 或独立测试账户及其安装注册状态、数据根、清理/恢复路径已就绪；这是运行 NSIS 安装/卸载、人工验收及宣称 T081 完成的前置条件。Owner 已允许隔离环境就绪前进行安全的本地代码实现和禁止发布的构建；不能在真实用户的相同 `appId` 安装身份上运行安装测试。
 - [ ] 两包均能在保持现有依赖、schemaVersion=3、导出契约和安装身份的条件下构建；若需要改动这些边界，先停止并升级。
-- [x] 任务索引与 sidecar 建立后直接运行相同的 Node metadata 校验器，通过（21 sidecar、1 profile）；当前终端找不到 `npm.cmd`，实施环境仍须运行仓库规定的 npm 入口。结构通过不等于行为验收。
+- [x] 任务索引与 sidecar 建立后运行 `npm.cmd run governance:metadata:check`，通过（21 sidecar、1 profile）。结构通过不等于行为验收。
 
 ### 4.1 Dependencies
 
@@ -81,7 +81,7 @@ dependencies:
     - pinned compatible source installer
 ```
 
-上述是 S8 §4 的串行任务图；B、D 分别对应 T082、T084。编写基线是准备时事实，不是永久固定的授权 `dev`：开始实现前再次核对。任务已激活，但本轮仅提交治理文件，不运行安装器。
+上述是 S8 §4 的串行任务图；B、D 分别对应 T082、T084。编写基线是准备时事实，不是永久固定的授权 `dev`：实现及集成时核对最新授权 `dev`。当前没有隔离 Windows 身份，因此不运行安装器。
 
 ### 4.2 Metadata / Profile
 
@@ -96,9 +96,11 @@ T081 的 `docs/implementation/metadata/T081.json` 与 §4.1 同步；T082～T084
 | Windows E2E        | `tests/e2e/windows-package-smoke.e2e.test.ts` 的必要窄调整，以及新增跨版本安装 E2E；证明真实 A→B 安装、重开、导出、事实守恒、再次写入和运行中安装行为，不以 unpacked 测试代替 |
 | 升级说明           | 与本任务有关的安装/升级、隔离运行、版本与 hash、失败后的应用外手动修复说明；不写私有更新源或发布流程的实现说明                                                                |
 | 任务证据           | 本合同、T081 metadata、任务索引 T081 行及真实结果在 `ACCEPTANCE_EVIDENCE_V0.1.md` 的条目；最终 docs closeout 仍遵守 owner gate                                                |
+| Skill 适用同步    | 经 owner 单独批准，仅修改 `.agents/skills/mytracer-stage-development/SKILL.md` 的 S8 适用说明；不改变流程门禁或其他任务权限                                               |
+| 应用版本           | 经 owner 批准，仅将 `package.json` 与 `package-lock.json` 的根应用版本从 `0.1.0` 同步升至 `0.1.1`；不新增、升级或重锁任何依赖                                                  |
 | 忽略的产物         | `out/`、`release/`、`.tmp/evidence/` 与一次性测试根；不提交安装包、数据库、配置内容、令牌或完整日志                                                                           |
 
-为生成两种真实版本，优先使用已存在且可验证的不同 source revision/版本包。若必须修改 `package.json`/lock、依赖或额外生产模块才能达成目标，先提出精确扩围；本合同不预授这些文件修改。`package.json` 仅新增无依赖测试命令也需在批准时列明范围，不能暗中加入。
+除上述 version-only 变更外，`package.json`/lock 的脚本、依赖和其他字段不在本任务范围。若还需修改依赖或额外生产模块才能达成目标，先提出精确扩围；不得暗中加入。
 
 ## 6. 明确非范围
 
@@ -106,7 +108,7 @@ T081 的 `docs/implementation/metadata/T081.json` 与 §4.1 同步；T082～T084
 - schema、migration、数据导入/恢复、自动备份、导出格式或 AI Provider/权限改变；不改变 SQLite 或 Electron 的生产路径以迎合测试。
 - 自动检查、后台通知、强制更新、静默安装、降级、预发布通道、多平台、代码签名或正式源发布。
 - 真实凭据、真实用户数据库、真实安装注册状态和真实使用资料；不复用 AI key。
-- Ready、合并 `dev`/`main`、tag、Release、外部发布、强推或远端删分支。
+- 未满足审查门禁时的 Ready、合并 `dev`/`main`、tag、Release、外部发布、强推或远端删分支。
 
 ## 7. 必须保持的不变量
 
@@ -140,7 +142,7 @@ T081 的 `docs/implementation/metadata/T081.json` 与 §4.1 同步；T082～T084
 
 ### 10.1 合同准备检查
 
-只验证合同结构、引用和 diff；本轮不运行产品测试、打包或安装，不记录 T081 行为通过。Markdown 被 `.prettierignore` 忽略，须对本文件显式运行 Prettier 检查。
+合同准备提交仅验证结构、引用和 diff，不记录 T081 行为通过。Markdown 被 `.prettierignore` 忽略，须对本文件显式运行 Prettier 检查。
 
 ### 10.2 实施后的定向与回归
 
@@ -149,12 +151,13 @@ T081 的 `docs/implementation/metadata/T081.json` 与 §4.1 同步；T082～T084
 ```powershell
 npm.cmd run governance:metadata:check
 npm.cmd run test:package-smoke
+npm.cmd run test:e2e:run -- tests/e2e/windows-in-place-upgrade.e2e.test.ts
 npm.cmd run verify
 npm.cmd run build
 node node_modules/electron-builder/cli.js --win nsis --x64 --publish never
 ```
 
-上述 package smoke 也会运行 NSIS 安装/卸载，因此只可在隔离 Windows 身份执行；`verify` 在普通环境中可能跳过 package-only 程序，不能替代它。构建 A/B 时各在独立、可追溯 source revision 及其隔离输出根执行相同的禁止发布命令；不覆盖另一候选产物。`verify` 包含 format、lint、typecheck、build、unit、integration 和常规 Electron E2E；按受影响内容额外运行 AC-07/导出与配置回归，精确文件入口在代码候选形成后登记。
+上述 package smoke 也会运行 NSIS 安装/卸载，因此只可在隔离 Windows 身份执行。跨版本测试还须设置合同批准的隔离身份、A/B 安装包路径及 SHA-256 环境变量，详见 [T081 升级验证步骤](T081_UPGRADE_TEST_PROCEDURE.md)；未设置时该测试会跳过，不构成通过。`verify` 在普通环境中也会跳过 package-only 程序，不能替代真实安装证据。构建 A/B 时各在独立、可追溯 source revision 及其隔离输出根执行相同的禁止发布命令；不覆盖另一候选产物。`verify` 包含 format、lint、typecheck、build、unit、integration 和常规 Electron E2E；按受影响内容额外运行 AC-07/导出与配置回归，精确文件入口在代码候选形成后登记。
 
 ### 10.3 确定性证据与人工步骤
 
@@ -202,7 +205,7 @@ permissions:
 
 ## 12. 依赖、数据与外部操作权限
 
-- **依赖**：T081 无新增/升级依赖；已批准的 `electron-updater` 属于 T082，不能提前安装。改变 Electron、builder、SQLite 或其他版本须另行批准。
+- **依赖**：T081 无新增/升级依赖；仅根应用版本 `0.1.0`→`0.1.1` 获准。已批准的 `electron-updater` 属于 T082，不能提前安装。改变 Electron、builder、SQLite 或其他依赖版本须另行批准。
 - **网络**：准备阶段可只读核对来源包与版本资料；实施中的受控下载或 GitHub Draft PR 只能在合同批准的精确权限内执行。测试不接正式更新源，不发布 Release。
 - **AI**：仅 fake Provider 与合成配置；不读取真实 key，不作 live Provider 调用。
 - **数据**：不进行 schema/migration 或破坏性真实数据操作。安装/卸载只在隔离身份与授权测试根执行。

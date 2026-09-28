@@ -1,6 +1,6 @@
 ---
 name: mytracer-stage-development
-description: Execute one approved MyTracer Txxx implementation or fix task within an S0-S7 slice, from task-contract and authority checks through scoped development, layered validation, independent review, meaningful commits, hosted CI, owner-approved documentation closeout, final-head CI, and merge handoff. Use when a development agent is asked to build or fix a concrete MyTracer task; do not use it to invent product requirements, batch an entire stage, or treat review-only requests as implementation authorization.
+description: Execute one approved MyTracer Txxx implementation or fix task within an S0-S8 slice, from task-contract and authority checks through scoped development, layered validation, independent review, meaningful commits, hosted CI, owner-approved documentation closeout, final-head CI, and merge handoff. Use when a development agent is asked to build or fix a concrete MyTracer task; do not use it to invent product requirements, batch an entire stage, or treat review-only requests as implementation authorization.
 ---
 
 # MyTracer Stage Development
@@ -15,6 +15,7 @@ Complete one approved `Txxx` task as a focused, traceable delivery. Preserve fro
    - For implementation or fixing, continue only within the explicit local-write scope.
    - For monitoring, observe only the named target.
 3. Require one stable `Txxx` task. Treat a stage or plan item as context, not as permission to batch neighboring tasks.
+   For S8, read `docs/architecture/S8_UPDATE_MAINTENANCE_DESIGN.md` and the approved T081～T084 contract for the chosen task; S8 applicability does not activate neighboring tasks or broaden their permissions.
 4. Read the smallest relevant set in this authority order:
    1. `docs/PRODUCT_REQUIREMENTS_V0.1.md` for frozen FR and AC semantics.
    2. `docs/DECISIONS.md` for frozen D decisions.
