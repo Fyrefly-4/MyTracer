@@ -31,6 +31,8 @@
 - **Integration Freshness**：original/latest authorized/verified dev base 均为 `248350409927923016de18f7c5d967aa064964ca`，2026-09-28 收口前再次核实，`status=fresh`、`refresh_method=none`。
 - **Closeout review / checks**：只读文档 review session `01a0e720-3635-7750-9404-2b9a1d03eb78` 提出 final-head CI 前不应记录 Task Delivery Revision/任务完成；已改为 Implementation Candidate，T072 保持 review，交付 revision 待 final-head CI 后绑定。metadata、仓库 `format:check`、diff 检查通过；额外 `classify-changes.mjs docs --paths-file .tmp/T072-doc-paths.txt` 退出 1，仅报告六份文档的 Prettier 整文件格式问题，链接/结构无错误。对照 `a78a31f` 确认六份基线同样不符合该直接格式检查，README 前后均通过；比较记录为 `.tmp/evidence/T072-doc-format-audit.json`。不把此失败记为通过，不为消除历史格式问题扩大为整文件重排；PR 仍按原 milestone 分类执行最终门禁。
 
+- **Documentation head verified (2026-09-29)**：[run 36397819756](https://github.com/Fyrefly-4/MyTracer/actions/runs/36397819756) success，PR head `aab9231c149f890c59268912df33703717c08487`、test-merge `e35f24cee8fa9255e11b8b66644d5f907703dba2`、base `248350409927923016de18f7c5d967aa064964ca`。已下载 `verification-evidence-36397819756-1`（id `10958742880`）和 `milestone-evidence-36397819756-1`（id `10959463183`）；verify/package/package-smoke JSON 均 exit 0、capture complete，head/merge/base 一致。Full Windows、Milestone、Governance、PR quality 和两个 Gate 成功，documentation 分类跳过。远端 dev 再次核对未变，fresh。此结果解决上条 review 的等待条件，支持 T072 收口为 done；后续纯状态提交的最新 head CI 与最终 task_delivery_revision 仅在 PR #56 更新，dev/stage integration 仍为 null。
+
 #### 当前候选断言映射（69 MUST）
 
 路径简写：U=`tests/unit/`，I=`tests/integration/`，E=`tests/e2e/`；下表文件省略 `.test.ts` 后缀（E 文件保留 `.e2e`）。映射以源码中的输入、结果和快照断言为依据。所有行所列自动断言均纳入上述成功 aggregate，主观体验由下述 owner 报告独立记录；该结论不包含 live-only skip。结构核对 87 行/87 唯一 FR，无 PRD 编号遗漏或额外编号；数量核对本身不作为行为证据。

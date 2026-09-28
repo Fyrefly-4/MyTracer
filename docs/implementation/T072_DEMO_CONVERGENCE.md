@@ -179,7 +179,7 @@ Sidecar 为 [metadata/T072.json](metadata/T072.json)，任务类型 `aggregate`�
 - [x] 同版本完整 verify、AC 批次、Windows package、unpacked/隔离 NSIS smoke 的脱敏证据。
 - [x] Windows 人工体验：owner 报告上述 AC/UX 全部通过；实际显示/缩放/窗口数值未单独报告，记录此证据粒度限制，不以 Agent 环境代填。
 - [x] 完整 diff 自查、独立只读 review、Integration Freshness、candidate CI 与 owner-approved docs closeout；文档提交的 final-head CI 仍作为 PR 集成门禁。
-- [ ] 文档提交的 exact final-head full/milestone CI；不得以 candidate CI 替代，实时结果在 PR #56 记录。
+- [x] 文档提交 `aab9231` 的 exact final-head full/milestone CI 已由 run `36397819756` 证明；后续状态提交仍需最新 head 门禁，实时结果与最终 Task Delivery Revision 在 PR #56 绑定。
 - [x] Demo 候选交接：source/产物 revision、SHA-256、数据兼容/导出限制、已知问题和自用观察入口；不发布或预签 G4。
 
 ## 9. 可判定验收条件
