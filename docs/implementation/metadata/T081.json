@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "task": "T081",
+  "task_kind": "implementation",
+  "dependencies": {
+    "requires": [],
+    "blocks": ["T082"],
+    "can_parallel": [],
+    "prefer_after": [],
+    "conflicts_with": ["T082", "T084"]
+  },
+  "conflict_basis": {
+    "T082": "S8 requires serial integration: T082 extends the T081 builder configuration, package provenance and Windows installation test surface after T081 establishes real same-identity upgrade behavior.",
+    "T084": "S8 requires serial integration: T084 consumes the T081 package and compatibility evidence and shares packaging, installation tests and release provenance."
+  },
+  "shared_surfaces": [
+    {
+      "files": [
+        "electron-builder.yml",
+        "tests/e2e/windows-package-smoke.e2e.test.ts",
+        "tests/e2e/",
+        "tests/support/",
+        "tools/",
+        "docs/implementation/T081_IN_PLACE_UPGRADE_BASELINE.md",
+        "docs/implementation/TASK_INDEX_V0.1.md",
+        "docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md"
+      ],
+      "modules": [
+        "same-identity-windows-nsis-upgrade",
+        "isolated-cross-version-install-and-data-conservation",
+        "package-provenance-and-task-evidence"
+      ],
+      "schema_tables": [],
+      "ipc_contracts": [],
+      "domain_invariants": [
+        "same-app-id-and-userdata-resolution-across-versions",
+        "schema-version-3-and-existing-export-contract-preserved",
+        "historical-core-facts-and-explicit-local-dates-preserved",
+        "installer-tests-use-isolated-windows-identity-and-synthetic-data",
+        "builds-never-publish-and-artifacts-bind-to-immutable-source-revisions"
+      ],
+      "risk": "high",
+      "integration_policy": "serial"
+    }
+  ],
+  "external": [
+    "isolated Windows VM or independent test account",
+    "pinned compatible source installer"
+  ]
+}
