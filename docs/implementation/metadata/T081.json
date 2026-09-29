@@ -36,7 +36,7 @@
         "same-app-id-and-userdata-resolution-across-versions",
         "schema-version-3-and-existing-export-contract-preserved",
         "historical-core-facts-and-explicit-local-dates-preserved",
-        "installer-tests-use-isolated-windows-identity-and-synthetic-data",
+        "installer-tests-use-approved-windows-identity-and-isolated-synthetic-data",
         "builds-never-publish-and-artifacts-bind-to-immutable-source-revisions"
       ],
       "risk": "high",
@@ -44,7 +44,7 @@
     }
   ],
   "external": [
-    "isolated Windows VM or independent test account",
+    "approved Windows test identity (T081 current-account exception recorded in contract)",
     "pinned compatible source installer"
   ]
 }

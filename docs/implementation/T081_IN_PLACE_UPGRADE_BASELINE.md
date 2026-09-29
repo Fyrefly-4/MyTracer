@@ -2,13 +2,13 @@
 
 > 合同状态：approved-3，2026-09-29。项目所有者已批准本合同范围、激活 T081，并授权本地任务分支、提交、普通 push、目标为 `dev` 的 Draft PR 与 Ready 操作；明确不创建 worktree。后续另行批准了 S8 Development Skill 窄范围同步和 [T081 扩围提案](T081_ESCALATION_PROPOSAL.md)中的版本文件、hash 记录时点调整。Owner 又明确批准本次在当前 Windows 账户执行 NSIS 测试，确认该账户已有的 MyTracer 默认数据可丢弃，并免除本次独立 Codex review；具体安全边界见 §4.3。
 >
-> 本合同只覆盖 [S8 设计](../architecture/S8_UPDATE_MAINTENANCE_DESIGN.md) §4 的 A 节点。T082～T084 的编号与顺序已获批准，但不由本合同启动。采用 V2 显式权限流程；不声明 Automation Profile。
+> 项目所有者于 2026-09-29 另行授权 T081 文档收口，并明确由其自行完成人工验收和文档提交后的最终 CI 检查；Agent 不代签或把未复核结果记为已通过。本合同只覆盖 [S8 设计](../architecture/S8_UPDATE_MAINTENANCE_DESIGN.md) §4 的 A 节点。T082～T084 不由本合同启动。采用 V2 显式权限流程；不声明 Automation Profile。
 
 ## 1. 任务信息
 
 - **Task ID / Title**：T081 / Windows 原位升级与数据保留基线。
 - **Slice / Plan item**：S8-A；[Implementation Plan](../architecture/IMPLEMENTATION_PLAN_V0.1.md) §13 将后续维护任务导向 S8 设计 §3.1、§3.2、§4、§5～7，不改变 S0～S7 历史范围。
-- **Status**：`active`；任务执行状态以 [TASK_INDEX_V0.1.md](TASK_INDEX_V0.1.md) 为准。合同与治理基线已提交，后续实施及证据以实际 revision 为准。
+- **Status**：`review`；任务执行状态以 [TASK_INDEX_V0.1.md](TASK_INDEX_V0.1.md) 为准。实现候选与本地实装验证已完成；最终文档 head 的 CI、owner 人工验收和集成仍待 owner 核对。
 - **编写基线**：`dev@d8b211b3c184cff8d0afdb09ff4b13164704290b`；激活时已核对本地 `dev`、`origin/dev` 与远端 `dev` 为该 revision。S8 设计原为未跟踪文件，本次与合同一起纳入提交。
 - **目标分支**：`task/T081-in-place-upgrade`，已从核实的 `dev@d8b211b3c184cff8d0afdb09ff4b13164704290b` 创建；本任务不创建 worktree。
 - **任务类型**：`implementation`，只建立原位升级兼容与跨版本验证基线。
@@ -51,13 +51,13 @@ references:
 
 ## 4. 开始条件与依赖
 
-- [x] 项目所有者批准本合同范围与明确权限，并激活 T081；任务索引登记相同状态，S8 计划引用与仓库规则一致。本次尚未执行安装测试。
+- [x] 项目所有者批准本合同范围与明确权限，并激活 T081；任务索引登记相同状态，S8 计划引用与仓库规则一致。实际安装测试结果见 §10.5 与 `EV-T081-001`。
 - [x] S8 设计与合同纳入本任务提交候选；远端与本地 `dev` 已核对为编写基线。
 - [x] 开始产品实现前已复核 T072 最终证据、当前工作区和其他 worktree，并确认无重叠用户修改。
 - [x] Owner 已单独批准仅把 Development Skill 的适用说明扩展至 S8；`.agents/skills/mytracer-stage-development/SKILL.md` 已作窄范围同步，不激活 T082～T084 或扩大其他权限。
 - [x] A 的 source 固定为 `dev@d8b211b3c184cff8d0afdb09ff4b13164704290b`，真实应用版本 `0.1.0`；B 在本任务分支将应用版本升至 `0.1.1`，具体 source revision 由实现候选提交固定。A/B 的安装包 SHA-256 必须在各自真实构建后记录，不能提前填造。已核对六个现有版本标签中的应用版本均为 `0.1.0`；标签名不代替包内版本。
 - [x] 本次执行账户及其安装注册状态、数据根、清理边界已经按 §4.3 预检。默认隔离身份要求由 owner 对当前账户的明确一次性授权替代；不将该例外推广至其他任务或账户。
-- [ ] 两包均能在保持现有依赖、schemaVersion=3、导出契约和安装身份的条件下构建；若需要改动这些边界，先停止并升级。
+- [x] A/B 两包在保持现有依赖、schemaVersion=3、导出契约和安装身份的条件下构建；source、hash 与实际验证见 §10.5。
 - [x] 任务索引与 sidecar 建立后运行 `npm.cmd run governance:metadata:check`，通过（21 sidecar、1 profile）。结构通过不等于行为验收。
 
 ### 4.1 Dependencies
@@ -152,7 +152,7 @@ T081 的 `docs/implementation/metadata/T081.json` 与 §4.1 同步；T082～T084
 
 ### 10.2 实施后的定向与回归
 
-在已授权并隔离的任务环境中，按实际改变的文件运行已有入口；跨版本测试必须在上述 Windows VM/独立测试账户中，以明确 A/B 相对产物路径、版本和 hash 运行。新增跨版本命令在实现测试入口时固定于本合同/证据，不把尚不存在的命令写成已通过。
+在已授权的任务环境中，按实际改变的文件运行已有入口；跨版本测试使用 VM/独立测试账户，或 §4.3 本次获批的当前账户，以明确 A/B 绝对产物路径、版本和 hash 运行。实际结果只以 `EV-T081-001` 中的 revision、命令和证据为准。
 
 ```powershell
 npm.cmd run governance:metadata:check
@@ -163,24 +163,31 @@ npm.cmd run build
 node node_modules/electron-builder/cli.js --win nsis --x64 --publish never
 ```
 
-上述 package smoke 也会运行 NSIS 安装/卸载，因此只可在隔离 Windows 身份执行。跨版本测试还须设置合同批准的隔离身份、A/B 安装包路径及 SHA-256 环境变量，详见 [T081 升级验证步骤](T081_UPGRADE_TEST_PROCEDURE.md)；未设置时该测试会跳过，不构成通过。`verify` 在普通环境中也会跳过 package-only 程序，不能替代真实安装证据。构建 A/B 时各在独立、可追溯 source revision 及其隔离输出根执行相同的禁止发布命令；不覆盖另一候选产物。`verify` 包含 format、lint、typecheck、build、unit、integration 和常规 Electron E2E；按受影响内容额外运行 AC-07/导出与配置回归，精确文件入口在代码候选形成后登记。
+上述 package smoke 也会运行 NSIS 安装/卸载，因此只可在获批准的 Windows 身份执行。跨版本测试还须设置合同批准的身份、A/B 安装包路径及 SHA-256 环境变量，详见 [T081 升级验证步骤](T081_UPGRADE_TEST_PROCEDURE.md)；未设置时该测试会跳过，不构成通过。`verify` 在普通环境中也会跳过 package-only 程序，不能替代真实安装证据。构建 A/B 时各在独立、可追溯 source revision 及其隔离输出根执行相同的禁止发布命令；不覆盖另一候选产物。`verify` 包含 format、lint、typecheck、build、unit、integration 和常规 Electron E2E；受影响的 AC-07/导出与配置回归已由跨版本实装测试和 `verify` 覆盖，见 `EV-T081-001`。
 
 ### 10.3 确定性证据与人工步骤
 
 对关键命令使用 `node tools/evidence/capture-command.mjs --task T081 --gate <gate> --base-revision <实际 SHA> --output .tmp/evidence -- <明确 argv>`；Windows `.cmd` 由 wrapper 用显式 `ComSpec` argv 启动。JSON 只保留允许的元数据，不写 stdout/stderr、绝对用户路径、正文、数据库、凭据或完整日志。记录旧/新版 source 与 hash、实际执行环境、命令、结果、限制，以及 PR head/test-merge 的不同 revision。
 
-人工验收按 §9.7 在隔离机器执行；不将 Agent 自动化代签为 owner 结果。安装失败、权限提示和手动修复均记录实际观察。
+人工验收按 §9.7 由 owner 在获授权的 Windows 身份执行；不将 Agent 自动化代签为 owner 结果。安装失败、权限提示和手动修复均记录实际观察。
 
 ### 10.4 验证环境
 
-- OS：Windows x64 一次性 VM 或独立测试账户；不能使用真实 MyTracer 安装身份所在账户。
+- OS：通常为 Windows x64 一次性 VM 或独立测试账户；本次 §4.3 明确授权当前账户，并按预检约束使用唯一临时安装和数据根。
 - Node/npm/Electron/builder：以当前锁定版本和实际执行环境记录；编写时 `package.json` 为 Node 24.18.0、npm 11.16.0、Electron 43.3.0、electron-builder 26.15.3。
 - 数据：唯一临时测试根、合成业务数据、合成 AI 配置、fake Provider；不使用 live Provider。
-- source / packages：实施时填写 A/B 精确 SHA、真实版本、安装包 hash 与签名状态；当前均未验证。
+- source / packages：A/B 精确 SHA、版本、hash 与签名状态见 §10.5 和 `EV-T081-001`。
+
+### 10.5 实施候选与 owner 交接（2026-09-29）
+
+- A：`dev@d8b211b3c184cff8d0afdb09ff4b13164704290b`，应用 `0.1.0`，NSIS SHA-256 `AD68642DEB44F31D9194544D55DED558B52BD4442C920837539124DD466D48E4`。B：生产构建 source `be44e337ba33bdbb44e9a30cb5dcd110d6ee6fa6`，应用 `0.1.1`，NSIS SHA-256 `F0DB2793A2DA6833D505C1107DBE1EC60150E3722E25C051A9DBE6817F750051`。两包均为 Windows x64、`appId=io.mytracer.desktop`、每用户 NSIS、unsigned，构建时指定 `--publish never`；未改依赖、schemaVersion=3 或导出契约。
+- 实现候选 `2f98854b9386812000a118353dee2861a3d68f65`：在 owner 批准的当前 Windows 账户使用唯一临时安装、数据和导出根，真实 A→B、A 运行时安装、损坏包启动失败后用已核 hash 的 B 修复三场景 **3/3 pass**；B package smoke **1/1 pass**；完整 `verify` 通过（255 unit、130 integration、30 常规 E2E；1 live-only integration 与 4 opt-in package E2E 按默认策略 skip，后四项已单独运行）。测试结束后 MyTracer 卸载注册、进程和默认安装目录均为零；未读取或清理现有默认数据。具体命令、失败历史与 artifacts 见 `EV-T081-001`。
+- `dev` 基线核对为 `d8b211b3c184cff8d0afdb09ff4b13164704290b`，为候选祖先；Integration Freshness=`fresh`，`refresh_method=none`。PR #57 指向 `dev`，保持 Draft。owner 报告同一实现 head 的替代 hosted run `36521775546` 已通过；Agent 查询 GitHub API 连续 TLS 握手超时，尚未独立读取该 run 的 job 与 evidence artifact，因此只记录 owner-reported 状态。
+- owner 明确接手人工验收和文档提交后的最终 CI 检查。两者均为 `pending owner verification`，不由本次文档收口推断为 pass；`task_delivery_revision`、`dev_integration_revision`、`stage_final_integration_revision` 仍为 `null`。不自动标 Ready、merge、tag、release 或启动 T082。
 
 ## 11. Git 与 GitHub 权限
 
-项目所有者已批准下列任务 Git 权限，并要求本次仅创建分支及提交合同/治理文件，不开始产品开发。未明确为 `true` 的动作不得执行；Ready 须在实际审查与 CI 门禁满足后才能操作。
+项目所有者已批准下列任务 Git 权限；最初仅要求创建分支及提交合同/治理文件，之后另行启动实施。未明确为 `true` 的动作不得执行；Ready 须在实际审查与 CI 门禁满足后才能操作。
 
 - [x] 创建本地任务分支；不创建 worktree。
 - [x] 创建本地提交。
@@ -214,8 +221,8 @@ permissions:
 - **依赖**：T081 无新增/升级依赖；仅根应用版本 `0.1.0`→`0.1.1` 获准。已批准的 `electron-updater` 属于 T082，不能提前安装。改变 Electron、builder、SQLite 或其他依赖版本须另行批准。
 - **网络**：准备阶段可只读核对来源包与版本资料；实施中的受控下载或 GitHub Draft PR 只能在合同批准的精确权限内执行。测试不接正式更新源，不发布 Release。
 - **AI**：仅 fake Provider 与合成配置；不读取真实 key，不作 live Provider 调用。
-- **数据**：不进行 schema/migration 或破坏性真实数据操作。安装/卸载只在隔离身份与授权测试根执行。
-- **外部写入**：任务分支普通 push 与同一任务 Draft PR 已批准，但本步不执行；非任务外部写入、Actions 发布、tag、Release 均未授权。
+- **数据**：不进行 schema/migration 或破坏性真实数据操作。安装/卸载通常在隔离身份执行；本次 §4.3 例外使用获批当前账户，安装、测试数据与清理均限制于授权临时根。
+- **外部写入**：任务分支普通 push 与同一任务 Draft PR 已批准并已用于 PR #57；非任务外部写入、Actions 发布、tag、Release 均未授权。
 
 ### 12.1 Integration
 

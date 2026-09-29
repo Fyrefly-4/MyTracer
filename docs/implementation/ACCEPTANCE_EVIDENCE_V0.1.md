@@ -1,8 +1,23 @@
 # MyTracer v0.1 验收证据
 
-> 文档状态：证据账本已建立；已记录 T001～T004、T011～T014、T021～T023、T031～T033、T041/T042、T051/T052、T061～T063、T801～T807、AC-01～AC-07 及已执行阶段聚合证据
+> 文档状态：证据账本已建立；已记录 T001～T004、T011～T014、T021～T023、T031～T033、T041/T042、T051/T052、T061～T063、T081、T801～T807、AC-01～AC-07 及已执行阶段聚合证据
 > 作用：记录可复核的命令、版本、环境、产物和人工观察  
 > 禁止：用任务状态、测试名称、关键词存在或 Agent 自述替代实际结果
+
+## T081 实现候选证据
+
+### EV-T081-001
+
+- **Status / scope**：`partial`；T081/S8-A 的 U-01、U-05 产物追踪子集，以及 FR-D01～D05、AC-07 持久化/导出子集、ED-018 的本地实装自动化通过。owner 接手人工验收和最终文档 head CI；本条不声明 T081 `done`、S8 阶段完成、Ready、merge、tag 或 release。
+- **Source / integration**：分支 `task/T081-in-place-upgrade`、PR #57→`dev`；B 生产构建 source `be44e337ba33bdbb44e9a30cb5dcd110d6ee6fa6`，实施候选 `2f98854b9386812000a118353dee2861a3d68f65`。`original_base_revision=latest_authorized_dev_revision=verified_against_revision=d8b211b3c184cff8d0afdb09ff4b13164704290b`，为候选祖先；Integration Freshness=`fresh`、`refresh_method=none`。`task_delivery_revision=null`、`dev_integration_revision=null`、`stage_final_integration_revision=null`。
+- **Package provenance**：A=`dev@d8b211b3c184cff8d0afdb09ff4b13164704290b` / `0.1.0` / SHA-256 `AD68642DEB44F31D9194544D55DED558B52BD4442C920837539124DD466D48E4`；B=`be44e337ba33bdbb44e9a30cb5dcd110d6ee6fa6` / `0.1.1` / SHA-256 `F0DB2793A2DA6833D505C1107DBE1EC60150E3722E25C051A9DBE6817F750051`。两包为 Windows x64、同一 `appId=io.mytracer.desktop`、每用户 NSIS、`NotSigned`，构建显式 `--publish never`。依赖版本、schemaVersion=3、导出契约和默认数据目录规则未改。
+- **Environment / data**：Windows x64 当前 owner 账户（owner 本次明确授权），SID 在测试中与批准值核对；Node `v24.18.0`、npm `11.16.0`、Electron `43.3.0`。每场景唯一临时安装、SQLite、Electron `userData`、导出根与合成配置；仅预检既有默认数据的存在性，不读取、使用或清理真实默认数据。各场景结束后的卸载注册、MyTracer 进程和默认安装目录计数为 `0,0,0`；不使用 live Provider 或真实 key。
+- **Actual commands / local results**：在 exact `2f98854...` 运行 `node tools/evidence/capture-command.mjs --task T081 --gate cross-version-install --base-revision d8b211b3c184cff8d0afdb09ff4b13164704290b --output .tmp/evidence -- npm.cmd run test:e2e:run -- tests/e2e/windows-in-place-upgrade.e2e.test.ts`，以显式 A/B 路径、hash、获批模式及账户 SID 输入，**3 passed / 0 skipped**；artifact `.tmp/evidence/T081-cross-version-install-2f98854b9386-20260929042213.json`，exit 0、capture complete。相同 source 的 `npm.cmd run test:package-smoke` **1/1 pass**，artifact `T081-package-smoke-2f98854b9386-20260929042421.json`；`npm.cmd run verify` exit 0，format/lint/typecheck/build、Unit 255、Integration 130、常规 Electron E2E 30 pass；1 live-only integration、4 opt-in package E2E 默认 skip，artifact `T081-implementation-candidate-2f98854b9386-20260929042455.json`。metadata 检查 21 sidecar、1 profile 通过；完整 `dev...task` diff 与 `git diff --check` 检查完成，owner 明确免除本次独立 Codex review。
+- **Observed behavior**：A 经 UI 创建目标/复盘，经正常 Application 命令建立关联行动、例行任务、四种已记录 Routine 状态与缺失记录的 unknown、显式 LocalDate 和合成 AI 配置。关闭/重开 A 后，不卸载 A 即安装 B；B 重开后的完整导出事实、SQLite 全业务表快照和同机配置状态保持一致，新增行动记录再次重开仍存在。A 运行时启动 B 安装器返回 0、旧进程退出；B 启动后的相同数据/配置快照证明本次没有观察到并发写库或残留旧进程。故障演练将 B 副本在临时根截断，子进程在 **包启动阶段** 报错；A 仍可重开且数据库未变，随后以 hash 已核对的完整 B 包修复，旧事实/导出/配置仍一致并可新增记录。
+- **Preserved failures / superseding evidence**：初次实装测试 `.tmp/evidence/T081-current-account-upgrade-2b30c852489e-20260929034716.json` exit 1，因测试错误读取不存在的配置 DTO 字段；修复后 `T081-current-account-upgrade-b2bbba870f11-20260929035102.json` 虽记录 exit 0，但 Playwright 直接关闭 Main 时出现 SQLite busy 对话框并等待人工关闭，不计为有效通过。改用正常窗口关闭路径后，`T081-current-account-upgrade-a05edb9796e8-20260929040925.json` 与本条 exact candidate 三场景成功，supersede 上述失败/不可靠运行；不删除早期 artifacts。A 初次 package 构建因 `npm ci` 未生成 Electron `dist` 而失败，按锁定版本运行 Electron install script 后成功，不改依赖。
+- **Hosted CI**：early run `36462327969` 在旧 head `be44e337...` 成功；run `36512456319` 在旧 head `9e267b9...` 成功。候选 `2f98854...` 的 run `36521689254` 因 PR 正文更新被新 run 取代并取消，不作为通过。owner 于 2026-09-29 报告同 head 替代 run `36521775546` 已通过；Agent 查询 GitHub API 连续 TLS 握手超时，未独立读取 job、test-merge revision 或 hosted artifact，故此项仅为 **owner-reported pass / artifact unverified**，不得写成独立复核。
+- **Manual / handoff / limits**：人工覆盖升级、失败后修复可理解性和实际未签名提示均 `pending owner verification`；文档提交后的 final-head CI 亦由 owner 自行检查，当前 `pending`。损坏包演练发生在启动阶段，未验证 NSIS 已写文件后的中断或断电恢复；静默安装测试不证明交互式提示。未发现需求语义冲突；经 owner 明确批准的扩围仅为根应用版本 `0.1.1`、构建后记录 hash、当前账户测试和 S8 Skill 适用说明，不含新依赖或 migration。
+- **Recorded at**：2026-09-29。
 
 ## T072 交付证据
 

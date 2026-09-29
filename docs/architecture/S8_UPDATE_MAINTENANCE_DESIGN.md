@@ -4,11 +4,11 @@
 
 - **Stage**：S8 — Update Maintenance（owner 授权自主分配的后续维护阶段；不改变 S0～S7 的历史范围）。
 - **Title**：保留数据的 Windows 原位升级与用户主动更新。
-- **Status**：首期范围与分发/发布约定 approved；实现接口细节为 draft。T081 合同已获批准并激活，产品实现尚未开始；T082～T084 实施合同尚未创建。
+- **Status**：首期范围与分发/发布约定 approved；实现接口细节为 draft。T081 实现候选与本地跨版本安装验证已完成，证据见 [EV-T081-001](../implementation/ACCEPTANCE_EVIDENCE_V0.1.md#ev-t081-001)；owner 人工与最终文档 head CI 待核。T082～T084 实施合同尚未创建。
 - **Owner approval**：2026-09-29 owner 已批准首期 U-01～05、electron-updater 引入、S8/T081～T084 自主编号、个人私有且不配置代码签名的分发方式；在说明影响后进一步回复“同意，现在在合同中更新”，确认私有 GitHub Releases＋本机只读凭据，以及 Actions 自动准备、owner 手动确认发布的流程。上述决定已生效，不重复请求批准；本次为文档更新，不代表实际发布执行。
 - **Target branch**：后续实现进入 `dev`；T081 使用 `task/T081-in-place-upgrade`，不创建 worktree。任务激活与实施以 [T081 合同](../implementation/T081_IN_PLACE_UPGRADE_BASELINE.md)和任务索引为准。
 - **Prior behavior revision**：`dev@d8b211b3c184cff8d0afdb09ff4b13164704290b`。
-- **授权解释**：据授权分配 S8 及 T081～T084；T081 的独立合同已获 owner 批准并激活，其余任务仍待合同。Development Skill 当前描述限于 S0～S7，产品实现前仍需同步 S8 适用边界，不能默认现有技能已覆盖新阶段。
+- **授权解释**：据授权分配 S8 及 T081～T084；T081 的独立合同已获 owner 批准并激活，其余任务仍待合同。Development Skill 已按 owner 的窄范围批准同步 S8 适用说明，不激活相邻任务。
 
 ## 2. Baseline manifest
 
@@ -37,10 +37,10 @@ baseline:
 - 本地 `dev` HEAD 为上述 revision，提交说明为 T072 Demo 收敛（PR #56）；检查开始时工作区干净。[任务索引](../implementation/TASK_INDEX_V0.1.md) 将 T072 标为 done。
 - [T072 合同](../implementation/T072_DEMO_CONVERGENCE.md)及 [EV-T072-001](../implementation/ACCEPTANCE_EVIDENCE_V0.1.md)记录候选自动化与 owner 人工结果。证据仍保留 `dev_integration_revision=null` 的历史交接描述，与当前本地集成事实存在文档漂移；本次只报告，不修改旧账本。
 - 未重新查询远端、重跑 T072、确认 G4 或正式 release；本地集成 revision 不是新阶段的验收结果。实施前重新核对最新授权 `dev` 与必要的 T072 最终证据。
-- `electron-builder.yml`：NSIS x64、每用户安装、`appId=io.mytracer.desktop`；`package.json`：应用版本 0.1.0、electron-builder 26.15.3、Electron 43.3.0，未声明 electron-updater。
+- 固定的先前 `dev@d8b211b...` 基线：`electron-builder.yml` 为 NSIS x64、每用户安装、`appId=io.mytracer.desktop`；`package.json` 应用版本 `0.1.0`、electron-builder 26.15.3、Electron 43.3.0，未声明 electron-updater。T081 候选仅将根应用版本升为 `0.1.1`，不改变上述依赖和安装身份。
 - 数据库路径由 Main 的 `app.getPath('userData')` 决定，位于 `data/mytracer.sqlite3`；当前 schemaVersion=3，WAL 模式，每步迁移事务化，拒绝高于已知版本的数据库。
 - AI 配置由独立配置适配器保存；退出时 Main 清理会话并关闭 SQLite。Renderer 有会话内状态，不能视为跨重启持久草稿。
-- 当前打包 smoke 不能代替两份不同版本安装包之间的升级证据。
+- 单版本打包 smoke 不能代替两份不同版本安装包之间的升级证据；T081 已用真实 `0.1.0`→`0.1.1` NSIS 包单独验证，范围与限制见 `EV-T081-001`。
 
 基线或工具链变化后须重新评估本文；不自动将新提交视为同等已验证输入。
 

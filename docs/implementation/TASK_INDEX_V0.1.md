@@ -77,7 +77,7 @@
 | T063 | E6-03        | AI 建议接受/修改/拒绝和确认命令                                                             | FR-AI05/06；FR-C02/C03；D-014/109；AC-02                             | T062                          | `done`    | `EV-T063-001`                |
 | T071 | S7           | [11 条 SHOULD 的既定处理结论](T071_SHOULD_CONVERGENCE.md)                                    | Traceability §3；Implementation §10.1                                | S1～S6                        | `done`  | `EV-T071-001`                |
 | T072 | S7           | [全量回归、AC-01～AC-07、Windows Demo 收敛](T072_DEMO_CONVERGENCE.md)                         | 全部 MUST/AC；Test Strategy §7～10                                   | T071                          | `done` | `EV-T072-001` |
-| T081 | S8-A         | [Windows 原位升级与数据保留基线](T081_IN_PLACE_UPGRADE_BASELINE.md)                           | U-01；FR-D01～D05；AC-07；ED-018；S8 设计 §4                         | 最新授权 dev 与隔离安装环境    | `active` | 尚无实施证据；本步只激活并提交合同 |
+| T081 | S8-A         | [Windows 原位升级与数据保留基线](T081_IN_PLACE_UPGRADE_BASELINE.md)                           | U-01；FR-D01～D05；AC-07；ED-018；S8 设计 §4                         | 最新授权 dev 与获批 Windows 账户 | `review` | `EV-T081-001`；owner 接手人工与最终 CI |
 | T082 | S8-B         | 私有源版本检查与下载（实施合同待创建）                                                        | U-02/03；S8 设计 §4                                                 | T081                          | `pending` | — |
 | T083 | S8-C         | 确认安装与退出协调（实施合同待创建）                                                          | U-04；S8 设计 §4                                                    | T082                          | `pending` | — |
 | T084 | S8-D         | 发布流程与阶段验收（实施合同待创建）                                                          | U-01～05；S8 设计 §4                                                | T081～T083                    | `pending` | — |
@@ -105,7 +105,7 @@
 | S4 前工程/UI 基线 | T804/T092/T093/T805/T094 | `dev@2632ff0...` 本地聚合 candidate 通过；文档 final-head CI 与 `dev -> main` Draft PR 另记 |
 | S6 AI 启动帮助    | T061～T063/T807          | 固定 `dev@f06b1e9...` 自动与人工 AC-02 已通过；后续文档 final-head CI 与 dev 集成已补记；发布独立审批 |
 | G4 Demo 就绪      | T094、T041～T072         | 全量验收后再决定 `rc.1` 或 `v0.1.0`；不自动授权发布                                         |
-| S8 原位升级与维护 | T081～T084              | T081 已激活但尚未开发；后续各节点按独立合同串行集成，阶段验收与发布分别受 owner 门禁约束       |
+| S8 原位升级与维护 | T081～T084              | T081 实现候选及本地实装验证见 `EV-T081-001`；owner 人工与最终 CI 待核，后续节点按独立合同串行集成 |
 
 阶段门不会因任务表显示 `done` 自动通过；必须满足开发流程中的自动化和人工验收要求。
 
