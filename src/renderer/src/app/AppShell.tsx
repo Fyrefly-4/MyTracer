@@ -22,6 +22,7 @@ export function AppShell(): ReactNode {
   const [status, setStatus] = useState<ShellStatus | null>(null)
   const [statusError, setStatusError] = useState(false)
   const [updateOpen, setUpdateOpen] = useState(false)
+  const [installPreparing, setInstallPreparing] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -37,6 +38,28 @@ export function AppShell(): ReactNode {
       active = false
     }
   }, [])
+
+  useEffect(() => {
+    const unsubscribeStatus = window.myTracer.updates.subscribe((next) => {
+      setInstallPreparing(
+        next.state === 'preparing' ||
+          next.state === 'installing' ||
+          next.state === 'restartRequired'
+      )
+    })
+    const unsubscribeDraftRequests = window.myTracer.updates.subscribeDraftRequests((request) => {
+      requestAnimationFrame(() => {
+        void window.myTracer.updates.replyToDraftRequest({
+          requestId: request.requestId,
+          hasUnsavedContent: session.hasUnsavedContent()
+        })
+      })
+    })
+    return () => {
+      unsubscribeStatus()
+      unsubscribeDraftRequests()
+    }
+  }, [session])
 
   const selected = appSections.find((section) => section.id === activeSection) ?? appSections[0]
 
@@ -66,7 +89,7 @@ export function AppShell(): ReactNode {
 
         {updateOpen ? <UpdatePanel onClose={() => setUpdateOpen(false)} /> : null}
 
-        <div className="workspace">
+        <div className="workspace" inert={installPreparing}>
           <nav className="sidebar" aria-label="主要视图">
             <p className="nav-label">主要页面</p>
             {appSections.map((section) => (

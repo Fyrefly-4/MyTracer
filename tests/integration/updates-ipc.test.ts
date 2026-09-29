@@ -25,6 +25,11 @@ class FakeIpc {
 }
 
 describe('T082 update IPC boundary', () => {
+  const installCoordinator = {
+    install: vi.fn(async () => ({ status: { state: 'idle' as const, currentVersion: '0.1.2' } })),
+    cancelPreparation: vi.fn(() => ({ state: 'idle' as const, currentVersion: '0.1.2' }))
+  }
+  const draftProbe = { reply: vi.fn() }
   it('exposes fixed channels, verifies sender and requires an exact candidate', async () => {
     const ipc = new FakeIpc()
     const download = vi.fn(async () => ({ verify: async () => true, startInstall: () => true }))
@@ -41,14 +46,17 @@ describe('T082 update IPC boundary', () => {
     const assertSender = vi.fn((event: IpcMainInvokeEvent) => {
       if (event.sender.id !== 1) throw new TypeError('Untrusted sender')
     })
-    registerUpdatesIpc({ ipc, service, assertSender })
+    registerUpdatesIpc({ ipc, service, installCoordinator, draftProbe, assertSender })
 
     expect([...ipc.handlers.keys()].sort()).toEqual(
       [
         UPDATE_CHANNELS.status,
         UPDATE_CHANNELS.check,
         UPDATE_CHANNELS.download,
-        UPDATE_CHANNELS.cancel
+        UPDATE_CHANNELS.cancel,
+        UPDATE_CHANNELS.install,
+        UPDATE_CHANNELS.cancelPreparation,
+        UPDATE_CHANNELS.draftReply
       ].sort()
     )
     expect(() => ipc.invoke(UPDATE_CHANNELS.check, 2)).toThrow('Untrusted sender')
@@ -91,7 +99,13 @@ describe('T082 update IPC boundary', () => {
       currentVersion: '0.1.2',
       generateId: () => 'op-2'
     })
-    registerUpdatesIpc({ ipc, service, assertSender: vi.fn() })
+    registerUpdatesIpc({
+      ipc,
+      service,
+      installCoordinator,
+      draftProbe,
+      assertSender: vi.fn()
+    })
     expect(await ipc.invoke(UPDATE_CHANNELS.check, 1)).toEqual({
       state: 'error',
       currentVersion: '0.1.2',

@@ -15,6 +15,10 @@ export const UPDATE_CHANNELS = Object.freeze({
   check: 'updates:check',
   download: 'updates:download',
   cancel: 'updates:cancel',
+  install: 'updates:install',
+  cancelPreparation: 'updates:cancel-preparation',
+  draftRequest: 'updates:draft-request',
+  draftReply: 'updates:draft-reply',
   changed: 'updates:changed'
 } as const)
 
@@ -27,6 +31,7 @@ export type UpdateState =
   | 'downloaded'
   | 'preparing'
   | 'installing'
+  | 'restartRequired'
   | 'error'
 
 export interface UpdateStatusDto {
@@ -54,10 +59,33 @@ export interface CancelUpdateInputDto {
   readonly operationId: string
 }
 
+export interface DraftRequestDto {
+  readonly requestId: string
+}
+
+export interface DraftReplyDto extends DraftRequestDto {
+  readonly hasUnsavedContent: boolean
+}
+
+export interface InstallPreparationResultDto {
+  readonly status: UpdateStatusDto
+  readonly blocker?:
+    | 'unsaved-content'
+    | 'renderer-unavailable'
+    | 'busy'
+    | 'cancelled'
+    | 'timeout'
+    | 'restart-required'
+}
+
 export interface UpdateApi {
   readonly getStatus: () => Promise<UpdateStatusDto>
   readonly check: () => Promise<UpdateStatusDto>
   readonly download: (input: DownloadUpdateInputDto) => Promise<UpdateStatusDto>
   readonly cancel: (input: CancelUpdateInputDto) => Promise<UpdateStatusDto>
+  readonly install: (input: DownloadUpdateInputDto) => Promise<InstallPreparationResultDto>
+  readonly cancelPreparation: (input: CancelUpdateInputDto) => Promise<UpdateStatusDto>
   readonly subscribe: (listener: (status: UpdateStatusDto) => void) => () => void
+  readonly subscribeDraftRequests: (listener: (request: DraftRequestDto) => void) => () => void
+  readonly replyToDraftRequest: (input: DraftReplyDto) => Promise<void>
 }

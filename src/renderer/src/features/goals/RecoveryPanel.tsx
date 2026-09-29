@@ -2,7 +2,7 @@ import { factOutcomeText } from '../../app/ui-text'
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import type { RecoveryActionDto, RecoveryContextDto } from '../../../../contracts/recovery'
 import type { RoutineSummaryDto } from '../../../../contracts/routines'
-import { revealStart, useUiSession } from '../../app/ui-session'
+import { revealStart, useUiSession, useUnsavedContent } from '../../app/ui-session'
 
 type RecoveryDraft =
   | { readonly kind: 'pause-goal' | 'end-goal' }
@@ -69,6 +69,10 @@ export function RecoveryPanel(props: {
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  useUnsavedContent(
+    `recovery-${props.goalId}`,
+    Boolean(newActionTitle || newActionDescription || draft?.kind === 'create-current')
+  )
 
   const loadFacts = useCallback(async (): Promise<void> => {
     const [recoveryResult, routinesResult, todayResult] = await Promise.all([

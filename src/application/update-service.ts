@@ -237,6 +237,14 @@ export class UpdateService {
     return this.status
   }
 
+  requireRestart(): UpdateStatusDto {
+    if (this.status.state === 'restartRequired') return this.status
+    ++this.generation
+    this.downloaded = null
+    this.publish({ ...this.status, state: 'restartRequired' })
+    return this.status
+  }
+
   async confirmInstall(input: {
     readonly operationId: string
     readonly version: string
@@ -302,7 +310,8 @@ export class UpdateService {
       this.status.state === 'checking' ||
       this.status.state === 'downloading' ||
       this.status.state === 'preparing' ||
-      this.status.state === 'installing'
+      this.status.state === 'installing' ||
+      this.status.state === 'restartRequired'
     )
   }
 

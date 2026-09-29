@@ -1,4 +1,11 @@
-import { createContext, useContext, useEffect, useRef, type RefObject } from 'react'
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  type RefObject
+} from 'react'
 import type { GoalStatusDto } from '../../../contracts/goals'
 import type { BeginActionRecordingDto, ActionRecordOutcomeDto } from '../../../contracts/records'
 import type {
@@ -56,6 +63,7 @@ export class UiSession {
   private positions: Partial<Record<AppSectionId, number>> = {}
   private actionDrafts = new Map<string, ActionRecordingDraft>()
   private routineDrafts = new Map<string, RoutineRecordingDraft>()
+  private unsavedContent = new Set<string>()
 
   constructor(private readonly onNavigate: (section: AppSectionId) => void) {}
   get goalId(): string | null {
@@ -131,6 +139,13 @@ export class UiSession {
   hasRoutineDraft(routineId: string): boolean {
     return this.routineDrafts.has(routineId)
   }
+  setUnsavedContent(source: string, unsaved: boolean): void {
+    if (unsaved) this.unsavedContent.add(source)
+    else this.unsavedContent.delete(source)
+  }
+  hasUnsavedContent(): boolean {
+    return this.unsavedContent.size > 0 || this.actionDrafts.size > 0 || this.routineDrafts.size > 0
+  }
   setPosition(section: AppSectionId, position: number): void {
     this.positions[section] = position
   }
@@ -163,6 +178,14 @@ export function useUiSession(): UiSession {
   const session = useContext(UiSessionContext)
   if (!session) throw new Error('UI session is unavailable')
   return session
+}
+
+export function useUnsavedContent(source: string, unsaved: boolean): void {
+  const session = useUiSession()
+  useLayoutEffect(() => {
+    session.setUnsavedContent(source, unsaved)
+    return () => session.setUnsavedContent(source, false)
+  }, [session, source, unsaved])
 }
 
 export function useUiLifetime(): RefObject<boolean> {

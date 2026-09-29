@@ -16,11 +16,11 @@ import {
 
 test.skip(
   process.env.MYTRACER_UPGRADE_TEST !== '1',
-  'Cross-version NSIS installation requires a separately approved Windows account.'
+  'Cross-version NSIS installation requires an owner-approved Windows test mode.'
 )
 
-const oldVersion = '0.1.0'
-const newVersion = '0.1.1'
+const oldVersion = process.env.MYTRACER_UPGRADE_OLD_VERSION ?? '0.1.0'
+const newVersion = process.env.MYTRACER_UPGRADE_NEW_VERSION ?? '0.1.1'
 const installTimeout = 300_000
 
 function requiredEnvironment(name: string): string {
@@ -52,7 +52,8 @@ function assertApprovedWindowsIdentity(): void {
   const approval = requiredEnvironment('MYTRACER_UPGRADE_ISOLATION_ACK')
   if (
     approval !== 'isolated-windows-identity' &&
-    approval !== 'T081-owner-approved-current-account'
+    approval !== 'T081-owner-approved-current-account' &&
+    approval !== 'T083-owner-approved-current-account'
   ) {
     throw new Error('The Windows account approval mode is invalid.')
   }
@@ -64,7 +65,7 @@ function assertApprovedWindowsIdentity(): void {
   if (identity.status !== 0 || actualSid !== requiredEnvironment('MYTRACER_UPGRADE_ACCOUNT_SID')) {
     throw new Error('The current Windows account does not match the approved test identity.')
   }
-  if (approval === 'T081-owner-approved-current-account') assertNoExistingInstallation()
+  if (approval !== 'isolated-windows-identity') assertNoExistingInstallation()
 }
 
 async function sha256(path: string): Promise<string> {

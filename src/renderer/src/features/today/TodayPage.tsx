@@ -17,6 +17,7 @@ import type { TodayViewDto } from '../../../../contracts/today'
 import type { GoalActivityViewDto } from '../../../../contracts/progress'
 import {
   useUiSession,
+  useUnsavedContent,
   usePagePosition,
   revealStart,
   useUiLifetime,
@@ -120,6 +121,7 @@ function ActionRecordingPanel(props: {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [invalidContext, setInvalidContext] = useState(false)
+  useUnsavedContent(`action-record-${props.action.id}`, Boolean(context))
 
   useEffect(() => {
     if (!context) return
@@ -710,6 +712,13 @@ function TodayWorkspace(): ReactNode {
   const [replacementActionId, setReplacementActionId] = useState('')
   const [replacementTitle, setReplacementTitle] = useState('')
   const [pendingTransition, setPendingTransition] = useState<PendingTransition | null>(null)
+  useUnsavedContent(
+    'action-form',
+    Boolean(createTitle || createDescription || createGoalId) ||
+      (detail !== null &&
+        (editTitle !== detail.title || editDescription !== (detail.description ?? ''))) ||
+      Boolean(pendingTransition && replacementTitle)
+  )
   const availableCandidates =
     today?.availableActions.filter(
       (action) => action.canSelectForToday && action.todayCommitment === null

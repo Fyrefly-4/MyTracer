@@ -1,4 +1,4 @@
-import { usePagePosition, useUiSession } from '../../app/ui-session'
+import { usePagePosition, useUiSession, useUnsavedContent } from '../../app/ui-session'
 import { type ReactNode, useEffect, useState } from 'react'
 import type {
   CompleteReviewInputDto,
@@ -61,6 +61,17 @@ export function ReviewPage(): ReactNode {
   const [existingActionId, setExistingActionId] = useState('')
   const [newActionTitle, setNewActionTitle] = useState('')
   const [followUp, setFollowUp] = useState<ReviewFollowUp | null>(null)
+  const [loadedDraft, setLoadedDraft] = useState('')
+  const currentDraft = JSON.stringify([
+    confirmedProgress,
+    mainObstacle,
+    nextAdjustment,
+    relatedGoalId,
+    nextStepKind,
+    existingActionId,
+    newActionTitle
+  ])
+  useUnsavedContent('review-form', Boolean(contextId && !busy && currentDraft !== loadedDraft))
 
   useEffect(() => {
     let active = true
@@ -98,6 +109,17 @@ export function ReviewPage(): ReactNode {
             setNextAdjustment(reviewResult.value.nextAdjustment)
             setRelatedGoalId(reviewResult.value.relatedGoalId ?? '')
           }
+          setLoadedDraft(
+            JSON.stringify([
+              reviewResult.value?.confirmedProgress ?? '',
+              reviewResult.value?.mainObstacle ?? '',
+              reviewResult.value?.nextAdjustment ?? '',
+              reviewResult.value?.relatedGoalId ?? '',
+              'none',
+              '',
+              ''
+            ])
+          )
           setError(null)
         } else {
           const failed = !summaryResult.ok

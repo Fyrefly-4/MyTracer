@@ -1,4 +1,10 @@
-import { revealStart, usePagePosition, useUiLifetime, useUiSession } from '../../app/ui-session'
+import {
+  revealStart,
+  usePagePosition,
+  useUiLifetime,
+  useUiSession,
+  useUnsavedContent
+} from '../../app/ui-session'
 import { goalStatusText, routineRecordOutcomeText } from '../../app/ui-text'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import type { GoalErrorCode, GoalSummaryDto } from '../../../../contracts/goals'
@@ -129,6 +135,7 @@ export function RoutineRecordingPanel(props: {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [invalidContext, setInvalidContext] = useState(false)
+  useUnsavedContent(`routine-record-${props.routineId}`, Boolean(context))
 
   useEffect(() => {
     if (!context) return
@@ -452,6 +459,21 @@ function RoutineWorkspace(): ReactNode {
   const [editWeekdays, setEditWeekdays] = useState<readonly number[]>([])
   const [confirmEnd, setConfirmEnd] = useState(false)
   const [creating, setCreating] = useState(false)
+  useUnsavedContent(
+    'routine-form',
+    Boolean(
+      createName ||
+      createDescription ||
+      createMinimumAction ||
+      createGoalId ||
+      createWeekdays.join(',') !== '1,2,3,4,5'
+    ) ||
+      (detail !== null &&
+        (editName !== detail.name ||
+          editDescription !== (detail.description ?? '') ||
+          editMinimumAction !== detail.minimumAction ||
+          editWeekdays.join(',') !== detail.weekdays.join(',')))
+  )
 
   const showDetail = (routine: RoutineDetailDto): void => {
     session.selectRoutine(routine.id)
