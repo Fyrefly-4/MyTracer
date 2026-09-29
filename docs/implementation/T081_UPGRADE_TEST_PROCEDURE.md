@@ -13,7 +13,7 @@
 
 ## 2. 构建与核对
 
-在独立、可删除的构建目录分别检出 A/B 的不可变 Git revision（可使用 `git archive` 解包，不创建 worktree）。每份源先运行 `npm.cmd ci`，再运行：
+在独立、可删除的构建目录分别检出 A/B 的不可变 Git revision（可使用 `git archive` 解包，不创建 worktree）。每份源先运行 `npm.cmd ci`。若锁定版本的 Electron 安装脚本未生成 `node_modules/electron/dist`，在该构建目录运行 `node node_modules/electron/install.js` 并核对 `node node_modules/electron/cli.js --version` 为 `v43.3.0`；不得改变依赖版本。随后运行：
 
 ```powershell
 npm.cmd run build
