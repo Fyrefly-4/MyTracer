@@ -1,13 +1,13 @@
 # T082 — 私有源版本检查与下载
 
-> 合同状态：approved-1，2026-09-29。项目所有者已批准本合同范围、应用版本 `0.1.2`、精确依赖 `electron-updater@6.8.10`、本机当前账户验证及 §11 权限，明确激活 T082；本次只提交合同，不开始产品开发。项目所有者确认 T081 遗留缺口完成。任务实时状态以 [任务索引](TASK_INDEX_V0.1.md)为准。本合同只覆盖 S8 §4 的 B 节点，不启动 T083/T084。
+> 合同状态：approved-1，2026-09-29。项目所有者已批准本合同范围、应用版本 `0.1.2`、精确依赖 `electron-updater@6.8.10`、本机当前账户验证及 §11 权限，并激活 T082；项目所有者确认 T081 遗留缺口完成。T082 已形成实现候选并通过云端候选 CI，项目所有者报告人工代码 review 通过；真实私有源和安装版人工体验仍待验证。任务实时状态以 [任务索引](TASK_INDEX_V0.1.md)为准，结果见 [EV-T082-001](ACCEPTANCE_EVIDENCE_V0.1.md#ev-t082-001)。本合同只覆盖 S8 §4 的 B 节点，不启动 T083/T084。
 
 ## 1. 任务信息
 
 - **Task ID / Title**：T082 / 私有源版本检查与下载。
 - **Slice / Plan item**：S8-B；[Implementation Plan](../architecture/IMPLEMENTATION_PLAN_V0.1.md) §13、S8 设计 §3～7。
-- **Status**：`active`（owner 已激活；产品实现尚未开始）。
-- **任务基线**：`dev@0724cbb9990d328ee7ff68b7e5ac93fc8107e6d3`（创建分支时本地 `dev` 与 `origin/dev` 相同，包含 T081 PR #57）；实施前仍核对最新授权 `dev` 与工作区。
+- **Status**：`review`（实现候选与云端候选 CI 通过；私有源实测和人工体验待完成）。
+- **任务基线**：`dev@0724cbb9990d328ee7ff68b7e5ac93fc8107e6d3`（创建分支时本地 `dev` 与 `origin/dev` 相同，包含 T081 PR #57）；候选及文档收口时继续核对最新授权 `dev` 与工作区。
 - **任务分支**：`task/T082-private-update-download`，已从上述 `dev` 创建；本任务不创建独立 worktree。
 - **任务类型**：`implementation`；采用 V2 显式权限流程，不声明 Automation Profile。
 
@@ -50,10 +50,10 @@ references:
 
 - [x] Owner 批准本合同的精确依赖版本、范围和 §11 权限，并明确激活 T082；任务索引登记 `active`。
 - [x] T081 已由 PR #57 进入 `dev@0724cbb9990d328ee7ff68b7e5ac93fc8107e6d3`；owner 本轮确认其遗留缺口完成。T082 不再以旧的 T081 待核项作为启动阻塞，也不据此编造具体 CI 或人工测试编号。
-- [x] 本地 `dev` 与 `origin/dev` 在建分支时相同；已检查本轮合同改动及分支名，从该 revision 创建任务分支，不创建 worktree。开始产品实现前再检查最新授权 `dev`、其他 worktree、工作区和安装身份。
+- [x] 本地 `dev` 与 `origin/dev` 在建分支时相同；已检查本轮合同改动及分支名，从该 revision 创建任务分支，不创建 worktree。产品实现前已核对最新授权 `dev`、其他 worktree、工作区和安装身份；集成前继续检查 freshness。
 - [x] Owner 批准 §12 精确版本 `electron-updater@6.8.10`；lockfile 传递依赖及与 Electron 43.3.0、electron-builder 26.15.3、NSIS x64 的实际兼容性仍须实施前/实施中验证。若不兼容，先升级提案，不顺带升级工具链。
 - [x] T081 集成包应用版本为 `0.1.1`；owner 批准 T082 根应用版本升至 `0.1.2`。测试候选必须严格高于实际包内版本，不能仅修改 UI 文案模拟。
-- [ ] 确定只供本任务使用的私有测试 Release 来源或等效受控源、合成只读凭据与无公网的 fake adapter；真实部署仓库和凭据不写入合同。任何真实源写入须另行授权。
+- [ ] 私有测试来源仓库已由 owner 指定为 `Fyrefly-4/MyTracer`，无公网的 fake adapter 已用于自动化；尚无高于 `0.1.2` 的稳定测试 Release 或合成只读凭据，真实源检查/下载保持待验证。任何真实源写入须另行授权，凭据不写入合同。
 - [x] Owner 明确批准 T082 在本机当前 Windows 账户验证，不使用一次性 VM/独立测试账户；这是一项仅适用于 T082 的身份例外，不授权读取、修改或删除当前账户已有的默认 MyTracer 数据。任何实装/卸载前先核对现存安装、进程、注册项和测试路径；只使用唯一临时安装、`userData`、导出与缓存根。若现存正式安装或路径归属无法隔离，停止该项验证并报告，不覆盖或清理既有内容。测试入口、来源包与 hash 在实际执行时固定。
 
 ### 4.1 Dependencies
@@ -135,13 +135,13 @@ dependencies:
 
 ## 10. 验证计划
 
-### 10.1 合同准备
+### 10.1 合同准备阶段（历史）
 
-本轮只检查合同/sidecar/索引结构、引用、Markdown 格式和 diff；不运行产品测试，不产生 T082 行为证据。
+合同准备阶段只检查合同/sidecar/索引结构、引用、Markdown 格式和 diff，未产生 T082 行为证据；后续实际结果见 EV-T082-001。
 
 ### 10.2 实施后定向验证
 
-新增测试文件由实施提交固定；合同先指定现有精确入口，不能将尚不存在的测试名写成已通过：
+以下为合同规划的定向入口；实际执行的命令、环境和结果以 EV-T082-001 及对应 CI artifact 为准，不能把测试名当作通过证据：
 
 ```powershell
 npm.cmd run governance:metadata:check
@@ -150,7 +150,7 @@ npm.cmd run test:integration -- tests/integration/updates-ipc.test.ts
 npm.cmd run test:e2e:run -- tests/e2e/update-check-download.e2e.test.ts
 ```
 
-上述三个测试文件由 T082 创建。受控私有测试源的 Windows 安装版检查/下载须另以来源 URL、版本、资产和 SHA-256 绑定实际产物，在 owner 已批准的当前账户执行；先完成 §4 的现存安装、进程、注册项与测试路径预检。无法保证不触及已有内容时记为未验证并报告，不以 fake adapter 通过替代。
+上述三个测试文件已由 T082 创建。受控私有测试源的 Windows 安装版检查/下载须另以来源 URL、版本、资产和 SHA-256 绑定实际产物，在 owner 已批准的当前账户执行；先完成 §4 的现存安装、进程、注册项与测试路径预检。无法保证不触及已有内容时记为未验证并报告，不以 fake adapter 通过替代。
 
 ### 10.3 受影响回归、打包与证据
 
@@ -165,6 +165,8 @@ node node_modules/electron-builder/cli.js --win nsis --x64 --publish never
 
 `verify` 包含 build、Unit、Integration 与常规 Electron E2E，但不证明私有源实装或跨版本安装。打包须检查 `app-update.yml`、`latest.yml` 与包的版本/hash 一致，且没有上传；`test:package-smoke` 或新包的正式 `appId` 安装测试只在 §4 获批的当前账户、完成预检并限定临时根后执行。T082 的当前账户权限来自本合同，不借用 T081 例外，也不授权清理默认数据。
 
+Owner 在实施中指定后续测试仅在云端运行；因此候选及文档 final-head 验证使用 GitHub Actions 的 Windows runner，不再运行本地测试。较早本地包证据按当时 source 单独记录，不代替当前候选包或受控私有源的实测。
+
 关键命令用 `node tools/evidence/capture-command.mjs --task T082 --gate <gate> --base-revision <实际 SHA> --output .tmp/evidence -- <明确 argv>` 捕获真实退出码。先运行 metadata 校验；JSON 不含 stdout/stderr、绝对路径、token、正文、数据库或完整日志。区分 early、candidate、final-head CI 的 PR head/test-merge revision 与任务交付/`dev` 集成 revision；失败 artifact 保留并用 supersedes 记录后续结果。
 
 ### 10.4 验证环境
@@ -176,13 +178,13 @@ node node_modules/electron-builder/cli.js --win nsis --x64 --publish never
 
 ## 11. Git 与 GitHub 权限
 
-Owner 已批准 T082 本地写入、在当前 checkout 从 `dev` 建任务分支、提交、普通 push、创建/更新目标为 `dev` 的 Draft PR，以及在审查与 CI 门禁通过后标记 Ready。本步只创建任务分支并提交合同，不推送、不创建 PR、不开始产品开发。本任务明确不创建独立 worktree；merge、main、tag、release 和非任务外部写入不在此授权内。
+Owner 已批准 T082 本地写入、在当前 checkout 从 `dev` 建任务分支、提交、普通 push、创建/更新目标为 `dev` 的 Draft PR，以及在审查与 CI 门禁通过后标记 Ready。任务分支及 PR #58 已创建并推送；本任务不创建独立 worktree。merge、main、tag、release 和非任务外部写入不在此授权内。
 
 - [x] 在当前 checkout 创建任务分支；不创建 worktree。
 - [x] 创建本地提交。
-- [x] 普通推送任务分支（本步不执行）。
-- [x] 创建或更新目标为 `dev` 的 Draft PR（本步不执行）。
-- [x] 在审查与 CI 门禁通过后将 Draft 标记为 Ready（本步不执行）。
+- [x] 普通推送任务分支（已执行）。
+- [x] 创建或更新目标为 `dev` 的 Draft PR（PR #58 已创建）。
+- [x] 在审查与 CI 门禁通过后将 Draft 标记为 Ready（权限已批准；PR 当前状态以 GitHub 为准）。
 - [x] Agent 不合并到 `dev`。
 - [x] Agent 不创建或合并 `dev -> main` PR。
 - [x] Agent 不创建 tag 或 Release。
@@ -210,9 +212,9 @@ permissions:
 ## 12. 依赖、网络与外部操作
 
 - **应用版本**：owner 批准仅将根应用版本 `0.1.1`→`0.1.2`，同步 `package.json`/lockfile，不替换已发布的同版资产。用于验证 T082 检查/下载的候选版本必须再高于 `0.1.2`，来源、hash 和用途在真实执行时固定；不提前确定 T084 发布版本。
-- **精确依赖**：owner 批准仅新增生产依赖 `electron-updater@6.8.10`，使用精确版本而非 `^`/`~`；不升级 Electron 43.3.0、electron-builder 26.15.3 或其他直接依赖。2026-09-29 从 npm registry 只读核对该版本、`builder-util-runtime@9.7.0` 等声明的传递依赖；本仓库现有 lockfile 已含 `builder-util-runtime@9.7.0`。此为依赖元数据核对，**尚无本项目安装/打包兼容性证明**，须在安装前复核并在实施中验证。
+- **精确依赖**：owner 批准仅新增生产依赖 `electron-updater@6.8.10`，使用精确版本而非 `^`/`~`；不升级 Electron 43.3.0、electron-builder 26.15.3 或其他直接依赖。2026-09-29 从 npm registry 只读核对该版本、`builder-util-runtime@9.7.0` 等声明的传递依赖；实际安装与 Windows x64 NSIS 打包已在云端候选 CI 通过，详见 EV-T082-001。
 - **网络**：实现期普通测试只访问 fake/受控源；真实私有 GitHub 只读检查/下载限获批测试源和合成只读凭据。`MYTRACER_UPDATE_TOKEN` 配置由用户在本机进程环境注入，轮换/撤销后重启生效；不添加应用内凭据页面或持久化。
-- **外部写入**：owner 已批准本任务普通分支 push 与 Draft PR，但本步不执行；不授权创建/修改真实 Release、Actions secret/environment、发布源、tag 或 dispatch。
+- **外部写入**：owner 已批准并已执行本任务普通分支 push 与 PR #58；不授权创建/修改真实 Release、Actions secret/environment、发布源、tag 或 dispatch。
 - **AI / 数据**：fake Provider、临时根、合成业务数据；不访问真实 key/数据库，不迁移、不做破坏性操作。
 
 ### 12.1 Integration

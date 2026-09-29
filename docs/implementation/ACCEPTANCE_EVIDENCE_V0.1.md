@@ -1,8 +1,22 @@
 # MyTracer v0.1 验收证据
 
-> 文档状态：证据账本已建立；已记录 T001～T004、T011～T014、T021～T023、T031～T033、T041/T042、T051/T052、T061～T063、T081、T801～T807、AC-01～AC-07 及已执行阶段聚合证据
+> 文档状态：证据账本已建立；已记录 T001～T004、T011～T014、T021～T023、T031～T033、T041/T042、T051/T052、T061～T063、T081/T082、T801～T807、AC-01～AC-07 及已执行阶段聚合证据
 > 作用：记录可复核的命令、版本、环境、产物和人工观察  
 > 禁止：用任务状态、测试名称、关键词存在或 Agent 自述替代实际结果
+
+## T082 实现候选证据
+
+### EV-T082-001
+
+- **Status / scope**：`review`；T082/S8-B 的 U-02/U-03 与 U-05 候选、元数据和 hash 追踪子集已有实现候选及云端自动化结果。FR-D01～D05、AC-07 是数据和核心功能边界，不因此条重新宣称完整 AC-07 通过。T083 安装确认、T084 发布及 S8 阶段验收不在此条。
+- **Source / freshness**：分支 `task/T082-private-update-download`、PR [#58](https://github.com/Fyrefly-4/MyTracer/pull/58)→`dev`；`implementation_candidate=b1525d18494dd5f38807f907b947df5ea15607ae`。`original_base_revision=latest_authorized_dev_revision=verified_against_revision=0724cbb9990d328ee7ff68b7e5ac93fc8107e6d3`；候选 CI 时 `Integration Freshness=fresh`、`refresh_method=none`。文档收口后的最新 PR head 须以 final-head CI 另验；`task_delivery_revision=null`、`dev_integration_revision=null`、`stage_final_integration_revision=null`。
+- **Implementation / isolation**：根应用版本由 `0.1.1` 升至 `0.1.2`，精确增加生产依赖 `electron-updater@6.8.10`；固定 `Fyrefly-4/MyTracer` 私有稳定通道。Main 启动时读取专用 `MYTRACER_UPDATE_TOKEN`，更新服务校验候选版本、预期资产名和 SHA-512，并将检查、确认下载、进度、取消、重试及脱敏状态经窄 IPC/Preload 提供给现有应用级面板。`autoDownload=false`、`autoInstallOnAppQuit=false`；不调用安装器，不持久化 token，不改变 schema、业务 Domain 或 AI 权限。自动化使用 fake/受控源及临时数据根，无真实凭据。
+- **Hosted candidate CI**：[run 36542314738](https://github.com/Fyrefly-4/MyTracer/actions/runs/36542314738) `success`，PR head `b1525d18494dd5f38807f907b947df5ea15607ae`、test-merge `2ab23eaa890dd12f626509061fd4ad455d1e710f`、base `0724cbb9990d328ee7ff68b7e5ac93fc8107e6d3`。Windows full verification 的 `npm.cmd run verify`、Governance、PR quality、Milestone packaging 的 `npm.cmd run package -- --publish never` 与 `npm.cmd run test:package-smoke`、CI Gate 和 Windows required gate 全部通过。云端 Windows x64 环境使用 Node `v24.18.0`、Electron `43.3.0`；未执行正式发布。package smoke 覆盖 unpacked 与隔离 NSIS 安装应用的 T082 窄 API 和缺 token 状态；不等于真实私有 Release 下载。
+- **Artifacts checked**：`verification-evidence-36542314738-1`（id `11020459400`）及 `milestone-evidence-36542314738-1`（id `11021327512`）已下载检查。三份生成 JSON `unscoped-aggregate-2ab23eaa890d-20260929082634.json`、`unscoped-package-2ab23eaa890d-20260929083224.json`、`unscoped-package-smoke-2ab23eaa890d-20260929083418.json` 均记录 `commandStatus=passed`、`captureStatus=complete`、exit code 0，并区分上述 head、test-merge 和 base。artifact 为命令和环境事实，不自行构成人工验收。
+- **Package provenance limit**：候选云端包的构建和 smoke 有 revision 绑定，但上述 artifact 不记录其安装包 SHA-256 或 `latest.yml` SHA-512；因此不把较早本地包的 hash 归给 `b1525d1`。较早本地 `a34ebdf` 包确曾以 `--publish never` 构建，`0.1.2` NSIS SHA-256 为 `0B3A743285F34F07586A821F5C2EB9A0A2D3242FCDE658A94BBAE1047931F140`，`latest.yml` SHA-512 为 `ZG+0hqcBBXKuyOz41nxO2bBCTpE4OOZgVYynT3xaJEN1WgGV3M1GkmK2L0yiixcj3qR9oqysj9mANzr5klXFOQ==`，签名状态 `NotSigned`；这些只证明该旧源码构建的产物。取得真实受控测试包时仍须固定其版本、资产和 hash。
+- **Preserved failures / superseding evidence**：云端 [run 36536892634](https://github.com/Fyrefly-4/MyTracer/actions/runs/36536892634) 的更新测试错误假定依赖不会添加请求头；[run 36537461320](https://github.com/Fyrefly-4/MyTracer/actions/runs/36537461320) 的修正又触发 TypeScript union headers 属性错误。二者已由后续成功候选 supersede，失败记录保留。[run 36538791019](https://github.com/Fyrefly-4/MyTracer/actions/runs/36538791019) 的产品验证通过但 PR quality 因正文缺少模板章节失败；重写模板正文后 [run 36540400640](https://github.com/Fyrefly-4/MyTracer/actions/runs/36540400640) 通过，且被更新 head 的成功 run 36542314738 取代。旧成功 run 不证明新 head。
+- **Review / manual**：项目所有者于 2026-09-29 明确报告“人工review通过”，按 T082 实现候选的人工代码 review 通过记录。尚未报告受控私有源安装版的检查、断网、鉴权失败、下载/重试/稍后或 unsigned 提示体验；§9.7 的 `MANUAL` 仍为 `pending owner verification`。当前仓库只有 prerelease，未有严格高于 `0.1.2` 的稳定测试 Release，也未提供合成只读 token；不创建真实 Release 或 secret 来填补证据。Owner 此前要求此后只在云端运行测试；候选后的验证均在 GitHub Actions，文档 final-head CI 仍须验证最新 head。
+- **Scope / outstanding gates**：未发现冻结需求语义冲突；owner 已授权应用版本、精确依赖、当前账户测试、上位设计文档调整及本轮 docs closeout。真实私有源检查/下载、对应当前产物 hash、安装版人工体验和 final-head CI 尚未完成；任务维持 `review`，不标 `done`、不申请合并。记录于 2026-09-29。
 
 ## T081 实现候选证据
 
