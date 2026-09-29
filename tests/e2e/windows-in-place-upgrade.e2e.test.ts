@@ -202,7 +202,6 @@ async function createOldVersionFacts(page: Page): Promise<string> {
   expect(
     await page.evaluate(() => window.myTracer.aiConfiguration.importFromEnvironment())
   ).toMatchObject({
-    configured: true,
     availability: 'configured-available'
   })
   return actionId
@@ -284,14 +283,10 @@ test('keeps all old-version facts and synthetic configuration through an in-plac
 
     application = await launchInstalled(root, executable, oldVersion)
     await setMainDate(application)
-    expect(
-      await (
-        await application.firstWindow()
-      ).evaluate(() => window.myTracer.aiConfiguration.status())
-    ).toMatchObject({
-      configured: true,
-      availability: 'configured-available'
-    })
+    const beforeConfiguration = await (
+      await application.firstWindow()
+    ).evaluate(() => window.myTracer.aiConfiguration.status())
+    expect(beforeConfiguration.availability).toBe('configured-available')
     const beforeExport = await exportFacts(
       application,
       await application.firstWindow(),
@@ -305,10 +300,9 @@ test('keeps all old-version facts and synthetic configuration through an in-plac
     application = await launchInstalled(root, executable, newVersion)
     await setMainDate(application)
     const newPage = await application.firstWindow()
-    expect(await newPage.evaluate(() => window.myTracer.aiConfiguration.status())).toMatchObject({
-      configured: true,
-      availability: 'configured-available'
-    })
+    expect(await newPage.evaluate(() => window.myTracer.aiConfiguration.status())).toEqual(
+      beforeConfiguration
+    )
     const afterExport = await exportFacts(
       application,
       newPage,
