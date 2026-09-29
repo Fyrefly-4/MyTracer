@@ -9,6 +9,7 @@ import type { CompleteExportApi } from './exports'
 import type { RecoveryApi } from './recovery'
 import type { ReviewApi } from './review'
 import type { AiConfigurationApi, AiStartHelpApi } from './ai-start-help'
+import type { UpdateApi } from './updates'
 
 export const SHELL_STATUS_CHANNEL = 'shell:query-status' as const
 
@@ -39,4 +40,5 @@ export interface MyTracerApi {
   readonly exports: CompleteExportApi
   readonly aiStartHelp: AiStartHelpApi
   readonly aiConfiguration: AiConfigurationApi
+  readonly updates: UpdateApi
 }

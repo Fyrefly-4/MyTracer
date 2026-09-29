@@ -15,6 +15,8 @@ import { DataControlService } from '../application/data-control'
 import { CompleteExportService } from '../application/complete-export'
 import { queryShellStatus } from '../application/query-shell-status'
 import { AiStartHelpService } from '../application/ai-start-help'
+import { UpdateService } from '../application/update-service'
+import { UpdatePortError, type UpdatePort } from '../application/ports/update'
 import {
   AiProviderError,
   type AiStartHelpProvider,
@@ -25,6 +27,7 @@ import type { MutableAiConfigurationPort } from '../application/ports/configurat
 import type { DiagnosticsPort } from '../application/ports/diagnostics'
 import { asStartHelpContextQueryRepository } from '../application/ports/persistence'
 import { SHELL_STATUS_CHANNEL } from '../contracts/shell'
+import { UPDATE_CHANNELS } from '../contracts/updates'
 import { SystemClock } from '../infrastructure/clock/system-clock'
 import { FileAiConfiguration } from '../infrastructure/configuration/file-ai-configuration'
 import { SafeStorageCredentialAdapter } from '../infrastructure/credentials/safe-storage-credential-adapter'
@@ -36,6 +39,7 @@ import {
 import { resolveProductionDatabasePath } from '../infrastructure/sqlite/database-path'
 import { SqliteConnection } from '../infrastructure/sqlite/sqlite-connection'
 import { SystemExportAdapter } from '../infrastructure/export/system-export-adapter'
+import { GithubUpdatePort } from '../infrastructure/update/github-update-port'
 import { registerGoalIpc } from './goals-ipc'
 import { registerActionIpc } from './actions-ipc'
 import { registerTodayIpc } from './today-ipc'
@@ -55,12 +59,15 @@ import { assertTrustedSender, type RendererLocation } from './ipc-security'
 import { AiStartHelpContextCoordinator } from './ai-start-help-context'
 import { AiStartHelpSessionStore } from './ai-start-help-session'
 import { registerAiStartHelpIpc } from './ai-start-help-ipc'
+import { registerUpdatesIpc } from './updates-ipc'
+import { createOfflineTestUpdatePort } from './test-update-port'
 
 let mainWindow: BrowserWindow | null = null
 let sqliteConnection: SqliteConnection | null = null
 let aiConfiguration: MutableAiConfigurationPort | null = null
 let diagnostics: DiagnosticsPort | null = null
 let aiStartHelpSessions: AiStartHelpSessionStore | null = null
+let updateService: UpdateService | null = null
 const actionRecordingContexts = new ActionRecordingContextStore(randomUUID)
 const routineRecordingContexts = new RoutineRecordingContextStore(randomUUID)
 const deletePreviewContexts = new DeletePreviewContextStore(randomUUID)
@@ -417,6 +424,34 @@ app.whenReady().then(async () => {
     correlationId: 'startup.complete'
   })
   registerShellQuery()
+  let updatePort: UpdatePort
+  try {
+    updatePort = createOfflineTestUpdatePort(app.getVersion()) ?? new GithubUpdatePort({
+      token: process.env.MYTRACER_UPDATE_TOKEN,
+      isPackaged: app.isPackaged
+    })
+  } catch {
+    updatePort = {
+      check: async () => {
+        throw new UpdatePortError('unavailable')
+      }
+    }
+  }
+  updateService = new UpdateService({
+    port: updatePort,
+    currentVersion: app.getVersion(),
+    generateId: randomUUID
+  })
+  updateService.subscribe((status) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send(UPDATE_CHANNELS.changed, status)
+    }
+  })
+  registerUpdatesIpc({
+    ipc: ipcMain,
+    service: updateService,
+    assertSender: (event) => assertTrustedSender(event, mainWindow, getRendererLocation())
+  })
   const goalService = new GoalService({
     repository: sqliteConnection.repository,
     unitOfWork: sqliteConnection,
@@ -608,6 +643,9 @@ app.on('window-all-closed', () => {
 })
 
 app.on('before-quit', () => {
+  const updateStatus = updateService?.getStatus()
+  if (updateStatus?.operationId) updateService?.cancel({ operationId: updateStatus.operationId })
+  updateService = null
   actionRecordingContexts.clearAll()
   routineRecordingContexts.clearAll()
   deletePreviewContexts.clearAll()

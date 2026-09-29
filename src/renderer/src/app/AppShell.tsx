@@ -6,6 +6,7 @@ import { ProgressPage } from '../features/progress/ProgressPage'
 import { ReviewPage } from '../features/review/ReviewPage'
 import { RoutinesPage } from '../features/routines/RoutinesPage'
 import { TodayPage } from '../features/today/TodayPage'
+import { UpdatePanel } from '../features/update/UpdatePanel'
 import { UiSessionContext, UiSession } from './ui-session'
 import { appSections, type AppSectionId } from './navigation'
 
@@ -20,6 +21,7 @@ export function AppShell(): ReactNode {
   }
   const [status, setStatus] = useState<ShellStatus | null>(null)
   const [statusError, setStatusError] = useState(false)
+  const [updateOpen, setUpdateOpen] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -51,11 +53,18 @@ export function AppShell(): ReactNode {
               <p className="brand-note">行动、记录与温和恢复</p>
             </div>
           </div>
-          <div className={`connection ${statusError ? 'connection-error' : ''}`} role="status">
-            <span aria-hidden="true" />
-            {statusError ? '本地数据暂时无法连接' : status ? '本地数据可用' : '正在连接本地数据'}
+          <div className="topbar-actions">
+            <button type="button" className="update-entry" onClick={() => setUpdateOpen(true)}>
+              关于与更新
+            </button>
+            <div className={`connection ${statusError ? 'connection-error' : ''}`} role="status">
+              <span aria-hidden="true" />
+              {statusError ? '本地数据暂时无法连接' : status ? '本地数据可用' : '正在连接本地数据'}
+            </div>
           </div>
         </header>
+
+        {updateOpen ? <UpdatePanel onClose={() => setUpdateOpen(false)} /> : null}
 
         <div className="workspace">
           <nav className="sidebar" aria-label="主要视图">

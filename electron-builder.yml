@@ -7,6 +7,12 @@ npmRebuild: false
 electronDist: node_modules/electron/dist
 directories:
   output: release
+publish:
+  provider: github
+  owner: Fyrefly-4
+  repo: MyTracer
+  private: true
+  channel: latest
 files:
   - out/**/*
   - package.json

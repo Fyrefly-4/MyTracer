@@ -72,7 +72,8 @@ test('runs the Electron shell with an isolated userData root', async () => {
       'dataControl',
       'exports',
       'aiStartHelp',
-      'aiConfiguration'
+      'aiConfiguration',
+      'updates'
     ])
     expect(await page.evaluate(() => Object.keys(window.myTracer.shell))).toEqual(['getStatus'])
     expect(await page.evaluate(() => Object.keys(window.myTracer.goals))).toEqual([
