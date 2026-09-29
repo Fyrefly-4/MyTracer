@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "task": "T082",
+  "task_kind": "implementation",
+  "dependencies": {
+    "requires": ["T081"],
+    "blocks": ["T083"],
+    "can_parallel": [],
+    "prefer_after": ["T081"],
+    "conflicts_with": ["T081", "T083", "T084"]
+  },
+  "conflict_basis": {
+    "T081": "S8 requires serial integration: T082 extends T081 packaging configuration, package provenance and installed Windows validation after T081 enters dev.",
+    "T083": "S8 requires serial integration: T083 extends T082 update service, Main IPC, Preload contracts and Renderer status UI for install confirmation.",
+    "T084": "S8 requires serial integration: T084 uses the T082 private source, updater metadata, packaging and update test evidence for release and stage acceptance."
+  },
+  "shared_surfaces": [
+    {
+      "files": [
+        "package.json",
+        "package-lock.json",
+        "electron-builder.yml",
+        "src/application/",
+        "src/main/",
+        "src/infrastructure/update/",
+        "src/contracts/updates.ts",
+        "src/contracts/shell.ts",
+        "src/preload/index.ts",
+        "src/renderer/src/",
+        "tests/unit/",
+        "tests/integration/",
+        "tests/e2e/",
+        "tests/support/",
+        "docs/implementation/T082_PRIVATE_UPDATE_CHECK_DOWNLOAD.md",
+        "docs/implementation/TASK_INDEX_V0.1.md",
+        "docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md"
+      ],
+      "modules": [
+        "private-stable-update-check-and-download",
+        "manual-update-state-and-candidate-validation",
+        "main-only-update-token-and-redacted-ipc",
+        "controlled-source-and-package-provenance-tests"
+      ],
+      "schema_tables": [],
+      "ipc_contracts": ["updates-check-download-cancel-status-subscribe"],
+      "domain_invariants": [
+        "manual-check-and-download-only-no-install",
+        "private-fixed-source-and-token-main-only",
+        "verified-higher-stable-candidate-before-downloaded",
+        "core-data-and-local-date-semantics-unchanged",
+        "isolated-synthetic-tests-and-no-implicit-publish"
+      ],
+      "risk": "high",
+      "integration_policy": "serial"
+    }
+  ],
+  "external": [
+    "controlled private test release source and synthetic read-only credential",
+    "owner-approved current Windows account with preflight and isolated synthetic test roots"
+  ]
+}
