@@ -1,12 +1,12 @@
 # T083 — 确认安装与安全退出协调
 
-> 合同状态：approved，2026-09-29。项目所有者批准本合同范围、应用版本 `0.1.3`、本机当前 Windows 账户验证及 §11 权限，明确本任务不创建独立 worktree；本轮仅落实合同并提交，不开始产品开发。任务激活状态以 [任务索引](TASK_INDEX_V0.1.md)为准。T082 已由 PR #58 集成到 `dev@cf3b2b4c00b6757218295c2672d23cf19f1ee526`；T082 的真实私有源、最终发布包及安装版人工体验缺口仍归 T084，不在本合同中冒充通过。
+> 合同状态：approved，2026-09-29。项目所有者批准本合同范围、应用版本 `0.1.3`、本机当前 Windows 账户验证及 §11 权限，明确本任务不创建独立 worktree，并确认激活 T083；当前仅完成合同与 Git 准备，尚未开始产品开发。任务实时状态以 [任务索引](TASK_INDEX_V0.1.md)为准。T082 已由 PR #58 集成到 `dev@cf3b2b4c00b6757218295c2672d23cf19f1ee526`；T082 的真实私有源、最终发布包及安装版人工体验缺口仍归 T084，不在本合同中冒充通过。
 
 ## 1. 任务信息
 
 - **Task ID / Title**：T083 / 确认安装与安全退出协调。
 - **Slice / Plan item**：S8-C；[实施计划](../architecture/IMPLEMENTATION_PLAN_V0.1.md) §13、[S8 设计](../architecture/S8_UPDATE_MAINTENANCE_DESIGN.md) §3～7。
-- **Status**：以任务索引为准；本轮仅完成合同与 Git 准备，不开始产品实现。
+- **Status**：`active`（owner 已激活；当前仅完成合同与 Git 准备，产品实现尚未开始）。
 - **拟定任务基线**：`dev@cf3b2b4c00b6757218295c2672d23cf19f1ee526`（本合同起草时本地 `dev` 与本地远端跟踪引用 `origin/dev` 相同，未实时查询远端）；启动与集成前重新核对最新授权 `dev`，不能把此 SHA 当成永久有效基线。
 - **任务分支**：`task/T083-confirm-install-shutdown`，已在当前 checkout 从上述 `dev` 建立；本任务不创建独立 worktree。
 - **任务类型**：`implementation`；V2 显式权限流程，不声明 Automation Profile。
