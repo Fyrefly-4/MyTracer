@@ -121,6 +121,33 @@ async function launchInstalled(
   return application
 }
 
+async function closeInstalled(application: ElectronApplication): Promise<void> {
+  let timeout: ReturnType<typeof setTimeout> | undefined
+  try {
+    await Promise.race([
+      (async () => {
+        // Use the same window-close path as a user before waiting for the Electron process.
+        await (await application.firstWindow()).close()
+        await application.close()
+      })(),
+      new Promise<never>((_resolve, reject) => {
+        timeout = setTimeout(
+          () => reject(new Error('The installed application did not close within 30 seconds.')),
+          30_000
+        )
+      })
+    ])
+  } catch (error) {
+    const pid = application.process().pid
+    if (pid && application.process().exitCode === null) {
+      spawnSync('taskkill.exe', ['/PID', String(pid), '/T', '/F'], { timeout: 10_000 })
+    }
+    throw error
+  } finally {
+    if (timeout) clearTimeout(timeout)
+  }
+}
+
 async function setMainDate(application: ElectronApplication): Promise<void> {
   await application.evaluate(() => {
     const RealDate = Date
@@ -278,7 +305,7 @@ test('keeps all old-version facts and synthetic configuration through an in-plac
     await setMainDate(application)
     const page = await application.firstWindow()
     const actionId = await createOldVersionFacts(page)
-    await application.close()
+    await closeInstalled(application)
     application = undefined
 
     application = await launchInstalled(root, executable, oldVersion)
@@ -292,7 +319,7 @@ test('keeps all old-version facts and synthetic configuration through an in-plac
       await application.firstWindow(),
       join(root.exports, 'before-upgrade.json')
     )
-    await application.close()
+    await closeInstalled(application)
     application = undefined
     const beforeDatabase = snapshotDatabase(databasePath)
 
@@ -310,7 +337,7 @@ test('keeps all old-version facts and synthetic configuration through an in-plac
     )
     expect(afterExport).toMatchObject({ exportVersion: 2, sourceDataVersion: 3 })
     expect(afterExport.data).toEqual(beforeExport.data)
-    await application.close()
+    await closeInstalled(application)
     application = undefined
     expect(snapshotDatabase(databasePath)).toEqual(beforeDatabase)
 
@@ -329,7 +356,7 @@ test('keeps all old-version facts and synthetic configuration through an in-plac
       actionId
     )
     expect(added).toMatchObject({ ok: true })
-    await application.close()
+    await closeInstalled(application)
     application = undefined
 
     application = await launchInstalled(root, executable, newVersion)
@@ -344,21 +371,24 @@ test('keeps all old-version facts and synthetic configuration through an in-plac
       ])
     })
   } finally {
-    await application?.close()
     try {
-      if (installed) {
-        await assertExistingPathWithinRoot(root, uninstaller)
-        const removal = spawnSync(uninstaller, ['/S'], {
-          cwd: root.root,
-          env: minimalElectronEnvironment(root),
-          encoding: 'utf8',
-          timeout: installTimeout
-        })
-        expect(removal.error).toBeUndefined()
-        expect(removal.status).toBe(0)
-      }
+      if (application && application.process().exitCode === null) await closeInstalled(application)
     } finally {
-      await removeTemporaryTestRootWithOptions(root, { maxRetries: 8, retryDelay: 500 })
+      try {
+        if (installed) {
+          await assertExistingPathWithinRoot(root, uninstaller)
+          const removal = spawnSync(uninstaller, ['/S'], {
+            cwd: root.root,
+            env: minimalElectronEnvironment(root),
+            encoding: 'utf8',
+            timeout: installTimeout
+          })
+          expect(removal.error).toBeUndefined()
+          expect(removal.status).toBe(0)
+        }
+      } finally {
+        await removeTemporaryTestRootWithOptions(root, { maxRetries: 8, retryDelay: 500 })
+      }
     }
   }
 })
