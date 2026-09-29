@@ -14,7 +14,7 @@ describe('T082 updater request policy', () => {
       }
     )
     expect(redirected.headers).toMatchObject({ accept: 'application/octet-stream' })
-    expect(redirected.headers?.authorization).toBeUndefined()
+    expect(redirected.headers).not.toHaveProperty('authorization')
   })
 
   it.each([
