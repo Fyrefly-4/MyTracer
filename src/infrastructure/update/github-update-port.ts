@@ -1,5 +1,3 @@
-import { createReadStream } from 'node:fs'
-import { createHash } from 'node:crypto'
 import { session } from 'electron'
 import { CancellationToken } from 'builder-util-runtime'
 import electronUpdater, { type NsisUpdater } from 'electron-updater'
@@ -11,17 +9,12 @@ import {
 import type { UpdateFailureCode } from '../../contracts/updates'
 import { validatePrivateRelease, type ReleaseInfo } from './release-metadata'
 import { isAllowedUpdaterUrl } from './request-policy'
+import { verifyDownloadedPackage } from './package-integrity'
 
 const SOURCE = Object.freeze({ owner: 'Fyrefly-4', repo: 'MyTracer' })
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
-async function sha512Base64(path: string): Promise<string> {
-  const hash = createHash('sha512')
-  for await (const chunk of createReadStream(path)) hash.update(chunk)
-  return hash.digest('base64')
 }
 
 function mapFailure(error: unknown, signal: AbortSignal): UpdatePortError {
@@ -135,7 +128,7 @@ export class GithubUpdatePort implements UpdatePort {
       if (signal.aborted) throw new UpdatePortError('cancelled')
       const paths = await updater.downloadUpdate(cancellation)
       if (signal.aborted) throw new UpdatePortError('cancelled')
-      if (paths.length !== 1 || (await sha512Base64(paths[0])) !== expected.file.sha512) {
+      if (paths.length !== 1 || !(await verifyDownloadedPackage(paths[0], expected.file.sha512))) {
         throw new UpdatePortError('integrity')
       }
     } catch (error) {

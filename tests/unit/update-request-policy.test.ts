@@ -1,7 +1,21 @@
 import { describe, expect, it } from 'vitest'
+import { HttpExecutor } from 'builder-util-runtime'
 import { isAllowedUpdaterUrl } from '../../src/infrastructure/update/request-policy'
 
 describe('T082 updater request policy', () => {
+  it('the locked transport strips authorization from cross-origin asset redirects', () => {
+    const redirected = HttpExecutor.prepareRedirectUrlOptions(
+      'https://release-assets.githubusercontent.com/download?id=123',
+      {
+        protocol: 'https:',
+        hostname: 'api.github.com',
+        path: '/repos/Fyrefly-4/MyTracer/releases/assets/123',
+        headers: { authorization: 'token synthetic-secret', accept: 'application/octet-stream' }
+      }
+    )
+    expect(redirected.headers).toEqual({ accept: 'application/octet-stream' })
+  })
+
   it.each([
     'https://api.github.com/repos/Fyrefly-4/MyTracer/releases/latest',
     'https://api.github.com/repos/Fyrefly-4/MyTracer/releases/assets/123',
