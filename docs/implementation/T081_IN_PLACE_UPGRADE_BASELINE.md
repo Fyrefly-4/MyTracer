@@ -8,7 +8,7 @@
 
 - **Task ID / Title**：T081 / Windows 原位升级与数据保留基线。
 - **Slice / Plan item**：S8-A；[Implementation Plan](../architecture/IMPLEMENTATION_PLAN_V0.1.md) §13 将后续维护任务导向 S8 设计 §3.1、§3.2、§4、§5～7，不改变 S0～S7 历史范围。
-- **Status**：`review`；任务执行状态以 [TASK_INDEX_V0.1.md](TASK_INDEX_V0.1.md) 为准。实现候选与本地实装验证已完成；最终文档 head 的 CI、owner 人工验收和集成仍待 owner 核对。
+- **Status**：`done`（owner 于 2026-09-29 明确报告 review 通过并批准标记）；任务执行状态以 [TASK_INDEX_V0.1.md](TASK_INDEX_V0.1.md) 为准。PR 最终 CI、人工安装体验和集成是独立 owner 门禁，均不由任务状态代签。
 - **编写基线**：`dev@d8b211b3c184cff8d0afdb09ff4b13164704290b`；激活时已核对本地 `dev`、`origin/dev` 与远端 `dev` 为该 revision。S8 设计原为未跟踪文件，本次与合同一起纳入提交。
 - **目标分支**：`task/T081-in-place-upgrade`，已从核实的 `dev@d8b211b3c184cff8d0afdb09ff4b13164704290b` 创建；本任务不创建 worktree。
 - **任务类型**：`implementation`，只建立原位升级兼容与跨版本验证基线。
@@ -182,8 +182,8 @@ node node_modules/electron-builder/cli.js --win nsis --x64 --publish never
 
 - A：`dev@d8b211b3c184cff8d0afdb09ff4b13164704290b`，应用 `0.1.0`，NSIS SHA-256 `AD68642DEB44F31D9194544D55DED558B52BD4442C920837539124DD466D48E4`。B：生产构建 source `be44e337ba33bdbb44e9a30cb5dcd110d6ee6fa6`，应用 `0.1.1`，NSIS SHA-256 `F0DB2793A2DA6833D505C1107DBE1EC60150E3722E25C051A9DBE6817F750051`。两包均为 Windows x64、`appId=io.mytracer.desktop`、每用户 NSIS、unsigned，构建时指定 `--publish never`；未改依赖、schemaVersion=3 或导出契约。
 - 实现候选 `2f98854b9386812000a118353dee2861a3d68f65`：在 owner 批准的当前 Windows 账户使用唯一临时安装、数据和导出根，真实 A→B、A 运行时安装、损坏包启动失败后用已核 hash 的 B 修复三场景 **3/3 pass**；B package smoke **1/1 pass**；完整 `verify` 通过（255 unit、130 integration、30 常规 E2E；1 live-only integration 与 4 opt-in package E2E 按默认策略 skip，后四项已单独运行）。测试结束后 MyTracer 卸载注册、进程和默认安装目录均为零；未读取或清理现有默认数据。具体命令、失败历史与 artifacts 见 `EV-T081-001`。
-- `dev` 基线核对为 `d8b211b3c184cff8d0afdb09ff4b13164704290b`，为候选祖先；Integration Freshness=`fresh`，`refresh_method=none`。PR #57 指向 `dev`，保持 Draft。owner 报告同一实现 head 的替代 hosted run `36521775546` 已通过；Agent 查询 GitHub API 连续 TLS 握手超时，尚未独立读取该 run 的 job 与 evidence artifact，因此只记录 owner-reported 状态。
-- owner 明确接手人工验收和文档提交后的最终 CI 检查。两者均为 `pending owner verification`，不由本次文档收口推断为 pass；`task_delivery_revision`、`dev_integration_revision`、`stage_final_integration_revision` 仍为 `null`。不自动标 Ready、merge、tag、release 或启动 T082。
+- `dev` 基线核对为 `d8b211b3c184cff8d0afdb09ff4b13164704290b`，为候选祖先；Integration Freshness=`fresh`，`refresh_method=none`。PR #57 指向 `dev`，实时 Draft/Ready 与 merge 状态以 GitHub 为准。同一实现 head 的替代 hosted run `36521775546` 的 `success` 状态已由 GitHub run 列表核对；hosted artifact 与 test-merge revision 尚未独立检查。
+- owner 于 2026-09-29 报告 T081 review 通过并批准任务标 `done` 与推送；人工安装体验仍为 `pending owner verification`。文档 head `8f0c62d...` 的 run `36523147239` 中 Windows 验证和治理检查成功，PR quality 因正文缺少 `Summary`、`Evidence`、`Risk` 章节失败，两个 Gate 因此前置失败而失败；已据失败日志修正 PR 正文，新 run 仍须核实。`task_delivery_revision` 在最终 PR head 与 required CI 固定前保持 `null`，`dev_integration_revision`、`stage_final_integration_revision` 亦为 `null`。不自动 merge、tag、release 或启动 T082。
 
 ## 11. Git 与 GitHub 权限
 
