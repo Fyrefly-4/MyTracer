@@ -159,6 +159,8 @@
 
 T081/S8-A 对 FR-D01～D05 与 AC-07 持久化、导出和 AI 配置保留的跨版本回归，定位于 `tests/e2e/windows-in-place-upgrade.e2e.test.ts`、`tests/e2e/windows-package-smoke.e2e.test.ts` 和 [EV-T081-001](../implementation/ACCEPTANCE_EVIDENCE_V0.1.md#ev-t081-001)。它补充原 S3 验证，不改变上述 FR 的优先级、原切片或 AC-07 的既有验收语义；owner 人工与最终提交 CI 状态以任务索引和 PR #57 为准。
 
+T082/S8-B 的 U-02/U-03 更新检查和确认下载，以及 U-05 的候选/元数据/hash 追踪子集，定位于 `src/application/update-service.ts`、`src/infrastructure/update/`、`src/main/` 更新接线、`src/preload/index.ts`、应用级更新面板、`tests/unit/`、`tests/integration/`、`tests/e2e/` 对应更新测试和 [EV-T082-001](../implementation/ACCEPTANCE_EVIDENCE_V0.1.md#ev-t082-001)。FR-D01～D05 与 AC-07 仅为失败降级时必须保持的既有数据/核心功能边界；此映射不新增冻结 FR，也不表示真实私有源人工体验或 AC-07 已由 T082 重新验收。实时状态以任务索引为准。
+
 ## 3. SHOULD 结论汇总
 
 | ID | 结论 | 影响 |

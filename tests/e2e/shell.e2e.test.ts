@@ -61,6 +61,7 @@ test('runs the Electron shell with an isolated userData root', async () => {
     expect(status.ai).toEqual({ configured: false, availability: 'not-configured' })
     expect(await page.evaluate(() => Object.keys(window.myTracer))).toEqual([
       'shell',
+      'updates',
       'goals',
       'actions',
       'today',
