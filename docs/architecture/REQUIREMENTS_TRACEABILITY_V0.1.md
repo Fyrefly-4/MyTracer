@@ -157,6 +157,8 @@
 | FR-D06 | 延期 | Architecture §3/7 | — | SCOPE：无账号/同步 |
 | FR-D07 | 延期 | Data §8/9 | — | SCOPE：有版本导出、无自动导入 |
 
+T081/S8-A 对 FR-D01～D05 与 AC-07 持久化、导出和 AI 配置保留的跨版本回归，定位于 `tests/e2e/windows-in-place-upgrade.e2e.test.ts`、`tests/e2e/windows-package-smoke.e2e.test.ts` 和 [EV-T081-001](../implementation/ACCEPTANCE_EVIDENCE_V0.1.md#ev-t081-001)。它补充原 S3 验证，不改变上述 FR 的优先级、原切片或 AC-07 的既有验收语义；owner 人工与最终提交 CI 状态以任务索引和 PR #57 为准。
+
 ## 3. SHOULD 结论汇总
 
 | ID | 结论 | 影响 |
