@@ -46,6 +46,7 @@ async function verifyPackagedApplication(
     })
     expect(await page.evaluate(() => Object.keys(window.myTracer))).toEqual([
       'shell',
+      'updates',
       'goals',
       'actions',
       'today',
@@ -60,6 +61,22 @@ async function verifyPackagedApplication(
       'aiConfiguration'
     ])
     expect(await page.evaluate(() => Object.keys(window.myTracer.shell))).toEqual(['getStatus'])
+    expect(await page.evaluate(() => Object.keys(window.myTracer.updates))).toEqual([
+      'getStatus',
+      'check',
+      'download',
+      'cancel',
+      'subscribe'
+    ])
+    expect(await page.evaluate(() => window.myTracer.updates.getStatus())).toMatchObject({
+      state: 'idle',
+      currentVersion: expectedVersion
+    })
+    expect(await page.evaluate(() => window.myTracer.updates.check())).toMatchObject({
+      state: 'error',
+      error: { code: 'not-configured' }
+    })
+    await expect(page.getByRole('heading', { name: '今天', exact: true })).toBeVisible()
     expect(await page.evaluate(() => Object.keys(window.myTracer.goals))).toEqual([
       'create',
       'updateDetails',
