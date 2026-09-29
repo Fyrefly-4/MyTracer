@@ -10,15 +10,9 @@ import {
 } from '../../application/ports/update'
 import type { UpdateFailureCode } from '../../contracts/updates'
 import { validatePrivateRelease, type ReleaseInfo } from './release-metadata'
+import { isAllowedUpdaterUrl } from './request-policy'
 
 const SOURCE = Object.freeze({ owner: 'Fyrefly-4', repo: 'MyTracer' })
-const ALLOWED_HOSTS = new Set([
-  'api.github.com',
-  'github.com',
-  'objects.githubusercontent.com',
-  'release-assets.githubusercontent.com',
-  'github-releases.githubusercontent.com'
-])
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -63,12 +57,7 @@ function mapFailure(error: unknown, signal: AbortSignal): UpdatePortError {
 function restrictUpdaterRequests(): void {
   const updaterSession = session.fromPartition('electron-updater', { cache: false })
   updaterSession.webRequest.onBeforeRequest((details, callback) => {
-    try {
-      const url = new URL(details.url)
-      callback({ cancel: url.protocol !== 'https:' || !ALLOWED_HOSTS.has(url.hostname) })
-    } catch {
-      callback({ cancel: true })
-    }
+    callback({ cancel: !isAllowedUpdaterUrl(details.url) })
   })
 }
 
