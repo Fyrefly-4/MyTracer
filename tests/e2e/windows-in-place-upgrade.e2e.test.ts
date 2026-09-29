@@ -16,7 +16,7 @@ import {
 
 test.skip(
   process.env.MYTRACER_UPGRADE_TEST !== '1',
-  'Cross-version NSIS installation requires a separately confirmed isolated Windows identity.'
+  'Cross-version NSIS installation requires a separately approved Windows account.'
 )
 
 const oldVersion = '0.1.0'
@@ -25,14 +25,36 @@ const installTimeout = 300_000
 
 function requiredEnvironment(name: string): string {
   const value = process.env[name]
-  if (!value) throw new Error(`${name} must be set for the isolated upgrade test.`)
+  if (!value) throw new Error(`${name} must be set for the approved upgrade test.`)
   return value
 }
 
-function assertIsolatedWindowsIdentity(): void {
+function assertNoExistingInstallation(): void {
+  const preflight = spawnSync(
+    'powershell.exe',
+    [
+      '-NoProfile',
+      '-NonInteractive',
+      '-Command',
+      "$registered = @(Get-ChildItem 'Registry::HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall' -ErrorAction SilentlyContinue | ForEach-Object { Get-ItemProperty -LiteralPath $_.PSPath -ErrorAction SilentlyContinue } | Where-Object { $_.DisplayName -like '*MyTracer*' }).Count; $running = @(Get-Process -Name MyTracer -ErrorAction SilentlyContinue).Count; $defaultInstall = [int](Test-Path -LiteralPath (Join-Path $env:LOCALAPPDATA 'Programs\\MyTracer')); Write-Output \"$registered,$running,$defaultInstall\""
+    ],
+    { encoding: 'utf8', timeout: 10_000 }
+  )
+  if (preflight.status !== 0 || preflight.stdout?.trim() !== '0,0,0') {
+    throw new Error(
+      'An existing MyTracer installation or process prevents current-account testing.'
+    )
+  }
+}
+
+function assertApprovedWindowsIdentity(): void {
   if (process.platform !== 'win32') throw new Error('The upgrade test requires Windows.')
-  if (requiredEnvironment('MYTRACER_UPGRADE_ISOLATION_ACK') !== 'isolated-windows-identity') {
-    throw new Error('The isolated Windows identity acknowledgement is invalid.')
+  const approval = requiredEnvironment('MYTRACER_UPGRADE_ISOLATION_ACK')
+  if (
+    approval !== 'isolated-windows-identity' &&
+    approval !== 'T081-owner-approved-current-account'
+  ) {
+    throw new Error('The Windows account approval mode is invalid.')
   }
   const identity = spawnSync('whoami.exe', ['/user', '/fo', 'csv', '/nh'], {
     encoding: 'utf8',
@@ -42,6 +64,7 @@ function assertIsolatedWindowsIdentity(): void {
   if (identity.status !== 0 || actualSid !== requiredEnvironment('MYTRACER_UPGRADE_ACCOUNT_SID')) {
     throw new Error('The current Windows account does not match the approved test identity.')
   }
+  if (approval === 'T081-owner-approved-current-account') assertNoExistingInstallation()
 }
 
 async function sha256(path: string): Promise<string> {
@@ -233,7 +256,7 @@ function snapshotDatabase(databasePath: string): Record<string, unknown[]> {
 
 test('keeps all old-version facts and synthetic configuration through an in-place NSIS upgrade', async () => {
   test.setTimeout(900_000)
-  assertIsolatedWindowsIdentity()
+  assertApprovedWindowsIdentity()
   const oldInstaller = await checkedInstaller(
     'MYTRACER_UPGRADE_OLD_INSTALLER',
     'MYTRACER_UPGRADE_OLD_SHA256'
