@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "task": "T083",
+  "task_kind": "implementation",
+  "dependencies": {
+    "requires": ["T082"],
+    "blocks": ["T084"],
+    "can_parallel": [],
+    "prefer_after": ["T082"],
+    "conflicts_with": ["T082", "T084"]
+  },
+  "conflict_basis": {
+    "T082": "S8 serial integration: T083 extends T082 update service, Main IPC, Preload contracts, Renderer update UI and downloaded candidate handling.",
+    "T084": "S8 serial integration: T084 relies on T083 install coordination and continuous Windows update evidence for release and stage acceptance."
+  },
+  "shared_surfaces": [
+    {
+      "files": [
+        "package.json",
+        "package-lock.json",
+        "src/application/update-service.ts",
+        "src/application/ports/update.ts",
+        "src/infrastructure/update/",
+        "src/main/",
+        "src/contracts/updates.ts",
+        "src/contracts/shell.ts",
+        "src/preload/index.ts",
+        "src/renderer/src/",
+        "tests/unit/",
+        "tests/integration/",
+        "tests/e2e/",
+        "tests/support/",
+        "docs/implementation/T083_CONFIRM_INSTALL_SHUTDOWN.md",
+        "docs/implementation/TASK_INDEX_V0.1.md",
+        "docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md"
+      ],
+      "modules": [
+        "explicit-install-confirmation-and-candidate-validation",
+        "main-shutdown-write-drain-and-recovery",
+        "renderer-unsaved-content-barrier",
+        "single-instance-and-isolated-windows-install-tests"
+      ],
+      "schema_tables": [],
+      "ipc_contracts": ["updates-prepare-confirm-cancel-status-subscribe"],
+      "domain_invariants": [
+        "no-install-without-current-verified-candidate-and-explicit-confirmation",
+        "unsaved-input-and-ai-drafts-block-install",
+        "main-rejects-new-writes-and-drains-in-flight-work",
+        "core-data-and-local-date-semantics-unchanged",
+        "isolated-synthetic-tests-and-no-implicit-publish"
+      ],
+      "risk": "high",
+      "integration_policy": "serial"
+    }
+  ],
+  "external": [
+    "owner-approved current Windows account NSIS install and upgrade verification after existing-install preflight, with unique temporary roots, synthetic data and controlled source"
+  ]
+}
