@@ -1,12 +1,12 @@
 # T082 — 私有源版本检查与下载
 
-> 合同状态：approved-1，2026-09-29。项目所有者已批准本合同范围、应用版本 `0.1.2`、精确依赖 `electron-updater@6.8.10`、本机当前账户验证及 §11 权限，并激活 T082；项目所有者确认 T081 遗留缺口完成。T082 已形成实现候选并通过云端候选 CI，项目所有者报告人工代码 review 通过；真实私有源和安装版人工体验仍待验证。任务实时状态以 [任务索引](TASK_INDEX_V0.1.md)为准，结果见 [EV-T082-001](ACCEPTANCE_EVIDENCE_V0.1.md#ev-t082-001)。本合同只覆盖 S8 §4 的 B 节点，不启动 T083/T084。
+> 合同状态：approved-2，2026-09-29。项目所有者已批准本合同范围、应用版本 `0.1.2`、精确依赖 `electron-updater@6.8.10`、本机当前账户验证及 §11 权限，并激活 T082；项目所有者确认 T081 遗留缺口完成。随后 owner 批准 [范围冲突提案](T082_ESCALATION_PROPOSAL.md)：真实私有稳定 Release、只读凭据下的安装版体验及最终发布包证据归 T084，T082 以受控源自动化、包校验、云端 CI 和 owner 人工代码 review 收口；这些延期项不得记作 T082 已验证。任务实时状态以 [任务索引](TASK_INDEX_V0.1.md)为准，结果见 [EV-T082-001](ACCEPTANCE_EVIDENCE_V0.1.md#ev-t082-001)。本合同只覆盖 S8 §4 的 B 节点，不启动 T083/T084。
 
 ## 1. 任务信息
 
 - **Task ID / Title**：T082 / 私有源版本检查与下载。
 - **Slice / Plan item**：S8-B；[Implementation Plan](../architecture/IMPLEMENTATION_PLAN_V0.1.md) §13、S8 设计 §3～7。
-- **Status**：`review`（实现候选与云端候选 CI 通过；私有源实测和人工体验待完成）。
+- **Status**：`done`（T082 获批的 B 节点结果已收口；T084 的真实私有源及安装版人工验收未执行）。
 - **任务基线**：`dev@0724cbb9990d328ee7ff68b7e5ac93fc8107e6d3`（创建分支时本地 `dev` 与 `origin/dev` 相同，包含 T081 PR #57）；候选及文档收口时继续核对最新授权 `dev` 与工作区。
 - **任务分支**：`task/T082-private-update-download`，已从上述 `dev` 创建；本任务不创建独立 worktree。
 - **任务类型**：`implementation`；采用 V2 显式权限流程，不声明 Automation Profile。
@@ -53,7 +53,7 @@ references:
 - [x] 本地 `dev` 与 `origin/dev` 在建分支时相同；已检查本轮合同改动及分支名，从该 revision 创建任务分支，不创建 worktree。产品实现前已核对最新授权 `dev`、其他 worktree、工作区和安装身份；集成前继续检查 freshness。
 - [x] Owner 批准 §12 精确版本 `electron-updater@6.8.10`；lockfile 传递依赖及与 Electron 43.3.0、electron-builder 26.15.3、NSIS x64 的实际兼容性仍须实施前/实施中验证。若不兼容，先升级提案，不顺带升级工具链。
 - [x] T081 集成包应用版本为 `0.1.1`；owner 批准 T082 根应用版本升至 `0.1.2`。测试候选必须严格高于实际包内版本，不能仅修改 UI 文案模拟。
-- [ ] 私有测试来源仓库已由 owner 指定为 `Fyrefly-4/MyTracer`，无公网的 fake adapter 已用于自动化；尚无高于 `0.1.2` 的稳定测试 Release 或合成只读凭据，真实源检查/下载保持待验证。任何真实源写入须另行授权，凭据不写入合同。
+- [x] 私有来源仓库由 owner 指定为 `Fyrefly-4/MyTracer`，无公网的 fake/受控源 adapter 已用于 T082 自动化。owner 在 approved-2 中将高于 `0.1.2` 的真实稳定 Release、合成只读凭据及其安装版检查/下载体验归 T084；目前尚未准备或验证。任何真实源写入须另行授权，凭据不写入合同。
 - [x] Owner 明确批准 T082 在本机当前 Windows 账户验证，不使用一次性 VM/独立测试账户；这是一项仅适用于 T082 的身份例外，不授权读取、修改或删除当前账户已有的默认 MyTracer 数据。任何实装/卸载前先核对现存安装、进程、注册项和测试路径；只使用唯一临时安装、`userData`、导出与缓存根。若现存正式安装或路径归属无法隔离，停止该项验证并报告，不覆盖或清理既有内容。测试入口、来源包与 hash 在实际执行时固定。
 
 ### 4.1 Dependencies
@@ -74,7 +74,7 @@ dependencies:
     - Preload, contracts, Renderer shell and update panel
     - updater tests, package provenance and task evidence
   external:
-    - controlled private test release source and synthetic read-only credential
+    - fixed private source configuration with fake or controlled test adapter; real Release and read-only credential verification handed to T084
     - owner-approved current Windows account with isolated synthetic test roots
 ```
 
@@ -121,7 +121,7 @@ dependencies:
 - 应用版本 `0.1.2`、精确版本的 `electron-updater` 及 lockfile 传递依赖记录；构建产物的更新元数据与安装包 hash 校验说明，不提交二进制。
 - 无 token、错误 token、断网、超时、损坏元数据/包、重定向、迟到事件、重复操作、同版/低版/预发布的分层测试；受控源而非真实公网进入普通 CI。
 - 凭据首次配置、轮换、撤销和重启生效步骤；说明检查更新访问分发服务时会产生 IP 等网络元数据，以及 unsigned 限制。
-- 真实执行时的定向/完整验证、完整 diff 与独立 review、early/candidate/final-head CI、实际 evidence 和 owner 手工状态；不把计划写成通过结果。
+- T082 的定向/完整验证、完整 diff 与 owner 人工代码 review、early/candidate/final-head CI、实际 evidence；T084 的真实私有源和安装版人工状态单独交接，不把计划写成通过结果。
 
 ## 9. 可判定验收条件
 
@@ -131,7 +131,7 @@ dependencies:
 4. Main/IPC 拒绝非法输入和非可信 sender；Renderer 不获得 token、URL/文件路径、`ipcRenderer` 或任意 channel。事件由 operationId/版本关联；旧回调与卸载订阅后不改变当前状态。
 5. 测试与打包证明无自动检查、自动下载、退出时安装、安装器执行或正式源发布；T082 只交付经校验下载。普通关闭应用后不得安装，重复启动若复用缓存必须重新校验。
 6. 精确依赖及其传递依赖、当前 Electron/builder 兼容性、`--publish never`、Windows x64 NSIS 与相同 `appId` 有实际证据；定向、受影响回归及 `verify` 通过，完整 diff 和独立 review 无未处理 material finding。
-7. **MANUAL**：owner 在已批准的本机当前账户及受控私有测试源体验检查、断网、鉴权失败、下载/重试/稍后与 unsigned 提示；直到 owner 实测并记录，人工结果保持 `pending`。T084 的真实安装连续 E2E 和正式发布另行验收。
+7. **MANUAL / 交接**：owner 的 T082 人工代码 review 通过须有实际报告。当前账户安装版在真实私有稳定 Release 与只读凭据下的检查、断网、鉴权失败、下载/重试/稍后和 unsigned 提示，连同真实安装连续 E2E、发布包 provenance 与正式发布，归 T084 阶段验收；在 T084 实测前保持 `pending`，不得从 T082 的 fake/受控源或打包 smoke 推断通过。
 
 ## 10. 验证计划
 
@@ -150,7 +150,7 @@ npm.cmd run test:integration -- tests/integration/updates-ipc.test.ts
 npm.cmd run test:e2e:run -- tests/e2e/update-check-download.e2e.test.ts
 ```
 
-上述三个测试文件已由 T082 创建。受控私有测试源的 Windows 安装版检查/下载须另以来源 URL、版本、资产和 SHA-256 绑定实际产物，在 owner 已批准的当前账户执行；先完成 §4 的现存安装、进程、注册项与测试路径预检。无法保证不触及已有内容时记为未验证并报告，不以 fake adapter 通过替代。
+上述三个测试文件已由 T082 创建。T084 的真实私有源 Windows 安装版检查/下载须以来源 URL、版本、资产和 SHA-256 绑定实际产物；执行前按其合同完成现存安装、进程、注册项与测试路径预检。T082 的 fake/受控源通过只证明本任务实现边界，不替代 T084 的实际私有分发验证。
 
 ### 10.3 受影响回归、打包与证据
 
@@ -165,7 +165,7 @@ node node_modules/electron-builder/cli.js --win nsis --x64 --publish never
 
 `verify` 包含 build、Unit、Integration 与常规 Electron E2E，但不证明私有源实装或跨版本安装。打包须检查 `app-update.yml`、`latest.yml` 与包的版本/hash 一致，且没有上传；`test:package-smoke` 或新包的正式 `appId` 安装测试只在 §4 获批的当前账户、完成预检并限定临时根后执行。T082 的当前账户权限来自本合同，不借用 T081 例外，也不授权清理默认数据。
 
-Owner 在实施中指定后续测试仅在云端运行；因此候选及文档 final-head 验证使用 GitHub Actions 的 Windows runner，不再运行本地测试。较早本地包证据按当时 source 单独记录，不代替当前候选包或受控私有源的实测。
+Owner 在实施中指定后续测试仅在云端运行；候选及文档 final-head 验证使用 GitHub Actions 的 Windows runner。随后 owner 仅对当前 T082 测试允许本机当前账户验证；本机据此只读预检并在 `7b5baa9` 以 `--publish never` 构建 `0.1.2` 包、核对版本/hash/签名，未安装、发布或读取默认数据。较早本地包证据按当时 source 单独记录；当前包亦不代替 T084 的真实私有源实测。
 
 关键命令用 `node tools/evidence/capture-command.mjs --task T082 --gate <gate> --base-revision <实际 SHA> --output .tmp/evidence -- <明确 argv>` 捕获真实退出码。先运行 metadata 校验；JSON 不含 stdout/stderr、绝对路径、token、正文、数据库或完整日志。区分 early、candidate、final-head CI 的 PR head/test-merge revision 与任务交付/`dev` 集成 revision；失败 artifact 保留并用 supersedes 记录后续结果。
 
@@ -173,8 +173,8 @@ Owner 在实施中指定后续测试仅在云端运行；因此候选及文档 f
 
 - OS：Windows x64 当前账户（owner 本次特批）；真实安装版先预检现存安装/进程/注册项，自动化使用唯一临时 `userData`、安装/缓存根和合成数据，不读取或清理默认数据。
 - Node/npm/Electron/builder：实施时记录实际锁定版本；编写时项目为 Node 24.18.0、npm 11.16.0、Electron 43.3.0、electron-builder 26.15.3。
-- 更新源：单元/集成/常规 E2E 为 fake adapter 或受控本地源；真实私有测试 Release 的 owner/repo 是部署输入，不写入合同或日志。
-- Source、旧/新包版本/hash、更新元数据 hash、unsigned 状态、人工环境：执行后在证据中填写，不预填成功。
+- 更新源：T082 单元/集成/常规 E2E 为 fake adapter 或受控本地源；真实私有稳定 Release 与只读凭据验证归 T084。固定 owner/repo 为 `Fyrefly-4/MyTracer`，凭据不得写入合同或日志。
+- T082 当前 `0.1.2` 包的 source、版本/hash、更新元数据和 unsigned 状态见 EV-T082-001；T084 的真实候选包、访问控制和人工环境按实际执行再填，不预填成功。
 
 ## 11. Git 与 GitHub 权限
 
@@ -211,9 +211,9 @@ permissions:
 
 ## 12. 依赖、网络与外部操作
 
-- **应用版本**：owner 批准仅将根应用版本 `0.1.1`→`0.1.2`，同步 `package.json`/lockfile，不替换已发布的同版资产。用于验证 T082 检查/下载的候选版本必须再高于 `0.1.2`，来源、hash 和用途在真实执行时固定；不提前确定 T084 发布版本。
+- **应用版本**：owner 批准仅将根应用版本 `0.1.1`→`0.1.2`，同步 `package.json`/lockfile，不替换已发布的同版资产。T082 fake/受控源用严格高于 `0.1.2` 的合成候选验证状态转移；T084 实际私有候选必须是真实更高版本，来源、hash 和用途在执行时固定，不由 T082 提前确定 T084 发布版本。
 - **精确依赖**：owner 批准仅新增生产依赖 `electron-updater@6.8.10`，使用精确版本而非 `^`/`~`；不升级 Electron 43.3.0、electron-builder 26.15.3 或其他直接依赖。2026-09-29 从 npm registry 只读核对该版本、`builder-util-runtime@9.7.0` 等声明的传递依赖；实际安装与 Windows x64 NSIS 打包已在云端候选 CI 通过，详见 EV-T082-001。
-- **网络**：实现期普通测试只访问 fake/受控源；真实私有 GitHub 只读检查/下载限获批测试源和合成只读凭据。`MYTRACER_UPDATE_TOKEN` 配置由用户在本机进程环境注入，轮换/撤销后重启生效；不添加应用内凭据页面或持久化。
+- **网络**：T082 普通测试只访问 fake/受控源；真实私有 GitHub 只读检查/下载归 T084，并限获批来源和合成只读凭据。`MYTRACER_UPDATE_TOKEN` 配置由用户在本机进程环境注入，轮换/撤销后重启生效；不添加应用内凭据页面或持久化。
 - **外部写入**：owner 已批准并已执行本任务普通分支 push 与 PR #58；不授权创建/修改真实 Release、Actions secret/environment、发布源、tag 或 dispatch。
 - **AI / 数据**：fake Provider、临时根、合成业务数据；不访问真实 key/数据库，不迁移、不做破坏性操作。
 
@@ -234,7 +234,7 @@ integration:
 
 ## 13. 风险与停止条件
 
-私有 GitHub 鉴权无法在专用本机只读凭据下安全实现；token 可能进入日志/Renderer/非信任重定向；updater 不能禁用隐式下载或退出安装；元数据/hash 无法证明资产完整性；无签名包无法按已批准策略可靠下载；依赖版本与现有工具链不兼容；需修改 schema、安装身份、AI 权限或正式源；当前账户存在不可隔离的既有安装或清理目标；证据无法绑定当前 revision/包——均停止受影响实现，保存安全结果并按 [升级提案模板](ESCALATION_PROPOSAL_TEMPLATE.md)提出精确决策。不得用公网成功、旧 CI 或跳过测试替代必要证据。
+私有 GitHub 鉴权无法在专用本机只读凭据下安全实现；token 可能进入日志/Renderer/非信任重定向；updater 不能禁用隐式下载或退出安装；元数据/hash 无法证明资产完整性；无签名包无法按已批准策略可靠下载；依赖版本与现有工具链不兼容；需修改 schema、安装身份、AI 权限或正式源；当前账户存在不可隔离的既有安装或清理目标；证据无法绑定当前 revision/包——发现时停止受影响工作，保存安全结果并按 [升级提案模板](ESCALATION_PROPOSAL_TEMPLATE.md)提出精确决策。真实私有源/发布包的实际结果留待 T084，不因源尚未发布阻塞 T082 的已批准 B 节点收口；不得用公网成功、旧 CI 或跳过测试冒充 T084 证据。
 
 ## 14. 完成报告
 

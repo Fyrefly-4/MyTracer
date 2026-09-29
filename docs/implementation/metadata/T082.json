@@ -55,7 +55,7 @@
     }
   ],
   "external": [
-    "controlled private test release source and synthetic read-only credential",
+    "fixed private source configuration with fake or controlled test adapter; real Release and read-only credential verification handed to T084",
     "owner-approved current Windows account with preflight and isolated synthetic test roots"
   ]
 }
