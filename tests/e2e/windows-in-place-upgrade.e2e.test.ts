@@ -2,7 +2,7 @@ import Database from 'better-sqlite3'
 import { createHash } from 'node:crypto'
 import { spawnSync } from 'node:child_process'
 import { createReadStream } from 'node:fs'
-import { readFile, stat } from 'node:fs/promises'
+import { copyFile, readFile, stat, truncate } from 'node:fs/promises'
 import { isAbsolute, join } from 'node:path'
 import { expect, test, type ElectronApplication, type Page } from '@playwright/test'
 import { _electron as electron } from 'playwright'
@@ -370,6 +370,221 @@ test('keeps all old-version facts and synthetic configuration through an in-plac
         expect.objectContaining({ durationMinutes: 1, outcome: 'partial' })
       ])
     })
+  } finally {
+    try {
+      if (application && application.process().exitCode === null) await closeInstalled(application)
+    } finally {
+      try {
+        if (installed) {
+          await assertExistingPathWithinRoot(root, uninstaller)
+          const removal = spawnSync(uninstaller, ['/S'], {
+            cwd: root.root,
+            env: minimalElectronEnvironment(root),
+            encoding: 'utf8',
+            timeout: installTimeout
+          })
+          expect(removal.error).toBeUndefined()
+          expect(removal.status).toBe(0)
+        }
+      } finally {
+        await removeTemporaryTestRootWithOptions(root, { maxRetries: 8, retryDelay: 500 })
+      }
+    }
+  }
+})
+
+test('observes a running old application during installation', async () => {
+  test.setTimeout(600_000)
+  assertApprovedWindowsIdentity()
+  const oldInstaller = await checkedInstaller(
+    'MYTRACER_UPGRADE_OLD_INSTALLER',
+    'MYTRACER_UPGRADE_OLD_SHA256'
+  )
+  const newInstaller = await checkedInstaller(
+    'MYTRACER_UPGRADE_NEW_INSTALLER',
+    'MYTRACER_UPGRADE_NEW_SHA256'
+  )
+  const root = await createTemporaryTestRoot()
+  const installDirectory = join(root.artifacts, 'nsis-install')
+  const executable = join(installDirectory, 'MyTracer.exe')
+  const databasePath = join(root.electronUserData, 'data', 'mytracer.sqlite3')
+  const uninstaller = join(installDirectory, 'Uninstall MyTracer.exe')
+  let installed = false
+  let application: ElectronApplication | undefined
+  try {
+    runInstaller(oldInstaller, installDirectory, root)
+    installed = true
+    application = await launchInstalled(root, executable, oldVersion, true)
+    await setMainDate(application)
+    const page = await application.firstWindow()
+    await createOldVersionFacts(page)
+    await closeInstalled(application)
+    application = undefined
+
+    application = await launchInstalled(root, executable, oldVersion)
+    await setMainDate(application)
+    const runningPage = await application.firstWindow()
+    const beforeExport = await exportFacts(
+      application,
+      runningPage,
+      join(root.exports, 'running-before-upgrade.json')
+    )
+    const beforeConfiguration = await runningPage.evaluate(() =>
+      window.myTracer.aiConfiguration.status()
+    )
+    expect(beforeConfiguration.availability).toBe('configured-available')
+    const beforeDatabase = snapshotDatabase(databasePath)
+
+    const attempt = spawnSync(newInstaller, ['/S', `/D=${installDirectory}`], {
+      cwd: root.root,
+      env: minimalElectronEnvironment(root),
+      encoding: 'utf8',
+      timeout: 90_000
+    })
+    console.log(`T081 running-install attempt exit status: ${attempt.status}`)
+    expect(attempt.error).toBeUndefined()
+    if (attempt.status === 0) {
+      const oldProcess = application.process()
+      await expect.poll(() => oldProcess.exitCode, { timeout: 5_000 }).not.toBeNull()
+      application = undefined
+    } else {
+      expect(await application.evaluate(({ app }) => app.getVersion())).toBe(oldVersion)
+      await closeInstalled(application)
+      application = undefined
+      runInstaller(newInstaller, installDirectory, root)
+    }
+
+    application = await launchInstalled(root, executable, newVersion)
+    await setMainDate(application)
+    const newPage = await application.firstWindow()
+    expect(await newPage.evaluate(() => window.myTracer.aiConfiguration.status())).toEqual(
+      beforeConfiguration
+    )
+    const afterExport = await exportFacts(
+      application,
+      newPage,
+      join(root.exports, 'running-after-upgrade.json')
+    )
+    expect(afterExport.data).toEqual(beforeExport.data)
+    await closeInstalled(application)
+    application = undefined
+    expect(snapshotDatabase(databasePath)).toEqual(beforeDatabase)
+  } finally {
+    try {
+      if (application && application.process().exitCode === null) await closeInstalled(application)
+    } finally {
+      try {
+        if (installed) {
+          await assertExistingPathWithinRoot(root, uninstaller)
+          const removal = spawnSync(uninstaller, ['/S'], {
+            cwd: root.root,
+            env: minimalElectronEnvironment(root),
+            encoding: 'utf8',
+            timeout: installTimeout
+          })
+          expect(removal.error).toBeUndefined()
+          expect(removal.status).toBe(0)
+        }
+      } finally {
+        await removeTemporaryTestRootWithOptions(root, { maxRetries: 8, retryDelay: 500 })
+      }
+    }
+  }
+})
+
+test('repairs a failed package launch without replacing old facts', async () => {
+  test.setTimeout(600_000)
+  assertApprovedWindowsIdentity()
+  const oldInstaller = await checkedInstaller(
+    'MYTRACER_UPGRADE_OLD_INSTALLER',
+    'MYTRACER_UPGRADE_OLD_SHA256'
+  )
+  const newInstaller = await checkedInstaller(
+    'MYTRACER_UPGRADE_NEW_INSTALLER',
+    'MYTRACER_UPGRADE_NEW_SHA256'
+  )
+  const root = await createTemporaryTestRoot()
+  const installDirectory = join(root.artifacts, 'nsis-install')
+  const executable = join(installDirectory, 'MyTracer.exe')
+  const databasePath = join(root.electronUserData, 'data', 'mytracer.sqlite3')
+  const uninstaller = join(installDirectory, 'Uninstall MyTracer.exe')
+  let installed = false
+  let application: ElectronApplication | undefined
+  try {
+    runInstaller(oldInstaller, installDirectory, root)
+    installed = true
+    application = await launchInstalled(root, executable, oldVersion, true)
+    await setMainDate(application)
+    const actionId = await createOldVersionFacts(await application.firstWindow())
+    await closeInstalled(application)
+    application = undefined
+
+    application = await launchInstalled(root, executable, oldVersion)
+    await setMainDate(application)
+    const oldPage = await application.firstWindow()
+    const beforeConfiguration = await oldPage.evaluate(() =>
+      window.myTracer.aiConfiguration.status()
+    )
+    expect(beforeConfiguration.availability).toBe('configured-available')
+    const beforeExport = await exportFacts(
+      application,
+      oldPage,
+      join(root.exports, 'before-failed-launch.json')
+    )
+    await closeInstalled(application)
+    application = undefined
+    const beforeDatabase = snapshotDatabase(databasePath)
+
+    const damagedInstaller = join(root.artifacts, 'damaged-setup.exe')
+    await copyFile(newInstaller, damagedInstaller)
+    await truncate(damagedInstaller, 0)
+    const failedAttempt = spawnSync(damagedInstaller, ['/S', `/D=${installDirectory}`], {
+      cwd: root.root,
+      env: minimalElectronEnvironment(root),
+      encoding: 'utf8',
+      timeout: 10_000
+    })
+    console.log(
+      `T081 damaged-package launch status: ${failedAttempt.status}; spawn error: ${failedAttempt.error ? 'yes' : 'no'}`
+    )
+    expect(failedAttempt.error || failedAttempt.status !== 0).toBeTruthy()
+    expect(snapshotDatabase(databasePath)).toEqual(beforeDatabase)
+
+    application = await launchInstalled(root, executable, oldVersion)
+    await closeInstalled(application)
+    application = undefined
+
+    runInstaller(newInstaller, installDirectory, root)
+    application = await launchInstalled(root, executable, newVersion)
+    await setMainDate(application)
+    const newPage = await application.firstWindow()
+    expect(await newPage.evaluate(() => window.myTracer.aiConfiguration.status())).toEqual(
+      beforeConfiguration
+    )
+    const afterExport = await exportFacts(
+      application,
+      newPage,
+      join(root.exports, 'after-repair.json')
+    )
+    expect(afterExport.data).toEqual(beforeExport.data)
+    await closeInstalled(application)
+    application = undefined
+    expect(snapshotDatabase(databasePath)).toEqual(beforeDatabase)
+
+    application = await launchInstalled(root, executable, newVersion)
+    const added = await (
+      await application.firstWindow()
+    ).evaluate(
+      (id) =>
+        window.myTracer.dataControl.backfillActionRecord({
+          actionId: id,
+          occurredOn: '2026-08-11',
+          durationMinutes: 1,
+          outcome: 'partial'
+        }),
+      actionId
+    )
+    expect(added).toMatchObject({ ok: true })
   } finally {
     try {
       if (application && application.process().exitCode === null) await closeInstalled(application)
