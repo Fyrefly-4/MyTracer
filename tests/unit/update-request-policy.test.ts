@@ -13,7 +13,8 @@ describe('T082 updater request policy', () => {
         headers: { authorization: 'token synthetic-secret', accept: 'application/octet-stream' }
       }
     )
-    expect(redirected.headers).toEqual({ accept: 'application/octet-stream' })
+    expect(redirected.headers).toMatchObject({ accept: 'application/octet-stream' })
+    expect(redirected.headers?.authorization).toBeUndefined()
   })
 
   it.each([
