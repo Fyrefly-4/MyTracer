@@ -4,6 +4,7 @@ import electronUpdater, { type NsisUpdater } from 'electron-updater'
 import {
   UpdatePortError,
   type CheckedUpdate,
+  type DownloadedUpdate,
   type UpdatePort
 } from '../../application/ports/update'
 import type { UpdateFailureCode } from '../../contracts/updates'
@@ -107,7 +108,7 @@ export class GithubUpdatePort implements UpdatePort {
     expected: ReleaseInfo,
     signal: AbortSignal,
     onProgress: (percent: number) => void
-  ): Promise<void> {
+  ): Promise<DownloadedUpdate> {
     const updater = this.createUpdater()
     const cancellation = new CancellationToken()
     const cancel = (): void => cancellation.cancel()
@@ -130,6 +131,11 @@ export class GithubUpdatePort implements UpdatePort {
       if (signal.aborted) throw new UpdatePortError('cancelled')
       if (paths.length !== 1 || !(await verifyDownloadedPackage(paths[0], expected.file.sha512))) {
         throw new UpdatePortError('integrity')
+      }
+      const installerPath = paths[0]
+      return {
+        verify: () => verifyDownloadedPackage(installerPath, expected.file.sha512),
+        startInstall: () => updater.install(false, true)
       }
     } catch (error) {
       throw mapFailure(error, signal)

@@ -42,6 +42,7 @@ export function createOfflineTestUpdatePort(currentVersion: string): UpdatePort 
             )
           })
           onProgress(100)
+          return { verify: async () => true, startInstall: () => false }
         }
       }
     }

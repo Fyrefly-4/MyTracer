@@ -1,5 +1,10 @@
 import type { UpdateFailureCode, UpdateStatusDto } from '../contracts/updates'
-import { UpdatePortError, type CheckedUpdate, type UpdatePort } from './ports/update'
+import {
+  UpdatePortError,
+  type CheckedUpdate,
+  type DownloadedUpdate,
+  type UpdatePort
+} from './ports/update'
 
 function parseStableVersion(value: string): readonly bigint[] | null {
   const match = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.exec(value)
@@ -50,6 +55,7 @@ function withDeadline<T>(
 export class UpdateService {
   private status: UpdateStatusDto
   private candidate: CheckedUpdate | null = null
+  private downloaded: DownloadedUpdate | null = null
   private controller: AbortController | null = null
   private generation = 0
   private readonly listeners = new Set<(status: UpdateStatusDto) => void>()
@@ -79,6 +85,7 @@ export class UpdateService {
     if (this.isBusy()) return this.status
     this.controller?.abort('superseded')
     this.candidate = null
+    this.downloaded = null
     const generation = ++this.generation
     const controller = new AbortController()
     this.controller = controller
@@ -151,7 +158,7 @@ export class UpdateService {
       progressPercent: 0
     })
     try {
-      await withDeadline(
+      const downloaded = await withDeadline(
         (signal) =>
           candidate.download(signal, (percent) => {
             if (generation !== this.generation || signal.aborted) return
@@ -162,6 +169,7 @@ export class UpdateService {
         this.options.downloadDeadlineMs ?? 30 * 60_000
       )
       if (generation !== this.generation) return this.status
+      this.downloaded = downloaded
       this.publish({
         state: 'downloaded',
         currentVersion: this.options.currentVersion,
@@ -185,8 +193,92 @@ export class UpdateService {
     return this.status
   }
 
+  async prepareInstall(input: {
+    readonly operationId: string
+    readonly version: string
+  }): Promise<UpdateStatusDto> {
+    if (
+      this.status.state !== 'downloaded' ||
+      !this.downloaded ||
+      this.status.operationId !== input.operationId ||
+      this.status.candidate?.version !== input.version
+    ) {
+      return this.status
+    }
+    const downloaded = this.downloaded
+    const generation = ++this.generation
+    this.publish({ ...this.status, state: 'preparing' })
+    try {
+      if (!(await downloaded.verify())) throw new UpdatePortError('integrity')
+      if (generation !== this.generation) return this.status
+      return this.status
+    } catch (error) {
+      if (generation !== this.generation) return this.status
+      this.downloaded = null
+      this.publish({
+        ...this.status,
+        state: 'error',
+        error: {
+          code: error instanceof UpdatePortError ? error.code : 'internal',
+          retryable: true,
+          retryAction: 'download'
+        }
+      })
+      return this.status
+    }
+  }
+
+  cancelPreparation(input: { readonly operationId: string }): UpdateStatusDto {
+    if (this.status.state !== 'preparing' || this.status.operationId !== input.operationId) {
+      return this.status
+    }
+    ++this.generation
+    this.publish({ ...this.status, state: 'downloaded' })
+    return this.status
+  }
+
+  async confirmInstall(input: {
+    readonly operationId: string
+    readonly version: string
+  }): Promise<UpdateStatusDto> {
+    if (
+      this.status.state !== 'preparing' ||
+      !this.downloaded ||
+      this.status.operationId !== input.operationId ||
+      this.status.candidate?.version !== input.version
+    ) {
+      return this.status
+    }
+    const downloaded = this.downloaded
+    const generation = this.generation
+    try {
+      if (!(await downloaded.verify())) throw new UpdatePortError('integrity')
+      if (generation !== this.generation || this.status.state !== 'preparing') return this.status
+      if (!downloaded.startInstall()) throw new UpdatePortError('internal')
+      this.publish({ ...this.status, state: 'installing' })
+    } catch (error) {
+      if (generation !== this.generation) return this.status
+      this.downloaded = null
+      this.publish({
+        ...this.status,
+        state: 'error',
+        error: {
+          code: error instanceof UpdatePortError ? error.code : 'internal',
+          retryable: false,
+          retryAction: 'download'
+        }
+      })
+    }
+    return this.status
+  }
+
   cancel(input: { readonly operationId: string }): UpdateStatusDto {
-    if (input.operationId !== this.status.operationId || !this.isBusy()) return this.status
+    if (
+      input.operationId !== this.status.operationId ||
+      (this.status.state !== 'checking' && this.status.state !== 'downloading')
+    ) {
+      return this.status
+    }
     const wasDownloading = this.status.state === 'downloading'
     ++this.generation
     this.controller?.abort('cancelled')
@@ -206,7 +298,12 @@ export class UpdateService {
   }
 
   private isBusy(): boolean {
-    return this.status.state === 'checking' || this.status.state === 'downloading'
+    return (
+      this.status.state === 'checking' ||
+      this.status.state === 'downloading' ||
+      this.status.state === 'preparing' ||
+      this.status.state === 'installing'
+    )
   }
 
   private publish(status: UpdateStatusDto): void {

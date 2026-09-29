@@ -27,7 +27,7 @@ class FakeIpc {
 describe('T082 update IPC boundary', () => {
   it('exposes fixed channels, verifies sender and requires an exact candidate', async () => {
     const ipc = new FakeIpc()
-    const download = vi.fn(async () => undefined)
+    const download = vi.fn(async () => ({ verify: async () => true, startInstall: () => true }))
     const check = vi.fn(async () => ({
       version: '0.1.3',
       releaseNotes: '<script>unsafe</script>',

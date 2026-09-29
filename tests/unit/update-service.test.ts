@@ -3,11 +3,20 @@ import { UpdateService } from '../../src/application/update-service'
 import {
   UpdatePortError,
   type CheckedUpdate,
+  type DownloadedUpdate,
   type UpdatePort
 } from '../../src/application/ports/update'
 
+function downloaded(): DownloadedUpdate {
+  return { verify: vi.fn(async () => true), startInstall: vi.fn(() => true) }
+}
+
 function candidate(version = '0.1.3'): CheckedUpdate {
-  return { version, releaseNotes: '<b>Release notes</b>', download: vi.fn(async () => undefined) }
+  return {
+    version,
+    releaseNotes: '<b>Release notes</b>',
+    download: vi.fn(async () => downloaded())
+  }
 }
 
 function service(port: UpdatePort): UpdateService {
@@ -92,7 +101,12 @@ describe('T082 update service', () => {
     const download = vi
       .fn()
       .mockRejectedValueOnce(new UpdatePortError('network'))
-      .mockImplementationOnce(() => new Promise<void>((resolve) => (resolveDownload = resolve)))
+      .mockImplementationOnce(
+        () =>
+          new Promise<DownloadedUpdate>(
+            (resolve) => (resolveDownload = () => resolve(downloaded()))
+          )
+      )
     const updates = service({ check: async () => ({ ...candidate(), download }) })
     const available = await updates.check()
     const input = { operationId: available.operationId!, version: available.candidate!.version }
@@ -116,6 +130,7 @@ describe('T082 update service', () => {
         download: async (_signal, onProgress) => {
           progress = onProgress
           await new Promise<void>((resolve) => (resolveDownload = resolve))
+          return downloaded()
         }
       })
     })

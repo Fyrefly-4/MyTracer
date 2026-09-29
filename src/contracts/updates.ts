@@ -19,7 +19,15 @@ export const UPDATE_CHANNELS = Object.freeze({
 } as const)
 
 export type UpdateState =
-  'idle' | 'checking' | 'upToDate' | 'available' | 'downloading' | 'downloaded' | 'error'
+  | 'idle'
+  | 'checking'
+  | 'upToDate'
+  | 'available'
+  | 'downloading'
+  | 'downloaded'
+  | 'preparing'
+  | 'installing'
+  | 'error'
 
 export interface UpdateStatusDto {
   readonly state: UpdateState
