@@ -121,7 +121,7 @@ dependencies:
 - 用户可见的“稍后/取消准备/确认重启安装”流程，完整未保存内容阻断及返回处理入口。
 - 专用安装状态与 Main 退出协调、单实例保护、窄 IPC/Preload 接口、脱敏失败状态和恢复路径。
 - 按 owner 已批准的版本将应用更新为 `0.1.3`，形成可追溯且与 T082 `0.1.2` 不同的 Windows x64 NSIS 测试包；构建显式禁止发布。
-- 状态转移、候选失效、草稿枚举、写入/导出/配置排空、AI 迟到结果、第二实例、超时/失败解除的 Unit/Integration/Renderer E2E；隔离 Windows 环境中的受控源安装连续验证。
+- 状态转移、候选失效、草稿枚举、写入/导出/配置排空、AI 迟到结果、第二实例、超时/失败解除的 Unit/Integration/Renderer E2E；按 §9.5 批准的替代方式分别提供隔离 Windows 手动 NSIS 数据连续性和应用内协调证据，交接完整应用内跨版本流程的未验证项。
 - 精确命令、环境、源与目标包版本/hash、source revision、结果与限制绑定的 evidence；最终文档收口仍走 owner gate。
 
 ## 9. 可判定验收条件
@@ -130,7 +130,7 @@ dependencies:
 2. Goal、Action、Routine、Review、Action/Routine 记录、数据管理表单及 AI 候选的每一种未保存状态均阻断安装，原输入保留并可返回处理；Renderer 超时/崩溃也阻断。处理完后必须重新确认。
 3. 准备期间新的业务写 IPC 被 Main 拒绝；已开始的写入、导出、配置保存完成或得到明确失败后才可关闭资源。未完成 AI 请求取消且迟到结果不写入。取消/超时/失败后解除门禁，旧版可继续正常读写或明确要求重启。
 4. Owner 批准的当前账户 Windows 测试在预检和临时根隔离后证明第二实例不能并发写库或干扰安装，运行中的手动安装不会静默破坏数据；安装调用仅发生在排空与关闭后。失败/中断保留原数据，不宣称升级成功。
-5. 受控源的已安装 `0.1.2`→更高版本连续测试使用真实不同版本包：手动检查/下载、草稿阻断、处理草稿、显式安装、新版启动、读取旧记录、导出比对、新增记录并重开。该项是 T083 必须通过的验收；若环境无法隔离或安装能力受限，停止受影响验收并提出升级提案，不得自动移交 T084 或用 fake adapter 结果替代。
+5. **Owner 于 2026-10-02 批准的替代验收**：本次以两组独立证据验收：①真实 T082 `0.1.2`→T083 `0.1.3` 的手动 NSIS 原位升级，验证新版启动、旧记录读取、导出比对、新增记录与重开，以及运行中安装和失败包修复；②`0.1.3` 的应用内安装协调分层测试，验证同一候选重新校验、草稿阻断与保留、处理后重新确认、门禁/排空/关闭顺序、取消/超时/失败恢复及第二实例保护。保留应用版本 `0.1.3`，取消额外双包测试。真实安装器由应用成功交接、随后新版启动的完整应用内跨版本连续流程留待后续版本/任务验收；该缺口须显式交接，不作为本次 T083 完成的阻断，也不宣称已通过或削弱 S8 最终门禁。Fake adapter 仅证明协调行为，手动 NSIS 仅证明安装与数据连续性，两者不得合写为完整应用内升级成功。批准记录见[升级提案](ESCALATION_PROPOSAL_T083_APP_MEDIATED_UPGRADE.md)。
 6. 新接口有输入和 sender/origin 校验；Renderer 不获得凭据、路径、任意 channel 或安装执行权；当前账户测试的合成数据、安装注册项和缓存须与既有真实用户资产隔离，且任何清理仅限已确认属于本次测试的目标。
 7. 定向验证、受影响回归、`verify`、完整 diff 和独立 review 无未处理 material finding；early、candidate、final-head CI 分别绑定对应 PR head/test-merge。文档和证据只陈述已执行结果。
 8. **MANUAL / 阶段交接**：owner 对真实私有源、unsigned Windows 提示、正式来源包、失败修复和完整跨版本体验的人工接受由 T084 记录；T083 不代签或宣称 S8 已通过。
@@ -151,7 +151,8 @@ npm.cmd run test:integration -- tests/integration/updates-ipc.test.ts
 npm.cmd run test:integration -- tests/integration/update-install-ipc.test.ts
 npm.cmd run test:e2e:run -- tests/e2e/update-check-download.e2e.test.ts
 npm.cmd run test:e2e:run -- tests/e2e/update-install-shutdown.e2e.test.ts
-npm.cmd run test:e2e:run -- tests/e2e/windows-update-install.e2e.test.ts
+npm.cmd run test:unit -- tests/unit/update-install-coordinator.test.ts tests/unit/update-install-gate.test.ts tests/unit/update-draft-probe.test.ts
+npm.cmd run test:e2e:run -- tests/e2e/windows-in-place-upgrade.e2e.test.ts
 npm.cmd run format:check
 npm.cmd run lint
 npm.cmd run typecheck
@@ -160,15 +161,15 @@ npm.cmd run build
 node node_modules/electron-builder/cli.js --win nsis --x64 --publish never
 ```
 
-上述三个 `update-install-*` / `windows-update-install` 测试文件是本合同拟建入口，起草时尚不存在，不能写成已执行；若实现需要拆分其他测试文件，须在候选提交前列出实际精确命令。`verify` 覆盖常规 build/Unit/Integration/Electron E2E，但不自动证明真实 NSIS 安装、私有源或 owner 人工体验。
+以上为当前实现的实际测试入口；命令清单本身不表示通过。`windows-in-place-upgrade.e2e.test.ts` 需显式启用安装测试并固定账户 SID、版本、安装包及 hash，未启用时的 skip 不构成证据。`verify` 覆盖常规 build/Unit/Integration/Electron E2E，但不自动证明真实 NSIS 安装、私有源或 owner 人工体验。
 
 证据捕获使用 `node tools/evidence/capture-command.mjs --task T083 --gate <gate> --base-revision <实际 SHA> --output .tmp/evidence -- <明确 argv>`；先通过 metadata 校验，保留失败 artifact 与真实退出码。JSON 不收集 stdout/stderr、绝对路径、token、用户正文或数据库。安装测试另记录包/元数据 hash、unsigned、Windows runner、隔离范围及实际结果。区分 task delivery、dev integration、stage final integration revision。
 
 ### 10.3 人工及安装步骤
 
 1. 在 owner 已批准的本机当前 Windows 账户只读预检现存进程、安装注册项、安装根和 `userData`；仅在确认不会触及既有安装与默认真实数据后创建唯一临时根、合成记录和 fake AI 配置，固定 A/B 包 source、版本和 hash。无法隔离时停止安装步骤。
-2. 使用受控源从已安装 A 手动下载 B；分别保留未保存 Goal/Action/Routine/Review/记录/AI 输入尝试安装，确认阻断与输入保留；处理后重新确认。
-3. 模拟在途写入、导出、配置保存、第二实例、安装取消/失败，记录 Main 拒新写、排空和恢复结果；再成功安装，验证新版启动、数据/导出守恒、新增写入与重开。人工直接运行安装器时单独核对运行中行为。
+2. 按 §9.5 的替代方式独立执行两组验证：真实已安装 `0.1.2` 手动 NSIS 升至 `0.1.3`；在含 T083 功能的 `0.1.3` 应用中分别保留未保存 Goal/Action/Routine/Review/记录/AI 输入尝试安装，确认阻断与输入保留，处理后重新确认。后一组使用 fake/受控测试能力，不将模拟成功调用或失败交接写成真实安装器成功交接。
+3. 模拟在途写入、导出、配置保存、第二实例、安装取消/失败，记录 Main 拒新写、排空和恢复结果；真实手动 NSIS 安装另验证新版启动、数据/导出守恒、新增写入与重开，并单独核对运行中安装及失败包修复。完整应用内跨版本流程保留为后续未验证项。
 4. 真实私有 Release、正式包与 owner 最终人工体验留给 T084，不在 T083 的隔离测试中宣称通过。
 
 ### 10.4 验证环境
@@ -211,7 +212,7 @@ permissions:
 
 ## 12. 依赖、网络、数据与集成
 
-- **应用版本**：owner 已批准从 `0.1.2` 升为 `0.1.3`；不得替换同版已发布资产。受控连续安装测试的更高目标版本与正式 T084 版本分别固定并记录，不以 UI 文案模拟。
+- **应用版本**：owner 已批准从 `0.1.2` 升为 `0.1.3`；不得替换同版已发布资产。Owner 于 2026-10-02 批准 §9.5 替代验收，取消额外双包测试；本任务不再构建额外更高版本测试包。正式后续版本由对应合同固定，不以 UI 文案模拟。
 - **依赖**：仅使用已锁定的 `electron-updater@6.8.10` 等现有依赖；新增/升级依赖权限为无。发现兼容性或 unsigned 安装阻塞时提交升级提案。
 - **网络与外部写入**：自动化仅 fake/受控本地源；不创建真实 Release、Secrets、Environment 或发布 workflow，不向正式源上传。GitHub 任务分支/PR 写入待 §11 批准。
 - **AI / 数据**：fake Provider、合成数据和临时根；不改 AI 权限、schema、导出契约或用户数据库。任何破坏性操作均未授权。
