@@ -1,12 +1,12 @@
 # T083 — 确认安装与安全退出协调
 
-> 合同状态：approved，2026-09-29。项目所有者批准本合同范围、应用版本 `0.1.3`、本机当前 Windows 账户验证及 §11 权限，明确本任务不创建独立 worktree，并确认激活 T083；当前仅完成合同与 Git 准备，尚未开始产品开发。任务实时状态以 [任务索引](TASK_INDEX_V0.1.md)为准。T082 已由 PR #58 集成到 `dev@cf3b2b4c00b6757218295c2672d23cf19f1ee526`；T082 的真实私有源、最终发布包及安装版人工体验缺口仍归 T084，不在本合同中冒充通过。
+> 合同状态：approved，2026-09-29；§9.5 替代验收于 2026-10-02 获批。项目所有者批准应用版本 `0.1.3`、本机当前 Windows 账户验证及 §11 权限，本任务不创建独立 worktree。2026-10-03 owner 确认 CI 和人工 review 通过，并批准文档收口及推送后结束本次 Agent 工作。交付证据见 [EV-T083-001](ACCEPTANCE_EVIDENCE_V0.1.md#ev-t083-001)，任务状态以 [任务索引](TASK_INDEX_V0.1.md)为准。完整应用内跨版本升级、真实私有源和正式发布包的最终人工体验仍待后续验收。
 
 ## 1. 任务信息
 
 - **Task ID / Title**：T083 / 确认安装与安全退出协调。
 - **Slice / Plan item**：S8-C；[实施计划](../architecture/IMPLEMENTATION_PLAN_V0.1.md) §13、[S8 设计](../architecture/S8_UPDATE_MAINTENANCE_DESIGN.md) §3～7。
-- **Status**：`active`（owner 已激活；当前仅完成合同与 Git 准备，产品实现尚未开始）。
+- **Status ledger**：[任务索引](TASK_INDEX_V0.1.md)；本合同不维护第二份实时任务状态。
 - **拟定任务基线**：`dev@cf3b2b4c00b6757218295c2672d23cf19f1ee526`（本合同起草时本地 `dev` 与本地远端跟踪引用 `origin/dev` 相同，未实时查询远端）；启动与集成前重新核对最新授权 `dev`，不能把此 SHA 当成永久有效基线。
 - **任务分支**：`task/T083-confirm-install-shutdown`，已在当前 checkout 从上述 `dev` 建立；本任务不创建独立 worktree。
 - **任务类型**：`implementation`；V2 显式权限流程，不声明 Automation Profile。
@@ -49,10 +49,10 @@ references:
 
 ## 4. 开始条件与依赖
 
-- [x] Owner 批准本合同范围、§11 权限、应用版本 `0.1.3` 及本机当前 Windows 账户验证；本轮只提交合同，不开始开发。任务激活状态以任务索引为准；版本批准不构成发布授权。
+- [x] Owner 批准本合同范围、§11 权限、应用版本 `0.1.3` 及本机当前 Windows 账户验证，并随后明确授权正式开发；版本批准不构成发布授权。
 - [x] T082 在本合同起草时已由 PR #58 进入本地 `dev@cf3b2b4c00b6757218295c2672d23cf19f1ee526`，本地 `origin/dev` 指向同一 revision，任务索引标为 `done`；其 T084 延后项不记作 T083 已完成。
-- [ ] 启动前核对最新授权 `dev`、任务分支/worktree、未提交改动、T082 证据和当前依赖锁；确认无重叠开发。候选集成前再次执行 Integration Freshness Gate。
-- [ ] 核对 T082 的同一已校验下载对象能否安全保留安装句柄或重新验证缓存；若 `electron-updater@6.8.10` 无法在已批准来源与 unsigned NSIS 策略下执行显式安装，先按升级提案处理，不绕过完整性或换用任意路径执行程序。
+- [x] 启动及候选验证核对任务分支、干净工作区、T082 证据和依赖锁；2026-10-03 通过 GitHub API 确认最新授权 `dev` 仍为 `cf3b2b4c00b6757218295c2672d23cf19f1ee526`，与验证基线一致，无需刷新。
+- [x] 同一下载对象保留 `NsisUpdater` 安装句柄，准备与执行前再次验证同一路径 SHA-512；分层测试支持此关系。真实应用成功交接安装器仍未证明，按 §9.5 批准方式显式交接，不以手动 NSIS 或 fake 结果替代。
 - [x] Owner 明确批准 T083 在本机当前 Windows 账户验证，不使用一次性 VM 或独立测试账户。任何实装/卸载前必须只读预检当前进程、已有安装及注册项，使用唯一临时数据/安装/缓存根和合成数据；不读取、修改或清理默认真实 MyTracer 数据、凭据或既有安装。无法隔离既有安装或证明清理目标属于本次测试时，停止受影响验证。
 
 ### 4.1 Dependencies
@@ -114,7 +114,7 @@ dependencies:
 5. 单实例/安装互斥须同时保护第二进程写库和运行中替换程序；人工运行安装器时的结果也须在隔离环境验证。`appId`、数据目录、业务事实、LocalDate、历史和导出范围保持不变。
 6. Renderer/Preload/IPC 保持 ED-019 边界；token、安装路径、包内容、日志与 AI key 不进入 Renderer DTO 或证据。测试不接触真实账户数据。
 
-**局部风险**：目前 T082 的 `GithubUpdatePort.download()` 在下载结束后释放 `NsisUpdater` 局部对象，只返回 `void`；T083 必须证明同一候选包的安装句柄与重新校验关系，不能从 `downloaded` 文案推断安装安全。现有 Main `before-quit` 同步关闭 SQLite，尚无全局安装准备与在途操作协调；合同要求覆盖所有写入入口、导出与配置保存，并测试竞争时序。
+**局部风险与实现结果**：T082 起点只返回 `void`，现已由 `DownloadedUpdate` 保留同一安装对象并再次校验。Main 在包校验前开启门禁，等待既有操作排空后再次探测 Renderer，才关闭 SQLite 并调用安装；失败后若连接已关闭则保持 `restartRequired` 锁定，页面重载也显示重启提示。完整真实应用内跨版本交接的残余风险按 §9.5 留待后续验收。
 
 ## 8. 交付物
 
@@ -181,13 +181,13 @@ node node_modules/electron-builder/cli.js --win nsis --x64 --publish never
 
 ## 11. Git 与 GitHub 权限
 
-Owner 已批准 T083 在当前 checkout 建任务分支、创建本地提交、普通 push、创建/更新指向 `dev` 的 Draft PR，并在审查与 CI 门禁通过后标记 Ready；本任务不创建独立 worktree。本轮只执行本地分支与合同提交，不推送、不建 PR、不开始产品开发。merge、main、tag、release 和非任务外部写入仍不在授权内。
+Owner 已批准 T083 在当前 checkout 建任务分支、创建本地提交、普通 push、创建/更新指向 `dev` 的 Draft PR，并在审查与 CI 门禁通过后标记 Ready；本任务不创建独立 worktree。2026-10-03 owner 批准文档收口、按仓库模板更新 PR 正文及推送，随后交还控制权；final-head CI 与 Ready 的后续处理在 PR 记录。merge、main、tag、release 和非任务外部写入仍不在授权内。
 
 - [x] 在当前 checkout 从 `dev` 建本地任务分支；不创建 worktree（已执行）。
 - [x] 创建本地提交。
-- [x] 普通推送任务分支（已获授权，本轮不执行）。
-- [x] 创建/更新目标为 `dev` 的 Draft PR（已获授权，本轮不执行）。
-- [x] 在审查与 CI 门禁通过后将 Draft 标记为 Ready（已获授权，本轮不执行）。
+- [x] 普通推送任务分支（已执行，文档收口亦获批准）。
+- [x] 创建/更新目标为 `dev` 的 Draft PR（PR #59）。
+- [x] 在审查与 CI 门禁通过后将 Draft 标记为 Ready（条件授权；不从早期 CI 推断 final-head 已通过）。
 - [x] Agent 不合并到 `dev`，不推进 `main`，不创建 tag 或 Release。
 
 ```yaml
@@ -214,7 +214,7 @@ permissions:
 
 - **应用版本**：owner 已批准从 `0.1.2` 升为 `0.1.3`；不得替换同版已发布资产。Owner 于 2026-10-02 批准 §9.5 替代验收，取消额外双包测试；本任务不再构建额外更高版本测试包。正式后续版本由对应合同固定，不以 UI 文案模拟。
 - **依赖**：仅使用已锁定的 `electron-updater@6.8.10` 等现有依赖；新增/升级依赖权限为无。发现兼容性或 unsigned 安装阻塞时提交升级提案。
-- **网络与外部写入**：自动化仅 fake/受控本地源；不创建真实 Release、Secrets、Environment 或发布 workflow，不向正式源上传。GitHub 任务分支/PR 写入待 §11 批准。
+- **网络与外部写入**：自动化仅 fake/受控本地源；不创建真实 Release、Secrets、Environment 或发布 workflow，不向正式源上传。GitHub 任务分支/PR 写入已按 §11 批准。
 - **AI / 数据**：fake Provider、合成数据和临时根；不改 AI 权限、schema、导出契约或用户数据库。任何破坏性操作均未授权。
 
 ### 12.1 Integration
@@ -225,12 +225,14 @@ integration:
   base_revision: dev@cf3b2b4c00b6757218295c2672d23cf19f1ee526
   freshness_required: true
   affected_regression_required: true
-  task_delivery_revision: null
+  task_delivery_revision: 2a171e0ac25b70aec25c0a62f0e20ab3af0bd8ee
   dev_integration_revision: null
   stage_final_integration_revision: null
 ```
 
 实施时记录 `original_base_revision`、`latest_authorized_dev_revision`、`verified_against_revision`、`fresh`/`refreshed-and-passed`/`blocked` 状态及 `refresh_method`。若基线陈旧，使用可追溯普通 merge 刷新并重跑受影响回归，必要时重审；不 force-push。进入 `dev` 仍须 owner 对具体 PR 的单独批准。
+
+2026-10-03 收口核对：`original_base_revision=latest_authorized_dev_revision=verified_against_revision=cf3b2b4c00b6757218295c2672d23cf19f1ee526`，`status=fresh`，`refresh_method=none`。上述 delivery revision 是已验证实现内容，文档提交不替代该证据绑定；dev 与阶段 integration revision 仍为 `null`。
 
 ## 13. 风险与停止条件
 
