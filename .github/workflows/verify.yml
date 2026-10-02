@@ -210,7 +210,7 @@ jobs:
       - name: Install pinned Electron binary
         run: npm.cmd exec -- install-electron --no
       - name: Capture package evidence
-        run: node tools/evidence/capture-command.mjs --task unscoped --gate package --output .tmp/evidence -- npm.cmd run package -- --publish never
+        run: node tools/evidence/capture-command.mjs --task unscoped --gate package --output .tmp/evidence -- node node_modules/electron-builder/cli.js --win nsis --x64 --publish never
       - name: Capture package smoke evidence
         run: node tools/evidence/capture-command.mjs --task unscoped --gate package-smoke --output .tmp/evidence -- npm.cmd run test:package-smoke
       - name: Upload milestone evidence

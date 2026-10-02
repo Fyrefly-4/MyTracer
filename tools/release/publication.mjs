@@ -25,7 +25,14 @@ export async function publishCandidate({ context, directory, api }) {
     Number.isSafeInteger(draft.id) && draft.id > 0 && draft.draft === true,
     'release-draft'
   )
-  const files = [...manifest.assets, { name: 'candidate-manifest.json', sha256: manifestHash }]
+  const files = [
+    ...manifest.assets,
+    {
+      name: 'candidate-manifest.json',
+      sha256: manifestHash,
+      size: (await readFile(manifestPath)).length
+    }
+  ]
   for (const asset of files) {
     requireCondition(
       (await hashFile(join(directory, asset.name))) === asset.sha256,

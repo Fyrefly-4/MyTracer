@@ -237,6 +237,12 @@ export function validatePublication(context) {
   )
   requireCondition(!existingVersions.includes(dispatch.tag), 'existing-version')
   requireCondition(
+    existingVersions
+      .filter((tag) => /^v(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)$/.test(tag))
+      .every((tag) => isHigherVersion(manifest.version, tag.slice(1))),
+    'non-monotonic-release'
+  )
+  requireCondition(
     run.id === dispatch.runId &&
       run.path === CANDIDATE_WORKFLOW &&
       run.status === 'completed' &&

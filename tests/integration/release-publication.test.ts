@@ -2,14 +2,11 @@ import { spawnSync } from 'node:child_process'
 import { describe, expect, test } from 'vitest'
 
 function scenario(body: string) {
-  return spawnSync(
-    process.execPath,
-    [
-      '--input-type=module',
-      '-e',
-      `
+  return spawnSync(process.execPath, ['--input-type=module'], {
+    input: `
     import assert from 'node:assert/strict';
     import {writeFile, readFile, symlink} from 'node:fs/promises';
+    import {spawnSync} from 'node:child_process';
     import {join} from 'node:path';
     import {createHash} from 'node:crypto';
     import {fixture} from './tests/support/release-fixture.mjs';
@@ -20,14 +17,15 @@ function scenario(body: string) {
       assertVersionAbsent:async()=>calls.push('absent'),
       createDraft:async input=>{assert.equal(input.draft,true);calls.push('draft');return {id:1,draft:true};},
       uploadAsset:async(id,name,bytes)=>{calls.push('upload');stored.set(name,bytes);return {name,size:bytes.length,state:'uploaded'};},
-      verifyAssets:async(id,files)=>{calls.push('verify');for(const file of files)assert.equal(createHash('sha256').update(stored.get(file.name)).digest('hex'),file.sha256);},
+      verifyAssets:async(id,files)=>{calls.push('verify');for(const file of files){assert.equal(stored.get(file.name).length,file.size);assert.equal(createHash('sha256').update(stored.get(file.name)).digest('hex'),file.sha256);}},
       makeVisible:async()=>{calls.push('visible');return {id:1,draft:false,prerelease:false,tag_name:'v0.1.4'};}
     };
     try { ${body} } finally {await f.cleanup();}
-  `
-    ],
-    { cwd: process.cwd(), encoding: 'utf8', windowsHide: true }
-  )
+  `,
+    cwd: process.cwd(),
+    encoding: 'utf8',
+    windowsHide: true
+  })
 }
 
 describe('publication transactions stay hidden until all assets are verified', () => {
@@ -35,7 +33,13 @@ describe('publication transactions stay hidden until all assets are verified', (
     const result = scenario(
       `await validateBundle(f.manifestPath);await publishCandidate({...f,api});assert.deepEqual(calls,['absent','draft',...Array(5).fill('upload'),'verify','visible']);`
     )
-    expect(result.status, result.stderr).toBe(0)
+    expect(result.status, result.error?.message ?? result.stderr).toBe(0)
+  })
+  test('read-only validation CLI accepts the exact bundle and rejects changed bytes', () => {
+    const result = scenario(
+      `const args=['tools/release/validate.mjs','--manifest',f.manifestPath];assert.equal(spawnSync(process.execPath,args,{encoding:'utf8'}).status,0);await writeFile(join(f.directory,'MyTracer-0.1.4-x64-setup.exe'),'tampered');const rejected=spawnSync(process.execPath,args,{encoding:'utf8'});assert.equal(rejected.status,1);assert.equal(rejected.stderr,'Release bundle validation failed.\\n');assert.deepEqual(calls,[]);`
+    )
+    expect(result.status, result.error?.message ?? result.stderr).toBe(0)
   })
   test.each([
     "await writeFile(join(f.directory,'MyTracer-0.1.4-x64-setup.exe'),'tampered');",
@@ -49,7 +53,7 @@ describe('publication transactions stay hidden until all assets are verified', (
     const result = scenario(
       `${mutation}await assert.rejects(()=>publishCandidate({...f,api}));assert.deepEqual(calls,[]);`
     )
-    expect(result.status, result.stderr).toBe(0)
+    expect(result.status, result.error?.message ?? result.stderr).toBe(0)
   })
   test('rejects a checksum-correct bundle with malicious metadata', () => {
     const result = scenario(String.raw`
