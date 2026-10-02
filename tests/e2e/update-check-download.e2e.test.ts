@@ -65,7 +65,11 @@ test('explicit check and confirmation download only, with plain text notes and n
       'check',
       'download',
       'cancel',
-      'subscribe'
+      'install',
+      'cancelPreparation',
+      'replyToDraftRequest',
+      'subscribe',
+      'subscribeDraftRequests'
     ])
     expect(await page.evaluate(() => typeof Reflect.get(window, 'require'))).toBe('undefined')
   } finally {

@@ -17,6 +17,7 @@ const ERROR_TEXT: Record<UpdateFailureCode, string> = {
 export function UpdatePanel(props: { readonly onClose: () => void }): ReactNode {
   const [status, setStatus] = useState<UpdateStatusDto | null>(null)
   const [connectionError, setConnectionError] = useState(false)
+  const [installBlocker, setInstallBlocker] = useState<string | null>(null)
 
   useEffect(() => {
     let active = true
@@ -44,7 +45,12 @@ export function UpdatePanel(props: { readonly onClose: () => void }): ReactNode 
       .catch(() => setConnectionError(true))
   }
   const candidate = status?.candidate
-  const busy = status?.state === 'checking' || status?.state === 'downloading'
+  const busy =
+    status?.state === 'checking' ||
+    status?.state === 'downloading' ||
+    status?.state === 'preparing' ||
+    status?.state === 'installing' ||
+    status?.state === 'restartRequired'
   const canDownload =
     candidate &&
     status?.operationId &&
@@ -63,6 +69,7 @@ export function UpdatePanel(props: { readonly onClose: () => void }): ReactNode 
           className="update-close"
           onClick={props.onClose}
           aria-label="关闭更新面板"
+          disabled={status?.state === 'restartRequired' || status?.state === 'installing'}
         >
           ×
         </button>
@@ -83,6 +90,16 @@ export function UpdatePanel(props: { readonly onClose: () => void }): ReactNode 
       {status?.state === 'downloaded' ? (
         <p role="status">版本 {candidate?.version} 已下载并校验。稍后可继续使用当前版本。</p>
       ) : null}
+      {status?.state === 'preparing' ? (
+        <p role="status">正在检查未保存内容并等待本地操作结束…</p>
+      ) : null}
+      {status?.state === 'installing' ? (
+        <p role="status">即将关闭当前版本并启动安装。新版启动后再确认更新结果。</p>
+      ) : null}
+      {status?.state === 'restartRequired' ? (
+        <p role="alert">安装未能启动，应用已关闭数据连接。请重新启动当前版本。</p>
+      ) : null}
+      {installBlocker ? <p role="alert">{installBlocker}</p> : null}
       {status?.state === 'error' && status.error ? (
         <p role="alert">{ERROR_TEXT[status.error.code]}</p>
       ) : null}
@@ -119,7 +136,48 @@ export function UpdatePanel(props: { readonly onClose: () => void }): ReactNode 
             {status?.state === 'error' ? '重试下载' : '确认下载'}
           </button>
         ) : null}
-        {busy && status?.operationId ? (
+        {status?.state === 'downloaded' && status.operationId && candidate ? (
+          <button
+            type="button"
+            onClick={() => {
+              setInstallBlocker(null)
+              void window.myTracer.updates
+                .install({ operationId: status.operationId!, version: candidate.version })
+                .then((result) => {
+                  setStatus(result.status)
+                  const blockerText = {
+                    'unsaved-content':
+                      '还有未保存的输入或未确认的 AI 建议。请返回处理后再确认安装。',
+                    'renderer-unavailable': '无法确认页面中的未保存内容，已取消安装。',
+                    busy: '当前安装准备尚未结束，请稍后重试。',
+                    cancelled: '已取消安装准备，可以继续使用当前版本。',
+                    timeout: '等待本地操作结束超时，已取消安装；请稍后重试。'
+                  }
+                  setInstallBlocker(
+                    result.blocker && result.blocker !== 'restart-required'
+                      ? blockerText[result.blocker]
+                      : null
+                  )
+                })
+                .catch(() => setConnectionError(true))
+            }}
+          >
+            确认重启安装
+          </button>
+        ) : null}
+        {status?.state === 'preparing' && status.operationId ? (
+          <button
+            type="button"
+            onClick={() =>
+              call(() =>
+                window.myTracer.updates.cancelPreparation({ operationId: status.operationId! })
+              )
+            }
+          >
+            取消安装准备
+          </button>
+        ) : null}
+        {(status?.state === 'checking' || status?.state === 'downloading') && status.operationId ? (
           <button
             type="button"
             onClick={() =>
@@ -129,7 +187,7 @@ export function UpdatePanel(props: { readonly onClose: () => void }): ReactNode 
             取消
           </button>
         ) : null}
-        <button type="button" onClick={props.onClose}>
+        <button type="button" onClick={props.onClose} disabled={busy}>
           稍后
         </button>
       </div>

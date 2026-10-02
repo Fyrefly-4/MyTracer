@@ -16,7 +16,7 @@ import {
   recordOutcomeText,
   routineRecordOutcomeText
 } from '../../app/ui-text'
-import { revealStart, usePagePosition, useUiSession } from '../../app/ui-session'
+import { revealStart, usePagePosition, useUiSession, useUnsavedContent } from '../../app/ui-session'
 import type { CompleteExportErrorCode } from '../../../../contracts/exports'
 
 const dataControlErrorText: Record<DataControlErrorCode, string> = {
@@ -42,6 +42,14 @@ function ActionRecordEditor(props: {
   const [nextStep, setNextStep] = useState(props.record.nextStep ?? '')
   const [note, setNote] = useState(props.record.note ?? '')
   const [error, setError] = useState<string | null>(null)
+  useUnsavedContent(
+    `action-record-edit-${props.record.id}`,
+    occurredOn !== props.record.occurredOn ||
+      duration !== String(props.record.durationMinutes) ||
+      outcome !== props.record.outcome ||
+      nextStep !== (props.record.nextStep ?? '') ||
+      note !== (props.record.note ?? '')
+  )
   const submit = async (): Promise<void> => {
     const result = await window.myTracer.dataControl.updateActionRecord({
       recordId: props.record.id,
@@ -146,6 +154,15 @@ function RoutineRecordEditor(props: {
   const [note, setNote] = useState(props.record.note ?? '')
   const [error, setError] = useState<string | null>(null)
   const dateChanged = occurredOn !== props.record.occurredOn
+  useUnsavedContent(
+    `routine-record-edit-${props.record.id}`,
+    dateChanged ||
+      duration !==
+        (props.record.durationMinutes === null ? '' : String(props.record.durationMinutes)) ||
+      outcome !== props.record.outcome ||
+      planned !== props.record.plannedForDate ||
+      note !== (props.record.note ?? '')
+  )
   const submit = async (): Promise<void> => {
     const result = await window.myTracer.dataControl.updateRoutineRecord({
       recordId: props.record.id,
@@ -269,6 +286,7 @@ function UnderstandingEditor(props: {
 }): ReactNode {
   const [text, setText] = useState(props.fact.text)
   const [error, setError] = useState<string | null>(null)
+  useUnsavedContent(`understanding-edit-${props.fact.id}`, text !== props.fact.text)
   const run = async (kind: 'update' | 'revoke'): Promise<void> => {
     const result =
       kind === 'update'
@@ -309,6 +327,10 @@ function ConfusionEditor(props: {
   const [text, setText] = useState(props.fact.text)
   const [resolution, setResolution] = useState(props.fact.resolution ?? '')
   const [error, setError] = useState<string | null>(null)
+  useUnsavedContent(
+    `confusion-edit-${props.fact.id}`,
+    text !== props.fact.text || resolution !== (props.fact.resolution ?? '')
+  )
   const run = async (kind: 'update' | 'resolve' | 'reopen'): Promise<void> => {
     const result =
       kind === 'update'
@@ -406,6 +428,23 @@ function DataControlWorkspace(): ReactNode {
   const [routineNote, setRoutineNote] = useState('')
   const [exportMessage, setExportMessage] = useState<string | null>(null)
   const [exporting, setExporting] = useState(false)
+  useUnsavedContent(
+    'data-backfill',
+    Boolean(
+      actionDate ||
+      actionUnderstanding ||
+      actionConfusion ||
+      actionNextStep ||
+      actionNote ||
+      actionDuration !== '0' ||
+      actionOutcome !== 'partial' ||
+      routineDate ||
+      routineNote ||
+      routineDuration ||
+      routinePlanned ||
+      routineOutcome !== 'not_done'
+    )
+  )
 
   const history = useMemo<readonly DataHistoryRow[]>(() => {
     if (!data) return []
@@ -606,6 +645,8 @@ function DataControlWorkspace(): ReactNode {
         `已补记：${data?.actions.find((item) => item.id === actionId)?.title ?? '记录'} · ${actionDate}`
       )
       setActionDate('')
+      setActionDuration('0')
+      setActionOutcome('partial')
       setActionUnderstanding('')
       setActionConfusion('')
       setActionNextStep('')
@@ -640,6 +681,9 @@ function DataControlWorkspace(): ReactNode {
         `已补记：${data?.routines.find((item) => item.id === routineId)?.name ?? '记录'} · ${routineDate}`
       )
       setRoutineDate('')
+      setRoutinePlanned(false)
+      setRoutineOutcome('not_done')
+      setRoutineDuration('')
       setRoutineNote('')
       await window.myTracer.routines.getDayState({ routineId, localDate: routineDate })
       await refreshAfterMutation()

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useUnsavedContent } from '../../app/ui-session'
 import type { ActionDetailDto } from '../../../../contracts/actions'
 import type {
   AiConfigurationStatusDto,
@@ -36,6 +37,12 @@ export function AiStartHelpPanel(props: { readonly action: ActionDetailDto }): R
   const [suggestionEdits, setSuggestionEdits] = useState<Record<string, string>>({})
   const [understandingEdits, setUnderstandingEdits] = useState<Record<string, string>>({})
   const [understandingTargets, setUnderstandingTargets] = useState<Record<string, string>>({})
+  useUnsavedContent(
+    `ai-input-${props.action.id}`,
+    Boolean(input.trim()) ||
+      Object.keys(suggestionEdits).length > 0 ||
+      Object.keys(understandingEdits).length > 0
+  )
 
   const applySession = (value: AiStartHelpSessionDto): void => {
     setSession(value)

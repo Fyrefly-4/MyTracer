@@ -4,6 +4,31 @@
 > 作用：记录可复核的命令、版本、环境、产物和人工观察  
 > 禁止：用任务状态、测试名称、关键词存在或 Agent 自述替代实际结果
 
+## T083 交付证据
+
+### EV-T083-001
+
+- **Status / scope**：`pass`（按 owner 批准的 T083 任务级替代验收收口）。U-04 的明确安装确认、候选校验、草稿阻断、退出协调、失败恢复和单实例保护由分层自动化、完整回归、真实手动 NSIS 升级及独立 review 支持。2026-10-03 owner 明确报告“ci和人工review通过”，批准文档收口、按仓库模板更新 PR body、提交推送后结束本次 Agent 工作。文档 final-head CI 是后续 PR 集成门槛，实时结果留在 PR，不据此声称已合并或 S8 已通过。
+- **Requirements**：U-04；U-01 数据连续性及 U-05 产物追踪安全子集；FR-D01～D05、AC-07、D-008～010、D-014/015/106/109/111、ED-010/014/017～019、GW 中适用的验证、review、集成规则。冻结业务事实、LocalDate、导出和 AI 确认语义未改变。
+- **Source / integration**：`task/T083-confirm-install-shutdown`，PR [#59](https://github.com/Fyrefly-4/MyTracer/pull/59)→`dev`；`task_delivery_revision=2a171e0ac25b70aec25c0a62f0e20ab3af0bd8ee`。`original_base_revision=latest_authorized_dev_revision=verified_against_revision=cf3b2b4c00b6757218295c2672d23cf19f1ee526`，2026-10-03 通过 GitHub API 再核远端 dev 未变；`Integration Freshness=fresh`，`refresh_method=none`。`dev_integration_revision=null`，`stage_final_integration_revision=null`；不创建 worktree，不改写已推送历史。
+- **Implementation**：保留已校验下载对象及同一 `NsisUpdater` 句柄，准备/执行前再次校验同一路径 SHA-512；确认绑定 operationId 与更高候选版本。Main 在准备校验前拒绝新业务 IPC，排空既有业务/导出/配置操作并取消 AI，排空后再次取得 Renderer 回答才关闭 SQLite、执行安装。未保存 Goal/Action/Routine/Review/记录/数据表单和 AI 内容阻断且保留；取消/超时在关闭前恢复，关闭后失败进入 `restartRequired`。重载 Renderer 仍锁定并显示重启提示；第二进程不能初始化同一数据根。Renderer 不获得任意路径、channel、token 或安装执行能力。
+- **Environment / isolation**：本机 Windows x64 当前 owner 账户；Node `v24.18.0`、Electron `43.3.0`、electron-updater `6.8.10`、electron-builder `26.15.3`。本地 `npm.cmd` 不可用，使用现有直接 Node CLI；不称为本地执行了 npm aggregate。Hosted Windows 的真实 `npm.cmd run verify` 另有 exit 0 证据。测试使用唯一临时 userData/安装/缓存根、合成配置/记录、fake AI/clock；当前账户 NSIS 测试先核对 SID、进程、安装与注册项，无法隔离时失败，不读取默认真实数据库或凭据，清理仅限测试创建的目标。
+- **Local commands / results on delivery revision**：
+  1. `node tools/governance/validate-task-metadata.mjs --metadata-dir docs/implementation/metadata --task-index docs/implementation/TASK_INDEX_V0.1.md`：23 sidecar、1 Profile 通过；本任务不声明 Profile。
+  2. `node node_modules/prettier/bin/prettier.cjs --check .`、`node node_modules/eslint/bin/eslint.js . --max-warnings 0`、`node node_modules/typescript/bin/tsc --build --pretty false`：全部 exit 0。
+  3. `node node_modules/vitest/vitest.mjs run --project unit --project integration`：82 文件通过，438 tests passed，1 个既有 live-provider opt-in test skip。定向 coordinator/gate/service 16/16 通过，验证慢校验期间阻断、取消迟到结果、校验失败恢复、排空后 Renderer 失效、关闭后失败等。
+  4. `node node_modules/electron-vite/bin/electron-vite.js build` 成功，构建内容与 delivery revision 相同；`node node_modules/@playwright/test/cli.js test`：36 passed，4 个 opt-in Windows 安装/包测试按默认配置 skip。定向 `test tests/e2e/update-install-shutdown.e2e.test.ts tests/e2e/update-check-download.e2e.test.ts` 为 6/6，含 Review 延迟刷新阻断和 `restartRequired` 页面重载锁定；未触发真实应用内安装。
+  5. `node node_modules/electron-builder/cli.js --win nsis --x64 --publish never`：exit 0，生成当前 `0.1.3` Windows x64 unsigned 包，禁止发布。
+  6. 固定 `MYTRACER_UPGRADE_TEST=1`、`MYTRACER_UPGRADE_ISOLATION_ACK=T083-owner-approved-current-account`、匹配当前账户的 SID、OLD/NEW_VERSION=`0.1.2`/`0.1.3`、OLD/NEW_INSTALLER 和下述 SHA-256 后执行 `node node_modules/@playwright/test/cli.js test tests/e2e/windows-in-place-upgrade.e2e.test.ts`：3/3 通过（旧事实/合成配置/导出/新增与重开、运行中手动安装、损坏包失败后修复），约 1.7 分钟。该组是手动 NSIS 路径，不证明应用成功交接安装器。
+- **Local artifacts inspected**：wrapper 为 `node tools/evidence/capture-command.mjs --task T083 --gate review-repair-<gate> --base-revision cf3b2b4c00b6757218295c2672d23cf19f1ee526 --output .tmp/evidence -- <上述明确 argv>`；`.tmp/evidence/` 下 `T083-review-repair-format-2a171e0ac25b-20261002154753.json`、`lint-2a171e0ac25b-20261002154750.json`、`typecheck-2a171e0ac25b-20261002154820.json`、`unit-integration-2a171e0ac25b-20261002154753.json`、`e2e-2a171e0ac25b-20261002154752.json`、`package-2a171e0ac25b-20261002154914.json`、`nsis-upgrade-2a171e0ac25b-20261002155117.json`（后六项均带相同 `T083-review-repair-` 前缀）。全部 source=`2a171e0...`、base=`cf3b2b4...`、exit 0、passed、capture complete；不含原始日志、用户正文、credential 或绝对用户路径。
+- **Package provenance**：旧 T082 `0.1.2` 包 `release/MyTracer-0.1.2-x64-setup.exe` SHA-256=`86B44150D721B0E437B2D3D3C375573C237CF6E090416DC5C480AF6641F3B398`；本地 delivery `0.1.3` 包 `release/MyTracer-0.1.3-x64-setup.exe` SHA-256=`CB75CA4CB62CBA80AE02D0EA1F88502B2975BE13A4EF1CEB539B850332E9E026`，Authenticode=`NotSigned`。更早 `a7fc5cc...` 的 `0.1.3` hash=`DAAABFB12F97406F793BBA36936E065C5ED00D056A6FD3E003A55480BD726079` 仅属历史候选；不混用，不将本地包 hash 归给正式 Release 或云端产物。
+- **Hosted candidate CI / artifact**：[run 37029797864](https://github.com/Fyrefly-4/MyTracer/actions/runs/37029797864) `success`，PR head=`2a171e0ac25b70aec25c0a62f0e20ab3af0bd8ee`，test-merge=`204b829f103a4bad5f93a6c16c60b4643b2d6f0d`，base=`cf3b2b4...`。已下载检查 `verification-evidence-37029797864-1`，id=`11237137151`，digest=`sha256:4f3008645724fbc13247d7065172cf46df77964216e1f84807021df15db74764`；JSON `unscoped-aggregate-204b829f103a-20261002155509.json` 记录 `npm.cmd run verify` exit 0、capture complete，明确区分 head/test-merge。产品 build/Unit/Integration/Electron 回归通过，不等于正式安装源或人工体验通过。
+- **Early / earlier candidate history**：初次实现 `014e4ff...` 的 run `36598812085` 通过；`a7fc5cc...` 的 run `36602804168` 通过；`9781882...` 的 [run 36604897822](https://github.com/Fyrefly-4/MyTracer/actions/runs/36604897822) 通过，artifact `verification-evidence-36604897822-1` id=`11050684456` 的 JSON 记录 head=`9781882f0e2c7f5f1990a4bc86761e9e582a0e5c`、test-merge=`89e2fe928e15008a5c4770394782c18f9c595b1d`、aggregate exit 0。这些成功均不能替代修复 delivery 或文档 final-head 的对应 CI。
+- **Review / preserved findings**：owner 批准只读子代理独立审查完整 base→`02591ad...` 38 文件差异，发现 P1 慢校验期间门禁未开、P2 排空期间 Renderer 失效未复查、P2 Review busy 隐藏草稿、P2 Renderer 重载丢失重启锁定。四项由 delivery 修复及定向测试闭合；独立复审所有五个修复文件和最终测试等待/面板呈现，结论为无新 material finding。Reviewer 未执行测试/安装/发布。2026-10-03 owner 人工 review 通过作为另一本人报告结果记录，不等同于完整真实更新体验人工验收。
+- **Preserved failures / supersedes**：早期 E2E Preload API 顺序断言失败，经 expected surface 修正后回归通过；错误账户 SID 安装尝试在预检阶段停止，正确批准账户的后续 3/3 结果 supersede，不称为曾成功安装。修复期受限账户 Vitest 在测试启动前遇 Vite-temp EPERM，后获准当前账户执行通过。新增 Electron 断言首次 2 failed（fallback 提示在 grid 中不可见、错误等待仅首次加载才出现的文字），修正面板呈现与按钮等待后 6/6，继而完整 36/36 pass。CI run `36602713561`、`36604857597`、`37029716046` 因 PR 更新/替代执行取消；取消及其缺失证据导致的 gate 失败保留，由相应后续候选成功取代，不解释为产品失败。失败事实不删除。
+- **Acceptance change / manual gaps**：原 T082 `0.1.2` 没有确认安装 UI，不能完成原 §9.5 应用内起点；冲突及直接批准见 [升级提案](ESCALATION_PROPOSAL_T083_APP_MEDIATED_UPGRADE.md)。2026-10-02 owner 保留 `0.1.3`、取消额外双包测试，批准真实手动 NSIS 与应用内协调分别验收，解除该项对 T083 的阻断。完整真实应用成功交接安装器、启动更高版本并验证旧数据仍 `pending subsequent version/task acceptance`，真实私有源、正式包与 unsigned 提示的最终 owner 体验也保持 pending；不削弱 S8 最终门禁、不代签或启动 T084。
+- **Documentation / handoff**：2026-10-03 owner 批准合同、任务索引、此证据、README、S8 设计、实施计划、追踪和派生用户说明的最小收口及模板化 PR 正文；文档提交与推送后的 final-head CI/Ready/merge 状态留在 PR。未新增或升级依赖、改 schema/migration/export/AI 权限、推进 main、创建 tag/Release 或执行 merge。记录于 2026-10-03。
+
 ## T082 实现候选证据
 
 ### EV-T082-001
@@ -67,112 +92,112 @@
 
 路径简写：U=`tests/unit/`，I=`tests/integration/`，E=`tests/e2e/`；下表文件省略 `.test.ts` 后缀（E 文件保留 `.e2e`）。映射以源码中的输入、结果和快照断言为依据。所有行所列自动断言均纳入上述成功 aggregate，主观体验由下述 owner 报告独立记录；该结论不包含 live-only skip。结构核对 87 行/87 唯一 FR，无 PRD 编号遗漏或额外编号；数量核对本身不作为行为证据。
 
-| FR | 实际断言与文件 |
-| --- | --- |
-| FR-G01 | E/goal-lifecycle.e2e：UI 创建并重开；U/goal-application：Goal 与初始 Action 原子创建 |
-| FR-G02 | E/goal-lifecycle.e2e、I/goal-sqlite：修改名称/说明，保持 id 和关系 |
-| FR-G03 | E/goal-lifecycle.e2e：暂停、恢复、结束状态 |
-| FR-G04 | I/goal-sqlite：暂停/结束前后历史快照相等并重开 |
-| FR-G05 | U/goal-application、U/action-application：唯一 currentNextAction 与显式解析 |
-| FR-G06 | E/progress-core-loop.e2e、I/goal-sqlite：关联行动、记录及 Goal 过滤 |
-| FR-A01 | E/action-today.e2e、U/action-application：创建、更新、取消及下一步解析 |
-| FR-A02 | U/action-application、I/action-today-sqlite：独立或单 Goal 关联，不允许偷换关系 |
-| FR-A03 | E/action-today.e2e：用户显式选入今日重点 |
-| FR-A04 | E/action-today.e2e、U/action-application：完成状态与当前下一步处理 |
-| FR-A05 | E/progress-core-loop.e2e、U/action-record-application：partial 记录保留、Action 不自动完成 |
-| FR-A06 | U/action-application、I/action-today-sqlite：reschedule 同一 Action，保留历史并移除当前选择 |
-| FR-A07 | E/action-intention.e2e：非强制意向与显式重点转换 |
-| FR-R01 | E/routine-lifecycle.e2e：创建、改名/最低行动、暂停/恢复/结束与重开 |
-| FR-R02 | E/routine-lifecycle.e2e：每天/工作日和实际 weekdays；I/routine-record-sqlite：历史计划事实 |
-| FR-R03 | E/routine-lifecycle.e2e：最低行动输入与 Today 展示 |
-| FR-R04 | E/routine-record.e2e：四种显式 outcome 与数据库事实 |
-| FR-R05 | E/routine-record.e2e、U/routine-record-domain：缺行 unknown，没有制造 not_done |
-| FR-R06 | E/routine-record.e2e、U/progress-application：acted 计次，与 planned target 数分离 |
-| FR-R07 | U/progress-application、U/review-domain：rest 不计真实行动，不出现失败评价指标 |
-| FR-R09 | E/routine-record.e2e：非计划日 target/acted 计事实，plannedForDate=false；后改计划不改历史 |
-| FR-T01 | E/action-today.e2e：显式选择后的 focus 列表 |
-| FR-T02 | E/routine-lifecycle.e2e、E/routine-record.e2e：计划 Routine 与记录事实投影 |
-| FR-T03 | E/action-intention.e2e：独立 intention 区域及 generic Action |
-| FR-T04 | U/today-application、E/should-convergence.e2e：selectedBy=user、6 个 focus 均可保留 |
-| FR-T05 | E/action-intention.e2e、U/today-application：次日不自动滚动，旧选择留存、零额外记录 |
-| FR-T08 | E/action-intention.e2e：通用自由文本意向；U/today-application：同一 focus/intention 模型 |
-| FR-L01 | E/action-record.e2e：时长与 outcome 快速保存 |
-| FR-L02 | E/windows-usability.e2e：深入字段未挂载，仅 0 分钟 partial 保存并返焦 |
-| FR-L03 | E/progress-core-loop.e2e：可选理解文本保存并进入进展 |
-| FR-L04 | E/progress-core-loop.e2e：困惑保存并在进展可见 |
-| FR-L05 | E/action-record.e2e：记录下一步与显式 Goal 下一步决定 |
-| FR-L07 | E/data-control.e2e、I/data-control-sqlite：补记、修改、预览/取消/删除/回滚与重开 |
-| FR-L08 | E/progress-core-loop.e2e：25 分钟 partial 作为真实记录保持到重开 |
-| FR-L09 | E/progress-core-loop.e2e、U/progress-application：只有事实指标，无质量/掌握度推导 |
-| FR-C01 | E/progress-core-loop.e2e、U/action-record-domain：自由文本理解成果 |
-| FR-C02 | E/ai-start-help-ac02.e2e：Understanding 候选单独确认；确认前 SQLite 不变 |
-| FR-C03 | I/ai-start-help-provider-contract：实际 system 禁止自行宣称掌握；E/ai-start-help-ac02.e2e：确认前零写 |
-| FR-P01 | U/progress-application、E/progress-core-loop.e2e：Goal/日期范围、分钟累计与空范围 |
-| FR-P02 | U/progress-application、E/routine-record.e2e：0 分钟/partial/stopped/acted 真实计次，关联去重 |
-| FR-P03 | E/progress-core-loop.e2e、E/ai-start-help-ac02.e2e：只显示已确认成果 |
-| FR-P04 | U/progress-application、E/progress-core-loop.e2e：未解决困惑结果 |
-| FR-P07 | E/progress-core-loop.e2e：四个事实汇总；U/progress-application：返回 key 集不含 streak |
-| FR-P08 | E/progress-core-loop.e2e、E/should-convergence.e2e：中性空态、简单差值，无评分/人格判断 |
-| FR-AI01 | E/ai-start-help-degradation.e2e、U/ai-start-help-context：未主动触发不调用 Provider |
-| FR-AI02 | I/ai-start-help-provider-contract：温和非评判 system；真实 Provider 输出不由此证明 |
-| FR-AI03 | U/ai-start-help-context、E/ai-start-help-ac02.e2e：当前目标/近期事实/本次阻力与小行动 |
-| FR-AI04 | I/ai-start-help-provider-contract、U/ai-start-help-response：1～3 小建议指令与数量校验 |
-| FR-AI05 | E/ai-start-help-ac02.e2e：拒绝、修改、接受、显式确认后普通写入 |
-| FR-AI06 | E/ai-start-help-ac02.e2e、I/ai-start-help-confirmation-sqlite：未确认/取消/关闭/迟到零核心写入 |
-| FR-AI07 | I/ai-start-help-provider-contract：system 明确不将合理休息当拖延；真实 Provider 输出不由此证明 |
-| FR-AI08 | E/ai-start-help-ac02.e2e、I/ai-start-help-context-isolation：唯一标记与 manifest 限定；system 禁止虚构完成 |
-| FR-AI09 | E/ai-data-capability.e2e、E/ai-start-help-degradation.e2e：禁用/未配置/失败时核心程序可用 |
-| FR-AI10 | I/ai-start-help-context-isolation、E/ai-start-help-ac02.e2e：无关 Goal/敏感数据排除、最多 5 近期记录、预算 |
-| FR-REC01 | E/recovery-restart.e2e、I/recovery-sqlite：中断前后历史事实守恒 |
-| FR-REC02 | E/recovery-context.e2e：只读上次行动、理解、困惑与当前下一步 |
-| FR-REC03 | E/recovery-restart.e2e：直接恢复小行动，中断日不补记录 |
-| FR-REC04 | E/recovery-restart.e2e：显式暂停/结束/整理过时内容 |
-| FR-REC06 | E/recovery-context.e2e、E/recovery-restart.e2e：事实式恢复，无补齐/失败率施压 |
-| FR-RV01 | E/review-summary.e2e、U/review-domain：周一至周日复用 Progress 事实 |
-| FR-RV02 | E/review-result.e2e：用户输入真实进展，保存后稳定 id |
-| FR-RV03 | E/review-result.e2e：主要阻力保存与修改 |
-| FR-RV04 | E/review-result.e2e：下一周期调整保存、取消零写 |
-| FR-RV06 | U/review-domain、E/review-summary.e2e：自动摘要与既有 Progress 相等，无重复录入统计 |
-| FR-D01 | E/ai-data-capability.e2e、I/sqlite-persistence：核心 CRUD 后完整进程/SQLite 重开 |
-| FR-D02 | E/data-control.e2e、E/windows-usability.e2e、I/data-control-sqlite：修改/预览/取消/确认、级联/解除关联及回滚 |
-| FR-D03 | E/complete-export.e2e：UI 导出到隔离临时目标并验证 JSON |
-| FR-D04 | I/complete-export-sqlite、U/complete-export：完整集合/引用/状态、schema 3、既有 v1/v2 兼容契约 |
-| FR-D05 | E/ai-data-capability.e2e：三种不可用模式执行相同核心数据程序并比较结果 |
+| FR       | 实际断言与文件                                                                                               |
+| -------- | ------------------------------------------------------------------------------------------------------------ |
+| FR-G01   | E/goal-lifecycle.e2e：UI 创建并重开；U/goal-application：Goal 与初始 Action 原子创建                         |
+| FR-G02   | E/goal-lifecycle.e2e、I/goal-sqlite：修改名称/说明，保持 id 和关系                                           |
+| FR-G03   | E/goal-lifecycle.e2e：暂停、恢复、结束状态                                                                   |
+| FR-G04   | I/goal-sqlite：暂停/结束前后历史快照相等并重开                                                               |
+| FR-G05   | U/goal-application、U/action-application：唯一 currentNextAction 与显式解析                                  |
+| FR-G06   | E/progress-core-loop.e2e、I/goal-sqlite：关联行动、记录及 Goal 过滤                                          |
+| FR-A01   | E/action-today.e2e、U/action-application：创建、更新、取消及下一步解析                                       |
+| FR-A02   | U/action-application、I/action-today-sqlite：独立或单 Goal 关联，不允许偷换关系                              |
+| FR-A03   | E/action-today.e2e：用户显式选入今日重点                                                                     |
+| FR-A04   | E/action-today.e2e、U/action-application：完成状态与当前下一步处理                                           |
+| FR-A05   | E/progress-core-loop.e2e、U/action-record-application：partial 记录保留、Action 不自动完成                   |
+| FR-A06   | U/action-application、I/action-today-sqlite：reschedule 同一 Action，保留历史并移除当前选择                  |
+| FR-A07   | E/action-intention.e2e：非强制意向与显式重点转换                                                             |
+| FR-R01   | E/routine-lifecycle.e2e：创建、改名/最低行动、暂停/恢复/结束与重开                                           |
+| FR-R02   | E/routine-lifecycle.e2e：每天/工作日和实际 weekdays；I/routine-record-sqlite：历史计划事实                   |
+| FR-R03   | E/routine-lifecycle.e2e：最低行动输入与 Today 展示                                                           |
+| FR-R04   | E/routine-record.e2e：四种显式 outcome 与数据库事实                                                          |
+| FR-R05   | E/routine-record.e2e、U/routine-record-domain：缺行 unknown，没有制造 not_done                               |
+| FR-R06   | E/routine-record.e2e、U/progress-application：acted 计次，与 planned target 数分离                           |
+| FR-R07   | U/progress-application、U/review-domain：rest 不计真实行动，不出现失败评价指标                               |
+| FR-R09   | E/routine-record.e2e：非计划日 target/acted 计事实，plannedForDate=false；后改计划不改历史                   |
+| FR-T01   | E/action-today.e2e：显式选择后的 focus 列表                                                                  |
+| FR-T02   | E/routine-lifecycle.e2e、E/routine-record.e2e：计划 Routine 与记录事实投影                                   |
+| FR-T03   | E/action-intention.e2e：独立 intention 区域及 generic Action                                                 |
+| FR-T04   | U/today-application、E/should-convergence.e2e：selectedBy=user、6 个 focus 均可保留                          |
+| FR-T05   | E/action-intention.e2e、U/today-application：次日不自动滚动，旧选择留存、零额外记录                          |
+| FR-T08   | E/action-intention.e2e：通用自由文本意向；U/today-application：同一 focus/intention 模型                     |
+| FR-L01   | E/action-record.e2e：时长与 outcome 快速保存                                                                 |
+| FR-L02   | E/windows-usability.e2e：深入字段未挂载，仅 0 分钟 partial 保存并返焦                                        |
+| FR-L03   | E/progress-core-loop.e2e：可选理解文本保存并进入进展                                                         |
+| FR-L04   | E/progress-core-loop.e2e：困惑保存并在进展可见                                                               |
+| FR-L05   | E/action-record.e2e：记录下一步与显式 Goal 下一步决定                                                        |
+| FR-L07   | E/data-control.e2e、I/data-control-sqlite：补记、修改、预览/取消/删除/回滚与重开                             |
+| FR-L08   | E/progress-core-loop.e2e：25 分钟 partial 作为真实记录保持到重开                                             |
+| FR-L09   | E/progress-core-loop.e2e、U/progress-application：只有事实指标，无质量/掌握度推导                            |
+| FR-C01   | E/progress-core-loop.e2e、U/action-record-domain：自由文本理解成果                                           |
+| FR-C02   | E/ai-start-help-ac02.e2e：Understanding 候选单独确认；确认前 SQLite 不变                                     |
+| FR-C03   | I/ai-start-help-provider-contract：实际 system 禁止自行宣称掌握；E/ai-start-help-ac02.e2e：确认前零写        |
+| FR-P01   | U/progress-application、E/progress-core-loop.e2e：Goal/日期范围、分钟累计与空范围                            |
+| FR-P02   | U/progress-application、E/routine-record.e2e：0 分钟/partial/stopped/acted 真实计次，关联去重                |
+| FR-P03   | E/progress-core-loop.e2e、E/ai-start-help-ac02.e2e：只显示已确认成果                                         |
+| FR-P04   | U/progress-application、E/progress-core-loop.e2e：未解决困惑结果                                             |
+| FR-P07   | E/progress-core-loop.e2e：四个事实汇总；U/progress-application：返回 key 集不含 streak                       |
+| FR-P08   | E/progress-core-loop.e2e、E/should-convergence.e2e：中性空态、简单差值，无评分/人格判断                      |
+| FR-AI01  | E/ai-start-help-degradation.e2e、U/ai-start-help-context：未主动触发不调用 Provider                          |
+| FR-AI02  | I/ai-start-help-provider-contract：温和非评判 system；真实 Provider 输出不由此证明                           |
+| FR-AI03  | U/ai-start-help-context、E/ai-start-help-ac02.e2e：当前目标/近期事实/本次阻力与小行动                        |
+| FR-AI04  | I/ai-start-help-provider-contract、U/ai-start-help-response：1～3 小建议指令与数量校验                       |
+| FR-AI05  | E/ai-start-help-ac02.e2e：拒绝、修改、接受、显式确认后普通写入                                               |
+| FR-AI06  | E/ai-start-help-ac02.e2e、I/ai-start-help-confirmation-sqlite：未确认/取消/关闭/迟到零核心写入               |
+| FR-AI07  | I/ai-start-help-provider-contract：system 明确不将合理休息当拖延；真实 Provider 输出不由此证明               |
+| FR-AI08  | E/ai-start-help-ac02.e2e、I/ai-start-help-context-isolation：唯一标记与 manifest 限定；system 禁止虚构完成   |
+| FR-AI09  | E/ai-data-capability.e2e、E/ai-start-help-degradation.e2e：禁用/未配置/失败时核心程序可用                    |
+| FR-AI10  | I/ai-start-help-context-isolation、E/ai-start-help-ac02.e2e：无关 Goal/敏感数据排除、最多 5 近期记录、预算   |
+| FR-REC01 | E/recovery-restart.e2e、I/recovery-sqlite：中断前后历史事实守恒                                              |
+| FR-REC02 | E/recovery-context.e2e：只读上次行动、理解、困惑与当前下一步                                                 |
+| FR-REC03 | E/recovery-restart.e2e：直接恢复小行动，中断日不补记录                                                       |
+| FR-REC04 | E/recovery-restart.e2e：显式暂停/结束/整理过时内容                                                           |
+| FR-REC06 | E/recovery-context.e2e、E/recovery-restart.e2e：事实式恢复，无补齐/失败率施压                                |
+| FR-RV01  | E/review-summary.e2e、U/review-domain：周一至周日复用 Progress 事实                                          |
+| FR-RV02  | E/review-result.e2e：用户输入真实进展，保存后稳定 id                                                         |
+| FR-RV03  | E/review-result.e2e：主要阻力保存与修改                                                                      |
+| FR-RV04  | E/review-result.e2e：下一周期调整保存、取消零写                                                              |
+| FR-RV06  | U/review-domain、E/review-summary.e2e：自动摘要与既有 Progress 相等，无重复录入统计                          |
+| FR-D01   | E/ai-data-capability.e2e、I/sqlite-persistence：核心 CRUD 后完整进程/SQLite 重开                             |
+| FR-D02   | E/data-control.e2e、E/windows-usability.e2e、I/data-control-sqlite：修改/预览/取消/确认、级联/解除关联及回滚 |
+| FR-D03   | E/complete-export.e2e：UI 导出到隔离临时目标并验证 JSON                                                      |
+| FR-D04   | I/complete-export-sqlite、U/complete-export：完整集合/引用/状态、schema 3、既有 v1/v2 兼容契约               |
+| FR-D05   | E/ai-data-capability.e2e：三种不可用模式执行相同核心数据程序并比较结果                                       |
 
 #### 11 SHOULD 与 7 延期项
 
-| FR | 实际断言 / 审查范围 |
-| --- | --- |
-| FR-G07 | E/should-convergence.e2e：少量活跃目标软提示、6 Goal 无硬上限 |
-| FR-A08 | E/action-record.e2e、U/action-record-application：完成/partial 后显式下一步决定 |
-| FR-R08 | E/data-control.e2e、I/data-control-sqlite：历史 Routine 补记和修正 |
-| FR-T06 | E/should-convergence.e2e：软提示且 6 focus 可保留 |
-| FR-T07 | E/should-convergence.e2e：候选事实日期、无自动 Today 写入；未来日期不显示负天数 |
-| FR-L06 | E/action-record.e2e、U/action-record-domain：自由 note 可选，重开保留 |
-| FR-C04 | E/data-control.e2e、I/data-control-sqlite：理解修改/撤销及投影同步 |
-| FR-P05 | U/should-facts、I/should-facts-sqlite、E/should-convergence.e2e：last real action/null/0 分钟及修正删除后重算 |
-| FR-P06 | 同上：本周/上周事实差值、日期边界、过滤与迟到响应不串 Goal |
-| FR-REC05 | E/recovery-restart.e2e：显式选择可重启小行动，Today 需另行选择 |
-| FR-RV05 | E/review-result.e2e：显式更新下一步，保留 Today 与历史 |
-| FR-C05 | 当前完整 diff 无概念图谱/知识层级/掌握度接口、数据模型或页面新增；不实现延期项 |
-| FR-AI11 | 当前 diff 无整日/整周计划生成或新 Provider 请求入口 |
-| FR-AI12 | 当前 diff 无后台 AI 调度、监督或主动弹出 |
-| FR-AI13 | 当前 diff 无跨会话 AI 记忆/画像表；AC-02 重开后临时 session/draft 清空 |
-| FR-RV07 | 当前 diff 无 AI 周计划；Review 保持用户三项文本与事实摘要 |
-| FR-D06 | 当前 diff 无账号/同步依赖、接口或存储变化 |
-| FR-D07 | 当前 diff 无导入恢复入口或格式变化；导出测试不等于恢复能力 |
+| FR       | 实际断言 / 审查范围                                                                                           |
+| -------- | ------------------------------------------------------------------------------------------------------------- |
+| FR-G07   | E/should-convergence.e2e：少量活跃目标软提示、6 Goal 无硬上限                                                 |
+| FR-A08   | E/action-record.e2e、U/action-record-application：完成/partial 后显式下一步决定                               |
+| FR-R08   | E/data-control.e2e、I/data-control-sqlite：历史 Routine 补记和修正                                            |
+| FR-T06   | E/should-convergence.e2e：软提示且 6 focus 可保留                                                             |
+| FR-T07   | E/should-convergence.e2e：候选事实日期、无自动 Today 写入；未来日期不显示负天数                               |
+| FR-L06   | E/action-record.e2e、U/action-record-domain：自由 note 可选，重开保留                                         |
+| FR-C04   | E/data-control.e2e、I/data-control-sqlite：理解修改/撤销及投影同步                                            |
+| FR-P05   | U/should-facts、I/should-facts-sqlite、E/should-convergence.e2e：last real action/null/0 分钟及修正删除后重算 |
+| FR-P06   | 同上：本周/上周事实差值、日期边界、过滤与迟到响应不串 Goal                                                    |
+| FR-REC05 | E/recovery-restart.e2e：显式选择可重启小行动，Today 需另行选择                                                |
+| FR-RV05  | E/review-result.e2e：显式更新下一步，保留 Today 与历史                                                        |
+| FR-C05   | 当前完整 diff 无概念图谱/知识层级/掌握度接口、数据模型或页面新增；不实现延期项                                |
+| FR-AI11  | 当前 diff 无整日/整周计划生成或新 Provider 请求入口                                                           |
+| FR-AI12  | 当前 diff 无后台 AI 调度、监督或主动弹出                                                                      |
+| FR-AI13  | 当前 diff 无跨会话 AI 记忆/画像表；AC-02 重开后临时 session/draft 清空                                        |
+| FR-RV07  | 当前 diff 无 AI 周计划；Review 保持用户三项文本与事实摘要                                                     |
+| FR-D06   | 当前 diff 无账号/同步依赖、接口或存储变化                                                                     |
+| FR-D07   | 当前 diff 无导入恢复入口或格式变化；导出测试不等于恢复能力                                                    |
 
 #### 同版本 AC 批次与人工结果
 
-| AC | 自动程序与关键事实 | 本轮 owner |
-| --- | --- | --- |
-| AC-01 | E/progress-core-loop.e2e：UI Goal→Today→25 分钟 partial/理解/困惑→进展→重开；E/action-record.e2e 补快速记录与跨午夜 | pass（owner-reported，2026-09-28） |
+| AC    | 自动程序与关键事实                                                                                                                     | 本轮 owner                         |
+| ----- | -------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| AC-01 | E/progress-core-loop.e2e：UI Goal→Today→25 分钟 partial/理解/困惑→进展→重开；E/action-record.e2e 补快速记录与跨午夜                    | pass（owner-reported，2026-09-28） |
 | AC-02 | E/ai-start-help-ac02.e2e：fake 最小上下文→拒绝/修改/接受→独立 Understanding 确认→真实 2 分钟记录→进展/重开；不等价于真实 Provider 体验 | pass（owner-reported，2026-09-28） |
-| AC-03 | E/routine-lifecycle.e2e 的 UI 创建/节奏/最低行动，与 E/routine-record.e2e 五态/非计划事实/重开在同 build 执行 | pass（owner-reported，2026-09-28） |
-| AC-04 | E/action-intention.e2e：通用意向→显式转换→次日零自动事实→真实记录 | pass（owner-reported，2026-09-28） |
-| AC-05 | E/recovery-context.e2e、E/recovery-restart.e2e：中断后事实恢复、整理过时内容、选小行动不补空白日 | pass（owner-reported，2026-09-28） |
-| AC-06 | E/review-summary.e2e、E/review-result.e2e、E/recovery-review-aggregate.e2e：保留恢复前后事实，三项复盘、显式下一步与重开 | pass（owner-reported，2026-09-28） |
-| AC-07 | E/ai-data-capability.e2e 核心数据三模式程序，加 E/data-control.e2e、E/complete-export.e2e 的修改删除/UI 导出、引用状态和重开 | pass（owner-reported，2026-09-28） |
+| AC-03 | E/routine-lifecycle.e2e 的 UI 创建/节奏/最低行动，与 E/routine-record.e2e 五态/非计划事实/重开在同 build 执行                          | pass（owner-reported，2026-09-28） |
+| AC-04 | E/action-intention.e2e：通用意向→显式转换→次日零自动事实→真实记录                                                                      | pass（owner-reported，2026-09-28） |
+| AC-05 | E/recovery-context.e2e、E/recovery-restart.e2e：中断后事实恢复、整理过时内容、选小行动不补空白日                                       | pass（owner-reported，2026-09-28） |
+| AC-06 | E/review-summary.e2e、E/review-result.e2e、E/recovery-review-aggregate.e2e：保留恢复前后事实，三项复盘、显式下一步与重开               | pass（owner-reported，2026-09-28） |
+| AC-07 | E/ai-data-capability.e2e 核心数据三模式程序，加 E/data-control.e2e、E/complete-export.e2e 的修改删除/UI 导出、引用状态和重开           | pass（owner-reported，2026-09-28） |
 
 上述 AC 是同一 build 上各自隔离的连续程序，AC-02 与 AC-05→06 另检查跨功能接缝；不是同一个共享数据库贯穿七个场景。owner 已报告本轮完整人工 AC/UX 通过；具体硬件/DPI 数值未另报，保留此证据粒度限制。本候选供 G4 决策，不代签 G4 或发布。
 
@@ -334,44 +359,44 @@ Artifact 位于 ignored `.tmp/evidence/`，可由 GitHub Actions 作为短期 ar
 
 ## 4. 任务级证据索引
 
-| Evidence                   | Task                          | Revision                                                            | Scope                                                                                              | Result  | Manual       | Notes                                                                                                                                                                             |
-| -------------------------- | ----------------------------- | ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ------- | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `EV-T001-001`              | T001                          | `090e848d066f6f56d772181621ff211313667aa6`                          | Electron 空壳、进程边界、Windows x64 打包                                                          | pass    | pass         | Agent 运行时验证通过；项目所有者于 2026-08-08 确认人工验收通过                                                                                                                    |
-| `EV-T002-001`              | T002                          | `f60a38c4e69b8bead2aa8975c6fdb6886bec220a`                          | 验证工具链、测试替身、临时根、Electron E2E、Windows CI                                             | pass    | not-required | 最新实现 revision 的本地与 hosted Windows 聚合验证通过；不声明 G2 或产品 AC                                                                                                       |
-| `EV-T003-001`              | T003                          | `b7f20901c54bd883f6ebf6cda66e3d9b9b5fa347`                          | SQLite schema/migration、Repository 契约、Windows x64 native addon                                 | pass    | not-required | 交互式本机与 hosted Windows `verify`、标准 package 和 packaged-native 冒烟均通过；不声明业务 FR/AC 或 G2                                                                          |
-| `EV-T004-001`              | T004                          | `0e9bf1f15614454f5618d5c910fe498dfa3de7ba`                          | LocalDate/Clock、诊断、空配置/safeStorage、Windows package smoke                                   | pass    | pass         | 本地 Windows `verify`、package、unpacked/NSIS 运行冒烟和 hosted Windows `verify` 通过；所有者窗口观察已通过；任务自身不单独声明业务 FR/AC 或 G2                                   |
-| `EV-T011-001`              | T011                          | `c4e9f6dee3cbab97f6902f2c90f97f96423b43e2`                          | Goal 生命周期、当前下一步、关联查询、SQLite/IPC/UI 和真实重开                                      | pass    | pass         | 本地 Windows `verify`、PR head hosted Windows gate、人工体验和项目所有者 review 通过；T011 `done`，仅贡献 AC-01 步骤 1～2                                                         |
-| `EV-T012-001`              | T012                          | `56b3446a1b952a9bdb6fe29ab4a89502171ba321`                          | Action 生命周期、Today focus、当前下一步处理、重新安排、SQLite/IPC/UI 和真实重开                   | pass    | pass         | 本地 Windows `verify`、PR #9 实现 head hosted Windows gate 和项目所有者人工复验通过；仅贡献 AC-01 步骤 3，FR-A05 仅为 Action 状态解耦部分                                         |
-| `EV-T013-001`              | T013                          | `b10d5d40c4c1dc1f7a20801d5d904b1d37953270`                          | 快速/深入 ActionRecord、recording context、跨午夜、原子 post-record、SQLite/IPC/UI 和真实重开      | pass    | pass         | 本地 Windows `verify`、独立复核、PR #10 实现 head hosted Windows gate 和项目所有者人工验收通过；贡献 AC-01 步骤 4～5，并与 T012 合并完成 FR-A05                                   |
-| `EV-T014-001`              | T014                          | `52cd33672b6b2632b09beb7cb8e66f48901f2bd0`                          | 事实型 Progress、SQLite 一致性快照、窄 IPC/UI、筛选与真实重开                                      | pass    | pass         | 本地 Windows `verify`、PR #11 hosted Windows gate、独立 review 和项目所有者完整人工 AC-01 通过；merge revision `623007dd4269df02771f6a526db269de1fe95a03`                         |
-| `EV-T021-001`              | T021                          | `07c626739b454378f8af886c1d233da6f0bd97e6`                          | Routine 生命周期、ISO 星期节奏、Goal 接缝、Today 计划、SQLite/IPC/UI 和真实重开                    | pass    | pass         | 本地完整 `verify`、PR #17 实现 head hosted Windows gate、独立只读复核和项目所有者人工验收通过；仅贡献 AC-03 步骤 1～2                                                             |
-| `EV-T022-001`              | T022                          | `022b6e25731a07f113692a452de0128367059574`                          | RoutineRecord 四显式结果/缺行 unknown、非计划日、Today 五态、统一 Progress、跨午夜与重开           | pass    | pass         | 本地/hosted Windows 自动化、独立只读复核、PR #18 实现 head required gate 和项目所有者完整人工 AC-03 通过；FR-R08/T031 与 AC-04/T023 未实现                                        |
-| `EV-T023-001`              | T023                          | `b747f41d647891d1de0ef77a61840fdbc87cfa0f`                          | 通用 Action 非强制 intention、Today commitment 分区、显式转换、跨日零滚动与普通 ActionRecord 复用  | pass    | pass         | 本地完整 `verify`、PR #19 实现 head hosted Windows gate、独立只读复核和项目所有者完整人工 AC-04 通过；不声明 AC-03                                                                |
-| `EV-T031-001`              | T031                          | `1c08b3161021319d1c87ef4bf8cb2470d977bd48` / merge `f41c601`        | Record 修改/补记、Routine provenance、子事实转换、五类删除预览与事务性删除                         | pass    | pending      | 任务自动化/final-head CI 与 dev merge 已完成；专用人工清单仍保留 pending，完整人工 AC-07 由 T033/聚合证据记录                                                                     |
-| `EV-T032-001`              | T032                          | `79458b88b505346ef81c3cc920224c7cf0eb4ba4` / merge `43e6406`        | 十集合一致性快照、版本化完整导出、结构/引用校验和原子交付                                          | pass    | pass         | 本地/hosted/package 与项目所有者人工导出验收通过；PR #27 已合入 `dev`                                                                                                             |
-| `EV-T033-001`              | T033                          | `502ed1a282bc127684229f4405072acb7ef6fb11` / merge `8058f7a`        | AI 三态数据独立性、失败零写入、CRUD/Progress/删除/导出/重开与 AC-07                                | pass    | pass         | 本地/hosted/package、独立复核与项目所有者完整人工 AC-07 通过；PR #28 已合入 `dev`                                                                                                 |
-| `EV-G3-S3-001`             | T803 / G3/S3                  | product `8058f7a` / task `0cd4a4b` / dev `eec0939` / main `75e51b4` | T031～T033 同 revision 聚合、AC-01/03/04/07、migration/重开、package、归档与 beta 里程碑           | pass    | pass         | pre-merge candidate 时间线保留；PR #29/#30、final/dev CI 与 `v0.1.0-beta.1` release 已完成                                                                                        |
-| `EV-T804-001`              | T804 / GOV-03                 | base `eec0939` / candidate-task `1610aae`                           | 长期文档任务、里程碑、release 与 GitHub 配置事实统一收口                                           | pass    | not-required | 本地门禁、完整 diff 独立 review、PR #31 candidate CI 与 owner-approved closeout 通过；final-head CI 为后续 PR 集成门禁                                                            |
-| `EV-T801-001`              | T801                          | `dd9bd4498b0339703f8cf992a564a7d7b80442b5`                          | S1 package smoke 精确 API、安全边界与 unpacked/NSIS 路径                                           | pass    | not-required | 本地 `verify`/package/package smoke、独立 review、PR #12 head CI 与最终 dev push CI 通过；merge `74ebe346a86cf431d87e02e8a1220b713b33901c`                                        |
-| `EV-T802-001`              | T802                          | `a61d0bc100752ae1209623a2ac020ff25a62bf8f`                          | S2 package API、连续 AC-03、S1 v1 数据守恒与合同归档候选                                           | partial | not-required | 实现候选本地完整门禁、独立 review 和 PR #20 hosted CI 通过；归档后最新 head CI、merge 与最终 dev 聚合复验待完成                                                                   |
-| `EV-T802-002`              | T802 / S2 aggregate           | `a9db1eb26134dac83b01f4a4d7da30f92a271242`                          | T021～T023 同 revision 聚合、AC-01/03/04、SQLite/LocalDate、Windows package 与归档                 | pass    | pass         | 最终 dev 本地/hosted 门禁、定向验收、package smoke 与独立 review 通过；T021～T023 人工验收沿用已记录的 owner pass                                                                 |
-| `EV-T090-001`              | T090 / GOV-01                 | `767ea6741411e2d2e7a82b297a0ed7dde3e3134e`                          | V2 第一、二批流程规范、Task Contract 字段、Stage Design 模板和 Escalation Proposal                 | pass    | pass         | T090 当时无产品试点；其流程后由 T031～T033/T803 实际使用，PR #23 以 `aeb0d68` 进入 `dev`                                                                                          |
-| `EV-T091-001`              | T091 / GOV-02                 | `f12f5e5fa81cf23124be126f2e23486d518104bc` / merge `4674597`        | V2 第三批确定性证据采集、CI artifact、metadata 校验和规则同步                                      | pass    | pass         | 本地与 hosted 验证通过；PR #24 已合入 `dev`，T031～T033/T803 已实际使用其 artifact/metadata 能力；T092 延后                                                                       |
-| `EV-T092-001`              | T092 / GOV-04                 | `9c7d9d3ae08dc7b32e9895deed1e43d26ca58985`                          | Standard Task Automation Profile、合同/metadata、Worktree 生命周期和 Workflow/PR 优化目标          | pass    | pass         | 本地分层验证、完整 diff review、candidate hosted CI 和 owner-approved docs closeout 通过；实际接入由 T093 证明                                                                    |
-| `EV-T093-001`              | T093 / GOV-05                 | `189decb664b0ba2147f3ec1931eabd37bda6fc8d`                          | Profile 与 lifecycle Skills、PR/CI 双 Gate、ruleset context、长任务等待策略                        | pass    | pass         | 本地治理与完整验证、完整 diff/独立 review、精确 head full+milestone hosted CI、ruleset after snapshot 和 owner-approved docs closeout 通过；final-head CI/merge 仍是 PR 集成 Gate |
-| `EV-T093-002`              | T093 / GOV-05                 | `2b31bc6be50d805f0dcad73a7a64cc3735a05d09`                          | PR #33 合入 dev 与 post-merge required checks                                                      | pass    | not-required | 补充当前集成事实；不覆盖 `EV-T093-001` 的候选时间线，不声明产品验收、Ready、tag 或 release                                                                                        |
-| `EV-T805-001`              | T805 / GOV-06                 | `c5dc68c2601b150becb1959869d2f48e5954539b`                          | `/docs` 冗余收敛、已完成治理合同归档和历史快照边界                                                 | partial | not-required | Draft PR #34 已创建；hosted checks 正在运行，项目所有者审阅仍待完成                                                                                                               |
-| `EV-T805-002`              | T805 / GOV-06                 | task `979fa1c` / dev `353a4d4`                                      | PR #34 final-head CI、owner closeout 与 dev 集成                                                   | pass    | pass         | 补充 `EV-T805-001` 的候选时间线；T805 已完成，不声明产品 FR/AC 或发布权限                                                                                                         |
-| `EV-T094-001`              | T094 / G4 enabling            | task `543180b...` / dev `2632ff0...`                                | Renderer ownership、AppShell/feature 拆分与 AC-01/03/04/07 行为保持                                | pass    | pending      | 本地完整验证、package smoke、独立复核、PR #35 candidate/final-head CI、owner closeout 与 dev 集成通过；同环境视觉对比仍待完成                                                     |
-| `EV-T061-001`              | T061 / S6 E6-01               | task `5f98b2f...` / dev `4630878...`                                | 窄 AI 上下文 Query、纯 selector、Main-only manifest、fake capture 与零调用/隔离证明                 | pass    | pass         | candidate、人工测试、owner-approved closeout、修复后的 final-head CI、PR #46 merge 与 post-merge CI 均通过；不声明 T062/T063、AC-02 或 S6 final gate                            |
-| `EV-T062-001`              | T062 / S6 E6-02               | task `bc5461e3...` / dev `233d6790...`                               | 可替换 Provider、严格响应验证、deadline/cancel/generation、Main-only 配置与失败降级                 | pass    | not-required | 本地完整验证/package smoke、独立 review、candidate/final-head CI、PR #47 merge、post-merge CI 与 owner-approved closeout 通过；不声明 T063、完整 AC-02 或 S6 final gate          |
-| `EV-T063-001`              | T063 / S6 E6-03               | task `fee398e...` / dev `f06b1e9...`                                | 临时建议编辑/拒绝/关闭/retry、普通确认 Commands、原子 current-next、逐项 Understanding 与零写入守恒 | pass    | pass         | task 自动化/CI/merge 已通过；项目所有者在 T807 固定产品内容及边界修复上完成完整人工 AC-02，任务原始 pending 由聚合人工结果闭合                                           |
-| `EV-T807-001`              | T807 / S6 aggregate           | product `f06b1e9...` / delivery `449ad4f...`                        | continuous AC-02、AI 隔离及 owner-approved SDK 日志/异常降级/live contract 边界修复                 | partial | pass         | exact delivery head hosted aggregate/package、独立复核及人工 AC-02 通过；owner-approved docs closeout 已执行，等待文档 final-head CI 与 owner-controlled merge/release gates       |
-| `EV-T041-001`              | T041 / E4-01                  | task `1e9ab2b80b5b81a8bedd192750281d4042f279d5`                     | RecoveryContext 只读事实、LocalDate、单事务 snapshot、窄 IPC/Preload、Goals 入口与 AC-05 步骤 1～4 | pass    | pass         | 本地完整验证、独立复核、PR #39 implementation-candidate CI 与项目所有者人工测试通过；不声明完整 AC-05、FR-P05、T042、Ready 或 merge                                               |
-| `EV-S4-S5-001`             | T806 / S4-S5 aggregate        | product `84b596e` / docs final head pending                         | T041～T052、AC-05/06、migration/export、package、证据与合同归档                                    | partial | pass         | 固定产品 source 的本地聚合与人工绑定通过；PR #43 candidate CI 因单 migration 用例默认超时失败，test-only 窄修复及 docs closeout 已完成，final-head hosted CI pending              |
-| `EV-PRE-S4-FOUNDATION-001` | S4 前工程/UI 基线（无新任务） | product/dev `2632ff0638fb02533100a1f9d0aea9f1323dbde3`              | T804/T092/T093/T805/T094 同 revision 治理、流程、UI Foundation 与 AC-01/03/04/07 回归              | pass    | pending      | 本地完整门禁、package smoke、完整 `main..dev` 独立 review 与 exact-dev post-merge CI 通过；视觉对比和聚合文档 final-head CI 分开记录                                              |
-| `EV-G3-S1-001`             | G3/S1                         | `623007dd4269df02771f6a526db269de1fe95a03`                          | T011～T014 同 revision 核心闭环、Windows package 与发布门禁                                        | fail    | pending      | `verify`、AC-01 和 package 构建通过；package smoke 因旧 Preload API 断言在 unpacked 阶段失败，NSIS 安装态未验证                                                                   |
-| `EV-G3-S1-002`             | G3/S1                         | `74ebe346a86cf431d87e02e8a1220b713b33901c`                          | T011～T014/T801 同 revision 核心闭环、Windows package 与发布门禁                                   | pass    | pass         | 验收门禁通过；项目所有者后续另行批准 PR #14 合入 `main@3912e80...` 并发布 `v0.1.0-alpha.2`                                                                                        |
+| Evidence                   | Task                          | Revision                                                            | Scope                                                                                               | Result  | Manual       | Notes                                                                                                                                                                             |
+| -------------------------- | ----------------------------- | ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ------- | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `EV-T001-001`              | T001                          | `090e848d066f6f56d772181621ff211313667aa6`                          | Electron 空壳、进程边界、Windows x64 打包                                                           | pass    | pass         | Agent 运行时验证通过；项目所有者于 2026-08-08 确认人工验收通过                                                                                                                    |
+| `EV-T002-001`              | T002                          | `f60a38c4e69b8bead2aa8975c6fdb6886bec220a`                          | 验证工具链、测试替身、临时根、Electron E2E、Windows CI                                              | pass    | not-required | 最新实现 revision 的本地与 hosted Windows 聚合验证通过；不声明 G2 或产品 AC                                                                                                       |
+| `EV-T003-001`              | T003                          | `b7f20901c54bd883f6ebf6cda66e3d9b9b5fa347`                          | SQLite schema/migration、Repository 契约、Windows x64 native addon                                  | pass    | not-required | 交互式本机与 hosted Windows `verify`、标准 package 和 packaged-native 冒烟均通过；不声明业务 FR/AC 或 G2                                                                          |
+| `EV-T004-001`              | T004                          | `0e9bf1f15614454f5618d5c910fe498dfa3de7ba`                          | LocalDate/Clock、诊断、空配置/safeStorage、Windows package smoke                                    | pass    | pass         | 本地 Windows `verify`、package、unpacked/NSIS 运行冒烟和 hosted Windows `verify` 通过；所有者窗口观察已通过；任务自身不单独声明业务 FR/AC 或 G2                                   |
+| `EV-T011-001`              | T011                          | `c4e9f6dee3cbab97f6902f2c90f97f96423b43e2`                          | Goal 生命周期、当前下一步、关联查询、SQLite/IPC/UI 和真实重开                                       | pass    | pass         | 本地 Windows `verify`、PR head hosted Windows gate、人工体验和项目所有者 review 通过；T011 `done`，仅贡献 AC-01 步骤 1～2                                                         |
+| `EV-T012-001`              | T012                          | `56b3446a1b952a9bdb6fe29ab4a89502171ba321`                          | Action 生命周期、Today focus、当前下一步处理、重新安排、SQLite/IPC/UI 和真实重开                    | pass    | pass         | 本地 Windows `verify`、PR #9 实现 head hosted Windows gate 和项目所有者人工复验通过；仅贡献 AC-01 步骤 3，FR-A05 仅为 Action 状态解耦部分                                         |
+| `EV-T013-001`              | T013                          | `b10d5d40c4c1dc1f7a20801d5d904b1d37953270`                          | 快速/深入 ActionRecord、recording context、跨午夜、原子 post-record、SQLite/IPC/UI 和真实重开       | pass    | pass         | 本地 Windows `verify`、独立复核、PR #10 实现 head hosted Windows gate 和项目所有者人工验收通过；贡献 AC-01 步骤 4～5，并与 T012 合并完成 FR-A05                                   |
+| `EV-T014-001`              | T014                          | `52cd33672b6b2632b09beb7cb8e66f48901f2bd0`                          | 事实型 Progress、SQLite 一致性快照、窄 IPC/UI、筛选与真实重开                                       | pass    | pass         | 本地 Windows `verify`、PR #11 hosted Windows gate、独立 review 和项目所有者完整人工 AC-01 通过；merge revision `623007dd4269df02771f6a526db269de1fe95a03`                         |
+| `EV-T021-001`              | T021                          | `07c626739b454378f8af886c1d233da6f0bd97e6`                          | Routine 生命周期、ISO 星期节奏、Goal 接缝、Today 计划、SQLite/IPC/UI 和真实重开                     | pass    | pass         | 本地完整 `verify`、PR #17 实现 head hosted Windows gate、独立只读复核和项目所有者人工验收通过；仅贡献 AC-03 步骤 1～2                                                             |
+| `EV-T022-001`              | T022                          | `022b6e25731a07f113692a452de0128367059574`                          | RoutineRecord 四显式结果/缺行 unknown、非计划日、Today 五态、统一 Progress、跨午夜与重开            | pass    | pass         | 本地/hosted Windows 自动化、独立只读复核、PR #18 实现 head required gate 和项目所有者完整人工 AC-03 通过；FR-R08/T031 与 AC-04/T023 未实现                                        |
+| `EV-T023-001`              | T023                          | `b747f41d647891d1de0ef77a61840fdbc87cfa0f`                          | 通用 Action 非强制 intention、Today commitment 分区、显式转换、跨日零滚动与普通 ActionRecord 复用   | pass    | pass         | 本地完整 `verify`、PR #19 实现 head hosted Windows gate、独立只读复核和项目所有者完整人工 AC-04 通过；不声明 AC-03                                                                |
+| `EV-T031-001`              | T031                          | `1c08b3161021319d1c87ef4bf8cb2470d977bd48` / merge `f41c601`        | Record 修改/补记、Routine provenance、子事实转换、五类删除预览与事务性删除                          | pass    | pending      | 任务自动化/final-head CI 与 dev merge 已完成；专用人工清单仍保留 pending，完整人工 AC-07 由 T033/聚合证据记录                                                                     |
+| `EV-T032-001`              | T032                          | `79458b88b505346ef81c3cc920224c7cf0eb4ba4` / merge `43e6406`        | 十集合一致性快照、版本化完整导出、结构/引用校验和原子交付                                           | pass    | pass         | 本地/hosted/package 与项目所有者人工导出验收通过；PR #27 已合入 `dev`                                                                                                             |
+| `EV-T033-001`              | T033                          | `502ed1a282bc127684229f4405072acb7ef6fb11` / merge `8058f7a`        | AI 三态数据独立性、失败零写入、CRUD/Progress/删除/导出/重开与 AC-07                                 | pass    | pass         | 本地/hosted/package、独立复核与项目所有者完整人工 AC-07 通过；PR #28 已合入 `dev`                                                                                                 |
+| `EV-G3-S3-001`             | T803 / G3/S3                  | product `8058f7a` / task `0cd4a4b` / dev `eec0939` / main `75e51b4` | T031～T033 同 revision 聚合、AC-01/03/04/07、migration/重开、package、归档与 beta 里程碑            | pass    | pass         | pre-merge candidate 时间线保留；PR #29/#30、final/dev CI 与 `v0.1.0-beta.1` release 已完成                                                                                        |
+| `EV-T804-001`              | T804 / GOV-03                 | base `eec0939` / candidate-task `1610aae`                           | 长期文档任务、里程碑、release 与 GitHub 配置事实统一收口                                            | pass    | not-required | 本地门禁、完整 diff 独立 review、PR #31 candidate CI 与 owner-approved closeout 通过；final-head CI 为后续 PR 集成门禁                                                            |
+| `EV-T801-001`              | T801                          | `dd9bd4498b0339703f8cf992a564a7d7b80442b5`                          | S1 package smoke 精确 API、安全边界与 unpacked/NSIS 路径                                            | pass    | not-required | 本地 `verify`/package/package smoke、独立 review、PR #12 head CI 与最终 dev push CI 通过；merge `74ebe346a86cf431d87e02e8a1220b713b33901c`                                        |
+| `EV-T802-001`              | T802                          | `a61d0bc100752ae1209623a2ac020ff25a62bf8f`                          | S2 package API、连续 AC-03、S1 v1 数据守恒与合同归档候选                                            | partial | not-required | 实现候选本地完整门禁、独立 review 和 PR #20 hosted CI 通过；归档后最新 head CI、merge 与最终 dev 聚合复验待完成                                                                   |
+| `EV-T802-002`              | T802 / S2 aggregate           | `a9db1eb26134dac83b01f4a4d7da30f92a271242`                          | T021～T023 同 revision 聚合、AC-01/03/04、SQLite/LocalDate、Windows package 与归档                  | pass    | pass         | 最终 dev 本地/hosted 门禁、定向验收、package smoke 与独立 review 通过；T021～T023 人工验收沿用已记录的 owner pass                                                                 |
+| `EV-T090-001`              | T090 / GOV-01                 | `767ea6741411e2d2e7a82b297a0ed7dde3e3134e`                          | V2 第一、二批流程规范、Task Contract 字段、Stage Design 模板和 Escalation Proposal                  | pass    | pass         | T090 当时无产品试点；其流程后由 T031～T033/T803 实际使用，PR #23 以 `aeb0d68` 进入 `dev`                                                                                          |
+| `EV-T091-001`              | T091 / GOV-02                 | `f12f5e5fa81cf23124be126f2e23486d518104bc` / merge `4674597`        | V2 第三批确定性证据采集、CI artifact、metadata 校验和规则同步                                       | pass    | pass         | 本地与 hosted 验证通过；PR #24 已合入 `dev`，T031～T033/T803 已实际使用其 artifact/metadata 能力；T092 延后                                                                       |
+| `EV-T092-001`              | T092 / GOV-04                 | `9c7d9d3ae08dc7b32e9895deed1e43d26ca58985`                          | Standard Task Automation Profile、合同/metadata、Worktree 生命周期和 Workflow/PR 优化目标           | pass    | pass         | 本地分层验证、完整 diff review、candidate hosted CI 和 owner-approved docs closeout 通过；实际接入由 T093 证明                                                                    |
+| `EV-T093-001`              | T093 / GOV-05                 | `189decb664b0ba2147f3ec1931eabd37bda6fc8d`                          | Profile 与 lifecycle Skills、PR/CI 双 Gate、ruleset context、长任务等待策略                         | pass    | pass         | 本地治理与完整验证、完整 diff/独立 review、精确 head full+milestone hosted CI、ruleset after snapshot 和 owner-approved docs closeout 通过；final-head CI/merge 仍是 PR 集成 Gate |
+| `EV-T093-002`              | T093 / GOV-05                 | `2b31bc6be50d805f0dcad73a7a64cc3735a05d09`                          | PR #33 合入 dev 与 post-merge required checks                                                       | pass    | not-required | 补充当前集成事实；不覆盖 `EV-T093-001` 的候选时间线，不声明产品验收、Ready、tag 或 release                                                                                        |
+| `EV-T805-001`              | T805 / GOV-06                 | `c5dc68c2601b150becb1959869d2f48e5954539b`                          | `/docs` 冗余收敛、已完成治理合同归档和历史快照边界                                                  | partial | not-required | Draft PR #34 已创建；hosted checks 正在运行，项目所有者审阅仍待完成                                                                                                               |
+| `EV-T805-002`              | T805 / GOV-06                 | task `979fa1c` / dev `353a4d4`                                      | PR #34 final-head CI、owner closeout 与 dev 集成                                                    | pass    | pass         | 补充 `EV-T805-001` 的候选时间线；T805 已完成，不声明产品 FR/AC 或发布权限                                                                                                         |
+| `EV-T094-001`              | T094 / G4 enabling            | task `543180b...` / dev `2632ff0...`                                | Renderer ownership、AppShell/feature 拆分与 AC-01/03/04/07 行为保持                                 | pass    | pending      | 本地完整验证、package smoke、独立复核、PR #35 candidate/final-head CI、owner closeout 与 dev 集成通过；同环境视觉对比仍待完成                                                     |
+| `EV-T061-001`              | T061 / S6 E6-01               | task `5f98b2f...` / dev `4630878...`                                | 窄 AI 上下文 Query、纯 selector、Main-only manifest、fake capture 与零调用/隔离证明                 | pass    | pass         | candidate、人工测试、owner-approved closeout、修复后的 final-head CI、PR #46 merge 与 post-merge CI 均通过；不声明 T062/T063、AC-02 或 S6 final gate                              |
+| `EV-T062-001`              | T062 / S6 E6-02               | task `bc5461e3...` / dev `233d6790...`                              | 可替换 Provider、严格响应验证、deadline/cancel/generation、Main-only 配置与失败降级                 | pass    | not-required | 本地完整验证/package smoke、独立 review、candidate/final-head CI、PR #47 merge、post-merge CI 与 owner-approved closeout 通过；不声明 T063、完整 AC-02 或 S6 final gate           |
+| `EV-T063-001`              | T063 / S6 E6-03               | task `fee398e...` / dev `f06b1e9...`                                | 临时建议编辑/拒绝/关闭/retry、普通确认 Commands、原子 current-next、逐项 Understanding 与零写入守恒 | pass    | pass         | task 自动化/CI/merge 已通过；项目所有者在 T807 固定产品内容及边界修复上完成完整人工 AC-02，任务原始 pending 由聚合人工结果闭合                                                    |
+| `EV-T807-001`              | T807 / S6 aggregate           | product `f06b1e9...` / delivery `449ad4f...`                        | continuous AC-02、AI 隔离及 owner-approved SDK 日志/异常降级/live contract 边界修复                 | partial | pass         | exact delivery head hosted aggregate/package、独立复核及人工 AC-02 通过；owner-approved docs closeout 已执行，等待文档 final-head CI 与 owner-controlled merge/release gates      |
+| `EV-T041-001`              | T041 / E4-01                  | task `1e9ab2b80b5b81a8bedd192750281d4042f279d5`                     | RecoveryContext 只读事实、LocalDate、单事务 snapshot、窄 IPC/Preload、Goals 入口与 AC-05 步骤 1～4  | pass    | pass         | 本地完整验证、独立复核、PR #39 implementation-candidate CI 与项目所有者人工测试通过；不声明完整 AC-05、FR-P05、T042、Ready 或 merge                                               |
+| `EV-S4-S5-001`             | T806 / S4-S5 aggregate        | product `84b596e` / docs final head pending                         | T041～T052、AC-05/06、migration/export、package、证据与合同归档                                     | partial | pass         | 固定产品 source 的本地聚合与人工绑定通过；PR #43 candidate CI 因单 migration 用例默认超时失败，test-only 窄修复及 docs closeout 已完成，final-head hosted CI pending              |
+| `EV-PRE-S4-FOUNDATION-001` | S4 前工程/UI 基线（无新任务） | product/dev `2632ff0638fb02533100a1f9d0aea9f1323dbde3`              | T804/T092/T093/T805/T094 同 revision 治理、流程、UI Foundation 与 AC-01/03/04/07 回归               | pass    | pending      | 本地完整门禁、package smoke、完整 `main..dev` 独立 review 与 exact-dev post-merge CI 通过；视觉对比和聚合文档 final-head CI 分开记录                                              |
+| `EV-G3-S1-001`             | G3/S1                         | `623007dd4269df02771f6a526db269de1fe95a03`                          | T011～T014 同 revision 核心闭环、Windows package 与发布门禁                                         | fail    | pending      | `verify`、AC-01 和 package 构建通过；package smoke 因旧 Preload API 断言在 unpacked 阶段失败，NSIS 安装态未验证                                                                   |
+| `EV-G3-S1-002`             | G3/S1                         | `74ebe346a86cf431d87e02e8a1220b713b33901c`                          | T011～T014/T801 同 revision 核心闭环、Windows package 与发布门禁                                    | pass    | pass         | 验收门禁通过；项目所有者后续另行批准 PR #14 合入 `main@3912e80...` 并发布 `v0.1.0-alpha.2`                                                                                        |
 
 ### EV-T001-001
 
@@ -1027,7 +1052,7 @@ G1 的设计结论不是代码、CI、Windows 打包或产品验收证据。
 | AC-03 | `EV-T021-001`（步骤 1～2）；`EV-T022-001`（四显式结果、缺行 unknown、非计划日、Today/Progress、跨午夜与重开完整闭环）                           | 项目所有者于 2026-08-14 通过 T021 人工清单，并于 2026-08-15 明确报告“T022 人工验收：通过” | pass    |
 | AC-04 | `EV-T023-001`（通用 Action intention、显式转换、未发生零事实、跨日不滚动、普通 ActionRecord 复用与真实重开）                                    | 项目所有者于 2026-08-16 按 T023 人工步骤测试并明确确认通过                                | pass    |
 | AC-05 | —                                                                                                                                               | —                                                                                         | pending |
-| AC-06 | `EV-T051-001`、`EV-T052-001`                                                                                                                     | 项目所有者于 2026-08-30 报告 T051 步骤 1 和 T052 完整人工程序全体通过                     | pass    |
+| AC-06 | `EV-T051-001`、`EV-T052-001`                                                                                                                    | 项目所有者于 2026-08-30 报告 T051 步骤 1 和 T052 完整人工程序全体通过                     | pass    |
 | AC-07 | `EV-T031-001`（修改/补记/删除）；`EV-T032-001`（完整导出）；`EV-T033-001` / `EV-G3-S3-001`（AI 三态与同 revision 聚合）                         | 项目所有者于 2026-08-22 报告完整人工 AC-07 `pass`；T031 专用清单未单独执行的历史仍保留    | pass    |
 
 ## 7. CI 证据要求

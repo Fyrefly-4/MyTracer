@@ -5,7 +5,13 @@ import type {
   GoalStatusDto,
   GoalSummaryDto
 } from '../../../../contracts/goals'
-import { useUiSession, usePagePosition, revealStart, useUiLifetime } from '../../app/ui-session'
+import {
+  useUiSession,
+  usePagePosition,
+  revealStart,
+  useUiLifetime,
+  useUnsavedContent
+} from '../../app/ui-session'
 import { goalStatusText, actionStatusText, recordOutcomeText } from '../../app/ui-text'
 import { RecoveryPanel } from './RecoveryPanel'
 import type { GoalActivityViewDto } from '../../../../contracts/progress'
@@ -48,6 +54,12 @@ function GoalWorkspace(): ReactNode {
   const [selectedActionId, setSelectedActionId] = useState('')
   const [pendingGoalEnd, setPendingGoalEnd] = useState<PendingGoalEnd | null>(null)
   const [recoveryGoalId, setRecoveryGoalId] = useState<string | null>(session.recoveryGoalId)
+  useUnsavedContent(
+    'goal-form',
+    Boolean(createName || createDescription || createNextAction) ||
+      (detail !== null &&
+        (editName !== detail.name || editDescription !== (detail.description ?? '')))
+  )
   const goalEndTriggerRef = useRef<HTMLButtonElement | null>(null)
 
   useEffect(() => {

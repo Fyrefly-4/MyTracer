@@ -120,6 +120,9 @@ import {
   UPDATE_CHANNELS,
   type CancelUpdateInputDto,
   type DownloadUpdateInputDto,
+  type DraftReplyDto,
+  type DraftRequestDto,
+  type InstallPreparationResultDto,
   type UpdateStatusDto
 } from '../contracts/updates'
 
@@ -134,11 +137,23 @@ const api: MyTracerApi = Object.freeze({
       ipcRenderer.invoke(UPDATE_CHANNELS.download, input),
     cancel: (input: CancelUpdateInputDto): Promise<UpdateStatusDto> =>
       ipcRenderer.invoke(UPDATE_CHANNELS.cancel, input),
+    install: (input: DownloadUpdateInputDto): Promise<InstallPreparationResultDto> =>
+      ipcRenderer.invoke(UPDATE_CHANNELS.install, input),
+    cancelPreparation: (input: CancelUpdateInputDto): Promise<UpdateStatusDto> =>
+      ipcRenderer.invoke(UPDATE_CHANNELS.cancelPreparation, input),
+    replyToDraftRequest: (input: DraftReplyDto): Promise<void> =>
+      ipcRenderer.invoke(UPDATE_CHANNELS.draftReply, input),
     subscribe: (listener: (status: UpdateStatusDto) => void): (() => void) => {
       const handler = (_event: Electron.IpcRendererEvent, status: UpdateStatusDto): void =>
         listener(status)
       ipcRenderer.on(UPDATE_CHANNELS.changed, handler)
       return () => ipcRenderer.removeListener(UPDATE_CHANNELS.changed, handler)
+    },
+    subscribeDraftRequests: (listener: (request: DraftRequestDto) => void): (() => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, request: DraftRequestDto): void =>
+        listener(request)
+      ipcRenderer.on(UPDATE_CHANNELS.draftRequest, handler)
+      return () => ipcRenderer.removeListener(UPDATE_CHANNELS.draftRequest, handler)
     }
   }),
   goals: Object.freeze({

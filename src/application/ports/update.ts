@@ -10,7 +10,12 @@ export class UpdatePortError extends Error {
 export interface CheckedUpdate {
   readonly version: string
   readonly releaseNotes: string
-  download(signal: AbortSignal, onProgress: (percent: number) => void): Promise<void>
+  download(signal: AbortSignal, onProgress: (percent: number) => void): Promise<DownloadedUpdate>
+}
+
+export interface DownloadedUpdate {
+  verify(): Promise<boolean>
+  startInstall(): boolean
 }
 
 export interface UpdatePort {

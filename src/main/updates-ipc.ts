@@ -1,6 +1,11 @@
 import type { IpcMainInvokeEvent } from 'electron'
 import type { UpdateService } from '../application/update-service'
 import { UPDATE_CHANNELS } from '../contracts/updates'
+import type {
+  DownloadUpdateInputDto,
+  InstallPreparationResultDto,
+  UpdateStatusDto
+} from '../contracts/updates'
 
 export interface UpdatesIpcMain {
   removeHandler(channel: string): void
@@ -56,16 +61,50 @@ function operationInput(args: unknown[]): { readonly operationId: string } {
   return { operationId: input.operationId }
 }
 
+function draftReplyInput(args: unknown[]): {
+  readonly requestId: string
+  readonly hasUnsavedContent: boolean
+} {
+  if (
+    args.length !== 1 ||
+    !args[0] ||
+    typeof args[0] !== 'object' ||
+    Array.isArray(args[0]) ||
+    Object.keys(args[0]).length !== 2
+  ) {
+    throw new TypeError('Invalid draft response.')
+  }
+  const input = args[0] as Record<string, unknown>
+  if (
+    typeof input.requestId !== 'string' ||
+    !/^[a-zA-Z0-9-]{1,80}$/.test(input.requestId) ||
+    typeof input.hasUnsavedContent !== 'boolean'
+  ) {
+    throw new TypeError('Invalid draft response.')
+  }
+  return { requestId: input.requestId, hasUnsavedContent: input.hasUnsavedContent }
+}
+
 export function registerUpdatesIpc(options: {
   readonly ipc: UpdatesIpcMain
   readonly service: UpdateService
+  readonly installCoordinator: {
+    install(input: DownloadUpdateInputDto): Promise<InstallPreparationResultDto>
+    cancelPreparation(input: { readonly operationId: string }): UpdateStatusDto
+  }
+  readonly draftProbe: {
+    reply(input: { readonly requestId: string; readonly hasUnsavedContent: boolean }): void
+  }
   readonly assertSender: (event: IpcMainInvokeEvent) => void
 }): void {
   for (const channel of [
     UPDATE_CHANNELS.status,
     UPDATE_CHANNELS.check,
     UPDATE_CHANNELS.download,
-    UPDATE_CHANNELS.cancel
+    UPDATE_CHANNELS.cancel,
+    UPDATE_CHANNELS.install,
+    UPDATE_CHANNELS.cancelPreparation,
+    UPDATE_CHANNELS.draftReply
   ]) {
     options.ipc.removeHandler(channel)
   }
@@ -86,5 +125,17 @@ export function registerUpdatesIpc(options: {
   options.ipc.handle(UPDATE_CHANNELS.cancel, (event, ...args: unknown[]) => {
     options.assertSender(event)
     return options.service.cancel(operationInput(args))
+  })
+  options.ipc.handle(UPDATE_CHANNELS.install, (event, ...args: unknown[]) => {
+    options.assertSender(event)
+    return options.installCoordinator.install(candidateInput(args))
+  })
+  options.ipc.handle(UPDATE_CHANNELS.cancelPreparation, (event, ...args: unknown[]) => {
+    options.assertSender(event)
+    return options.installCoordinator.cancelPreparation(operationInput(args))
+  })
+  options.ipc.handle(UPDATE_CHANNELS.draftReply, (event, ...args: unknown[]) => {
+    options.assertSender(event)
+    options.draftProbe.reply(draftReplyInput(args))
   })
 }

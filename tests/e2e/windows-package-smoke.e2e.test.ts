@@ -66,7 +66,11 @@ async function verifyPackagedApplication(
       'check',
       'download',
       'cancel',
-      'subscribe'
+      'install',
+      'cancelPreparation',
+      'replyToDraftRequest',
+      'subscribe',
+      'subscribeDraftRequests'
     ])
     expect(await page.evaluate(() => window.myTracer.updates.getStatus())).toMatchObject({
       state: 'idle',
