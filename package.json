@@ -11,6 +11,7 @@
     "build": "electron-vite build",
     "package": "npm run build && electron-builder --win nsis --x64 --publish never",
     "release:validate": "node tools/release/validate.mjs",
+    "test:installed-update": "node tools/release/run-installed-test.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint . --max-warnings 0",
