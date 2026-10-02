@@ -57,6 +57,36 @@ async function setup(
 }
 
 describe('T083 installation coordination', () => {
+  it('blocks new commands during package verification and restores them on cancellation', async () => {
+    let finishVerification: ((valid: boolean) => void) | undefined
+    const flow = await setup({
+      verify: () => new Promise<boolean>((resolve) => (finishVerification = resolve))
+    })
+    const installing = flow.coordinator.install(input)
+    await vi.waitFor(() => expect(finishVerification).toBeDefined())
+    expect(flow.service.getStatus().state).toBe('preparing')
+    expect(flow.gate.state).toBe('preparing')
+    const write = vi.fn()
+    expect(() => flow.gate.run(write)).toThrow('unavailable')
+    expect(write).not.toHaveBeenCalled()
+    flow.coordinator.cancelPreparation({ operationId: input.operationId })
+    expect((await installing).blocker).toBe('cancelled')
+    finishVerification?.(true)
+    await Promise.resolve()
+    expect(flow.service.getStatus().state).toBe('downloaded')
+    expect(flow.gate.run(() => 'old-app-write')).toBe('old-app-write')
+    expect(flow.closeDatabase).not.toHaveBeenCalled()
+    expect(flow.startInstall).not.toHaveBeenCalled()
+  })
+
+  it('reopens the gate when preparation package verification fails', async () => {
+    const flow = await setup({ verify: async () => false })
+    expect((await flow.coordinator.install(input)).status.error?.code).toBe('integrity')
+    expect(flow.gate.run(() => 'old-app-write')).toBe('old-app-write')
+    expect(flow.closeDatabase).not.toHaveBeenCalled()
+    expect(flow.startInstall).not.toHaveBeenCalled()
+  })
+
   it('blocks unsaved Renderer content without closing the database', async () => {
     const flow = await setup({ probe: async () => 'unsaved' })
     expect((await flow.coordinator.install(input)).blocker).toBe('unsaved-content')
@@ -119,6 +149,30 @@ describe('T083 installation coordination', () => {
     expect(flow.startInstall).not.toHaveBeenCalled()
     finish?.()
     await pending
+  })
+
+  it('blocks installation if Renderer becomes unavailable while existing work drains', async () => {
+    let rendererAvailable = true
+    let probes = 0
+    const flow = await setup({
+      probe: async () => {
+        probes += 1
+        return rendererAvailable ? 'clear' : 'unavailable'
+      }
+    })
+    let finish: (() => void) | undefined
+    const pending = flow.gate.run(() => new Promise<void>((resolve) => (finish = resolve)))
+    const installing = flow.coordinator.install(input)
+    await vi.waitFor(() => expect(flow.cancelAiRequests).toHaveBeenCalledOnce())
+    rendererAvailable = false
+    finish?.()
+    await pending
+    expect((await installing).blocker).toBe('renderer-unavailable')
+    expect(probes).toBe(3)
+    expect(flow.gate.state).toBe('open')
+    expect(flow.service.getStatus().state).toBe('downloaded')
+    expect(flow.closeDatabase).not.toHaveBeenCalled()
+    expect(flow.startInstall).not.toHaveBeenCalled()
   })
 
   it('honors explicit cancellation while an existing operation drains', async () => {

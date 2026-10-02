@@ -71,7 +71,10 @@ export function ReviewPage(): ReactNode {
     existingActionId,
     newActionTitle
   ])
-  useUnsavedContent('review-form', Boolean(contextId && !busy && currentDraft !== loadedDraft))
+  useUnsavedContent(
+    'review-form',
+    Boolean(contextId && loadedDraft && currentDraft !== loadedDraft)
+  )
 
   useEffect(() => {
     let active = true

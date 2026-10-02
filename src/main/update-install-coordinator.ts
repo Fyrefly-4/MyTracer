@@ -56,16 +56,19 @@ export class UpdateInstallCoordinator {
       if (initialDrafts !== 'clear') return this.result(initialDrafts)
       if (controller.signal.aborted)
         return this.cancelAndResult(input, this.abortBlocker(controller))
+      if (!this.options.gate.beginPreparation()) return this.result('busy')
 
       const prepared = await this.awaitStep(
         this.options.service.prepareInstall(input),
         controller.signal
       )
       if (prepared === null) return this.cancelAndResult(input, this.abortBlocker(controller))
-      if (prepared.state !== 'preparing') return this.result()
+      if (prepared.state !== 'preparing') {
+        this.options.gate.cancelPreparation()
+        return this.result()
+      }
       if (controller.signal.aborted)
         return this.cancelAndResult(input, this.abortBlocker(controller))
-      if (!this.options.gate.beginPreparation()) return this.cancelAndResult(input, 'busy')
 
       // The preparing state is broadcast before the second probe so the Renderer can lock editing.
       const finalDrafts = await this.awaitStep(this.probe(), controller.signal)
@@ -76,12 +79,16 @@ export class UpdateInstallCoordinator {
 
       this.options.cancelAiRequests()
       const drained = await this.options.gate.drain(controller.signal)
-      if (!drained || !this.options.gate.seal()) {
+      if (!drained) {
         return this.cancelAndResult(
           input,
           controller.signal.aborted ? this.abortBlocker(controller) : 'busy'
         )
       }
+      const closingDrafts = await this.awaitStep(this.probe(), controller.signal)
+      if (closingDrafts === null) return this.cancelAndResult(input, this.abortBlocker(controller))
+      if (closingDrafts !== 'clear') return this.cancelAndResult(input, closingDrafts)
+      if (!this.options.gate.seal()) return this.cancelAndResult(input, 'busy')
 
       this.databaseClosed = true
       this.options.closeDatabase()

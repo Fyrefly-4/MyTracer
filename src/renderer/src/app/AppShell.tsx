@@ -1,5 +1,6 @@
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import type { ShellStatus } from '../../../contracts/shell'
+import type { UpdateStatusDto } from '../../../contracts/updates'
 import { DataControlPage } from '../features/data-control/DataControlPage'
 import { GoalsPage } from '../features/goals/GoalsPage'
 import { ProgressPage } from '../features/progress/ProgressPage'
@@ -22,7 +23,8 @@ export function AppShell(): ReactNode {
   const [status, setStatus] = useState<ShellStatus | null>(null)
   const [statusError, setStatusError] = useState(false)
   const [updateOpen, setUpdateOpen] = useState(false)
-  const [installPreparing, setInstallPreparing] = useState(false)
+  const [installPreparing, setInstallPreparing] = useState(true)
+  const [restartRequired, setRestartRequired] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -40,13 +42,29 @@ export function AppShell(): ReactNode {
   }, [])
 
   useEffect(() => {
-    const unsubscribeStatus = window.myTracer.updates.subscribe((next) => {
+    let active = true
+    let receivedStatus = false
+    const applyUpdateStatus = (next: UpdateStatusDto): void => {
+      if (!active) return
+      setRestartRequired(next.state === 'restartRequired')
       setInstallPreparing(
         next.state === 'preparing' ||
           next.state === 'installing' ||
           next.state === 'restartRequired'
       )
+    }
+    const unsubscribeStatus = window.myTracer.updates.subscribe((next) => {
+      receivedStatus = true
+      applyUpdateStatus(next)
     })
+    void window.myTracer.updates
+      .getStatus()
+      .then((next) => {
+        if (!receivedStatus) applyUpdateStatus(next)
+      })
+      .catch(() => {
+        if (active) setStatusError(true)
+      })
     const unsubscribeDraftRequests = window.myTracer.updates.subscribeDraftRequests((request) => {
       requestAnimationFrame(() => {
         void window.myTracer.updates.replyToDraftRequest({
@@ -56,6 +74,7 @@ export function AppShell(): ReactNode {
       })
     })
     return () => {
+      active = false
       unsubscribeStatus()
       unsubscribeDraftRequests()
     }
@@ -87,7 +106,9 @@ export function AppShell(): ReactNode {
           </div>
         </header>
 
-        {updateOpen ? <UpdatePanel onClose={() => setUpdateOpen(false)} /> : null}
+        {updateOpen || restartRequired ? (
+          <UpdatePanel onClose={() => setUpdateOpen(false)} />
+        ) : null}
 
         <div className="workspace" inert={installPreparing}>
           <nav className="sidebar" aria-label="主要视图">

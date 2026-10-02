@@ -2,6 +2,7 @@ import { join } from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { expect, test, type ElectronApplication } from '@playwright/test'
 import { _electron as electron } from 'playwright'
+import { REVIEW_CHANNELS } from '../../src/contracts/review'
 import { minimalElectronEnvironment } from '../support/electron-environment'
 import { createTemporaryTestRoot, removeTemporaryTestRoot } from '../support/temporary-test-root'
 
@@ -46,6 +47,11 @@ test('blocks installation for a Goal draft and preserves input until the user ha
     expect(await page.evaluate(() => window.myTracer.updates.getStatus())).toMatchObject({
       state: 'restartRequired'
     })
+    await page.reload()
+    await expect(
+      page.getByText('安装未能启动，应用已关闭数据连接。请重新启动当前版本。')
+    ).toBeVisible()
+    await expect(page.locator('.workspace')).toHaveAttribute('inert', '')
   } finally {
     await application?.close().catch(() => undefined)
     await removeTemporaryTestRoot(root)
@@ -136,6 +142,22 @@ test('blocks Action, Routine, Review, Record, and Data drafts before installer h
     await page.getByRole('button', { name: '复盘', exact: true }).click()
     await page.getByLabel('一个真实进展').fill('T083 review draft')
     await expectBlocked()
+    await expect(page.getByLabel('一个真实进展')).toHaveValue('T083 review draft')
+
+    await application.evaluate(({ ipcMain, app }, channel) => {
+      const testApp = app as typeof app & { finishReviewRefresh?: () => void }
+      ipcMain.removeHandler(channel)
+      ipcMain.handle(channel, async () => {
+        await new Promise<void>((resolve) => (testApp.finishReviewRefresh = resolve))
+        return { ok: false, error: { code: 'persistence-failed' } }
+      })
+    }, REVIEW_CHANNELS.getSummary)
+    await page.getByRole('button', { name: '重新读取记录' }).click()
+    await expect(page.getByRole('button', { name: '重新读取记录' })).toBeDisabled()
+    await expectBlocked()
+    await application.evaluate(({ app }) => {
+      ;(app as typeof app & { finishReviewRefresh?: () => void }).finishReviewRefresh?.()
+    })
     await expect(page.getByLabel('一个真实进展')).toHaveValue('T083 review draft')
 
     await page.getByRole('button', { name: '数据', exact: true }).click()
