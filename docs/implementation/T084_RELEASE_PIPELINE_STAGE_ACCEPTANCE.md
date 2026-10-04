@@ -4,6 +4,8 @@
 
 > 2026-10-04 执行授权更新：owner 已要求继续 T084，并批准只读独立评审子 agent、固定私有源演练安排及“当前 Windows 账户＋全新合成数据＋`0.1.0`→`0.1.3`→`0.1.4` 完整正常升级链路”。原合同准备时的“本步不开发”限制仅为历史记录，本次已解除。具体 Release/tag/source/hash 批准、凭据注入、人工验收及最终 docs closeout 门禁仍保留；本修订不签署验收或标 done。
 
+> 2026-10-04 实装预检补充：Windows known-folder 实测否定了仅靠进程 APPDATA/USERPROFILE 隔离默认 userData 的假设。安装前已增加拒绝检查，真实实装暂停；见 [当前账户数据路径调整提案](T084_CURRENT_ACCOUNT_DATA_PATH_PROPOSAL.md)。现存默认数据仍不进入测试、未搬移或删除；新路径例外须 owner 决议。本记录不否定既有离线/CI 结果，也不将其当作实装通过。
+
 ## 1. 任务信息
 
 - **Task ID / Title**：T084 / 私有发布流程与 S8 阶段验收。

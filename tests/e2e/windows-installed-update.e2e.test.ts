@@ -49,6 +49,24 @@ function preflight(): void {
   expect(status.stdout.trim()).toBe('0,0')
 }
 
+function assertSyntheticDefaultAppData(root: TemporaryTestRoot): void {
+  const check = spawnSync(
+    'powershell.exe',
+    [
+      '-NoProfile',
+      '-NonInteractive',
+      '-Command',
+      "if ([Environment]::GetFolderPath('ApplicationData') -eq $env:APPDATA) { exit 0 } else { exit 2 }"
+    ],
+    { env: minimalElectronEnvironment(root), encoding: 'utf8', timeout: 10_000 }
+  )
+  if (check.error || check.signal || check.status !== 0) {
+    throw new Error(
+      'Windows default appData does not follow the approved synthetic root; no installer was started.'
+    )
+  }
+}
+
 async function checkedInstaller(kind: 'SOURCE' | 'BASE'): Promise<string> {
   const file = required(`MYTRACER_INSTALLED_UPDATE_${kind}_INSTALLER`)
   const digest = required(`MYTRACER_INSTALLED_UPDATE_${kind}_SHA256`)
@@ -113,9 +131,10 @@ test('preserves one fixture through manual A to B and application-installed B to
   )
   test.setTimeout(900_000)
   preflight()
+  const root = await createTemporaryTestRoot()
+  assertSyntheticDefaultAppData(root)
   const baseInstaller = await checkedInstaller('BASE')
   const installer = await checkedInstaller('SOURCE')
-  const root = await createTemporaryTestRoot()
   const directory = join(root.root, 'installed-app'),
     executable = join(directory, 'MyTracer.exe')
   const targetVersion = required('MYTRACER_INSTALLED_UPDATE_TARGET_VERSION')
