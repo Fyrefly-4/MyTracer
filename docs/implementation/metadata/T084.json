@@ -52,7 +52,7 @@
   ],
   "external": [
     "T083 integrated at de88b1877ba2cfc48f1e593bcfcb2007471a3fa3; owner-authorized task index conflict resolution completed during contract preparation",
-    "isolated Windows identity and exact source package hashes",
+    "T084 owner-approved current Windows account with unique temporary synthetic data roots, identity/preflight checks and exact source package hashes",
     "dedicated read-only private-source test credential",
     "owner approval for exact rehearsal assets and formal publication"
   ]

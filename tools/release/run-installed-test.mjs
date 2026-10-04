@@ -3,10 +3,12 @@ import { spawnSync } from 'node:child_process'
 if (
   process.platform !== 'win32' ||
   process.env.MYTRACER_INSTALLED_UPDATE_TEST !== '1' ||
-  process.env.MYTRACER_INSTALLED_UPDATE_ISOLATION_ACK !== 'isolated-windows-identity'
+  !['isolated-windows-identity', 't084-approved-current-account-synthetic-data'].includes(
+    process.env.MYTRACER_INSTALLED_UPDATE_ISOLATION_ACK
+  )
 ) {
   process.stderr.write(
-    'Installed update test requires an approved isolated Windows identity and explicit opt-in.\n'
+    'Installed update test requires T084-approved Windows identity, synthetic data and explicit opt-in.\n'
   )
   process.exitCode = 1
 } else {

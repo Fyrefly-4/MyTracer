@@ -24,7 +24,9 @@ function required(name: string): string {
 
 function preflight(): void {
   expect(process.platform).toBe('win32')
-  expect(required('MYTRACER_INSTALLED_UPDATE_ISOLATION_ACK')).toBe('isolated-windows-identity')
+  expect(['isolated-windows-identity', 't084-approved-current-account-synthetic-data']).toContain(
+    required('MYTRACER_INSTALLED_UPDATE_ISOLATION_ACK')
+  )
   const identity = spawnSync('whoami.exe', ['/user', '/fo', 'csv', '/nh'], {
     encoding: 'utf8',
     timeout: 10_000
@@ -107,7 +109,7 @@ async function assertDownloadedHash(root: TemporaryTestRoot): Promise<void> {
 test('preserves one fixture through manual A to B and application-installed B to C', async () => {
   test.skip(
     process.env.MYTRACER_INSTALLED_UPDATE_TEST !== '1',
-    'Requires a real stable feed, read credential and approved isolated Windows identity.'
+    'Requires a real stable feed, read credential and T084-approved Windows identity.'
   )
   test.setTimeout(900_000)
   preflight()
@@ -119,7 +121,7 @@ test('preserves one fixture through manual A to B and application-installed B to
   const targetVersion = required('MYTRACER_INSTALLED_UPDATE_TARGET_VERSION')
   expect(targetVersion).toBe('0.1.4')
   let application: ElectronApplication | undefined
-  // The isolated VM is retained for installer/operator evidence; no automatic uninstall or deletion.
+  // Retain the owned installation and synthetic data for review; no automatic uninstall or deletion.
   try {
     const installation = spawnSync(baseInstaller, ['/S', `/D=${directory}`], {
       cwd: root.root,

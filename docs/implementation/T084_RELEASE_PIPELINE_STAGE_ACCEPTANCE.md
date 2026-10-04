@@ -2,6 +2,8 @@
 
 > 合同状态：approved，2026-10-03；owner 明确批准并激活开发合同，同意验证版本与产物方向，并批准 §11 的任务分支、提交、普通 push 与 Draft PR 权限；本任务不新建独立 worktree。真实源演练与部署方案见 [具体提案](T084_PRIVATE_REHEARSAL_DEPLOYMENT_PROPOSAL.md)，方案批准前不写真实源。任务索引同步冲突已按 owner 授权解决，记录见 [升级提案](T084_INDEX_CONFLICT_PROPOSAL.md)。Owner 指定本步仅建分支、落实合同及提交，不直接开始开发。
 
+> 2026-10-04 执行授权更新：owner 已要求继续 T084，并批准只读独立评审子 agent、固定私有源演练安排及“当前 Windows 账户＋全新合成数据＋`0.1.0`→`0.1.3`→`0.1.4` 完整正常升级链路”。原合同准备时的“本步不开发”限制仅为历史记录，本次已解除。具体 Release/tag/source/hash 批准、凭据注入、人工验收及最终 docs closeout 门禁仍保留；本修订不签署验收或标 done。
+
 ## 1. 任务信息
 
 - **Task ID / Title**：T084 / 私有发布流程与 S8 阶段验收。
@@ -54,7 +56,8 @@ references:
 - [x] T083 PR #59 已进入 `dev@de88b1877ba2cfc48f1e593bcfcb2007471a3fa3`；final PR head `91933e05debdbd0e091a885dcb7c31e880f58588` 的 run `37032193821` 与 post-merge run `37051649546` 均 success。EV-T083-001 按 owner 批准替代验收 pass，完整应用内跨版本升级仍未证明。
 - [x] 建分支前确认本地已 pull T083，当前 dev 为 `de88b1877ba2cfc48f1e593bcfcb2007471a3fa3`；保留索引上游全部任务行及 T083 done，补入 T084 合同/激活记录。真正开发前重新核对最新授权 dev、main、工作区及 shared surface。
 - [ ] 验证版本具体化为 T083 `0.1.3`→T084 `0.1.4`，对应 owner 本轮同意的更高目标版本方向；根应用版本/lockfile 同步仅限此变化。实际 source revision/hash 构建后固定，不预填。旧 `0.1.2`→`0.1.3` 为已有手动路径输入；不同包/来源配置不得混用。
-- [ ] 固定 Windows 隔离账户/一次性 VM 与临时数据、安装、导出和缓存根。T081/T082 当前账户特批不适用于 T084；若需要当前账户，须单独批准并先预检安装、进程、注册项及路径归属。
+- [x] Owner 已单独批准 T084 使用当前 Windows 账户和全新合成数据，放弃强制 VM/独立账户。2026-10-04 在实际 owner 账户只读预检：无 MyTracer 进程、无匹配每用户卸载注册项、默认安装目录不存在；默认 userData 和更新缓存存在，禁止读取内容、复制或清理。沙箱账户不作为实装身份。每次真正实装前必须重做 SID、进程、注册项和路径归属检查。
+- [ ] 执行前由测试创建唯一 OS 临时根 `mytracer-tests-*`，固定其 `installed-app`、`AppData/Roaming`、`AppData/Local`、`exports` 和缓存子目录；实际绝对路径仅保存在本地操作记录，脱敏证据不写路径/SID。保持同一根贯穿 A/B/C，实际默认 userData 必须经 realpath 确认为该根后代；现存默认数据/缓存不进入该范围。测试保留自己的安装和合成数据，不自动卸载或删注册项；当前没有任何清理授权。
 - [ ] 为真实源验证准备专用、最小只读、可撤销、有有效期的测试凭据；由 owner 安全注入，不展示或读取其值。普通 CI 移除真实变量并使用合成值。
 - [ ] 将实际发布者 owner 身份、源/目标私有仓库、可信 workflow ref、写凭据配置与权限需求列入部署清单；配置 secrets/environment/规则须另行精确授权。
 
@@ -76,7 +79,7 @@ dependencies:
     - installed update fixtures and upgrade evidence
     - task index and acceptance ledger
   external:
-    - isolated Windows identity and real NSIS source packages
+    - T084 owner-approved Windows identity, unique synthetic temporary roots and real NSIS source packages
     - fixed private GitHub source and dedicated read-only test credential
     - owner-dispatched publication of exact accepted main artifacts
 ```
@@ -112,7 +115,7 @@ dependencies:
 2. 只读检查/下载凭据留在 Main 的 `MYTRACER_UPDATE_TOKEN`；发布写凭据只在发布 job。AI key、token、用户数据、数据库、完整日志不得进入包、Renderer、导出、证据或普通 artifacts。
 3. 包的应用版本严格递增、稳定通道、固定 HTTPS 私有源；资产 SHA-256 和 updater 元数据 SHA-512 均匹配。unsigned 必须如实记录，不承诺已验证发布者，不关闭 Windows 安全保护。
 4. 普通关闭不是安装确认；草稿、未确认 AI 建议阻断安装；事务/导出/配置保存协调、候选变更重确认与新版本启动验证由真实实装流程覆盖。
-5. 所有测试只使用合成业务数据、fake AI、隔离 Windows 身份和唯一临时根；修改 userData 不能隔离 NSIS 注册项。清理前校验绝对路径和注册项归属，不碰既有默认安装。
+5. 所有测试只使用合成业务数据、fake AI 和唯一临时根；T084 可采用 owner 已批准的当前 Windows 账户。修改 userData 不能隔离 NSIS 注册项，仍须核对真实 SID、无现存进程/安装注册项及目录归属。不碰既有默认数据或安装；清理需要另行授权，不能由环境替代方案推导。
 6. candidate workflow 与 Verification 不持有 Release 写权限，不改变 feed。所有测试打包显式 `--publish never`；不沿用可能隐式发布的旧 package 命令。
 7. 发布只消费 owner 审阅的不可变 artifact；构建、测试、验收、hash 和版本绑定同一来源。过期/缺失/不一致必须重新构建并重新审阅，不能静默换包或接受任意分支脚本。
 
@@ -152,7 +155,7 @@ Owner 对已审阅具体版本/产物手动 dispatch 即为该次批准，无需
 6. 真实私有源覆盖未配置/错误/过期或撤销凭据、无权访问、HTTPS/重定向、缺失元数据、损坏包、下载断网/重试/稍后；鉴权失败与无更新不同，核心功能持续可用。
 7. 草稿逐项阻断、取消不丢输入、写入/导出/配置等待、第二实例、同版/低版/预发布拒绝、磁盘不足、安装失败/中断及过新数据库拒绝有逐项结论；失败后可按应用外说明修复，不自动回退、不声称安装原子性。
 8. 在同一 S8 最终 dev revision 上 aggregate、打包、升级/失败路径结果可追溯，AC-01～07 受影响回归通过；缺口有 owner 明确处置而非删掉失败。
-9. **MANUAL**：owner 在隔离 Windows 环境完成 S8 §6.3 操作与 unsigned/系统拦截体验、私有源访问、数据/配置保留、安装失败人工修复，记录通过/失败/部分通过。Agent 不代签。准备文件完成不等于本条通过。
+9. **MANUAL**：owner 在 T084 已批准 Windows 账户与合成数据环境完成 S8 §6.3 操作与 unsigned/系统拦截体验、私有源访问、数据/配置保留、安装失败人工修复，记录通过/失败/部分通过。Agent 不代签。准备文件完成不等于本条通过。
 
 ## 10. 验证计划
 
@@ -194,9 +197,9 @@ node tools/evidence/capture-command.mjs --task T084 --gate task-candidate --base
 
 候选记录 source、PR head/test-merge、CI run/job/artifact ID；发布记录实际 main SHA、workflow ref、owner 触发、版本/tag/资产 hash、Release ID 及可见状态。early/candidate/final-head/post-merge 分开；保存失败/skip 并用 supersedes 链接后续成功。证据拟用 EV-T084-001（工具与 workflow）、EV-T084-002（真实分发/实装）、EV-S8-001（最终阶段聚合），尚不创建通过条目。
 
-Windows x64 可启动桌面进程，隔离身份与临时根；编写时 Node 24.18.0/npm 11.16.0/Electron 43.3.0/builder 26.15.3/updater 6.8.10。实际环境和每个包 source/版本/hash 在运行时固定。常规测试 fake AI/fake 更新源，真实源测试另列网络/账户授权。
+Windows x64 可启动桌面进程，T084 批准身份与唯一临时合成数据根；编写时 Node 24.18.0/npm 11.16.0/Electron 43.3.0/builder 26.15.3/updater 6.8.10。实际环境和每个包 source/版本/hash 在运行时固定。常规测试 fake AI/fake 更新源，真实源测试另列网络/账户授权。
 
-人工程序按 S8 §6.3 连续执行；失败/磁盘不足/安装中断只在一次性隔离环境演练，不修改全机安全设置。外部 CI 确认启动并记录 revision/run 后 HANDOFF；恢复时检查是否 superseded，不轮询不变状态。
+人工程序按 S8 §6.3 连续执行；失败/磁盘不足/安装中断等破坏性场景另行决定安排，当前账户正常链路批准不包含这些操作；未实测项保持 pending。不修改全机安全设置。外部 CI 确认启动并记录 revision/run 后 HANDOFF；恢复时检查是否 superseded，不轮询不变状态。
 
 ## 11. Git 与 GitHub 权限
 
