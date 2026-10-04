@@ -74,7 +74,12 @@ describe('release acceptance binds exact trusted artifacts before publication', 
     "manifest.tests.aggregate.commandStatus='failed';",
     "manifest.tests.aggregate.sourceRevision='c'.repeat(40);"
   ])('rejects %s', (mutation) => {
-    expect(run(`${mutation} validatePublication(context);`).status).not.toBe(0)
+    const result = run(`${mutation} validatePublication(context);`)
+    expect(result.error).toBeUndefined()
+    expect(result.signal).toBeNull()
+    expect(result.status, result.stderr).toBe(1)
+    expect(result.stderr).toMatch(/Error: [a-z]+(?:-[a-z]+)+\r?\n/)
+    expect(result.stderr).toContain('at requireCondition')
   })
   test('compares stable numeric versions without coercion or integer overflow', () => {
     expect(

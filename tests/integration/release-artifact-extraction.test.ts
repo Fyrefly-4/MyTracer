@@ -67,11 +67,13 @@ test.runIf(process.platform === 'win32').each([
         timeout: 30_000
       }
     )
+    expect(result.error).toBeUndefined()
+    expect(result.signal).toBeNull()
     if (scenario.valid) {
       expect(result.status, result.stderr).toBe(0)
       expect((await readdir(destination)).sort()).toEqual([...allowed].sort())
     } else {
-      expect(result.status).not.toBe(0)
+      expect(result.status, result.stderr).toBe(1)
       expect(await readdir(root)).toEqual(
         scenario.existing ? ['bundle', 'candidate.zip'] : ['candidate.zip']
       )
