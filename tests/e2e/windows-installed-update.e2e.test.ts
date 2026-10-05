@@ -239,7 +239,7 @@ test('preserves one fixture through manual A to B and application-installed B to
               '-NoProfile',
               '-NonInteractive',
               '-Command',
-              '$v=[System.Diagnostics.FileVersionInfo]::GetVersionInfo($env:MYTRACER_TEST_EXECUTABLE).ProductVersion; $p=@(Get-Process -Name MyTracer -ErrorAction SilentlyContinue).Count; Write-Output "$v,$p"'
+              '$v=[Version][System.Diagnostics.FileVersionInfo]::GetVersionInfo($env:MYTRACER_TEST_EXECUTABLE).ProductVersion; if ($v.Revision -eq 0) { $v=$v.ToString(3) }; $p=@(Get-Process -Name MyTracer -ErrorAction SilentlyContinue).Count; Write-Output "$v,$p"'
             ],
             {
               env: { ...minimalElectronEnvironment(root), MYTRACER_TEST_EXECUTABLE: executable },
