@@ -258,6 +258,16 @@ T083 未集成；未经批准版本/依赖/写权限；真实源尚未建立且�
 
 ## 14. 完成报告
 
+### 2026-10-05 授权文档收尾快照
+
+Owner 已明确“暂不考虑执行，直接进行文档收尾并进行最后一次推送”。本次更新合同、任务索引、证据账本、演练方案、认证阻塞记录与阶段程序及 Draft PR 正文，提交/普通推送当前任务分支；不继续真实测试、不重新安装、不清理、不 Ready/merge/main 或再发布。上文“本步仅合同”“拟建入口”等是初始合同阶段事实；现有 `release:validate`、`test:installed-update`、candidate/publish workflow 及离线发布工具已实现，不将历史计划当当前结果。
+
+验证候选 `f9e88a12038d3528dce067fa9828dae534a0bcbc`，基线 `de88b1877ba2cfc48f1e593bcfcb2007471a3fa3`；本地 `npm.cmd run verify` exit 0，独立复核无实质问题，candidate run `37313214100` 与 Verification run `37313214062` success；最新授权 dev 未变化，fresh/refresh_method=none。f9 与实测 a575 仅 Windows ProductVersion 零 revision 测试归一化不同，无产品代码/配置差异。文档推送是新 head，需其自身 CI；delivery/dev/stage final revision 尚未成立，保持 null。
+
+精确批准的 `v0.1.4` 演练已于固定私有源发布，source `a5759763adc18739f8f65bcfc48f01db8f1ecd7f`，五资产回读通过后 stable/latest，真实正常 A→B→C 与既有 C 接续结果见 [EV-T084-002](ACCEPTANCE_EVIDENCE_V0.1.md#ev-t084-002)。原实装版本格式断言 exit 1 和负面检查预期失败均保留；补测只覆盖对应缺口，不改写原命令。
+
+无凭据、合成错误凭据访问真实 API、进程内请求阻断有实装结果；真实 PAT 到期/撤销/有效无权、实际下载中断恢复、磁盘不足/安装中断/失败修复及 owner unsigned/系统提示体验仍 pending。Owner 暂不执行这些项目，不等于豁免或通过。§9条件不缩减，任务仍 active，S8 未完成；最终 dev 聚合与人工验收及正式 main 发布分别另行授权。未新增依赖、迁移、产品语义或 AI 权限；未发现冻结需求冲突。
+
 列出改动文件、U/FR/AC/D/ED/GW 覆盖、真实命令/退出码/环境、分层测试及 owner 人工状态、完整 diff/独立 review、任务/集成/阶段/main revision、PR/CI/run/artifact/包/元数据 hash、真实私有访问与 unsigned 结果、授权和副作用、未验证项及是否出现冲突/范围变化。
 
 T084 实施完成须满足范围内实现、规定验证、评审、证据与 docs closeout；S8 阶段通过须另有同一最终集成 revision 的完整聚合和 owner 人工结果。未得到真实结果前，不标 done，不把本合同当成验收或发布授权。

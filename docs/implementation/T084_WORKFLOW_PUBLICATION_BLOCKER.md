@@ -1,6 +1,6 @@
 # T084 — Workflow publication credential blocker
 
-> 2026-10-03，执行通信记录。只阻断普通 push、Draft PR 和 hosted CI；本地实现与离线验证继续。不是新增权限来源。
+> 2026-10-03，历史执行通信记录；2026-10-05 确认该认证阻塞已解决。下面 YAML 保留发现时失败，不表示当前仍阻塞。不是新增权限来源。
 
 ```yaml
 type: permission_change
@@ -44,3 +44,9 @@ minimum_owner_decision:
   - Provide working workflow-capable Git authentication without sending credentials in chat, or push the branch personally
 recommended_resume_point: Verify remote dev/head and local task state before retrying the same normal task push; no force push
 ```
+
+## 后续解决与证据
+
+后续普通任务分支 push 成功，Draft PR [#60](https://github.com/Fyrefly-4/MyTracer/pull/60) 建立并取得 hosted CI。当前验证候选 `f9e88a12038d3528dce067fa9828dae534a0bcbc` 的 candidate run `37313214100` 与 Verification run `37313214062` 均 `completed/success`，已只读核实对应 PR head；历史 push/SSH 失败保留，不改记为成功，不使用 force push。
+
+任务发布认证不等于客户端 Contents-read PAT，不扩大 token 权限或将认证值写入证据。Owner 于 2026-10-05 批准文档收尾与最后一次普通推送；新文档 head 的 CI 是新的集成门槛，结果在 PR 交接，不用候选绿灯替代。未授权 Ready、merge、main 或新的 tag/Release。
