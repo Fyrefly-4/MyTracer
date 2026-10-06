@@ -17,10 +17,9 @@ function run(expression: string) {
       assets:['MyTracer-0.1.4-x64-setup.exe','MyTracer-0.1.4-x64-setup.exe.blockmap','latest.yml','SHA256SUMS.txt'].map(name=>({name,size:10,sha256:digest,sha512:'A'.repeat(86)+'=='})),
       tests:Object.fromEntries(['aggregate','package','package-smoke'].map(g=>[g,{sourceRevision:sha,exitCode:0,captureStatus:'complete',commandStatus:'passed'}]))};
     const context={manifest,now,repository:{id:1326905280,full_name:'Fyrefly-4/MyTracer',private:true},
-      mainRevisions:[sha],existingVersions:[],dispatch:{actor:'Fyrefly-4',actorId:183197199,ref:'refs/heads/main',workflowRevision:sha,sourceRevision:sha,version:'0.1.4',tag:'v0.1.4',runId:100,artifactId:200,manifestSha256:digest},
+      mainRevisions:[sha],existingVersions:[],dispatch:{actor:'Fyrefly-4',actorId:183197199,ref:'refs/tags/v0.1.4',tagObjectRevision:sha,workflowRevision:sha,sourceRevision:sha,version:'0.1.4',tag:'v0.1.4',runId:100,runAttempt:1,artifactDigest:'sha256:'+digest,artifactId:200,manifestSha256:digest},
       run:{id:100,run_attempt:1,path:'.github/workflows/update-candidate.yml',status:'completed',conclusion:'success',head_sha:sha,head_branch:'main',event:'push',repository:{id:1326905280},head_repository:{id:1326905280}},
-      artifact:{id:200,name:'update-candidate-100-1',expired:false,digest:'sha256:'+digest,created_at:'2026-10-02T00:00:00Z',expires_at:'2026-10-10T00:00:00Z',workflow_run:{id:100,head_sha:sha,repository_id:1326905280}},
-      approval:{status:'accepted',sourceRevision:sha,version:'0.1.4',runId:100,artifactId:200,artifactDigest:'sha256:'+digest,ownerId:183197199,manifestSha256:digest}};
+      artifact:{id:200,name:'update-candidate-100-1',expired:false,digest:'sha256:'+digest,created_at:'2026-10-02T00:00:00Z',expires_at:'2026-10-10T00:00:00Z',workflow_run:{id:100,head_sha:sha,repository_id:1326905280}}};
     ${expression}
   `
     ],
@@ -30,14 +29,26 @@ function run(expression: string) {
 }
 
 describe('release acceptance binds exact trusted artifacts before publication', () => {
-  test('accepts exact owner/main/run/artifact/approval and stable source compatibility', () => {
+  test('accepts exact owner tag/main/run/artifact and stable source compatibility', () => {
     expect(run('validatePublication(context);').status).toBe(0)
+  })
+  test('accepts a manual candidate rebuild on the owner tag after its main source was verified', () => {
+    expect(
+      run(
+        "context.run.event=manifest.build.event='workflow_dispatch';context.run.head_branch=context.dispatch.tag;manifest.build.ref=context.dispatch.ref;validatePublication(context);"
+      ).status
+    ).toBe(0)
   })
   test.each([
     "context.dispatch.actor='someone';",
     'context.dispatch.actorId=1;',
     "context.dispatch.ref='refs/heads/dev';",
     "context.dispatch.workflowRevision='abc';",
+    "context.dispatch.workflowRevision='c'.repeat(40);",
+    "context.dispatch.tagObjectRevision='abc';",
+    'context.dispatch.runAttempt=2;',
+    "context.dispatch.artifactDigest='sha256:'+'c'.repeat(64);",
+    "context.dispatch.manifestSha256='abc';",
     'context.repository.private=false;',
     'context.repository.id=1;',
     "context.repository.full_name='other/repo';",
@@ -52,6 +63,7 @@ describe('release acceptance binds exact trusted artifacts before publication', 
     "context.run.path='.github/workflows/other.yml';",
     'context.run.head_repository.id=1;',
     "context.run.event='pull_request';",
+    "manifest.build.ref='refs/tags/v0.1.4';",
     "context.run.head_branch='dev';",
     'context.run.run_attempt=2;',
     'context.artifact.id=201;',
@@ -61,11 +73,7 @@ describe('release acceptance binds exact trusted artifacts before publication', 
     "context.artifact.created_at='2026-09-01T00:00:00Z';",
     "context.artifact.expires_at='2026-10-01T00:00:00Z';",
     "context.artifact.created_at='invalid';",
-    'context.approval=null;',
-    "context.approval.status='pending';",
-    'context.approval.artifactId=201;',
-    "context.approval.manifestSha256='c'.repeat(64);",
-    "context.approval.artifactDigest='sha256:'+'c'.repeat(64);",
+
     "manifest.version='0.1.4-beta.1';",
     "manifest.compatibleFrom=['0.1.4'];",
     "manifest.assets[0].name='../setup.exe';",

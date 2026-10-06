@@ -1,28 +1,8 @@
 name: Publish accepted update
 
 on:
-  workflow_dispatch:
-    inputs:
-      source_sha:
-        description: Full accepted main source SHA
-        type: string
-        required: true
-      version:
-        description: Reviewed stable app version; tag is v plus this version
-        type: string
-        required: true
-      run_id:
-        description: Exact completed main candidate run ID
-        type: string
-        required: true
-      artifact_id:
-        description: Exact reviewed immutable artifact ID
-        type: string
-        required: true
-      manifest_sha256:
-        description: Reviewed candidate-manifest SHA-256 in main acceptance ledger
-        type: string
-        required: true
+  push:
+    tags: ['v*']
 
 permissions:
   contents: read
@@ -34,9 +14,11 @@ concurrency:
 
 jobs:
   validate:
-    if: github.repository == 'Fyrefly-4/MyTracer' && github.ref == 'refs/heads/main' && github.actor == 'Fyrefly-4' && github.triggering_actor == 'Fyrefly-4'
+    if: github.repository == 'Fyrefly-4/MyTracer' && startsWith(github.ref, 'refs/tags/v') && github.event.created == true && github.event.deleted == false && github.event.forced == false && github.actor == 'Fyrefly-4' && github.triggering_actor == 'Fyrefly-4'
     runs-on: windows-2025
     timeout-minutes: 10
+    outputs:
+      selection: ${{ steps.prepare.outputs.selection }}
     steps:
       - name: Checkout trusted workflow revision only
         uses: actions/checkout@v6.0.2
@@ -50,6 +32,7 @@ jobs:
           node-version: 24.18.0
           package-manager-cache: false
       - name: Read-only source and artifact validation
+        id: prepare
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node tools/release/publish.mjs prepare
@@ -77,4 +60,5 @@ jobs:
       - name: Revalidate and publish exact approved bytes
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MYTRACER_RELEASE_SELECTION: ${{ needs.validate.outputs.selection }}
         run: node tools/release/publish.mjs publish

@@ -1,91 +1,106 @@
 import { createHash } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { appendFile, mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { GithubApi } from './github-api.mjs'
-import { OWNER, requireCondition, validateBundle, validatePublication } from './provenance.mjs'
+import { REPOSITORY, requireCondition, validateBundle, validatePublication } from './provenance.mjs'
 import { publishCandidate } from './publication.mjs'
+import {
+  readTagApproval,
+  selectCandidateArtifact,
+  selectCandidateRun,
+  validateSelection
+} from './tag-approval.mjs'
 
-try {
-  const mode = process.argv[2]
-  requireCondition(
-    process.argv.length === 3 && ['prepare', 'publish'].includes(mode),
-    'publication-arguments'
-  )
-  const environment = process.env
+// Offline tests inject only the transport and Git checkout identity; bundle extraction is real.
+export async function runPublication(
+  mode,
+  environment = process.env,
+  api,
+  git = (args) => execFileSync('git', args, { encoding: 'utf8' }).trim()
+) {
+  requireCondition(['prepare', 'publish'].includes(mode), 'publication-arguments')
   const event = JSON.parse(await readFile(environment.GITHUB_EVENT_PATH, 'utf8'))
+  const approval = readTagApproval(event, environment)
+  const sourceRevision = git(['rev-parse', 'HEAD'])
   requireCondition(
-    environment.GITHUB_EVENT_NAME === 'workflow_dispatch' &&
-      environment.GITHUB_REF === 'refs/heads/main' &&
-      event.sender?.login === OWNER.login &&
-      event.sender?.id === OWNER.id &&
-      environment.GITHUB_ACTOR === OWNER.login &&
-      environment.GITHUB_TRIGGERING_ACTOR === OWNER.login,
-    'dispatch-owner'
+    sourceRevision === git(['rev-parse', `${approval.workflowRevision}^{commit}`]),
+    'workflow-checkout'
   )
-  const git = (args) => execFileSync('git', args, { encoding: 'utf8' }).trim()
-  const workflowRevision = git(['rev-parse', 'HEAD'])
-  requireCondition(workflowRevision === environment.GITHUB_SHA, 'workflow-checkout')
-  const { source_sha, version, run_id, artifact_id, manifest_sha256 } = event.inputs
+  const { version } = JSON.parse(await readFile('package.json', 'utf8'))
+  const lock = JSON.parse(await readFile('package-lock.json', 'utf8'))
   requireCondition(
-    /^[a-f0-9]{40}$/.test(source_sha) &&
-      /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(version) &&
-      /^[1-9]\d*$/.test(run_id) &&
-      /^[1-9]\d*$/.test(artifact_id) &&
-      /^[a-f0-9]{64}$/.test(manifest_sha256),
-    'dispatch-input'
+    version === approval.version &&
+      lock.version === version &&
+      lock.packages?.['']?.version === version,
+    'source-version'
   )
+  api ??= new GithubApi(environment.GH_TOKEN, mode === 'publish')
+  const repository = await api.get('')
+  const tag = await api.resolveTag(approval.tag)
   requireCondition(
-    Number.isSafeInteger(Number(run_id)) && Number.isSafeInteger(Number(artifact_id)),
-    'dispatch-id'
+    tag.sourceRevision === sourceRevision &&
+      [tag.sourceRevision, tag.tagObjectRevision].includes(approval.eventRevision),
+    'tag-event-source'
   )
-  git(['merge-base', '--is-ancestor', source_sha, workflowRevision])
-  const api = new GithubApi(environment.GH_TOKEN, mode === 'publish')
-  const [repository, run, artifact, releases] = await Promise.all([
-    api.get(''),
-    api.get(`/actions/runs/${run_id}`),
-    api.get(`/actions/artifacts/${artifact_id}`),
-    api.allReleases()
-  ])
-  // Only approvals checked into the trusted main checkout are authoritative, never bundle-provided approvals.
-  const ledger = await readFile('docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md', 'utf8')
-  const approvals = [...ledger.matchAll(/```release-approval\r?\n([\s\S]*?)```/g)].map((m) =>
-    JSON.parse(m[1])
-  )
-  const matching = approvals.filter(
-    (a) =>
-      a.sourceRevision === source_sha &&
-      a.version === version &&
-      a.artifactId === Number(artifact_id)
-  )
-  requireCondition(matching.length === 1, 'missing-main-acceptance')
+  approval.workflowRevision = sourceRevision
+  approval.tagObjectRevision = tag.tagObjectRevision
+  await api.assertMainSource(sourceRevision)
+  await api.assertReleaseAvailable(approval.tag, sourceRevision, approval.tagObjectRevision)
+
+  let selection, run, artifact
+  if (mode === 'prepare') {
+    run = selectCandidateRun(await api.candidateRuns(sourceRevision), sourceRevision, approval.tag)
+    artifact = selectCandidateArtifact(await api.runArtifacts(run.id), run)
+  } else {
+    selection = validateSelection(JSON.parse(environment.MYTRACER_RELEASE_SELECTION))
+    requireCondition(
+      selection.sourceRevision === sourceRevision &&
+        selection.version === approval.version &&
+        selection.tagObjectRevision === approval.tagObjectRevision,
+      'selection-source'
+    )
+    // Never rediscover a replacement candidate in the write job.
+    run = await api.get(`/actions/runs/${selection.runId}`)
+    artifact = await api.get(`/actions/artifacts/${selection.artifactId}`)
+  }
+  const dispatch = {
+    ...approval,
+    sourceRevision,
+    runId: run.id,
+    runAttempt: run.run_attempt,
+    artifactId: artifact.id,
+    artifactDigest: artifact.digest,
+    manifestSha256: selection?.manifestSha256 ?? '0'.repeat(64)
+  }
+  if (selection) {
+    requireCondition(
+      run.id === selection.runId &&
+        artifact.id === selection.artifactId &&
+        run.run_attempt === selection.runAttempt &&
+        artifact.digest === selection.artifactDigest,
+      'selection-changed'
+    )
+  }
   const context = {
     now: Date.now(),
     repository,
     run,
     artifact,
-    approval: matching[0],
-    mainRevisions: [source_sha],
-    existingVersions: releases.map((r) => r.tag_name),
-    dispatch: {
-      actor: event.sender.login,
-      actorId: event.sender.id,
-      ref: environment.GITHUB_REF,
-      workflowRevision,
-      sourceRevision: source_sha,
-      version,
-      tag: `v${version}`,
-      runId: Number(run_id),
-      artifactId: Number(artifact_id),
-      manifestSha256: manifest_sha256
-    }
+    dispatch,
+    mainRevisions: [sourceRevision],
+    existingVersions: (await api.allReleases()).map((release) => release.tag_name)
   }
-  const base = `.tmp/release/${mode}`
-  await mkdir(base, { recursive: true })
-  const archive = await api.request(
-    `/repos/Fyrefly-4/MyTracer/actions/artifacts/${artifact_id}/zip`,
-    { binary: true }
+  requireCondition(
+    artifact.expired === false && /^sha256:[a-f0-9]{64}$/.test(artifact.digest),
+    'candidate-artifact'
   )
+  await mkdir('.tmp/release', { recursive: true })
+  const base = await mkdtemp(`.tmp/release/${mode}-`)
+  const archive = await api.request(`/repos/${REPOSITORY}/actions/artifacts/${artifact.id}/zip`, {
+    binary: true
+  })
   requireCondition(
     `sha256:${createHash('sha256').update(archive).digest('hex')}` === artifact.digest,
     'archive-integrity'
@@ -111,25 +126,49 @@ try {
   )
   const manifestPath = join(directory, 'candidate-manifest.json')
   const manifest = await validateBundle(manifestPath)
-  requireCondition(
-    createHash('sha256')
-      .update(await readFile(manifestPath))
-      .digest('hex') === manifest_sha256,
-    'manifest-integrity'
-  )
+  const manifestSha256 = createHash('sha256')
+    .update(await readFile(manifestPath))
+    .digest('hex')
+  if (selection) requireCondition(manifestSha256 === selection.manifestSha256, 'manifest-integrity')
+  dispatch.manifestSha256 = manifestSha256
   validatePublication({ ...context, manifest })
-  await api.assertVersionAbsent(`v${version}`)
-  if (mode === 'publish') {
+  selection = validateSelection({
+    sourceRevision,
+    tagObjectRevision: approval.tagObjectRevision,
+    version,
+    runId: run.id,
+    runAttempt: run.run_attempt,
+    artifactId: artifact.id,
+    artifactDigest: artifact.digest,
+    manifestSha256
+  })
+  if (mode === 'prepare') {
+    requireCondition(typeof environment.GITHUB_OUTPUT === 'string', 'selection-output')
+    await appendFile(environment.GITHUB_OUTPUT, `selection=${JSON.stringify(selection)}\n`)
+  } else {
     const result = await publishCandidate({ context, directory, api })
     process.stdout.write(`Published release ${result.releaseId} from ${result.sourceRevision}.\n`)
-  } else
-    process.stdout.write(
-      `Approved immutable candidate ${version} validated; no writes performed.\n`
+  }
+  if (environment.GITHUB_STEP_SUMMARY) {
+    await appendFile(
+      environment.GITHUB_STEP_SUMMARY,
+      `Owner tag: ${approval.tag}\n\nSource: ${sourceRevision}\n\nCandidate run/attempt: ${run.id}/${run.run_attempt}\n\nArtifact: ${artifact.id}\n\nArchive digest: ${artifact.digest}\n\nManifest SHA-256: ${manifestSha256}\n`
     )
-} catch {
-  // Never print exception text, GitHub bodies, signed URLs or credential-bearing environment.
-  process.stderr.write(
-    'Publication stopped. Check source, acceptance, artifact and permissions; any created draft/tag is preserved.\n'
-  )
-  process.exitCode = 1
+  }
+  return selection
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  Promise.resolve()
+    .then(() => {
+      requireCondition(process.argv.length === 3, 'publication-arguments')
+      return runPublication(process.argv[2])
+    })
+    .catch(() => {
+      // Never print exception text, API bodies, signed URLs or credential-bearing environment.
+      process.stderr.write(
+        'Publication stopped. Check owner tag, main source, candidate and permissions; any created draft is preserved.\n'
+      )
+      process.exitCode = 1
+    })
 }

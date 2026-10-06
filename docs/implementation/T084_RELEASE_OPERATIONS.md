@@ -1,6 +1,6 @@
 # T084 — 候选构建与私有发布操作
 
-> 初始实现说明为 2026-10-03；2026-10-06 更新：候选 workflow 与 v0.1.4 私有 stable 演练已有实际结果，owner 报告简明真实更新通过。正式 accepted-main publish workflow 及真实故障验收仍待验证；本文件不授予发布权限。
+> 发布操作说明。当前维护方案见 Owner tag 正式发布一节；后文的 S8 阶段记录为历史事实。创建 tag、真实发布和分支合并仍由 owner 控制。
 
 ## 候选与审核
 
@@ -10,30 +10,20 @@
 
 上传使用现有批准的 `actions/upload-artifact@v4.6.2`。Artifact ID/ZIP digest 从 upload receipt 和 GitHub API 取得，不能把 ID 写回已经不可变的同一 archive。Owner 审阅确切 run/artifact、manifest hash 和资产 hash，不能选浮动 latest。PR 候选只供审阅/演练，正式发布工具拒绝 PR/非 main 构建。
 
-## 正式发布审批记录
+## Owner tag 正式发布（2026-10-06 批准的维护改造）
 
-正式 publish workflow 只接受可信 main 的手动调用。经 owner 实际验收且授权 docs closeout 后，在可信 main 的 `ACCEPTANCE_EVIDENCE_V0.1.md` 增加一个 `release-approval` fenced JSON block，字段如下；这只是字段示意，当前不在账本预填 accepted：
+本节取代每次发布前写入 `release-approval` JSON 和手填五个 dispatch 参数的操作。历史演练、失败、豁免和验收记录继续保留，不成为新的发布输入。是否已经部署本流程取决于对应改造是否已合入 main；首次使用必须选择包含本版 publish workflow 的 main 提交。
 
-```json
-{
-  "status": "accepted",
-  "sourceRevision": "完整已验收main源SHA",
-  "version": "具体稳定版本",
-  "runId": 0,
-  "artifactId": 0,
-  "artifactDigest": "sha256:实际archive-hash",
-  "manifestSha256": "实际manifest-hash",
-  "ownerId": 183197199
-}
-```
+1. 在代码合入 main 前同步 package.json 与 package-lock.json 中的版本。main push 自动运行 Update candidate，完成 verify、禁止发布的 NSIS 打包、隔离安装 smoke、unsigned 和 bundle 校验。候选 Summary 提供源 SHA、版本、run/artifact 链接与 manifest hash。PR 候选不能正式发布。
+2. Owner 查看该 main 候选成功结果，在对应完整源 SHA 上创建并推送稳定版本 tag，例如 `v0.1.5`。Owner 的认证账号推送新 tag 即批准该源提交及其通过发布校验的候选产物进入现有私有正式更新源；支持 lightweight 和 annotated tag，tagger/commit author 文本不是身份凭证。不要通过 GitHub 的 Publish release 按钮抢先创建 Release。
+3. Tag 可指向仍在 main 历史中的提交，不要求等于当前 main HEAD。版本必须与该提交的 package/lock 版本一致。只接受配置 owner 的 login/numeric ID，并检查原始事件及重跑者；拒绝 prerelease、tag 更新、删除和强推事件。Agent 代 owner 创建 tag 仍需该版本的独立授权。
+4. 只读 validate job 查询固定 candidate workflow、精确 SHA、main、成功状态的 runs，按 run ID 降序选最新成功 run，再选该 run/attempt 下唯一的候选 artifact。选定产物缺失、过期或校验失败即停止，不退回更早 artifact，不改用其他 SHA。自动取得实际 artifact ID/digest，下载并校验 ZIP、五个扁平文件、manifest、每个资产、latest.yml 和 checksum list。
+5. Validate 输出固定 JSON selection，包含源 SHA、实际 tag object SHA、版本、run/attempt、artifact ID/archive digest 和 manifest hash。Publish job 只回读这组确切标识，重复 main ancestry、tag、版本、provenance 和完整性验证，不重新发现候选；run rerun、artifact replacement、tag 移动或 bytes 变化会停止发布。
+6. 仅 publish job 获同库 contents write/actions read。已有 tag 是必要条件且必须解引用到源 SHA；已有 Release（包括 draft）仍拒绝覆盖，新 stable 版本必须高于既有 stable Releases。先建 draft、上传全部五个文件、回读 hash，最后再次检查 tag/main 来源，再公开为 stable/latest。Actions Summary 和 Release body 自动保留 tag、源、run/attempt、artifact、digest 与 manifest hash。发布不创建、移动或删除 tag，不推进分支，不回写验收账本。
 
-数据必须是实际完整 SHA、正整数 ID 和 64 位小写 hash。批准记录可在来源包构建之后的 main 文档提交加入；来源 SHA 必须是该可信 workflow revision 的 main ancestor，因此无需制造自引用 SHA。Validator 不写此账本，artifact 自带批准记录也无效。
+候选默认保留 14 天且 validator 限制最大年龄 14 天。Tag 推早了或候选过期时，流程失败并保持 feed 不变；owner 在同一源 SHA 的 main 候选成功后可重跑原 tag workflow。Main 已前进时，可在 Actions Update candidate 的手动入口选择原发布 tag，workflow 会验证其源仍属于 main，并按该精确源重新构建；manifest 记录实际 tag ref，发布仍核对其 main 来源。若已创建 draft，普通重跑拒绝该版本；owner 先检查保留现场并另行授权处置，不自动删除、覆盖或续传。已经正式可见的坏版本使用更高修复版。
 
-Owner 对该记录与具体产物确认后，手动运行 `Publish accepted update`，输入 source_sha、version、run_id、artifact_id、manifest_sha256；tag 固定为 `v<version>`，目标固定为该 source SHA。手动触发只批准这次指定产物，不批准推进 main 或换包。
-
-只读 validate job 核对固定 owner login/numeric ID、repo ID/private、main ancestry、候选 workflow/run/attempt/source、artifact/digest/有效期及 main 账本，再下载 ZIP。ZIP 只允许五个确切扁平文件，解压到新建 `.tmp` 根，校验 archive/manifest/资产 hash 和具体 NSIS 元数据格式。不执行候选脚本，也不运行 `npm ci`。
-
-独立 publish job 才获得同库 `GITHUB_TOKEN` 的 contents write、actions read，并重复所有检查。拒绝旧版/同版、已存在 tag/Release。创建 draft→上传所有资产及 manifest→回读每个资产的 hash→公开为 stable Release。部分失败保留 draft/tag，停止后续步骤；不自动清理、覆盖或假定原子回滚。错误消息不打印 token、原始 API 响应或 signed URL。
+新 tag workflow 和旧手动入口不并行保留。现有私有源、Windows x64 NSIS、schema=3/export=2、unsigned、客户端只读凭据与用户确认安装边界不变。正式 tag 触发和真实发布仍须在 main 集成后实际验证，本地模拟接口测试不能证明真实发布成功。
 
 ## 本地命令与限制
 

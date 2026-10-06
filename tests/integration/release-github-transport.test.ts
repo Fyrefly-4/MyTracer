@@ -42,7 +42,7 @@ test('read-only preparation cannot mutate releases or access other repositories'
 })
 test('permission failure does not masquerade as absent release', () => {
   const result = run(
-    `const api=new GithubApi('synthetic-token',false,async()=>new Response('{}',{status:403}));await assert.rejects(()=>api.assertVersionAbsent('v0.1.4'),/github-http-403/);`
+    `const api=new GithubApi('synthetic-token',false,async()=>new Response('{}',{status:403}));await assert.rejects(()=>api.assertReleaseAvailable('v0.1.4','a'.repeat(40),'a'.repeat(40)),/github-http-403/);`
   )
   expect(result.status, result.stderr).toBe(0)
 })
@@ -50,6 +50,52 @@ test('permission failure does not masquerade as absent release', () => {
 test('readback verifies every uploaded byte including the provenance manifest', () => {
   const result = run(
     `const {createHash}=await import('node:crypto');const payload=Buffer.from('synthetic manifest');const hash=createHash('sha256').update(payload).digest('hex');const api=new GithubApi('synthetic-token',true,async(url)=>url.includes('/assets?')?new Response(JSON.stringify([{id:10,name:'candidate-manifest.json',state:'uploaded',size:payload.length}])):new Response(payload));await api.verifyAssets(1,[{name:'candidate-manifest.json',size:payload.length,sha256:hash}]);await assert.rejects(()=>api.verifyAssets(1,[{name:'candidate-manifest.json',size:payload.length+1,sha256:hash}]),/remote-integrity/);await assert.rejects(()=>api.verifyAssets(1,[{name:'candidate-manifest.json',size:payload.length,sha256:'0'.repeat(64)}]),/remote-integrity/);`
+  )
+  expect(result.status, result.stderr).toBe(0)
+})
+
+test.each(['lightweight', 'annotated'])(
+  'accepts an existing %s tag with the exact approved commit',
+  (kind) => {
+    const result = run(`
+    const sha='a'.repeat(40), object=${kind === 'annotated' ? "'b'.repeat(40)" : 'sha'};
+    const api=new GithubApi('synthetic-token',false,async url=>{
+      calls.push(url);
+      if(url.includes('/releases/tags/'))return new Response('{}',{status:404});
+      if(url.includes('/releases?'))return new Response('[]');
+      if(url.includes('/git/ref/'))return new Response(JSON.stringify({ref:'refs/tags/v0.1.5',object:{type:'${kind === 'annotated' ? 'tag' : 'commit'}',sha:object}}));
+      if(url.includes('/git/tags/'))return new Response(JSON.stringify({object:{type:'commit',sha}}));
+      if(url.includes('/compare/'))return new Response(JSON.stringify({status:'ahead',merge_base_commit:{sha}}));
+      throw Error('unexpected');
+    });
+    await api.assertReleaseAvailable('v0.1.5',sha,object);await api.assertMainSource(sha);
+    assert(calls.every(url=>url.startsWith('https://api.github.com/repos/Fyrefly-4/MyTracer/')));
+  `)
+    expect(result.status, result.stderr).toBe(0)
+  }
+)
+
+test.each([
+  "{ref:'refs/tags/v0.1.5',object:{type:'commit',sha:'c'.repeat(40)}}",
+  "{ref:'refs/tags/v0.1.5',object:{type:'tree',sha:'a'.repeat(40)}}",
+  "{ref:'refs/tags/other',object:{type:'commit',sha:'a'.repeat(40)}}"
+])('rejects changed or invalid existing tag %s', (reference) => {
+  const result = run(
+    `const api=new GithubApi('synthetic-token',false,async()=>new Response(JSON.stringify(${reference})));await assert.rejects(()=>api.assertTagTarget('v0.1.5','a'.repeat(40),'a'.repeat(40)));`
+  )
+  expect(result.status, result.stderr).toBe(0)
+})
+
+test('does not mistake a hidden draft release for an available version', () => {
+  const result = run(
+    `const api=new GithubApi('synthetic-token',false,async url=>url.includes('/releases/tags/')?new Response('{}',{status:404}):new Response(JSON.stringify([{tag_name:'v0.1.5',draft:true}])));await assert.rejects(()=>api.assertReleaseAvailable('v0.1.5','a'.repeat(40),'a'.repeat(40)),/existing-version/);`
+  )
+  expect(result.status, result.stderr).toBe(0)
+})
+
+test.each(['behind', 'diverged'])('rejects a source outside main ancestry: %s', (status) => {
+  const result = run(
+    `const api=new GithubApi('synthetic-token',false,async()=>new Response(JSON.stringify({status:'${status}',merge_base_commit:{sha:'a'.repeat(40)}})));await assert.rejects(()=>api.assertMainSource('a'.repeat(40)),/non-main-source/);`
   )
   expect(result.status, result.stderr).toBe(0)
 })

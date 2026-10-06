@@ -114,15 +114,15 @@ baseline:
 
 私有分发采用已批准的本机只读凭据，限定分发仓库、可撤销且有有效期；发布用写权限凭据仅留在 CI。首期实现选择为 Main 读取专用本机环境变量 `MYTRACER_UPDATE_TOKEN`，不新增应用内凭据持久化或配置页面，不复用 AI key 或发布 token。不能将 token 编进安装包、SQLite、导出、日志或 Renderer；测试启动环境显式移除真实变量，仅注入合成值。未配置/过期时更新显示不可用，核心功能仍运行；鉴权失败与“无更新”严格区分。T082 文档说明首次配置、轮换、撤销和重启生效步骤。固定私有仓库已配置，专用凭据由 owner 本机管理；owner 报告真实检查/下载/更新通过，凭据值不写入文档。
 
-已批准采用“自动准备、owner 手动发布”：
+2026-10-06 owner 批准轻量维护改造为“main 自动准备、owner tag 批准、Actions 自动发布”，取代原五参数 workflow_dispatch 与逐版本审批 JSON 门禁：
 
-1. 现有 Verification 继续做只读校验；新建候选构建 workflow 只产出私有 Actions artifact 和版本/hash/测试摘要，不发布 Release，不更新客户端 feed。
-2. 独立 publish workflow 使用 workflow_dispatch，输入已验收 main 的完整 SHA、版本、候选 run/artifact 标识。owner 审阅具体产物后手动触发，即表示批准该次指定版本及产物的发布，无需再于会话重复批准。Agent 不自行 dispatch；如由 Agent 代为触发，则必须有针对该版本及产物的单独授权。
-3. 发布 job 检查触发者为配置的 owner、执行受信 main 上的 workflow、来源 SHA 与验收证据/构建 provenance 一致；选择不可变 artifact 并校验 hash，不使用浮动 latest，不接受任意分支脚本。过期/缺失产物重新构建并重新审阅，不能偷换已批准产物。
-4. 仅发布 job 获最小写权限；私有源和目标仓库必须显式指定。版本并发串行，拒绝覆盖既有版本。先上传和检查所有资产，再公开为私有仓库内可见的 Release；消费者不使用 draft。tag 创建如由流程负责，必须在同次批准摘要明确 tag 名及 main SHA；不自动合并或推进 main。
-5. 若账户套餐支持，可加 GitHub Environment required reviewer；单人流程不要开启 prevent self-review 导致自己无法批准。私有仓库下该能力受套餐限制，不能假定可用；不支持时采用上述 owner 手动 dispatch 与 workflow 内身份/来源验证。它不是通用多人审批系统。
+1. Verification 继续只读验证；Update candidate 在 main push 准备不可变候选、hash 和测试摘要，PR 候选仅供审阅。main 候选并发按源 SHA 分组，后续 main 提交不取消先前源的构建。
+2. Owner 审阅合格候选后，在对应 main 源提交上创建并推送严格稳定版本 tag，即批准该源及其通过校验的候选产物进入正式更新源。源可在 main 历史中，不必是最新 HEAD；tag/package/lock/manifest 版本须一致。Agent 不自行 tag，代 owner 操作须有具体版本授权。
+3. 只读 validate job 认证 owner login/numeric ID 与 push 新建事件、检查 main ancestry，并自动解析候选 run/attempt/artifact 和 hashes。选择固定 workflow、精确源、main 的最新成功 run 及唯一候选；失效或歧义停止。支持 annotated/lightweight tag，不依赖可伪造的 tagger 文本。
+4. Publish job 只重验 validate 固定的 selection，校验实际 tag object/source、不可变 archive/manifest/资产、成功命令证据、兼容边界及版本递增。已有 tag 必须正确；已有 Release 包括 draft 拒绝覆盖。仅 publish 获同库写权限，先 draft、上传和回读校验，最后再次检查 tag/main 来源才发布 stable/latest。部分失败保留现场，不自动清理或覆盖，不创建 tag、推进分支或回写账本。
+5. 过早 tag 可在合格候选就绪后由 owner 重跑。过期候选可在候选手动入口选择原 main 源 tag 重建；先只读验证其 main ancestry，manifest 保留实际 ref。发布始终拒绝 PR/dev 来源。真实 feed 变化只发生在 owner tag 授权后的正式发布；首次部署须包含新 workflow，并单独核验真实链路。
 
-目前仅发现 Verification workflow，有手动验证入口，无发布 workflow；未核查远端套餐或创建 environment/secrets。私有库的 required reviewer 在 Free/Pro/Team 下不可用，不能仅因已有环境功能就假设能审批；依据 [GitHub deployment review 文档](https://docs.github.com/en/actions/how-tos/managing-workflow-runs-and-deployments/managing-deployments/reviewing-deployments)。人工触发机制依据 [GitHub workflow dispatch 文档](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/manually-run-a-workflow)。配置 Actions 与实际执行发布是两个独立授权范围。
+具体操作和故障处置见 [T084_RELEASE_OPERATIONS.md](../implementation/T084_RELEASE_OPERATIONS.md)。不引入 Environment 审批、套餐变更、凭据持久化或新的依赖。本次记录 owner 批准的发布机制变化，保留历史阶段证据，实际上线以 main 集成为准。
 
 ## 4. Task graph and shared surface
 
