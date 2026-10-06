@@ -275,3 +275,7 @@ T084 实施完成须满足范围内实现、规定验证、评审、证据与 do
 ### 2026-10-06 T809 聚合进度
 
 T081～T084 已分别通过 PR #57～#60 集成至固定产品 dev revision `080c308ff511705bfd8ab21386a03d58ec311dcd`。T809 本地定向、完整 verify 和禁止发布的打包通过；owner 报告本地 0.1.3→0.1.4 应用内更新、未保存输入保护、数据保留和重开持久化的简明步骤全部通过。详见 [EV-S8-001](ACCEPTANCE_EVIDENCE_V0.1.md#ev-s8-001) 与 [T809 合同](T809_S8_FINAL_ACCEPTANCE.md)。此报告未覆盖完整实装配置/导出绑定、全部真实故障或安装 smoke；T084/T809 仍 active，S8 未整体通过。历史失败与 pending 保留，不执行正式发布。
+
+### 2026-10-06 最终收口状态
+
+Owner 已报告正式凭据部署与重启检查完成，并明确豁免剩余真实故障及实装复核；原 pending 为历史记录，现按 waived-by-owner/未执行接受风险处理，不再阻塞本次 S8 收尾。独立评审和 d57e653 head CI 已通过；hosted aggregate/package/package-smoke 的 complete/exit0 artifacts 已核实。Owner 授权最终文档收口、模板 PR 正文和最后一次推送；T084/T809 仍 active，最新推送 head CI 和交付待核验，不自动 Ready/merge/main/tag/release。正式发布成功仍未执行，现有 v0.1.4 演练资产不覆盖。具体范围及历史证据见 [T809](T809_S8_FINAL_ACCEPTANCE.md) 和 [EV-S8-001](ACCEPTANCE_EVIDENCE_V0.1.md#ev-s8-001)。

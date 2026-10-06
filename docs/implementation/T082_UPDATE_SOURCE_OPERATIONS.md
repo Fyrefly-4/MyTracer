@@ -79,3 +79,9 @@ Windows 凭据管理器或加密存储、独立私有分发仓库、多用户授
 - 已知正式安装包获取位置、凭据轮换步骤和更新失败时的备用途径。
 
 当前上述项目均为待 owner 实际操作/回报。新 token 下有更高正式版本时的真实下载和安装结果另行绑定确切版本/资产；“已是最新”只证明本次检查可用，不证明下载、安装或完整故障矩阵。此清单是 S8 正式使用交接项，不替代原阶段验收条件。
+
+2026-10-06 后续回报：owner 已报告上述正式配置步骤“已完成”；该清单由待回报变更为 owner-reported completed，实际到期日未提供，不补写、不读取密钥核实。随后 owner 明确豁免剩余真实故障及实装检查；范围与风险见 [T809 最新记录](T809_S8_FINAL_ACCEPTANCE.md#2026-10-06-owner-明确豁免剩余真实验收)。豁免不证明正式凭据下跨版本下载安装或故障恢复已经实测通过；正式发布权限和来源校验不变。
+
+### 2026-10-06 最终收口状态
+
+Owner 已报告正式凭据部署与重启检查完成，并明确豁免剩余真实故障及实装复核；原 pending 为历史记录，现按 waived-by-owner/未执行接受风险处理，不再阻塞本次 S8 收尾。独立评审和 d57e653 head CI 已通过；hosted aggregate/package/package-smoke 的 complete/exit0 artifacts 已核实。Owner 授权最终文档收口、模板 PR 正文和最后一次推送；T084/T809 仍 active，最新推送 head CI 和交付待核验，不自动 Ready/merge/main/tag/release。正式发布成功仍未执行，现有 v0.1.4 演练资产不覆盖。具体范围及历史证据见 [T809](T809_S8_FINAL_ACCEPTANCE.md) 和 [EV-S8-001](ACCEPTANCE_EVIDENCE_V0.1.md#ev-s8-001)。

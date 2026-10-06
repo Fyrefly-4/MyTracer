@@ -115,11 +115,11 @@ T084/T809 共用证据、安装身份、临时数据与验收状态，不并行�
 ## 9. 验收标准
 
 1. 全部开发内容属于批准 S8 范围且已进入固定 dev；task delivery 与 integration 审计完整。T084 缺口明确回链并闭合。
-2. 同一阶段基线上的规定自动化、package、连续实装及失败矩阵均有实际结果。不得以旧任务 green 或默认 skip 代替。
+2. 同一阶段基线上的规定自动化、package、连续实装及失败矩阵均有实际结果，或明确引用下文 owner 批准的验收豁免。不得以旧任务 green 或默认 skip 代替；豁免不记为通过。
 3. **MANUAL 必需**：owner 在本地从来源版完成检查→下载→草稿阻断→处理草稿→重新确认→NSIS 向导→新版启动，明确报告通过/失败/部分通过。
 4. **MANUAL 必需**：正常快捷方式/开始菜单启动时能够取得只读凭据；更新器重启与完全退出后再次从正常入口启动仍能检查。不能仅证明开发终端注入环境时可用。
-5. **MANUAL 必需**：升级前后相同合成数据根；历史记录/状态/关联/日期和配置可用，导出一致；新增记录再次重开仍在。未知发布者/系统拦截提示及处理观察由 owner 记录，不关闭系统安全保护。
-6. 失败场景见 §10.3；未执行项不因 owner 先前暂缓而豁免。若需要缩减验收必须作为明确范围变更处理，不由本合同隐含放宽。
+5. **MANUAL**：保留已报告的正常升级、简明数据/日期保留及新增记录重开结果；剩余完整实装字段/关联/配置/导出比对和未覆盖人工退出保护按下文 owner 豁免处理。未知发布者/系统拦截的已观察事实如实记录，不关闭系统安全保护，不捏造观察结果。
+6. 失败场景见 §10.3；原暂缓不构成豁免。2026-10-06 owner 已明确批准下文所列剩余真实故障及实装检查豁免，此为本次验收范围变更，不改变功能要求或自动化断言。
 7. 独立 review 无未解决实质问题，证据绑定最终产品 source；必要 CI 最新 head 成功，docs closeout 后重新核验。
 8. owner 人工通过后才判断 S8 gate；T084/T809 done 及文档更新基于实际结果和批准。正式发布是独立事实，不由阶段通过推断。
 
@@ -306,3 +306,21 @@ S8 正式使用交接增加以下 owner 实际回报条件：正式 token 的限
 继续暂停进入阶段通过或发布交接的后续结论。允许仅维护这三份文档和必要非破坏验证；不读取、创建或替换真实凭据，不配置本机环境变量/提醒服务，不改账户、Secrets、Release/feed 或权限，不执行安装/卸载。加密凭据存储读取、独立分发仓库、多用户授权、代码签名和数据库恢复只是后续独立改进方向，不授权新开发或改变当前首期语义。原 Git 普通提交/push/dev Draft PR 权限保持；Ready/merge/main/tag/release 等门禁不变。
 
 本批三文档经同一 owner 授权的只读独立 Agent 评审，无实质问题；格式、链接/结构、metadata（25 sidecar/1 profile）和 diff check 通过。`npm.cmd run verify` exit0，artifact `.tmp/evidence/T809-production-handoff-docs-4703c96bfb0c-20261006080319.json`：source=4703c96bfb0c9abf1b25956b526be6dddabe47fa/base=080c308ff511705bfd8ab21386a03d58ec311dcd 加本批未提交三文档，capture complete；37 E2E passed/5 installed skipped。结果只证明该文档工作区的非破坏回归，不证明正式凭据部署或新 head hosted CI；本行随后追加结果事实，不改变产品内容。工具选项探查 `capture-command.mjs --help` exit1（不支持该参数，未启动子命令），文档 checker 首次 HEAD 对比得到 0 文件不用于证明本批；后以显式三文件清单检查通过，原结果不包装成成功。
+
+### 2026-10-06 Owner 明确豁免剩余真实验收
+
+Owner 先报告正式使用配置“已完成，ci也已通过”，再在 Agent 列出剩余测试及风险后明确要求：“明确忽略这些测试。”本条为批准的验收范围缩减，状态为 waived-by-owner/未执行，不作为 pass 或自动化 supersedes。
+
+豁免范围为刚才呈交的剩余项：真实撤销/过期/有效无权凭据；真实下载断网恢复重试；安装客户端缺失元数据/损坏包/同低版/预发布拒绝；拒绝安装、磁盘不足、安装中断及人工修复；真实发布权限/上传/回读与可见性故障及部分 draft 留存；未覆盖表单/AI 草稿、迟到结果、排空/超时、第二实例、关闭后失败的实装复核；完整升级前后字段/关联/LocalDate/配置/导出比对及隔离过新 schema 拒绝的剩余实装证明。这些剩余项不再阻塞本次 S8 收尾，不新建环境或执行上述演练。已执行自动化/实装/失败与有限 owner 结果继续保留，未知发布者未观察事实继续如实标未验证，不升级为通过。
+
+风险由本次决定明确接受：上述现实故障下的数据保留、拒绝不可信更新和人工修复未完整实证；未来实际问题另行授权修复。仅豁免本次真实测试，不删除现有测试、不改断言/产品语义/数据保护边界，不意味着程序可以放宽来源、版本、校验或退出保护。正式发布仍要求 accepted-main、具体产物授权和完整来源/hash 校验；首次正式发布成功仍是独立待执行事实，不随发布故障演练豁免而记为完成。Git/CI/独立 review/文档收口及 Ready/merge/main/tag/release 门禁不变。
+
+正式凭据创建/替换、测试凭据撤销、提醒与重启后正常入口检查等按 owner“已完成”记为 owner-reported，不读取真实 token 验证；实际到期日未提供，不补写。宿主只读核实 d57e653da55cf529c94ab12bfb32d5a891b9dd95 的 Verification37433913791 与 Update candidate37433876479 均 success，较早同 head Verification37433876468 cancelled 并留下失败 gate，后续替代成功不删除它。此为 GitHub 状态核实，尚未解读下载的命令 artifacts；不证明本次豁免文档的新 head CI。当前不据此自动标 T809/T084 done 或执行集成发布。
+
+### 2026-10-06 最终文档收口授权
+
+Owner 明确要求“进行文档收尾，并依据仓库内格式重写 pr body，然后进行最后一次推送”。允许本合同 §5 文档矩阵范围内同步已完成的 owner 报告、明确豁免和真实 CI 证据，重写现有 dev Draft PR #61 正文并普通提交/推送；不更改源码、测试、工具、依赖或 workflow。T084/T809 保持 active，最终任务交付须待新 head CI 及证据核验，不预填 done、delivery/integration 或正式 release-approval。
+
+已下载并解读 d57e653 head hosted 命令证据：Verification37433913791 的 aggregate source/test-merge=85890ba363801ca7ac4f0f5405423587c31406cc；Update candidate37433876479 的 aggregate、package、package-smoke source=d57e653。四份 capture 均 complete/exit0，ci.headRevision=d57e653、ci.mergeRevision=85890ba、base=080c308。它们证明该 head 的完整云端回归、禁止发布打包及临时隔离安装 smoke；不证明被豁免的真实故障。Artifact 本地相对位置为 `.tmp/evidence/T809-manual/hosted-d57e653-verification/` 与 `hosted-d57e653-candidate/`，远端 run 作为可追溯入口。旧取消/失败事实保留；这些成功不替代最终文档 head 的 CI。
+
+最终文档工作区验证：npm.cmd run verify exit0（37 E2E passed/5 installed skipped），artifact `.tmp/evidence/T809-final-waiver-docs-d57e653da55c-20261006083620.json`，capture complete/source=d57e653/base=080c308 加本批十文档未提交状态；不是裸 d57e653 或后续 final head 的独立运行。十文档结构/链接/格式、metadata25/1、diff check 和同一 owner 授权只读 Agent 完整 delta review 均通过。最终结果仅追加文档事实，产品/测试/工具/workflow/依赖/Skill 内容不变。最终推送 head hosted CI 仍需独立核验，现有豁免和发布门禁不变。

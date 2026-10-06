@@ -64,3 +64,7 @@ T081～T084 已分别通过 PR #57～#60 集成至固定产品 dev revision `080
 稳定源今后只接收已验收且获具体发布授权的版本；测试构建留在 Actions 候选产物。既有 v0.1.4 仍是演练，首次正式版本须更高且单独安排版本任务，不覆盖旧资产。首次正式发布需实际验证本文件的 accepted-main、不可变候选、审批账本与 owner dispatch 全链路，当前仍未证明；本约定不触发发布、tag、Secrets 或规则修改。
 
 坏版本保留来源与处置记录，通过更高修复版处理；暂停推荐涉及的实际 feed/Release 修改另行授权。长期交接应给出私有 Release 中的完整安装包、校验值和兼容范围，以便 owner 手动原位置覆盖安装。首期保持同 schema 与 unsigned 边界；加密凭据读取、分发源变更、多用户分发、签名和数据库恢复均不在本次文档操作中实施。
+
+### 2026-10-06 最终收口状态
+
+Owner 已报告正式凭据部署与重启检查完成，并明确豁免剩余真实故障及实装复核；原 pending 为历史记录，现按 waived-by-owner/未执行接受风险处理，不再阻塞本次 S8 收尾。独立评审和 d57e653 head CI 已通过；hosted aggregate/package/package-smoke 的 complete/exit0 artifacts 已核实。Owner 授权最终文档收口、模板 PR 正文和最后一次推送；T084/T809 仍 active，最新推送 head CI 和交付待核验，不自动 Ready/merge/main/tag/release。正式发布成功仍未执行，现有 v0.1.4 演练资产不覆盖。具体范围及历史证据见 [T809](T809_S8_FINAL_ACCEPTANCE.md) 和 [EV-S8-001](ACCEPTANCE_EVIDENCE_V0.1.md#ev-s8-001)。

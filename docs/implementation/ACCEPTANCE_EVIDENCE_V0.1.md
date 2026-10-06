@@ -8,6 +8,20 @@
 
 ### EV-S8-001
 
+#### 2026-10-06 最终文档工作区验证
+
+最终文档工作区验证：npm.cmd run verify exit0（37 E2E passed/5 installed skipped），artifact `.tmp/evidence/T809-final-waiver-docs-d57e653da55c-20261006083620.json`，capture complete/source=d57e653/base=080c308 加本批十文档未提交状态；不是裸 d57e653 或后续 final head 的独立运行。十文档结构/链接/格式、metadata25/1、diff check 和同一 owner 授权只读 Agent 完整 delta review 均通过。最终结果仅追加文档事实，产品/测试/工具/workflow/依赖/Skill 内容不变。最终推送 head hosted CI 仍需独立核验，现有豁免和发布门禁不变。
+
+#### 2026-10-06 最新 owner 决定：真实验收豁免
+
+Owner 报告正式凭据配置、测试凭据撤销、提醒和重启后的正常入口检查“已完成”；按 owner-reported 记录，不接触密钥核实，实际到期日未提供。Agent 只读核实 PR #61 head=d57e653da55cf529c94ab12bfb32d5a891b9dd95/base=080c308ff511705bfd8ab21386a03d58ec311dcd 的 Verification37433913791 和 Update candidate37433876479 均 success；同 head 较早 Verification37433876468 被替代取消，失败 gate 保留。仅核实运行状态，未下载解读 hosted artifacts，不归因于尚未提交的本次文档。
+
+在获知剩余测试及风险后，owner 明确“明确忽略这些测试”。其批准范围为剩余真实凭据鉴权故障、下载断网恢复、安装客户端元数据/损坏包/版本拒绝、拒绝安装/磁盘不足/安装中断与人工修复、真实发布故障，以及未覆盖退出保护和完整数据/配置/导出/隔离过新 schema 的实装复核。当前处理为 **waived-by-owner（未执行，接受风险）**，不再阻塞本次 S8 收尾；详细边界见 [T809 最新豁免记录](T809_S8_FINAL_ACCEPTANCE.md#2026-10-06-owner-明确豁免剩余真实验收)。下方原 pending、失败及 supersedes 为各日期历史事实，不删除、不改成 pass。
+
+未完整实证的现实故障下数据保护、拒绝更新与修复效果仍为已接受风险；本次只缩减验收范围，不删除自动化、放宽功能要求或批准产品改动。正式 accepted-main 发布及具体产物批准、hash/来源校验、Ready/merge/tag/release 和新文档 head CI 仍独立；此记录不是完整测试通过或发布完成，T809 delivery/integration 尚未建立。
+
+后续 owner 批准最终文档收口、按模板重写 PR body 和最后一次普通推送。已下载解读 [Verification37433913791](https://github.com/Fyrefly-4/MyTracer/actions/runs/37433913791) 与 [Update candidate37433876479](https://github.com/Fyrefly-4/MyTracer/actions/runs/37433876479) 的脱敏 artifacts：前者 aggregate source=85890ba363801ca7ac4f0f5405423587c31406cc；后者 aggregate/package/package-smoke source=d57e653da55cf529c94ab12bfb32d5a891b9dd95，四份 capture 均 complete/exit0，base=080c308、ci.headRevision=d57e653、ci.mergeRevision=85890ba。云端隔离安装 smoke 缺口在这一层级获得实际结果，本机未获授权的安装 smoke 未执行，不声称完成被豁免矩阵。两组 artifacts 相对位置见 T809 最新授权记录。最终文档 head CI/交付与 dev 集成仍独立，任务保持 active。
+
 - **Status / authority**：partial；T809。Owner 于 2026-10-06 批准本地执行、报告简明人工更新全部通过，随后批准精确文档影响矩阵、一个只读独立 Agent review、branch/commit/push/dev Draft PR 与 CI。T084/T809 active，S8 未整体通过；未批准 Ready/merge/tag/release、真实故障演练、安装/卸载/清理或访问真实数据。
 - **Revision / freshness**：固定 `stage_final_integration_revision=080c308ff511705bfd8ab21386a03d58ec311dcd`，prior boundary=T072 `d8b211b3c184cff8d0afdb09ff4b13164704290b`；宿主 API 再验 dev 不变，fresh/refresh_method=none。验证时为该产品 revision 加未提交合同/索引/metadata，不把未提交文档归给裸 HEAD。T809 `task_delivery_revision=null`、`dev_integration_revision=null`；任务分支 `task/T809-s8-final-acceptance`，第一文档提交 `4b003871f97b06e2411ea494345ea81d0018176a`，Draft [PR #61](https://github.com/Fyrefly-4/MyTracer/pull/61)→dev，不是任务已交付。
 
