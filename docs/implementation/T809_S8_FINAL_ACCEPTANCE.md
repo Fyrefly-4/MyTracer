@@ -296,3 +296,13 @@ Owner 对已呈交的精确文档清单、一个只读子 Agent 独立评审、�
 Owner 授权的一个只读独立 Agent 检查全部十一项聚合变更、四项 S8 集成与产品边界、合同、EV-S8-001、capture 和程序比较事实，结论无阻止提交的实质问题。评审未运行测试/安装/远端写入或读取真实用户数据/凭据；不证明剩余实装、真实故障、当前 head CI 或完整 S8 通过。合同开头历史准备措辞按 §15 日期理解，不重新设置已批准权限。后续 head 与最新 dev 等价性、验证结果及 CI 交接另记。
 
 收口后本地 `npm.cmd run verify` exit0（346 unit、163 integration/1 live skipped、37 E2E/5 installed skipped），wrapper `.tmp/evidence/T809-docs-closeout-aggregate-4b003871f97b-20261006075048.json` 回读 complete/source4b00387/base080c308，执行对象为该文档 head 加本批未提交收口；不是裸4b00387或后续提交的独立运行。产品、测试、构建、workflow、Skill 相对080c308无差异。十个收口 Markdown 的结构/链接/格式检查、metadata25/1、diff check 通过；无 Skill 修改。独立 Agent 再验评审/CI身份追加记录的最终 delta，无新增实质问题。追加命令结果后仅文档事实变化，后续 hosted CI 绑定推送 head，不自动升级为完整验收通过。
+
+### 2026-10-06 正式个人使用方案批准与交接补充
+
+Owner 要求在后续收尾之前综合考虑长期使用的生产方案，并对呈交方案回复“同意”。本次在现有允许文件中补充本文、T082_UPDATE_SOURCE_OPERATIONS.md 和 T084_RELEASE_OPERATIONS.md 的非开发交接内容：正式专用只读 token、180 天有效期/提前 14 天提醒、现有用户环境变量的限制、轮换/撤销、稳定源与候选区分、owner 手动发布、坏版本处置、原位安装备用途径和数据/unsigned 边界。上述方案已批准，不保留“待批准”表述；部署和实测事实分别记录。
+
+S8 正式使用交接增加以下 owner 实际回报条件：正式 token 的限定权限/到期日核对，本机替换、测试 token 撤销和到期提醒，重启电脑后正常入口更新检查及业务/导出可用，了解正式安装包来源和故障备用路径。详细操作与回报清单见 [正式个人使用方案](T082_UPDATE_SOURCE_OPERATIONS.md#正式个人使用方案2026-10-06-owner-已批准)。这些项目当前 pending；此前临时凭据更新成功不替代它们，也不替代原实装、真实故障和发布验收条件。不存在新 token 的实际操作结果时，不记录生产部署完成。
+
+继续暂停进入阶段通过或发布交接的后续结论。允许仅维护这三份文档和必要非破坏验证；不读取、创建或替换真实凭据，不配置本机环境变量/提醒服务，不改账户、Secrets、Release/feed 或权限，不执行安装/卸载。加密凭据存储读取、独立分发仓库、多用户授权、代码签名和数据库恢复只是后续独立改进方向，不授权新开发或改变当前首期语义。原 Git 普通提交/push/dev Draft PR 权限保持；Ready/merge/main/tag/release 等门禁不变。
+
+本批三文档经同一 owner 授权的只读独立 Agent 评审，无实质问题；格式、链接/结构、metadata（25 sidecar/1 profile）和 diff check 通过。`npm.cmd run verify` exit0，artifact `.tmp/evidence/T809-production-handoff-docs-4703c96bfb0c-20261006080319.json`：source=4703c96bfb0c9abf1b25956b526be6dddabe47fa/base=080c308ff511705bfd8ab21386a03d58ec311dcd 加本批未提交三文档，capture complete；37 E2E passed/5 installed skipped。结果只证明该文档工作区的非破坏回归，不证明正式凭据部署或新 head hosted CI；本行随后追加结果事实，不改变产品内容。工具选项探查 `capture-command.mjs --help` exit1（不支持该参数，未启动子命令），文档 checker 首次 HEAD 对比得到 0 文件不用于证明本批；后以显式三文件清单检查通过，原结果不包装成成功。
