@@ -62,12 +62,15 @@ export async function fixture() {
     dispatch: {
       actor: OWNER.login,
       actorId: OWNER.id,
-      ref: 'refs/heads/main',
+      ref: 'refs/tags/v0.1.4',
+      tagObjectRevision: sha,
       workflowRevision: sha,
       sourceRevision: sha,
       version: '0.1.4',
       tag: 'v0.1.4',
       runId: 100,
+      runAttempt: 1,
+      artifactDigest: digest,
       artifactId: 200,
       manifestSha256
     },
@@ -91,16 +94,6 @@ export async function fixture() {
       created_at: '2026-10-02T00:00:00Z',
       expires_at: '2026-10-10T00:00:00Z',
       workflow_run: { id: 100, head_sha: sha, repository_id: REPOSITORY_ID }
-    },
-    approval: {
-      status: 'accepted',
-      sourceRevision: sha,
-      version: '0.1.4',
-      runId: 100,
-      artifactId: 200,
-      artifactDigest: digest,
-      ownerId: OWNER.id,
-      manifestSha256
     }
   }
   return {

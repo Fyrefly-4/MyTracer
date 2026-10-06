@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { REPOSITORY, requireCondition } from './provenance.mjs'
+import { CANDIDATE_WORKFLOW, REPOSITORY, requireCondition } from './provenance.mjs'
 
 const PREFIX = `/repos/${REPOSITORY}`
 const MAX_BYTES = 256 * 1024 * 1024
@@ -85,14 +85,73 @@ export class GithubApi {
     throw new Error('release-list-limit')
   }
 
-  async assertVersionAbsent(tag) {
+  async candidateRuns(sourceRevision) {
+    const runs = []
+    const workflow = encodeURIComponent(CANDIDATE_WORKFLOW.split('/').at(-1))
+    for (let page = 1; page <= 10; page++) {
+      const response = await this.get(
+        `/actions/workflows/${workflow}/runs?head_sha=${sourceRevision}&per_page=100&page=${page}`
+      )
+      requireCondition(Array.isArray(response.workflow_runs), 'candidate-run-list')
+      runs.push(...response.workflow_runs)
+      if (response.workflow_runs.length < 100) return runs
+    }
+    throw new Error('candidate-run-list-limit')
+  }
+
+  async runArtifacts(runId) {
+    const artifacts = []
+    for (let page = 1; page <= 10; page++) {
+      const response = await this.get(`/actions/runs/${runId}/artifacts?per_page=100&page=${page}`)
+      requireCondition(Array.isArray(response.artifacts), 'candidate-artifact-list')
+      artifacts.push(...response.artifacts)
+      if (response.artifacts.length < 100) return artifacts
+    }
+    throw new Error('candidate-artifact-list-limit')
+  }
+
+  async resolveTag(tag) {
+    const reference = await this.get(`/git/ref/tags/${encodeURIComponent(tag)}`)
+    requireCondition(reference.ref === `refs/tags/${tag}`, 'tag-ref')
+    const tagObjectRevision = reference.object?.sha
+    let object = reference.object
+    for (let depth = 0; depth < 8; depth++) {
+      requireCondition(/^[a-f0-9]{40}$/.test(object?.sha), 'tag-object')
+      if (object.type === 'commit') {
+        return { sourceRevision: object.sha, tagObjectRevision }
+      }
+      requireCondition(object.type === 'tag', 'tag-object-type')
+      object = (await this.get(`/git/tags/${object.sha}`)).object
+    }
+    throw new Error('tag-depth')
+  }
+
+  async assertTagTarget(tag, sourceRevision, tagObjectRevision) {
+    const actual = await this.resolveTag(tag)
+    requireCondition(
+      actual.sourceRevision === sourceRevision && actual.tagObjectRevision === tagObjectRevision,
+      'tag-changed'
+    )
+  }
+
+  async assertMainSource(sourceRevision) {
+    const comparison = await this.get(`/compare/${sourceRevision}...main`)
+    requireCondition(
+      ['ahead', 'identical'].includes(comparison.status) &&
+        comparison.merge_base_commit?.sha === sourceRevision,
+      'non-main-source'
+    )
+  }
+
+  async assertReleaseAvailable(tag, sourceRevision, tagObjectRevision) {
     const release = await this.request(`${PREFIX}/releases/tags/${encodeURIComponent(tag)}`, {
       missing: true
     })
-    const reference = await this.request(`${PREFIX}/git/ref/tags/${encodeURIComponent(tag)}`, {
-      missing: true
-    })
-    requireCondition(release === null && reference === null, 'existing-version')
+    requireCondition(
+      release === null && !(await this.allReleases()).some((item) => item.tag_name === tag),
+      'existing-version'
+    )
+    await this.assertTagTarget(tag, sourceRevision, tagObjectRevision)
   }
 
   async createDraft(input) {

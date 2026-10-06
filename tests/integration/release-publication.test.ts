@@ -14,7 +14,10 @@ function scenario(body: string) {
     import {validateBundle} from './tools/release/provenance.mjs';
     const f=await fixture(), calls=[], stored=new Map();
     const api={
-      assertVersionAbsent:async()=>calls.push('absent'),
+      assertMainSource:async()=>{},
+      allReleases:async()=>[],
+      assertTagTarget:async()=>{},
+      assertReleaseAvailable:async()=>calls.push('available'),
       createDraft:async input=>{assert.equal(input.draft,true);calls.push('draft');return {id:1,draft:true};},
       uploadAsset:async(id,name,bytes)=>{calls.push('upload');stored.set(name,bytes);return {name,size:bytes.length,state:'uploaded'};},
       verifyAssets:async(id,files)=>{calls.push('verify');for(const file of files){assert.equal(stored.get(file.name).length,file.size);assert.equal(createHash('sha256').update(stored.get(file.name)).digest('hex'),file.sha256);}},
@@ -31,7 +34,7 @@ function scenario(body: string) {
 describe('publication transactions stay hidden until all assets are verified', () => {
   test('validates a real bundle and publishes after all five assets are round-trip checked', () => {
     const result = scenario(
-      `await validateBundle(f.manifestPath);await publishCandidate({...f,api});assert.deepEqual(calls,['absent','draft',...Array(5).fill('upload'),'verify','visible']);`
+      `await validateBundle(f.manifestPath);await publishCandidate({...f,api});assert.deepEqual(calls,['available','draft',...Array(5).fill('upload'),'verify','visible']);`
     )
     expect(result.status, result.error?.message ?? result.stderr).toBe(0)
   })
@@ -47,7 +50,7 @@ describe('publication transactions stay hidden until all assets are verified', (
     "await writeFile(join(f.directory,'unexpected.txt'),'unapproved');",
     "await writeFile(join(f.directory,'SHA256SUMS.txt'),'forged');",
     "f.context.dispatch.actor='other';",
-    'f.context.approval=null;',
+    "f.context.dispatch.ref='refs/heads/main';",
     "f.context.dispatch.manifestSha256='c'.repeat(64);"
   ])('performs no write on invalid bundle/context: %s', (mutation) => {
     const result = scenario(
@@ -67,11 +70,11 @@ describe('publication transactions stay hidden until all assets are verified', (
   })
   test('rechecks version before creating draft and preserves failure without visible release', () => {
     const result = scenario(
-      `api.assertVersionAbsent=async()=>{throw Error('already-exists')};await assert.rejects(()=>publishCandidate({...f,api}));assert.deepEqual(calls,[]);`
+      `api.assertReleaseAvailable=async()=>{throw Error('already-exists')};await assert.rejects(()=>publishCandidate({...f,api}));assert.deepEqual(calls,[]);`
     )
     expect(result.status, result.stderr).toBe(0)
   })
-  test.each(['uploadAsset', 'verifyAssets', 'makeVisible'])(
+  test.each(['uploadAsset', 'verifyAssets', 'assertTagTarget', 'makeVisible'])(
     'preserves %s failure and stops subsequent operations',
     (stage) => {
       const result = scenario(
