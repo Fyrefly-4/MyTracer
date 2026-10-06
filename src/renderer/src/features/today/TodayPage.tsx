@@ -14,8 +14,10 @@ import type {
   RecordingDateChoiceDto
 } from '../../../../contracts/records'
 import type { TodayViewDto } from '../../../../contracts/today'
+import type { GoalActivityViewDto } from '../../../../contracts/progress'
 import {
   useUiSession,
+  useUnsavedContent,
   usePagePosition,
   revealStart,
   useUiLifetime,
@@ -119,6 +121,7 @@ function ActionRecordingPanel(props: {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [invalidContext, setInvalidContext] = useState(false)
+  useUnsavedContent(`action-record-${props.action.id}`, Boolean(context))
 
   useEffect(() => {
     if (!context) return
@@ -357,6 +360,7 @@ function ActionRecordingPanel(props: {
       return
     }
     const saved = result.value
+    restoreBeginFocus.current = saved.action.status === 'pending'
     resetForm()
     const actionState = `行动现在为${actionStatusText[saved.action.status]}`
     const nextState = changingCurrentAction
@@ -690,6 +694,9 @@ function TodayWorkspace(): ReactNode {
   const [creating, setCreating] = useState(false)
   const detailRef = useRef<HTMLElement | null>(null)
   const [today, setToday] = useState<TodayViewDto | null>(null)
+  const [activity, setActivity] = useState<GoalActivityViewDto | null>(null)
+  const [activityError, setActivityError] = useState(false)
+  const [activityVersion, setActivityVersion] = useState(0)
   const [activeGoals, setActiveGoals] = useState<readonly GoalSummaryDto[]>([])
   const [detail, setDetail] = useState<ActionDetailDto | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -705,12 +712,48 @@ function TodayWorkspace(): ReactNode {
   const [replacementActionId, setReplacementActionId] = useState('')
   const [replacementTitle, setReplacementTitle] = useState('')
   const [pendingTransition, setPendingTransition] = useState<PendingTransition | null>(null)
+  useUnsavedContent(
+    'action-form',
+    Boolean(createTitle || createDescription || createGoalId) ||
+      (detail !== null &&
+        (editTitle !== detail.title || editDescription !== (detail.description ?? ''))) ||
+      Boolean(pendingTransition && replacementTitle)
+  )
   const availableCandidates =
     today?.availableActions.filter(
       (action) => action.canSelectForToday && action.todayCommitment === null
     ) ?? []
   usePagePosition('today', today !== null && selectionLoaded)
   const transitionTriggerRef = useRef<HTMLButtonElement | null>(null)
+
+  useEffect(() => {
+    let active = true
+    void window.myTracer.progress
+      .goalActivity({})
+      .then((result) => {
+        if (!active) return
+        setActivity(result.ok ? result.value : null)
+        setActivityError(!result.ok)
+      })
+      .catch(() => {
+        if (active) {
+          setActivity(null)
+          setActivityError(true)
+        }
+      })
+    return () => {
+      active = false
+    }
+  }, [refreshVersion, activityVersion])
+
+  const activityText = (goalId: string): string => {
+    const fact = activity?.goals.find((item) => item.goalId === goalId)
+    if (!fact) return activityError ? '行动日期暂时无法读取' : '正在读取行动日期…'
+    if (fact.daysSinceLastRealAction === null) return '尚无行动记录'
+    return fact.daysSinceLastRealAction < 0
+      ? `最近行动记录日期 ${fact.lastRealActionOn}（晚于今天）`
+      : `距上次真实行动 ${fact.daysSinceLastRealAction} 天`
+  }
 
   useEffect(() => {
     let active = true
@@ -793,6 +836,7 @@ function TodayWorkspace(): ReactNode {
   }
 
   const refresh = async (actionId?: string): Promise<void> => {
+    setActivityVersion((version) => version + 1)
     const todayResult = await window.myTracer.today.get({})
     if (!todayResult.ok) {
       setError(actionErrorText[todayResult.error.code])
@@ -904,6 +948,15 @@ function TodayWorkspace(): ReactNode {
     <details className="goal-card action-candidates" open={!today?.focuses.length}>
       <summary>其它行动（{availableCandidates.length}）</summary>
       <p className="empty-copy">浏览候选不会自动改变今日重点或目标的当前下一步。</p>
+      {activity ? <p className="empty-copy">目标行动日期截至 {activity.asOfLocalDate}</p> : null}
+      {activityError ? (
+        <p role="status">
+          行动日期暂时无法读取。
+          <button type="button" onClick={() => setActivityVersion((version) => version + 1)}>
+            重试行动日期
+          </button>
+        </p>
+      ) : null}
       <div className="action-list">
         {availableCandidates.length ? (
           availableCandidates.map((action) => (
@@ -935,6 +988,7 @@ function TodayWorkspace(): ReactNode {
                   {action.isCurrentNextAction ? ' · 目标当前下一步' : ''}
                   {session.hasActionDraft(action.id) ? ' · 有未保存草稿' : ''}
                 </small>
+                {action.goal ? <small>{activityText(action.goal.id)}</small> : null}
               </button>
               <div className="candidate-actions">
                 <button
@@ -1125,6 +1179,7 @@ function TodayWorkspace(): ReactNode {
           <section className="goal-card goal-list-card today-priority" aria-label="今日重点">
             <div className="card-heading">
               <p className="eyebrow">今日重点</p>
+              <p className="empty-copy">先选少量重点就好，也可以按需要继续添加。</p>
               <h2>现在可以继续什么</h2>
             </div>
             <div className="action-list">

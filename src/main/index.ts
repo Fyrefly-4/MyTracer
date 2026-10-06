@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { app, BrowserWindow, dialog, ipcMain, safeStorage } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, safeStorage, type IpcMainInvokeEvent } from 'electron'
 import { GoalService } from '../application/goals'
 import { ActionService } from '../application/actions'
 import { TodayService } from '../application/today'
@@ -15,6 +15,8 @@ import { DataControlService } from '../application/data-control'
 import { CompleteExportService } from '../application/complete-export'
 import { queryShellStatus } from '../application/query-shell-status'
 import { AiStartHelpService } from '../application/ai-start-help'
+import { UpdateService } from '../application/update-service'
+import { UpdatePortError, type UpdatePort } from '../application/ports/update'
 import {
   AiProviderError,
   type AiStartHelpProvider,
@@ -25,6 +27,7 @@ import type { MutableAiConfigurationPort } from '../application/ports/configurat
 import type { DiagnosticsPort } from '../application/ports/diagnostics'
 import { asStartHelpContextQueryRepository } from '../application/ports/persistence'
 import { SHELL_STATUS_CHANNEL } from '../contracts/shell'
+import { UPDATE_CHANNELS } from '../contracts/updates'
 import { SystemClock } from '../infrastructure/clock/system-clock'
 import { FileAiConfiguration } from '../infrastructure/configuration/file-ai-configuration'
 import { SafeStorageCredentialAdapter } from '../infrastructure/credentials/safe-storage-credential-adapter'
@@ -36,6 +39,7 @@ import {
 import { resolveProductionDatabasePath } from '../infrastructure/sqlite/database-path'
 import { SqliteConnection } from '../infrastructure/sqlite/sqlite-connection'
 import { SystemExportAdapter } from '../infrastructure/export/system-export-adapter'
+import { GithubUpdatePort } from '../infrastructure/update/github-update-port'
 import { registerGoalIpc } from './goals-ipc'
 import { registerActionIpc } from './actions-ipc'
 import { registerTodayIpc } from './today-ipc'
@@ -55,12 +59,31 @@ import { assertTrustedSender, type RendererLocation } from './ipc-security'
 import { AiStartHelpContextCoordinator } from './ai-start-help-context'
 import { AiStartHelpSessionStore } from './ai-start-help-session'
 import { registerAiStartHelpIpc } from './ai-start-help-ipc'
+import { registerUpdatesIpc } from './updates-ipc'
+import { createOfflineTestUpdatePort } from './test-update-port'
+import { InstallOperationGate } from './install-operation-gate'
+import { RendererDraftProbe } from './renderer-draft-probe'
+import { UpdateInstallCoordinator } from './update-install-coordinator'
 
 let mainWindow: BrowserWindow | null = null
 let sqliteConnection: SqliteConnection | null = null
 let aiConfiguration: MutableAiConfigurationPort | null = null
 let diagnostics: DiagnosticsPort | null = null
 let aiStartHelpSessions: AiStartHelpSessionStore | null = null
+let updateService: UpdateService | null = null
+const installGate = new InstallOperationGate()
+let draftProbe: RendererDraftProbe | null = null
+const guardedIpc = {
+  removeHandler: (channel: string): void => ipcMain.removeHandler(channel),
+  handle: (
+    channel: string,
+    listener: (event: IpcMainInvokeEvent, ...args: unknown[]) => unknown
+  ): void => {
+    ipcMain.handle(channel, (event, ...args: unknown[]) =>
+      installGate.run(() => listener(event, ...args))
+    )
+  }
+}
 const actionRecordingContexts = new ActionRecordingContextStore(randomUUID)
 const routineRecordingContexts = new RoutineRecordingContextStore(randomUUID)
 const deletePreviewContexts = new DeletePreviewContextStore(randomUUID)
@@ -349,6 +372,9 @@ async function createMainWindow(): Promise<void> {
   })
 
   applyWebContentsRestrictions(mainWindow)
+  mainWindow.on('close', (event) => {
+    if (installGate.state === 'preparing') event.preventDefault()
+  })
   const senderId = mainWindow.webContents.id
   mainWindow.webContents.on('did-start-navigation', () => {
     actionRecordingContexts.clearSender(senderId)
@@ -358,6 +384,7 @@ async function createMainWindow(): Promise<void> {
     aiStartHelpSessions?.clearSender(senderId)
   })
   mainWindow.webContents.on('destroyed', () => {
+    draftProbe?.clear()
     actionRecordingContexts.clearSender(senderId)
     routineRecordingContexts.clearSender(senderId)
     deletePreviewContexts.clearSender(senderId)
@@ -377,7 +404,15 @@ async function createMainWindow(): Promise<void> {
   await loadTrustedRenderer(mainWindow)
 }
 
+const hasSingleInstanceLock = app.requestSingleInstanceLock()
+if (!hasSingleInstanceLock) app.quit()
+app.on('second-instance', () => {
+  if (mainWindow?.isMinimized()) mainWindow.restore()
+  mainWindow?.focus()
+})
+
 app.whenReady().then(async () => {
+  if (!hasSingleInstanceLock) return
   const clock = new SystemClock()
   diagnostics = new SafeDiagnostics(clock, new StderrDiagnosticWriter())
   const credentialStore = new SafeStorageCredentialAdapter(safeStorage)
@@ -417,6 +452,39 @@ app.whenReady().then(async () => {
     correlationId: 'startup.complete'
   })
   registerShellQuery()
+  let updatePort: UpdatePort
+  try {
+    updatePort = createOfflineTestUpdatePort(app.getVersion()) ?? new GithubUpdatePort({
+      token: process.env.MYTRACER_UPDATE_TOKEN,
+      isPackaged: app.isPackaged
+    })
+  } catch {
+    updatePort = {
+      check: async () => {
+        throw new UpdatePortError('unavailable')
+      }
+    }
+  }
+  updateService = new UpdateService({
+    port: updatePort,
+    currentVersion: app.getVersion(),
+    generateId: randomUUID
+  })
+  updateService.subscribe((status) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send(UPDATE_CHANNELS.changed, status)
+    }
+  })
+  draftProbe = new RendererDraftProbe({
+    generateId: randomUUID,
+    sendRequest: (requestId) => {
+      if (!mainWindow || mainWindow.isDestroyed() || mainWindow.webContents.isDestroyed()) {
+        return false
+      }
+      mainWindow.webContents.send(UPDATE_CHANNELS.draftRequest, { requestId })
+      return true
+    }
+  })
   const goalService = new GoalService({
     repository: sqliteConnection.repository,
     unitOfWork: sqliteConnection,
@@ -452,7 +520,7 @@ app.whenReady().then(async () => {
     clock,
     generateId: randomUUID
   })
-  const progressService = new ProgressService({ repository: sqliteConnection.repository })
+  const progressService = new ProgressService({ repository: sqliteConnection.repository, clock })
   const recoveryService = new RecoveryService({ repository: sqliteConnection.repository, clock })
   const reviewService = new ReviewService({
     repository: sqliteConnection.repository,
@@ -529,69 +597,92 @@ app.whenReady().then(async () => {
     generateTargetRef: randomUUID
   })
   registerGoalIpc({
-    ipc: ipcMain,
+    ipc: guardedIpc,
     service: goalService,
     assertSender: (event) => assertTrustedSender(event, mainWindow, getRendererLocation())
   })
   registerActionIpc({
-    ipc: ipcMain,
+    ipc: guardedIpc,
     service: actionService,
     assertSender: (event) => assertTrustedSender(event, mainWindow, getRendererLocation())
   })
   registerTodayIpc({
-    ipc: ipcMain,
+    ipc: guardedIpc,
     service: todayService,
     assertSender: (event) => assertTrustedSender(event, mainWindow, getRendererLocation())
   })
   registerRoutineIpc({
-    ipc: ipcMain,
+    ipc: guardedIpc,
     service: routineService,
     assertSender: (event) => assertTrustedSender(event, mainWindow, getRendererLocation())
   })
   registerRoutineRecordIpc({
-    ipc: ipcMain,
+    ipc: guardedIpc,
     service: routineRecordService,
     contexts: routineRecordingContexts,
     assertSender: (event) => assertTrustedSender(event, mainWindow, getRendererLocation())
   })
   registerRecordIpc({
-    ipc: ipcMain,
+    ipc: guardedIpc,
     service: actionRecordService,
     contexts: actionRecordingContexts,
     assertSender: (event) => assertTrustedSender(event, mainWindow, getRendererLocation())
   })
   registerProgressIpc({
-    ipc: ipcMain,
+    ipc: guardedIpc,
     service: progressService,
     assertSender: (event) => assertTrustedSender(event, mainWindow, getRendererLocation())
   })
   registerRecoveryIpc({
-    ipc: ipcMain,
+    ipc: guardedIpc,
     service: recoveryService,
     assertSender: (event) => assertTrustedSender(event, mainWindow, getRendererLocation())
   })
   registerReviewIpc({
-    ipc: ipcMain,
+    ipc: guardedIpc,
     service: reviewService,
     contexts: reviewContexts,
     assertSender: (event) => assertTrustedSender(event, mainWindow, getRendererLocation())
   })
   registerDataControlIpc({
-    ipc: ipcMain,
+    ipc: guardedIpc,
     service: dataControlService,
     contexts: deletePreviewContexts,
     assertSender: (event) => assertTrustedSender(event, mainWindow, getRendererLocation()),
     now: () => clock.snapshot().instant
   })
   registerExportIpc({
-    ipc: ipcMain,
+    ipc: guardedIpc,
     service: completeExportService,
     assertSender: (event) => assertTrustedSender(event, mainWindow, getRendererLocation())
   })
   registerAiStartHelpIpc({
-    ipc: ipcMain,
+    ipc: guardedIpc,
     sessions: aiStartHelpSessions,
     configuration: aiConfiguration,
+    assertSender: (event) => assertTrustedSender(event, mainWindow, getRendererLocation())
+  })
+  const installCoordinator = new UpdateInstallCoordinator({
+    service: updateService,
+    gate: installGate,
+    probeDrafts: () => draftProbe!.request(),
+    hasPendingAiDraft: () => {
+      if (!mainWindow || !aiStartHelpSessions) return true
+      const state = aiStartHelpSessions.status(mainWindow.webContents.id).state
+      return !['idle', 'cancelled', 'confirmed', 'rejected', 'closed'].includes(state)
+    },
+    cancelAiRequests: () => aiStartHelpSessions?.clearAll(),
+    closeDatabase: () => {
+      sqliteConnection?.close()
+      sqliteConnection = null
+    },
+    quitApplication: () => app.quit()
+  })
+  registerUpdatesIpc({
+    ipc: ipcMain,
+    service: updateService,
+    installCoordinator,
+    draftProbe,
     assertSender: (event) => assertTrustedSender(event, mainWindow, getRendererLocation())
   })
   await createMainWindow()
@@ -607,7 +698,14 @@ app.on('window-all-closed', () => {
   app.quit()
 })
 
-app.on('before-quit', () => {
+app.on('before-quit', (event) => {
+  if (installGate.state === 'preparing') {
+    event.preventDefault()
+    return
+  }
+  const updateStatus = updateService?.getStatus()
+  if (updateStatus?.operationId) updateService?.cancel({ operationId: updateStatus.operationId })
+  updateService = null
   actionRecordingContexts.clearAll()
   routineRecordingContexts.clearAll()
   deletePreviewContexts.clearAll()

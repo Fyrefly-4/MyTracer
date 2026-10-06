@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "task": "T084",
+  "task_kind": "implementation",
+  "dependencies": {
+    "requires": ["T081", "T082", "T083"],
+    "blocks": [],
+    "can_parallel": [],
+    "prefer_after": ["T083"],
+    "conflicts_with": ["T081", "T082", "T083"]
+  },
+  "conflict_basis": {
+    "T081": "S8 serial integration: shared NSIS identity, cross-version fixtures and packaging provenance.",
+    "T082": "S8 serial integration: shared private feed, update metadata, candidate packaging and deferred real-source evidence.",
+    "T083": "S8 serial integration: installed continuous updates require completed install confirmation and safe exit coordination."
+  },
+  "shared_surfaces": [
+    {
+      "files": [
+        ".github/workflows/",
+        "tools/release/",
+        "tools/evidence/",
+        "tools/ci/classify-changes.mjs",
+        "package.json",
+        "package-lock.json",
+        "electron-builder.yml",
+        "tests/unit/",
+        "tests/integration/",
+        "tests/e2e/",
+        "tests/support/",
+        "docs/implementation/T084_RELEASE_PIPELINE_STAGE_ACCEPTANCE.md",
+        "docs/implementation/TASK_INDEX_V0.1.md",
+        "docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md"
+      ],
+      "modules": [
+        "private-release-provenance",
+        "owner-dispatched-publication",
+        "installed-update-stage-acceptance"
+      ],
+      "schema_tables": [],
+      "ipc_contracts": [],
+      "domain_invariants": [
+        "same-schema-core-data-and-local-date-preservation",
+        "explicit-install-confirmation-and-safe-exit",
+        "fixed-private-source-and-main-only-read-credential",
+        "no-implicit-publish-or-agent-release-authority",
+        "isolated-synthetic-windows-installation-tests"
+      ],
+      "risk": "high",
+      "integration_policy": "serial"
+    }
+  ],
+  "external": [
+    "T083 integrated at de88b1877ba2cfc48f1e593bcfcb2007471a3fa3; owner-authorized task index conflict resolution completed during contract preparation",
+    "T084 owner-approved current Windows account with unique temporary synthetic data roots, identity/preflight checks and exact source package hashes",
+    "dedicated read-only private-source test credential",
+    "owner approval for exact rehearsal assets and formal publication"
+  ]
+}

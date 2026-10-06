@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "task": "T072",
+  "task_kind": "aggregate",
+  "dependencies": {
+    "requires": ["T071"],
+    "blocks": [],
+    "can_parallel": [],
+    "prefer_after": [],
+    "conflicts_with": []
+  },
+  "conflict_basis": {},
+  "shared_surfaces": [
+    {
+      "files": ["tests/unit/", "tests/integration/", "tests/e2e/", "tests/support/"],
+      "modules": ["full-ac-regression", "windows-package-contract-and-isolated-smoke"],
+      "schema_tables": [],
+      "ipc_contracts": ["progress"],
+      "domain_invariants": [
+        "all-core-semantics-preserved",
+        "same-source-revision-for-acceptance",
+        "unique-temporary-data-roots",
+        "fake-ai-for-core-verification",
+        "strict-api-assertions-remain"
+      ],
+      "risk": "high",
+      "integration_policy": "serial"
+    },
+    {
+      "files": [
+        "src/renderer/src/app/",
+        "src/renderer/src/features/",
+        "src/renderer/src/styles.css"
+      ],
+      "modules": ["existing-feedback-and-disclosure", "keyboard-and-visible-focus"],
+      "schema_tables": [],
+      "ipc_contracts": [],
+      "domain_invariants": [
+        "current-ui-and-session-semantics-preserved",
+        "renderer-has-no-privileged-access",
+        "no-new-commands-or-user-concepts"
+      ],
+      "risk": "medium",
+      "integration_policy": "serial"
+    },
+    {
+      "files": [
+        "docs/implementation/T072_DEMO_CONVERGENCE.md",
+        "docs/implementation/metadata/T072.json",
+        "docs/implementation/TASK_INDEX_V0.1.md",
+        "docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md"
+      ],
+      "modules": ["requirements-coverage-and-evidence", "contract-preparation-and-owner-gates"],
+      "schema_tables": [],
+      "ipc_contracts": [],
+      "domain_invariants": [
+        "draft-does-not-activate-implementation",
+        "historical-ci-is-not-current-acceptance",
+        "manual-acceptance-owner-only",
+        "no-automatic-g4-or-release"
+      ],
+      "risk": "medium",
+      "integration_policy": "owner-review"
+    }
+  ],
+  "external": []
+}

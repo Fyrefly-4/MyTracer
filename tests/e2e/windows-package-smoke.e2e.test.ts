@@ -1,5 +1,5 @@
 import Database from 'better-sqlite3'
-import { mkdir } from 'node:fs/promises'
+import { mkdir, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { expect, test } from '@playwright/test'
@@ -20,7 +20,8 @@ const nsisCleanupOptions = process.env.CI === 'true' ? { maxRetries: 8, retryDel
 async function verifyPackagedApplication(
   root: TemporaryTestRoot,
   executablePath: string,
-  userData: string
+  userData: string,
+  expectedVersion: string
 ): Promise<void> {
   await mkdir(userData, { recursive: false })
   const application = await electron.launch({
@@ -34,6 +35,7 @@ async function verifyPackagedApplication(
     const actualUserData = await application.evaluate(({ app }) => app.getPath('userData'))
     await expect(assertExistingPathWithinRoot(root, actualUserData)).resolves.toBeDefined()
     expect(actualUserData).toBe(userData)
+    expect(await application.evaluate(({ app }) => app.getVersion())).toBe(expectedVersion)
 
     const page = await application.firstWindow()
     await expect(page.getByRole('heading', { name: '今天', exact: true })).toBeVisible()
@@ -44,6 +46,7 @@ async function verifyPackagedApplication(
     })
     expect(await page.evaluate(() => Object.keys(window.myTracer))).toEqual([
       'shell',
+      'updates',
       'goals',
       'actions',
       'today',
@@ -58,6 +61,26 @@ async function verifyPackagedApplication(
       'aiConfiguration'
     ])
     expect(await page.evaluate(() => Object.keys(window.myTracer.shell))).toEqual(['getStatus'])
+    expect(await page.evaluate(() => Object.keys(window.myTracer.updates))).toEqual([
+      'getStatus',
+      'check',
+      'download',
+      'cancel',
+      'install',
+      'cancelPreparation',
+      'replyToDraftRequest',
+      'subscribe',
+      'subscribeDraftRequests'
+    ])
+    expect(await page.evaluate(() => window.myTracer.updates.getStatus())).toMatchObject({
+      state: 'idle',
+      currentVersion: expectedVersion
+    })
+    expect(await page.evaluate(() => window.myTracer.updates.check())).toMatchObject({
+      state: 'error',
+      error: { code: 'not-configured' }
+    })
+    await expect(page.getByRole('heading', { name: '今天', exact: true })).toBeVisible()
     expect(await page.evaluate(() => Object.keys(window.myTracer.goals))).toEqual([
       'create',
       'updateDetails',
@@ -106,7 +129,11 @@ async function verifyPackagedApplication(
       'listForAction',
       'getDetail'
     ])
-    expect(await page.evaluate(() => Object.keys(window.myTracer.progress))).toEqual(['get'])
+    expect(await page.evaluate(() => Object.keys(window.myTracer.progress))).toEqual([
+      'goalActivity',
+      'compareWeeks',
+      'get'
+    ])
     expect(await page.evaluate(() => Object.keys(window.myTracer.recovery))).toEqual(['getContext'])
     expect(await page.evaluate(() => Object.keys(window.myTracer.review))).toEqual([
       'begin',
@@ -180,9 +207,13 @@ test('starts Windows x64 unpacked and isolated NSIS-installed applications', asy
   test.setTimeout(process.env.CI === 'true' ? 720_000 : 300_000)
   test.skip(process.platform !== 'win32', 'T004 package smoke is Windows-only.')
 
+  const packageJson = JSON.parse(await readFile(join(process.cwd(), 'package.json'), 'utf8')) as {
+    version: string
+  }
+  expect(packageJson.version).toMatch(/^\d+\.\d+\.\d+$/)
   const root = await createTemporaryTestRoot()
   const unpackedExecutable = join(process.cwd(), 'release', 'win-unpacked', 'MyTracer.exe')
-  const installer = join(process.cwd(), 'release', 'MyTracer-0.1.0-x64-setup.exe')
+  const installer = join(process.cwd(), 'release', `MyTracer-${packageJson.version}-x64-setup.exe`)
   const installDirectory = join(root.artifacts, 'nsis-install')
   const unpackedUserData = join(root.root, 'unpacked-user-data')
   const installedUserData = join(root.root, 'installed-user-data')
@@ -191,7 +222,7 @@ test('starts Windows x64 unpacked and isolated NSIS-installed applications', asy
   let uninstalled = false
 
   try {
-    await verifyPackagedApplication(root, unpackedExecutable, unpackedUserData)
+    await verifyPackagedApplication(root, unpackedExecutable, unpackedUserData, packageJson.version)
 
     const install = spawnSync(installer, ['/S', `/D=${installDirectory}`], {
       cwd: root.root,
@@ -207,7 +238,12 @@ test('starts Windows x64 unpacked and isolated NSIS-installed applications', asy
     await expect(assertExistingPathWithinRoot(root, installedExecutable)).resolves.toBe(
       installedExecutable
     )
-    await verifyPackagedApplication(root, installedExecutable, installedUserData)
+    await verifyPackagedApplication(
+      root,
+      installedExecutable,
+      installedUserData,
+      packageJson.version
+    )
 
     await expect(assertExistingPathWithinRoot(root, uninstaller)).resolves.toBe(uninstaller)
     const uninstall = spawnSync(uninstaller, ['/S'], {

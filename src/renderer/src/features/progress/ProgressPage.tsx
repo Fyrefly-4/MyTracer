@@ -4,6 +4,7 @@ import type {
   ProgressErrorCode,
   ProgressRecordFactDto,
   ProgressViewDto,
+  WeekComparisonDto,
   RoutineProgressRecordFactDto
 } from '../../../../contracts/progress'
 import { usePagePosition, useUiSession, type ProgressFilterState } from '../../app/ui-session'
@@ -32,6 +33,38 @@ function ProgressWorkspace(): ReactNode {
   usePagePosition('progress', progress !== null)
   const [busy, setBusy] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [comparison, setComparison] = useState<{
+    goalId: string
+    value: WeekComparisonDto | null
+    error: string | null
+  } | null>(null)
+  const [comparisonVersion, setComparisonVersion] = useState(0)
+
+  useEffect(() => {
+    let active = true
+    const queryGoalId = appliedFilter.goalId
+    void window.myTracer.progress
+      .compareWeeks({ goalId: queryGoalId || null })
+      .then((result) => {
+        if (!active) return
+        setComparison({
+          goalId: queryGoalId,
+          value: result.ok ? result.value : null,
+          error: result.ok ? null : progressErrorText[result.error.code]
+        })
+      })
+      .catch(() => {
+        if (active)
+          setComparison({
+            goalId: queryGoalId,
+            value: null,
+            error: progressErrorText['persistence-failed']
+          })
+      })
+    return () => {
+      active = false
+    }
+  }, [appliedFilter.goalId, comparisonVersion])
 
   const updateDraft = (next: ProgressFilterState): void => {
     setGoalId(next.goalId)
@@ -52,6 +85,7 @@ function ProgressWorkspace(): ReactNode {
       session.applyProgressFilter(filter)
       setAppliedFilter(filter)
       setProgress(result.value)
+      setComparisonVersion((version) => version + 1)
       setError(null)
     } else {
       setError(progressErrorText[result.error.code])
@@ -108,6 +142,9 @@ function ProgressWorkspace(): ReactNode {
     through !== appliedFilter.through
   const goalName = (id: string | null): string =>
     id ? (goals.find((goal) => goal.id === id)?.name ?? '关联目标') : '未关联目标'
+  const displayedComparison = comparison?.goalId === appliedFilter.goalId ? comparison : null
+  const week = displayedComparison?.value
+  const signed = (value: number): string => (value > 0 ? `+${value}` : String(value))
 
   return (
     <section className="progress-workspace" aria-label="进展记录">
@@ -165,26 +202,95 @@ function ProgressWorkspace(): ReactNode {
       ) : null}
       {busy && !progress ? <p role="status">正在读取本地记录…</p> : null}
       {progress ? (
+        <div className="progress-summary" aria-label="进展汇总">
+          <article>
+            <span>累计行动分钟</span>
+            <strong>{progress.totalDurationMinutes}</strong>
+          </article>
+          <article>
+            <span>记录到的行动次数</span>
+            <strong>{progress.realActionCount}</strong>
+          </article>
+          <article>
+            <span>例行达标次数</span>
+            <strong>{progress.targetMetCount}</strong>
+          </article>
+          <article>
+            <span>计划日达标次数</span>
+            <strong>{progress.plannedTargetMetCount}</strong>
+          </article>
+        </div>
+      ) : null}
+      <section className="goal-card week-comparison" aria-label="本周与上周事实比较">
+        <h2>本周与上周</h2>
+        <p className="empty-copy">
+          {appliedFilter.goalId ? goalName(appliedFilter.goalId) : '全部目标与无目标行动'} ·
+          周比较按本周/上周，不使用历史日期范围。
+        </p>
+        {!displayedComparison ? <p role="status">正在读取周期间事实…</p> : null}
+        {displayedComparison?.error ? (
+          <p role="status">
+            {displayedComparison.error}
+            <button type="button" onClick={() => setComparisonVersion((version) => version + 1)}>
+              重试周比较
+            </button>
+          </p>
+        ) : null}
+        {week ? (
+          <>
+            <p>
+              截至 {week.asOfLocalDate} 的记录
+              {week.asOfLocalDate < week.currentWeekEndedOn
+                ? '，本周尚未结束；两个统计区间可能不等长。'
+                : '。'}
+            </p>
+            <div className="week-comparison-scroll">
+              <table>
+                <caption>已记录的事实；差值为本周减上周</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">事实</th>
+                    <th scope="col">
+                      本周 {week.current.from} 至 {week.current.through}
+                    </th>
+                    <th scope="col">
+                      上周 {week.previous.from} 至 {week.previous.through}
+                    </th>
+                    <th scope="col">差值</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="row">记录到的投入分钟</th>
+                    <td>{week.current.totalDurationMinutes}</td>
+                    <td>{week.previous.totalDurationMinutes}</td>
+                    <td>{signed(week.difference.totalDurationMinutes)}</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">记录到的行动次数</th>
+                    <td>{week.current.realActionCount}</td>
+                    <td>{week.previous.realActionCount}</td>
+                    <td>{signed(week.difference.realActionCount)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            {!week.current.hasRecordedFacts && !week.previous.hasRecordedFacts ? (
+              <p>这两个区间尚无记录；没有记录不表示没有行动。</p>
+            ) : (
+              <>
+                {!week.current.hasRecordedFacts ? <p>本周统计区间尚无记录。</p> : null}
+                {!week.previous.hasRecordedFacts ? <p>上周统计区间尚无记录。</p> : null}
+              </>
+            )}
+            <p className="empty-copy">
+              0 只表示已记录的合计为 0；这些事实不评价行动质量，也不要求补齐记录。
+            </p>
+          </>
+        ) : null}
+      </section>
+      {progress ? (
         <>
-          <div className="progress-summary" aria-label="进展汇总">
-            <article>
-              <span>累计行动分钟</span>
-              <strong>{progress.totalDurationMinutes}</strong>
-            </article>
-            <article>
-              <span>记录到的行动次数</span>
-              <strong>{progress.realActionCount}</strong>
-            </article>
-            <article>
-              <span>例行达标次数</span>
-              <strong>{progress.targetMetCount}</strong>
-            </article>
-            <article>
-              <span>计划日达标次数</span>
-              <strong>{progress.plannedTargetMetCount}</strong>
-            </article>
-          </div>
-
           {timeline.length ? (
             <section aria-label="按时间排列的记录">
               <div className="progress-timeline-heading">

@@ -43,6 +43,8 @@ import {
 import {
   PROGRESS_CHANNELS,
   type GetProgressInputDto,
+  type GoalActivityViewDto,
+  type WeekComparisonDto,
   type ProgressResult,
   type ProgressViewDto
 } from '../contracts/progress'
@@ -114,10 +116,45 @@ import {
   type ConfirmAiStartHelpUnderstandingInputDto,
   type StartAiStartHelpInputDto
 } from '../contracts/ai-start-help'
+import {
+  UPDATE_CHANNELS,
+  type CancelUpdateInputDto,
+  type DownloadUpdateInputDto,
+  type DraftReplyDto,
+  type DraftRequestDto,
+  type InstallPreparationResultDto,
+  type UpdateStatusDto
+} from '../contracts/updates'
 
 const api: MyTracerApi = Object.freeze({
   shell: Object.freeze({
     getStatus: (): Promise<ShellStatus> => ipcRenderer.invoke(SHELL_STATUS_CHANNEL)
+  }),
+  updates: Object.freeze({
+    getStatus: (): Promise<UpdateStatusDto> => ipcRenderer.invoke(UPDATE_CHANNELS.status),
+    check: (): Promise<UpdateStatusDto> => ipcRenderer.invoke(UPDATE_CHANNELS.check),
+    download: (input: DownloadUpdateInputDto): Promise<UpdateStatusDto> =>
+      ipcRenderer.invoke(UPDATE_CHANNELS.download, input),
+    cancel: (input: CancelUpdateInputDto): Promise<UpdateStatusDto> =>
+      ipcRenderer.invoke(UPDATE_CHANNELS.cancel, input),
+    install: (input: DownloadUpdateInputDto): Promise<InstallPreparationResultDto> =>
+      ipcRenderer.invoke(UPDATE_CHANNELS.install, input),
+    cancelPreparation: (input: CancelUpdateInputDto): Promise<UpdateStatusDto> =>
+      ipcRenderer.invoke(UPDATE_CHANNELS.cancelPreparation, input),
+    replyToDraftRequest: (input: DraftReplyDto): Promise<void> =>
+      ipcRenderer.invoke(UPDATE_CHANNELS.draftReply, input),
+    subscribe: (listener: (status: UpdateStatusDto) => void): (() => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, status: UpdateStatusDto): void =>
+        listener(status)
+      ipcRenderer.on(UPDATE_CHANNELS.changed, handler)
+      return () => ipcRenderer.removeListener(UPDATE_CHANNELS.changed, handler)
+    },
+    subscribeDraftRequests: (listener: (request: DraftRequestDto) => void): (() => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, request: DraftRequestDto): void =>
+        listener(request)
+      ipcRenderer.on(UPDATE_CHANNELS.draftRequest, handler)
+      return () => ipcRenderer.removeListener(UPDATE_CHANNELS.draftRequest, handler)
+    }
   }),
   goals: Object.freeze({
     create: (input: CreateGoalInputDto): Promise<GoalResult<GoalDetailDto>> =>
@@ -190,6 +227,14 @@ const api: MyTracerApi = Object.freeze({
       ipcRenderer.invoke(RECORD_CHANNELS.getDetail, input)
   }),
   progress: Object.freeze({
+    goalActivity: (
+      input: Readonly<Record<string, never>>
+    ): Promise<ProgressResult<GoalActivityViewDto>> =>
+      ipcRenderer.invoke(PROGRESS_CHANNELS.goalActivity, input),
+    compareWeeks: (input: {
+      readonly goalId?: string | null
+    }): Promise<ProgressResult<WeekComparisonDto>> =>
+      ipcRenderer.invoke(PROGRESS_CHANNELS.compareWeeks, input),
     get: (input: GetProgressInputDto): Promise<ProgressResult<ProgressViewDto>> =>
       ipcRenderer.invoke(PROGRESS_CHANNELS.get, input)
   }),

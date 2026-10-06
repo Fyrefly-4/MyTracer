@@ -1,6 +1,6 @@
 {
   "name": "mytracer",
-  "version": "0.1.0",
+  "version": "0.1.4",
   "private": true,
   "description": "A local-first Windows desktop shell for MyTracer.",
   "license": "UNLICENSED",
@@ -9,7 +9,9 @@
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
-    "package": "npm run build && electron-builder --win nsis --x64",
+    "package": "npm run build && electron-builder --win nsis --x64 --publish never",
+    "release:validate": "node tools/release/validate.mjs",
+    "test:installed-update": "node tools/release/run-installed-test.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint . --max-warnings 0",
@@ -36,6 +38,7 @@
   },
   "dependencies": {
     "better-sqlite3": "13.0.1",
+    "electron-updater": "6.8.10",
     "openai": "7.8.0",
     "react": "19.2.8",
     "react-dom": "19.2.8"

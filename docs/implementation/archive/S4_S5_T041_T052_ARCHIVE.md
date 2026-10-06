@@ -1,6 +1,6 @@
 # MyTracer S4/S5 / T041～T052 开发合同归档
 
-> 状态：已归档；四个任务均已进入 `dev@84b596e12e54db098857004497a4d1964dcdc23c`，项目所有者报告完整人工 AC-05、AC-06 通过；T806 聚合 PR #43 的 final-head hosted CI、Ready 与 merge 尚待后续 Gate
+> 状态：已归档；固定产品 source 和原人工证据保留；T806 后续 final-head CI 与 dev 集成已补记于下文。
 >
 > 归档日期：2026-08-31
 
@@ -61,3 +61,7 @@ git show 84b596e12e54db098857004497a4d1964dcdc23c:docs/implementation/T052_REVIE
 ```
 
 历史合同中的候选、Draft、Ready、merge 与逐文件执行许可仅供审计，不再作为当前开发授权。
+
+## 后续集成事实补记
+
+2026-09-28 补核：PR #43 final head `605cb5433ca93d8f8353b93ca12e8596e16112f5` 的 [run 33323763973](https://github.com/Fyrefly-4/MyTracer/actions/runs/33323763973) 成功，supersedes candidate run `33314322219` 的失败；PR 于 2026-08-30 合入 `dev_integration_revision=1d02fd7a0a7b0bf29a5e39720d5818c9d68fdbc2`。原固定产品 source 与失败记录保留，不由集成事实推断新的人工或阶段接受。

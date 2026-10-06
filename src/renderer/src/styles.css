@@ -187,6 +187,94 @@ button:focus-visible {
   background-color: #b95e51;
 }
 
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.update-entry,
+.update-actions button,
+.update-close {
+  border: 1px solid var(--color-line);
+  border-radius: 9px;
+  color: var(--color-action);
+  background: var(--color-surface);
+  cursor: pointer;
+  font: inherit;
+}
+
+.update-entry {
+  padding: 7px 11px;
+  font-size: 13px;
+}
+
+.update-panel {
+  position: absolute;
+  z-index: 12;
+  top: 70px;
+  right: 24px;
+  width: min(390px, calc(100vw - 48px));
+  max-height: calc(100dvh - 90px);
+  overflow: auto;
+  padding: 20px;
+  border: 1px solid var(--color-line);
+  border-radius: 14px;
+  background: var(--color-surface);
+  box-shadow: 0 16px 44px rgb(40 45 39 / 16%);
+}
+
+.update-panel-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.update-panel-heading h2,
+.update-panel-heading p {
+  margin: 0;
+}
+
+.update-panel-heading p,
+.update-privacy {
+  color: var(--color-muted);
+  font-size: 13px;
+}
+
+.update-close {
+  height: 30px;
+  min-width: 30px;
+}
+
+.update-candidate {
+  margin: 16px 0;
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--color-shell);
+}
+
+.update-candidate p {
+  margin-bottom: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.update-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.update-actions button {
+  padding: 8px 10px;
+}
+
+.update-actions button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 .workspace {
   display: grid;
   min-height: 0;
@@ -495,13 +583,18 @@ button:focus-visible {
 }
 
 .confirmation-dialog {
-  width: min(520px, 100%);
+  width: min(520px, calc(100% - 48px));
+  margin: auto;
   max-height: calc(100dvh - 48px);
   overflow-y: auto;
   padding: 26px;
   border-radius: 20px;
   background: #fffdf8;
   box-shadow: 0 24px 80px rgba(18, 33, 28, 0.28);
+}
+
+.confirmation-dialog::backdrop {
+  background: rgba(24, 38, 34, 0.48);
 }
 
 .confirmation-dialog h2 {
@@ -1278,6 +1371,37 @@ h1 {
 .progress-workspace {
   display: grid;
   gap: 22px;
+}
+
+.week-comparison-scroll {
+  overflow-x: auto;
+}
+
+.week-comparison table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.week-comparison th,
+.week-comparison td {
+  padding: 0.65rem;
+  border-bottom: 1px solid rgba(44, 74, 65, 0.1);
+  vertical-align: top;
+}
+
+.week-comparison caption {
+  text-align: left;
+  padding: 0.5rem 0;
+}
+
+.week-comparison th:first-child {
+  min-width: 8em;
+}
+
+.week-comparison th:last-child,
+.week-comparison td:last-child {
+  white-space: nowrap;
 }
 
 .progress-filters {
