@@ -69,3 +69,7 @@ Fixture 经普通 API 创建 Goal/Action/Routine 生命周期、四种 Routine R
 无凭据返回 `error/not-configured`，合成错误 token 访问真实固定私有 API 返回 `error/authentication`；两者无候选、重复检查仍失败，普通创建/暂停/导出可用。进程内请求阻断实际返回 `error/unavailable`，对应“当前无法连接更新源”提示可见，重复检查与稍后、核心操作可用。原组合命令及 network 错误码预期诊断 exit 1 保留；后续补测 exit 0 仅 supersedes 该诊断预期，不证明物理断网、真实下载中断或恢复重试。
 
 草稿种类、迟到/取消、排空/超时、第二实例、版本策略、过新 schema、传输策略和损坏字节有候选 revision 的分层自动化结果；未由测试名称推导实装人工结果。磁盘不足、拒绝/中断安装及失败修复未执行。本次 owner 明确暂不继续执行，批准仅文档收尾与最后一次推送；未验证项继续 pending，不清理安装/临时数据、不重新安装、不代签 unsigned/系统提示及人工体验，不声称 T084 或 S8 完成。
+
+### 2026-10-06 T809 聚合进度
+
+T081～T084 已分别通过 PR #57～#60 集成至固定产品 dev revision `080c308ff511705bfd8ab21386a03d58ec311dcd`。T809 本地定向、完整 verify 和禁止发布的打包通过；owner 报告本地 0.1.3→0.1.4 应用内更新、未保存输入保护、数据保留和重开持久化的简明步骤全部通过。详见 [EV-S8-001](ACCEPTANCE_EVIDENCE_V0.1.md#ev-s8-001) 与 [T809 合同](T809_S8_FINAL_ACCEPTANCE.md)。此报告未覆盖完整实装配置/导出绑定、全部真实故障或安装 smoke；T084/T809 仍 active，S8 未整体通过。历史失败与 pending 保留，不执行正式发布。

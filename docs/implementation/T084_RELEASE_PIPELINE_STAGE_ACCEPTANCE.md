@@ -271,3 +271,7 @@ Owner 已明确“暂不考虑执行，直接进行文档收尾并进行最后�
 列出改动文件、U/FR/AC/D/ED/GW 覆盖、真实命令/退出码/环境、分层测试及 owner 人工状态、完整 diff/独立 review、任务/集成/阶段/main revision、PR/CI/run/artifact/包/元数据 hash、真实私有访问与 unsigned 结果、授权和副作用、未验证项及是否出现冲突/范围变化。
 
 T084 实施完成须满足范围内实现、规定验证、评审、证据与 docs closeout；S8 阶段通过须另有同一最终集成 revision 的完整聚合和 owner 人工结果。未得到真实结果前，不标 done，不把本合同当成验收或发布授权。
+
+### 2026-10-06 T809 聚合进度
+
+T081～T084 已分别通过 PR #57～#60 集成至固定产品 dev revision `080c308ff511705bfd8ab21386a03d58ec311dcd`。T809 本地定向、完整 verify 和禁止发布的打包通过；owner 报告本地 0.1.3→0.1.4 应用内更新、未保存输入保护、数据保留和重开持久化的简明步骤全部通过。详见 [EV-S8-001](ACCEPTANCE_EVIDENCE_V0.1.md#ev-s8-001) 与 [T809 合同](T809_S8_FINAL_ACCEPTANCE.md)。此报告未覆盖完整实装配置/导出绑定、全部真实故障或安装 smoke；T084/T809 仍 active，S8 未整体通过。历史失败与 pending 保留，不执行正式发布。

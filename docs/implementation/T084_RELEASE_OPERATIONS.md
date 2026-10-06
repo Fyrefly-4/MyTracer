@@ -1,6 +1,6 @@
 # T084 — 候选构建与私有发布操作
 
-> 实现说明，2026-10-03。Workflow/API 的远端执行尚未验证；真实源、凭据部署和人工验收仍 pending。本文件不授予发布权限。
+> 初始实现说明为 2026-10-03；2026-10-06 更新：候选 workflow 与 v0.1.4 私有 stable 演练已有实际结果，owner 报告简明真实更新通过。正式 accepted-main publish workflow 及真实故障验收仍待验证；本文件不授予发布权限。
 
 ## 候选与审核
 
@@ -50,3 +50,9 @@ npm.cmd run release:validate -- --manifest .tmp/release/candidate/candidate-mani
 客户端只读 token 与 CI 发布 token分离：owner 将限本库 Contents read 的专用凭据安全注入测试进程 `MYTRACER_UPDATE_TOKEN`，重启生效；轮换后撤销旧值，演练后撤销。检查会产生分发服务可见 IP 等网络元数据。unsigned 不证明发布者身份，记录 Windows 实际提示，不关闭安全保护。
 
 API/产物规则参考 [GitHub artifact API](https://docs.github.com/en/rest/actions/artifacts)、[Release API](https://docs.github.com/en/rest/releases/releases)；这些文档说明能力，不替代本仓库远端实测。
+
+### 2026-10-06 T809 聚合进度
+
+T081～T084 已分别通过 PR #57～#60 集成至固定产品 dev revision `080c308ff511705bfd8ab21386a03d58ec311dcd`。T809 本地定向、完整 verify 和禁止发布的打包通过；owner 报告本地 0.1.3→0.1.4 应用内更新、未保存输入保护、数据保留和重开持久化的简明步骤全部通过。详见 [EV-S8-001](ACCEPTANCE_EVIDENCE_V0.1.md#ev-s8-001) 与 [T809 合同](T809_S8_FINAL_ACCEPTANCE.md)。此报告未覆盖完整实装配置/导出绑定、全部真实故障或安装 smoke；T084/T809 仍 active，S8 未整体通过。历史失败与 pending 保留，不执行正式发布。
+
+正常开始菜单启动需继承专用 `MYTRACER_UPDATE_TOKEN`。本机用户环境变量配置或轮换后，完整注销/登录并重启应用；Main 仅启动时读取。owner 报告正常入口和更新后重开检查通过，不将开发终端注入等同于全部正常入口验证。不要把 token 值写入命令、文档、日志、截图或导出。现有 v0.1.4 演练资产不可覆盖，正式发布仍绑定 accepted-main 与不可变候选及 owner dispatch。

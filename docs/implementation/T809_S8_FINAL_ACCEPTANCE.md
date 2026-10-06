@@ -261,7 +261,7 @@ T084 实现已集成；其验收责任由 T809 补验：U-01 数据/配置/Local
 - 本地 `package --publish never` exit 0，artifact `.tmp/evidence/T809-package-080c308ff511-20261005162726.json`；本地重打 0.1.4 SHA-256=`48fd7d9ce4b272e520377bba4f073e11680e7bec44e16aa056212624e25b0c61`，NotSigned。它与已发布目标包是不同字节的构建产物，只证明阶段打包，不发布或替代 feed 包。
 - A/B/C 文件回读 hash 与 EV-T084-002 相符，A/B 另存 ignored 交接目录防止打包输出混淆；已有 C bundle 五资产 validate exit 0，latest Release 403104108、tag/source=a575976 未变。C 的 src/package/lock/builder/electron.vite 内容与最终阶段 source 无差异；人工适用性是产品内容等价推断，不是新版实装通过。
 - 沙箱定向 unit exit 1（realpath EPERM）及 bundle validate exit 1 保留。相同 argv 宿主重跑成功，限定 supersedes 环境失败；bundle 的环境原因属于由宿主成功推断，不声称命令输出已详细诊断。全部十个 wrapper JSON 已回读，source/base 均为 080c308，capture complete。
-- 执行事实、需求责任/失败矩阵与相对 artifact 清单：[本地审计](../../.tmp/evidence/T809-manual/AUDIT.md)；版本/hash、环境先决条件、凭据与正常入口、人工步骤/预期及回报表：[人工交接单](../../.tmp/evidence/T809-manual/HANDOFF.md)。这些为本地操作记录，未替代正式 Evidence 账本。
+- 执行事实、需求责任/失败矩阵与相对 artifact 清单在 ignored `.tmp/evidence/T809-manual/AUDIT.md`；版本/hash、环境先决条件、凭据与正常入口、人工步骤/预期及回报表在同目录 `HANDOFF.md`。这些为本地操作记录，不建立依赖 ignored 文件的仓库链接；已获准的正式事实记录见 [EV-S8-001](ACCEPTANCE_EVIDENCE_V0.1.md#ev-s8-001)。
 - 实际宿主预检：MyTracer 进程 0、HKCU 卸载注册项 0、默认安装目录不存在、默认数据目录存在；未读取默认数据或 token，未清理旧临时安装。此预检不授予当前账户安装或覆盖默认数据权限。
 - 当前停止点为 owner 明确隔离安装环境并亲自完成 B→C；package-smoke、真实故障矩阵、独立 review、T809 candidate/final-head CI、文档收口与 Git 交付继续 pending。没有新 branch/commit/PR/CI、安装、迁移、外部发布或产品改动；无冻结需求冲突。恢复前再次核验 dev、source、包与 feed。
 
@@ -286,3 +286,13 @@ Owner 明确“本次交接完毕，进行后续步骤吧”。继续现有聚�
 ### 2026-10-06 后续权限激活
 
 Owner 对已呈交的精确文档清单、一个只读子 Agent 独立评审、本地任务分支/普通提交推送/dev Draft PR 及 CI 明确回复“批准”。§11 对应四项 Git 权限现激活；保留现有工作区改动，使用 task/T809-s8-final-acceptance，不创建额外 worktree。允许 §5 所列事实性文档收口与 Draft PR 正文更新，不声称完整验收候选通过；实际安装/卸载/清理、真实故障演练、Ready/merge/main/tag/release、依赖/迁移仍未授权。external_write 仅例外允许本任务分支 push 与 dev Draft PR，其余 false。早期及后续文档 head CI 分别记录，不凭 CI 成功解除剩余验收条件。
+
+### 2026-10-06 文档收口与独立评审
+
+首个有意义文档提交 4b003871f97b06e2411ea494345ea81d0018176a 已普通推送，并创建 dev Draft PR #61；早期 Verification37431957105 和 Update candidate37431957117 确认启动，PR test-merge=5fa78fee5f5cef6bebc2dcd8ced47366e3f7c7a0。推送下一文档 head 前仍 in_progress，不预填通过。早期 Classify/Governance/PR quality 已 success，Documentation skipped，Full Windows 仍运行；历史记录不用于证明后续 head。
+
+已按 owner 批准矩阵更新八个事实文档/账本及索引、合同，metadata 核验有效无须改。正式 EV-S8-001 为 partial；消除现行过期描述，保留历史基线、原失败与剩余验收项。合同指向 ignored 操作材料的链接改为相对 artifact 标识，并回链正式账本；文档不依赖 CI 无法取得的本地临时文件。
+
+Owner 授权的一个只读独立 Agent 检查全部十一项聚合变更、四项 S8 集成与产品边界、合同、EV-S8-001、capture 和程序比较事实，结论无阻止提交的实质问题。评审未运行测试/安装/远端写入或读取真实用户数据/凭据；不证明剩余实装、真实故障、当前 head CI 或完整 S8 通过。合同开头历史准备措辞按 §15 日期理解，不重新设置已批准权限。后续 head 与最新 dev 等价性、验证结果及 CI 交接另记。
+
+收口后本地 `npm.cmd run verify` exit0（346 unit、163 integration/1 live skipped、37 E2E/5 installed skipped），wrapper `.tmp/evidence/T809-docs-closeout-aggregate-4b003871f97b-20261006075048.json` 回读 complete/source4b00387/base080c308，执行对象为该文档 head 加本批未提交收口；不是裸4b00387或后续提交的独立运行。产品、测试、构建、workflow、Skill 相对080c308无差异。十个收口 Markdown 的结构/链接/格式检查、metadata25/1、diff check 通过；无 Skill 修改。独立 Agent 再验评审/CI身份追加记录的最终 delta，无新增实质问题。追加命令结果后仅文档事实变化，后续 hosted CI 绑定推送 head，不自动升级为完整验收通过。

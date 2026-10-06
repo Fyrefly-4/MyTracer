@@ -31,7 +31,7 @@ MyTracer 是一个面向个人本地使用的 Windows 桌面应用，用于帮�
 
 - T071 补齐目标/今日重点的非阻塞软提示、最近真实行动日期与间隔、本周截至今天和上周完整周的分钟/行动次数比较，并回归六条既有 SHOULD。功能不设数量硬上限、停滞阈值或评价分数；实现与验证见 [T071 合同](docs/implementation/T071_SHOULD_CONVERGENCE.md) 和 [EV-T071-001](docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md#ev-t071-001)，任务状态以索引为准。T072 已完成当前候选的全量自动回归、Windows package/隔离安装冒烟及 owner 人工 AC/UX；修正删除对话框键盘焦点、记录后返焦及错误反馈。结果见 [EV-T072-001](docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md#ev-t072-001)；文档 final-head CI、G4 和发布各自受控。
 - T082 的私有源更新检查与确认下载实现候选见 [合同](docs/implementation/T082_PRIVATE_UPDATE_CHECK_DOWNLOAD.md)及 [EV-T082-001](docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md#ev-t082-001)；凭据配置、轮换、撤销和未签名限制见 [操作说明](docs/implementation/T082_UPDATE_SOURCE_OPERATIONS.md)。真实私有源体验及任务状态以证据和任务索引为准。
-- T083 增加显式“确认重启安装”、未保存输入和 AI 建议阻断、取消准备、Main 排空与单实例保护；关闭数据库后安装失败会保持锁定并提示重启。实现、真实手动 NSIS `0.1.2→0.1.3` 数据连续性及批准的替代验收见 [合同](docs/implementation/T083_CONFIRM_INSTALL_SHUTDOWN.md)和 [EV-T083-001](docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md#ev-t083-001)。完整真实应用内跨版本升级尚待后续验收。
+- T083 增加显式“确认重启安装”、未保存输入和 AI 建议阻断、取消准备、Main 排空与单实例保护；关闭数据库后安装失败会保持锁定并提示重启。实现、真实手动 NSIS `0.1.2→0.1.3` 数据连续性及批准的替代验收见 [合同](docs/implementation/T083_CONFIRM_INSTALL_SHUTDOWN.md)和 [EV-T083-001](docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md#ev-t083-001)。2026-10-06 owner 已报告 0.1.3→0.1.4 简明真实应用内更新、草稿保护、数据保留及重开步骤通过；完整阶段门仍待闭合，见 [EV-S8-001](docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md#ev-s8-001)。
 
 不要把任务实现或验收候选理解为已合入 `main` 或已发布。
 
@@ -145,3 +145,7 @@ task/Txxx-short-name
 3. Agent 仍不得从任务完成推定 Ready、merge、tag 或 release 权限。
 
 T011～T014 已覆盖 S1 与完整 AC-01；T021～T023 已覆盖 S2 与完整 AC-03/AC-04；T031～T033/T803 已覆盖 S3 数据控制、版本化完整导出、AI 三态数据独立性和完整人工 AC-07；T041/T042 已形成完整 AC-05 与 S4 acceptance candidate；T051/T052 已形成完整人工 AC-06 与 S5 acceptance candidate；T061～T063/T807 已形成完整 AC-02 与 S6 acceptance candidate。当前已发布的 `v0.1.0-beta.1` 仍不包含尚未晋升到 `main` 的 S4/S5/S6 candidate，也不包含自动导入/恢复、S7 或 G4 Demo。
+
+### S8 更新维护进度（2026-10-06）
+
+当前 dev 产品版本为 0.1.4；固定私有源 v0.1.4 是已授权演练，owner 正常更新人工结果已记录。使用安装版“关于与更新”主动检查、确认下载和确认重启安装；专用只读凭据配置与正常入口重启见 [操作说明](docs/implementation/T082_UPDATE_SOURCE_OPERATIONS.md)。未配置凭据只影响更新，核心功能仍可使用。S8 整体验收、正式 main 晋升和正式新版本发布尚未完成。
