@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "task": "T809",
+  "task_kind": "aggregate",
+  "dependencies": {
+    "requires": ["T081", "T082", "T083", "T084"],
+    "blocks": [],
+    "can_parallel": [],
+    "prefer_after": ["T084"],
+    "conflicts_with": ["T084"]
+  },
+  "conflict_basis": {
+    "T084": "Shared S8 evidence ledger, installed test environment, retained synthetic data and incomplete acceptance matrix; serialize verification and closeout."
+  },
+  "shared_surfaces": [
+    {
+      "files": [
+        "docs/implementation/T809_S8_FINAL_ACCEPTANCE.md",
+        "docs/implementation/metadata/T809.json",
+        "docs/implementation/TASK_INDEX_V0.1.md",
+        "docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md",
+        "docs/architecture/S8_UPDATE_MAINTENANCE_DESIGN.md",
+        "docs/architecture/IMPLEMENTATION_PLAN_V0.1.md",
+        "docs/implementation/T084_RELEASE_PIPELINE_STAGE_ACCEPTANCE.md",
+        "docs/implementation/T084_STAGE_ACCEPTANCE_PROCEDURE.md",
+        "docs/implementation/T084_RELEASE_OPERATIONS.md",
+        "docs/implementation/T082_UPDATE_SOURCE_OPERATIONS.md",
+        "README.md"
+      ],
+      "modules": [
+        "s8-aggregate-acceptance",
+        "revision-bound-installed-update-evidence",
+        "owner-manual-acceptance",
+        "release-handoff"
+      ],
+      "schema_tables": [],
+      "ipc_contracts": [],
+      "domain_invariants": [
+        "same-schema-data-and-local-date-preservation",
+        "explicit-update-install-confirmation",
+        "owner-reported-manual-acceptance",
+        "preserve-failed-and-pending-task-evidence",
+        "isolated-synthetic-installation",
+        "no-aggregate-product-fixes"
+      ],
+      "risk": "high",
+      "integration_policy": "serial"
+    }
+  ],
+  "external": [
+    "owner-approved-exact-installation-environment-and-artifacts",
+    "dedicated-private-feed-read-only-credential",
+    "owner-performed-local-installed-update",
+    "separate-git-publication-and-release-gates"
+  ]
+}

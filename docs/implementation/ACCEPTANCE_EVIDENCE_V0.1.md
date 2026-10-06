@@ -4,6 +4,60 @@
 > 作用：记录可复核的命令、版本、环境、产物和人工观察  
 > 禁止：用任务状态、测试名称、关键词存在或 Agent 自述替代实际结果
 
+## S8 最终聚合证据
+
+### EV-S8-001
+
+#### 2026-10-06 最终文档工作区验证
+
+最终文档工作区验证：npm.cmd run verify exit0（37 E2E passed/5 installed skipped），artifact `.tmp/evidence/T809-final-waiver-docs-d57e653da55c-20261006083620.json`，capture complete/source=d57e653/base=080c308 加本批十文档未提交状态；不是裸 d57e653 或后续 final head 的独立运行。十文档结构/链接/格式、metadata25/1、diff check 和同一 owner 授权只读 Agent 完整 delta review 均通过。最终结果仅追加文档事实，产品/测试/工具/workflow/依赖/Skill 内容不变。最终推送 head hosted CI 仍需独立核验，现有豁免和发布门禁不变。
+
+#### 2026-10-06 最新 owner 决定：真实验收豁免
+
+Owner 报告正式凭据配置、测试凭据撤销、提醒和重启后的正常入口检查“已完成”；按 owner-reported 记录，不接触密钥核实，实际到期日未提供。Agent 只读核实 PR #61 head=d57e653da55cf529c94ab12bfb32d5a891b9dd95/base=080c308ff511705bfd8ab21386a03d58ec311dcd 的 Verification37433913791 和 Update candidate37433876479 均 success；同 head 较早 Verification37433876468 被替代取消，失败 gate 保留。仅核实运行状态，未下载解读 hosted artifacts，不归因于尚未提交的本次文档。
+
+在获知剩余测试及风险后，owner 明确“明确忽略这些测试”。其批准范围为剩余真实凭据鉴权故障、下载断网恢复、安装客户端元数据/损坏包/版本拒绝、拒绝安装/磁盘不足/安装中断与人工修复、真实发布故障，以及未覆盖退出保护和完整数据/配置/导出/隔离过新 schema 的实装复核。当前处理为 **waived-by-owner（未执行，接受风险）**，不再阻塞本次 S8 收尾；详细边界见 [T809 最新豁免记录](T809_S8_FINAL_ACCEPTANCE.md#2026-10-06-owner-明确豁免剩余真实验收)。下方原 pending、失败及 supersedes 为各日期历史事实，不删除、不改成 pass。
+
+未完整实证的现实故障下数据保护、拒绝更新与修复效果仍为已接受风险；本次只缩减验收范围，不删除自动化、放宽功能要求或批准产品改动。正式 accepted-main 发布及具体产物批准、hash/来源校验、Ready/merge/tag/release 和新文档 head CI 仍独立；此记录不是完整测试通过或发布完成，T809 delivery/integration 尚未建立。
+
+后续 owner 批准最终文档收口、按模板重写 PR body 和最后一次普通推送。已下载解读 [Verification37433913791](https://github.com/Fyrefly-4/MyTracer/actions/runs/37433913791) 与 [Update candidate37433876479](https://github.com/Fyrefly-4/MyTracer/actions/runs/37433876479) 的脱敏 artifacts：前者 aggregate source=85890ba363801ca7ac4f0f5405423587c31406cc；后者 aggregate/package/package-smoke source=d57e653da55cf529c94ab12bfb32d5a891b9dd95，四份 capture 均 complete/exit0，base=080c308、ci.headRevision=d57e653、ci.mergeRevision=85890ba。云端隔离安装 smoke 缺口在这一层级获得实际结果，本机未获授权的安装 smoke 未执行，不声称完成被豁免矩阵。两组 artifacts 相对位置见 T809 最新授权记录。最终文档 head CI/交付与 dev 集成仍独立，任务保持 active。
+
+- **Status / authority**：partial；T809。Owner 于 2026-10-06 批准本地执行、报告简明人工更新全部通过，随后批准精确文档影响矩阵、一个只读独立 Agent review、branch/commit/push/dev Draft PR 与 CI。T084/T809 active，S8 未整体通过；未批准 Ready/merge/tag/release、真实故障演练、安装/卸载/清理或访问真实数据。
+- **Revision / freshness**：固定 `stage_final_integration_revision=080c308ff511705bfd8ab21386a03d58ec311dcd`，prior boundary=T072 `d8b211b3c184cff8d0afdb09ff4b13164704290b`；宿主 API 再验 dev 不变，fresh/refresh_method=none。验证时为该产品 revision 加未提交合同/索引/metadata，不把未提交文档归给裸 HEAD。T809 `task_delivery_revision=null`、`dev_integration_revision=null`；任务分支 `task/T809-s8-final-acceptance`，第一文档提交 `4b003871f97b06e2411ea494345ea81d0018176a`，Draft [PR #61](https://github.com/Fyrefly-4/MyTracer/pull/61)→dev，不是任务已交付。
+
+| 任务       | 已合并 PR 最后 head 身份（不补写原历史 null） | dev integration                          | 补验责任                               |
+| ---------- | --------------------------------------------- | ---------------------------------------- | -------------------------------------- |
+| T081 / #57 | e1412f790584b0b0c07ec8f1a25ae45aedb5b899      | 0724cbb9990d328ee7ff68b7e5ac93fc8107e6d3 | U-01；安装连续性/配置/导出             |
+| T082 / #58 | d8b0d63a42a87c6a8d782a4cefb1f0ca295a3d7a      | cf3b2b4c00b6757218295c2672d23cf19f1ee526 | U-02/03；真实私有检查/下载/失败恢复    |
+| T083 / #59 | 91933e05debdbd0e091a885dcb7c31e880f58588      | de88b1877ba2cfc48f1e593bcfcb2007471a3fa3 | U-04；草稿、排空、安装与恢复           |
+| T084 / #60 | e9b3923bac93c0d13b8c6d29f219dfd703e71c65      | 080c308ff511705bfd8ab21386a03d58ec311dcd | U-01～05；包、发布、完整实装与阶段缺口 |
+
+- **Requirement matrix**：U-01/FR-D01～05/AC-07/ED-014/017/018 由 verify 的持久化/完整导出/LocalDate/离线连续 fixture 与有限 owner 观察支持；完整实装配置/导出绑定仍 pending。U-02/03、ED-004/019、D-015 的检查、鉴权失败、确认下载、取消/迟到、版本/传输策略和校验由定向分层测试支持；真实中断恢复 pending。U-04、D-014/109、ED-010 的表单/AI 草稿、第二实例、门禁/排空由分层测试支持；安装故障恢复 pending。U-05/GW 的来源、不可变资产、回读及失败拒绝由 release tests 和 bundle 验证支持；真实发布故障/review/CI 门禁独立。AC-01～07、D-008～010/106/111 的核心流程、确认前 AI 不写入、五种 Routine、意向、恢复/复盘/导出由完整 verify 对应实际 E2E 支持，不从名称推断全部人工体验。
+- **Environment / commands**：Windows x64，Node24.18.0/npm11.16.0/Electron43.3.0；移除真实更新 token，fake Clock/Provider、唯一临时 SQLite/userData/export，未运行 live AI。全部通过 explicit-argv wrapper：`node tools/evidence/capture-command.mjs --task T809 --gate <gate> --base-revision 080c308ff511705bfd8ab21386a03d58ec311dcd --output .tmp/evidence -- <command>`。定向文件精确 argv 见 [T809 §10.1](T809_S8_FINAL_ACCEPTANCE.md) 和 capture JSON；下表 artifact 均在 `.tmp/evidence/`，回读 source/base=080c308、capture complete。
+
+| gate / command                                                                                                            | artifact 文件名                                            | 实际结果                                                                    |
+| ------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | --------------------------------------------------------------------------- |
+| metadata / npm.cmd run governance:metadata:check                                                                          | T809-metadata-080c308ff511-20261005162221.json             | exit0；25 sidecars/1 profile                                                |
+| update-unit / 合同九个 unit 文件                                                                                          | T809-update-unit-080c308ff511-20261005162222.json          | exit1；realpath EPERM，0 tests；保留                                        |
+| update-unit-host / 同 argv                                                                                                | T809-update-unit-host-080c308ff511-20261005162304.json     | exit0；91 tests；限定 supersedes 环境失败                                   |
+| update-integration / 合同五个 integration 文件                                                                            | T809-update-integration-080c308ff511-20261005162318.json   | exit0；33 tests                                                             |
+| build / npm.cmd run build                                                                                                 | T809-build-080c308ff511-20261005162326.json                | exit0                                                                       |
+| update-e2e / 合同两个 E2E 文件                                                                                            | T809-update-e2e-080c308ff511-20261005162330.json           | exit0；6 tests                                                              |
+| stage-aggregate / npm.cmd run verify                                                                                      | T809-stage-aggregate-080c308ff511-20261005162411.json      | exit0；346 unit、163 integration/1 live skipped、37 E2E/5 installed skipped |
+| package / npm.cmd run package（publish never）                                                                            | T809-package-080c308ff511-20261005162726.json              | exit0；不安装、不发布                                                       |
+| existing-bundle / npm.cmd run release:validate -- --manifest .tmp/release/rehearsal-37215009706-1/candidate-manifest.json | T809-existing-bundle-080c308ff511-20261005162422.json      | exit1；保留                                                                 |
+| existing-bundle-host / 同 argv                                                                                            | T809-existing-bundle-host-080c308ff511-20261005162444.json | exit0；限定 supersedes；环境原因由宿主成功推断                              |
+
+- **Package provenance**：A=0.1.0/source d8b211b/hash `ad68642deb44f31d9194544d55ded558b52bd4442c920837539124dd466d48e4`；B=0.1.3/source `2a171e0ac25b70aec25c0a62f0e20ab3af0bd8ee`/hash `cb75ca4cb62cba80ae02d0ea1f88502b2975be13a4ef1ceb539b850332e9e026`；C=0.1.4/source `a5759763adc18739f8f65bcfc48f01db8f1ecd7f`/hash `a6a36aa850083548f97cf7ecbe63eda9de01216b063eed273aa721eb486b3da0`，文件回读与 EV-T084-002 相符。C 的 manifest/five assets validate 通过；真实 latest 为 Release403104108/v0.1.4、tag/source=a575976。src/package/lock/builder/electron.vite 与阶段产品内容无差异，属于有限等价推断。本地重打 0.1.4/hash `48fd7d9ce4b272e520377bba4f073e11680e7bec44e16aa056212624e25b0c61`/NotSigned 是不同字节的构建，不替换已发布 C。
+- **Owner manual report**：2026-10-06 owner 报告本地安装与更新成功、“测试点全部通过”。对应会话简明九步的 0.1.3 来源安装、正常入口检查/下载0.1.4、测试数据重开、Goal 未保存内容阻断与保留、处理后明确确认/NSIS、新版0.1.4、旧数据日期、新记录重开及最新稳定版检查，记 owner-reported pass，Agent 不代签。未由该简明程序验证 A→B、全字段导出/配置、包 hash、详细 unsigned 提示、数据缓存隔离或真实故障；这些不能因“全部”而泛化通过。Owner 安装目录仅在操作记录中保存。
+- **Read-only installed binding**：安装 exe ProductVersion=0.1.4.0/FileVersion=0.1.4、NotSigned；SHA256 `f789c545000a8a98aa42827dd2c758be38872cf5a4910df1101698cd48277cb8`。安装 app.asar SHA256 `81bfa8033c1047f652e2196c3b3c28b0a0bdef05428372b42c25bcb64e402257`，本地 stage asar `f79adb15b979e4897fb3c821ec848df426ac3836744b9126cbd965725940b100`；整体不同，但 package.json 与 out 下全部五个程序文件 hash 相同，facts `.tmp/evidence/T809-manual/installed-program-comparison.json`。未比较全部依赖/原生模块或原始 downloaded installer，不读取数据/配置/凭据。初次零文件临时比较无效和随后路径错误保留，最终要求非空集合并正确适配路径后比较通过；不将无效 artifact 作为通过。
+- **Hosted / review gates**：既有 dev Verification37319196159 success/head080c308 是历史输入。早期 PR61 head4b00387 的 Verification37431957105、Update candidate37431957117 已确认 in_progress，不作成功声明；PR test-merge 与产物尚待核验。独立 review 与收口后新 head CI 单独记录；整体任务尚不构成通过候选。
+- **Outstanding / preserved history**：真实凭据到期/撤销/有效无权、真实下载中断恢复、安装客户端元数据/损坏/同低版/预发布矩阵、拒绝/磁盘不足/安装中断与人工修复、真实发布 API 故障、完整实装配置/导出绑定和 package-smoke、独立 review、当前 head CI 及交付仍 pending。原 EV-T084-001/002 ProductVersion 断言、网络错误码组合失败和限定 supersedes 原样保留。未削弱合同、修改产品/依赖/migration/AI权限、推进 main/tag/Release。文档事实收口不是 S8 通过。
+
+- **2026-10-06 独立 review 更新**：Owner 授权的一个只读独立 Agent 评审全部十一项聚合文档差异、S8 集成/产品边界、合同/账本、失败与 pending、人工及程序比较范围，无阻止提交的实质问题。未运行测试、安装或远端操作，未读取用户数据/凭据；不把 review 当剩余验收通过。早期 PR61 test-merge=5fa78fee5f5cef6bebc2dcd8ced47366e3f7c7a0；上述两个 run 在新推送前仍 in_progress，早期 full verification 未完成，不作成功声明。
+
+- **收口本地复验**：`npm.cmd run verify` 的 wrapper `.tmp/evidence/T809-docs-closeout-aggregate-4b003871f97b-20261006075048.json` exit0、complete；source4b00387/base080c308 加本批未提交文档，346 unit、163 integration/1 live skipped、37 E2E/5 installed skipped。产品/测试/构建/workflow/Skill 相对阶段源无差异；独立 reviewer 再验最终评审记录 delta 无新增实质问题。十个 Markdown 结构/链接/格式、metadata25/1、diff检查通过。后续推送 head hosted CI 单独判定；本地复验不代替完整实装、真实故障或交付。
+
 ## T084 候选与演练证据
 
 ### EV-T084-001
