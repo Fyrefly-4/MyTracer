@@ -41,4 +41,3 @@ npm.cmd run release:validate -- --manifest .tmp/release/candidate/candidate-mani
 客户端凭据、正常入口重启、轮换及备用安装统一见[更新与凭据维护](UPDATE.md)。CI 发布凭据与客户端只读 token 分离，检查不会授权真实发布。
 
 API/产物规则参考 [GitHub artifact API](https://docs.github.com/en/rest/actions/artifacts)、[Release API](https://docs.github.com/en/rest/releases/releases)；这些文档说明能力，不替代本仓库远端实测。
-
