@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: update-candidate-${{ github.event.pull_request.number || github.ref }}
+  group: update-candidate-${{ github.event.pull_request.number || github.sha }}
   cancel-in-progress: true
 
 jobs:
@@ -35,6 +35,11 @@ jobs:
         with:
           node-version: 24.18.0
           package-manager-cache: false
+      - name: Validate historical main source for a tag rebuild
+        if: github.event_name == 'workflow_dispatch' && startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node tools/release/validate-candidate-source.mjs
       - name: Install locked dependencies
         run: npm.cmd ci
       - name: Install pinned Electron binary
@@ -70,9 +75,21 @@ jobs:
         env:
           TASK_ARTIFACT_ID: ${{ steps.candidate_upload.outputs.artifact-id }}
           TASK_ARTIFACT_DIGEST: ${{ steps.candidate_upload.outputs.artifact-digest }}
+          TASK_SOURCE_REVISION: ${{ github.event.pull_request.head.sha || github.sha }}
+          TASK_CANDIDATE_REF: ${{ github.ref }}
         run: |
           "Candidate artifact ID: $env:TASK_ARTIFACT_ID" >> $env:GITHUB_STEP_SUMMARY
           "Archive digest: $env:TASK_ARTIFACT_DIGEST" >> $env:GITHUB_STEP_SUMMARY
+          $taskVersion = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          $taskManifestHash = (Get-FileHash -LiteralPath .tmp/release/candidate/candidate-manifest.json -Algorithm SHA256).Hash.ToLowerInvariant()
+          "Version: $taskVersion" >> $env:GITHUB_STEP_SUMMARY
+          "Source: $env:TASK_SOURCE_REVISION" >> $env:GITHUB_STEP_SUMMARY
+          "Run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> $env:GITHUB_STEP_SUMMARY
+          "Artifact: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/$env:TASK_ARTIFACT_ID" >> $env:GITHUB_STEP_SUMMARY
+          "Manifest SHA-256: $taskManifestHash" >> $env:GITHUB_STEP_SUMMARY
+          if ($env:TASK_CANDIDATE_REF -eq 'refs/heads/main' -or $env:TASK_CANDIDATE_REF -like 'refs/tags/v*') {
+            "After this run succeeds, owner may approve this source by pushing tag v$taskVersion." >> $env:GITHUB_STEP_SUMMARY
+          }
           "PR candidates cannot be formally published; accepted main sources are required." >> $env:GITHUB_STEP_SUMMARY
       - name: Preserve command evidence including failures
         if: always()

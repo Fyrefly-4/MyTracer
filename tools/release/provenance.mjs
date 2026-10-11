@@ -74,7 +74,8 @@ export function validateManifest(manifest) {
   )
   requireCondition(
     typeof manifest.build.ref === 'string' &&
-      /^refs\/(heads|pull)\/[A-Za-z0-9/_-]+$/.test(manifest.build.ref),
+      (/^refs\/(heads|pull)\/[A-Za-z0-9/_-]+$/.test(manifest.build.ref) ||
+        /^refs\/tags\/v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(manifest.build.ref)),
     'build-ref'
   )
   requireCondition(
@@ -199,24 +200,18 @@ export async function validateBundle(manifestPath) {
 }
 
 export function validatePublication(context) {
-  const {
-    manifest,
-    run,
-    artifact,
-    repository,
-    approval,
-    dispatch,
-    mainRevisions,
-    existingVersions,
-    now
-  } = context
+  const { manifest, run, artifact, repository, dispatch, mainRevisions, existingVersions, now } =
+    context
   validateManifest(manifest)
   requireCondition(
     dispatch.actor === OWNER.login && dispatch.actorId === OWNER.id,
     'owner-identity'
   )
   requireCondition(
-    dispatch.ref === 'refs/heads/main' && SHA.test(dispatch.workflowRevision),
+    dispatch.ref === `refs/tags/${dispatch.tag}` &&
+      SHA.test(dispatch.workflowRevision) &&
+      dispatch.workflowRevision === dispatch.sourceRevision &&
+      SHA.test(dispatch.tagObjectRevision),
     'trusted-workflow'
   )
   requireCondition(
@@ -244,11 +239,13 @@ export function validatePublication(context) {
   )
   requireCondition(
     run.id === dispatch.runId &&
+      run.run_attempt === dispatch.runAttempt &&
       run.path === CANDIDATE_WORKFLOW &&
       run.status === 'completed' &&
       run.conclusion === 'success' &&
       run.head_sha === manifest.sourceRevision &&
-      run.head_branch === 'main' &&
+      (run.head_branch === 'main' ||
+        (run.event === 'workflow_dispatch' && run.head_branch === dispatch.tag)) &&
       ['push', 'workflow_dispatch'].includes(run.event) &&
       run.repository?.id === REPOSITORY_ID &&
       run.head_repository?.id === REPOSITORY_ID,
@@ -256,7 +253,10 @@ export function validatePublication(context) {
   )
   requireCondition(
     manifest.build.event === run.event &&
-      manifest.build.ref === 'refs/heads/main' &&
+      (manifest.build.ref === 'refs/heads/main' ||
+        (run.event === 'workflow_dispatch' &&
+          run.head_branch === dispatch.tag &&
+          manifest.build.ref === dispatch.ref)) &&
       manifest.build.runId === String(run.id) &&
       manifest.build.runAttempt === String(run.run_attempt),
     'candidate-provenance'
@@ -268,7 +268,8 @@ export function validatePublication(context) {
       artifact.workflow_run?.id === run.id &&
       artifact.workflow_run?.head_sha === manifest.sourceRevision &&
       artifact.workflow_run?.repository_id === REPOSITORY_ID &&
-      /^sha256:[a-f0-9]{64}$/.test(artifact.digest),
+      /^sha256:[a-f0-9]{64}$/.test(artifact.digest) &&
+      artifact.digest === dispatch.artifactDigest,
     'candidate-artifact'
   )
   const age = now - Date.parse(artifact.created_at)
@@ -279,18 +280,7 @@ export function validatePublication(context) {
       Date.parse(artifact.expires_at) > now,
     'artifact-expired'
   )
-  requireCondition(
-    approval?.status === 'accepted' &&
-      approval.sourceRevision === manifest.sourceRevision &&
-      approval.version === manifest.version &&
-      approval.runId === run.id &&
-      approval.artifactId === artifact.id &&
-      approval.artifactDigest === artifact.digest &&
-      approval.ownerId === OWNER.id &&
-      approval.manifestSha256 === dispatch.manifestSha256 &&
-      HASH.test(dispatch.manifestSha256),
-    'owner-acceptance'
-  )
+  requireCondition(HASH.test(dispatch.manifestSha256), 'manifest-hash')
   return manifest
 }
 

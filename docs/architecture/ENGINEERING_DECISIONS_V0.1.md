@@ -9,7 +9,7 @@
 
 - 本文记录现行工程决定、主要替代方案和取舍，不修改冻结产品语义。
 - 改变 ED-001～019 时必须先评估受影响架构、数据迁移、测试和任务，并同步相关文档。
-- 具体依赖版本、测试框架和首个 AI Provider 尚未批准；安装或绑定前仍需项目所有者明确授权。
+- S0 工具链及 T062 首个 Provider 已获批准并实施，批准证据见 §6；当前版本以 package.json/package-lock.json 为准。新增/升级依赖、更换 Provider 或扩大权限仍需 owner 批准。
 - 延期能力不能通过工程决定进入 v0.1。
 
 ## 2. 运行与技术边界
@@ -81,7 +81,7 @@
 
 ### ED-014 导出
 
-- **决定**：UTF-8 JSON，通过系统保存对话框选择位置；默认名 `mytracer-export-YYYY-MM-DD-v1.json`。
+- **决定**：UTF-8 JSON，通过系统保存对话框选择位置；当前默认名 `mytracer-export-YYYY-MM-DD-v2.json`（S4/S5 已批准的 export v2）；早期 v1 名称只用于历史兼容契约。
 - **约束**：完整核心数据及版本必须包含；凭据、AI 草稿和技术日志排除；自动导入延期。
 
 ### ED-015 ID 与排序
@@ -127,18 +127,15 @@
 - **Preload**：只暴露具体 Command/Query 方法，不暴露 `ipcRenderer`、Electron 对象、SQL 或文件路径。
 - **版本**：工程初始化选择受支持的当前 Electron 版本；升级按单一 major 逐步验证。
 
-## 6. 尚未批准但不阻塞架构的实现选择
+## 6. 已批准实现选择与后续变更边界
 
-以下选择必须在安装依赖或接入厂商前批准，但不改变架构：
+截至 2026-10-11，以下选择已经批准并实施，不再作为工程启动阻塞：
 
-1. Electron、React、Vite、better-sqlite3 的确切版本；
-2. 包管理器、Electron 打包/脚手架工具；
-3. 单元、集成和 E2E 测试框架；
-4. UI 组件、表单和运行时校验依赖；
-5. 首个 AI Provider、模型、SDK、超时和文本预算；
-6. CI 已决定在 S0 启用且 Windows 为必需环境；具体 workflow、check 名称、Node 版本和命令仍需随工具链批准并在 T002 固定。
+- S0 工具链：Node 24.18.0、npm 11.16.0、Electron/React/TypeScript/Vite、better-sqlite3、electron-builder、Vitest、Playwright、ESLint/Prettier。批准与验证见 EV-T001-001/EV-T002-001 及 S0 归档；当前精确依赖以 package.json/package-lock.json 为准，不在本文维护第二份版本表。
+- T062 首个适配器：LiteLLM Gateway、模型 `gemini-3.7-flash`、SDK `openai@7.8.0`；环境变量 `MYTRACER_LITELLM_API_KEY`，配置与 safeStorage 仅在 Main。固定 origin、超时、预算及无自动重试的批准值见 [EV-T062-001](../implementation/ACCEPTANCE_EVIDENCE_V0.1.md#ev-t062-001)，不扩大既有上下文或写权限。
+- S8 更新依赖 `electron-updater@6.8.10` 已独立批准；private/unsigned/schema3/export2 与用户确认安装边界不变。发布 tag 改造仅进入 dev，main 尚未部署，见 [EV-DOC-CALIBRATION-001](../implementation/ACCEPTANCE_EVIDENCE_V0.1.md#ev-doc-calibration-001)。
 
-这些选择不得引入延期功能、改变数据语义或扩大 AI 权限。
+任何后续依赖新增/升级、Provider/模型/权限调整和迁移仍需其自身批准；现有批准不授权延期功能。
 
 ## 7. 审批结论
 
@@ -147,4 +144,4 @@
 - 架构阶段门 G1：通过。
 - 需求冲突：未发现。
 - 范围变化：无。
-- 下一阶段：在依赖清单获得批准后进入 S0 工程基础。
+- 原 2026-08-07 下一阶段为依赖审批后进入 S0；该历史准备步骤已完成。当前交付事实见任务索引及 EV-DOC-CALIBRATION-001，不自动启动下一任务。

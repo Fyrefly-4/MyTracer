@@ -1,10 +1,12 @@
 # MyTracer S8：应用更新与维护阶段设计草案
 
+> 2026-10-11 事实校准：S8 已按 owner 明确豁免完成 T809 交付/集成，并由 PR #62 晋升 main；剩余真实矩阵未执行且接受风险。PR #64 的 tag 发布改造仅进入 dev，尚未进入 main；v0.1.4 为演练，正式发布未执行。当前证据见 [EV-DOC-CALIBRATION-001](../implementation/ACCEPTANCE_EVIDENCE_V0.1.md#ev-doc-calibration-001)；下文准备/执行快照均按原日期理解。
+
 ## 1. Stage information
 
 - **Stage**：S8 — Update Maintenance（owner 授权自主分配的后续维护阶段；不改变 S0～S7 的历史范围）。
 - **Title**：保留数据的 Windows 原位升级与用户主动更新。
-- **Status**：首期范围与分发/发布约定 approved；实现接口细节以各批准合同为准。T081 已由 PR #57 进入 `dev@0724cbb9990d328ee7ff68b7e5ac93fc8107e6d3`，owner 于 2026-09-29 确认其遗留缺口完成；既有证据见 [EV-T081-001](../implementation/ACCEPTANCE_EVIDENCE_V0.1.md#ev-t081-001)。T081～T084 开发已集成，T809 聚合执行中；owner 简明真实更新步骤已报告通过，完整阶段门未闭合；实时任务状态以任务索引为准。
+- **Status**：设计 approved；T081～T084/T809 交付与 main 晋升已核验，按 owner 明确豁免闭合本次验收；不把未执行矩阵或首次正式发布记为通过。任务状态以任务索引为准。
 - **Owner approval**：2026-09-29 owner 已批准首期 U-01～05、electron-updater 引入、S8/T081～T084 自主编号、个人私有且不配置代码签名的分发方式；在说明影响后进一步回复“同意，现在在合同中更新”，确认私有 GitHub Releases＋本机只读凭据，以及 Actions 自动准备、owner 手动确认发布的流程。上述决定已生效，不重复请求批准；本次为文档更新，不代表实际发布执行。
 - **Target branch**：后续实现进入 `dev`；T081 使用 `task/T081-in-place-upgrade`，T082 使用 `task/T082-private-update-download`，均不创建 worktree。任务激活与实施以各自合同和任务索引为准。
 - **Prior behavior revision**：`dev@d8b211b3c184cff8d0afdb09ff4b13164704290b`。
@@ -35,7 +37,7 @@ baseline:
 ### 2.1 已核实事实与限制
 
 - 本地 `dev` HEAD 为上述 revision，提交说明为 T072 Demo 收敛（PR #56）；检查开始时工作区干净。[任务索引](../implementation/TASK_INDEX_V0.1.md) 将 T072 标为 done。
-- [T072 合同](../implementation/T072_DEMO_CONVERGENCE.md)及 [EV-T072-001](../implementation/ACCEPTANCE_EVIDENCE_V0.1.md)记录候选自动化与 owner 人工结果。证据仍保留 `dev_integration_revision=null` 的历史交接描述，与当前本地集成事实存在文档漂移；本次只报告，不修改旧账本。
+- [T072 归档](../implementation/archive/S7_T071_T072_ARCHIVE.md#t072)及 [EV-T072-001](../implementation/ACCEPTANCE_EVIDENCE_V0.1.md)记录候选自动化与 owner 人工结果。证据仍保留 `dev_integration_revision=null` 的历史交接描述，与当前本地集成事实存在文档漂移；本次只报告，不修改旧账本。
 - 未重新查询远端、重跑 T072、确认 G4 或正式 release；本地集成 revision 不是新阶段的验收结果。实施前重新核对最新授权 `dev` 与必要的 T072 最终证据。
 - 固定的先前 `dev@d8b211b...` 基线：`electron-builder.yml` 为 NSIS x64、每用户安装、`appId=io.mytracer.desktop`；`package.json` 应用版本 `0.1.0`、electron-builder 26.15.3、Electron 43.3.0，未声明 electron-updater。T081 候选仅将根应用版本升为 `0.1.1`，不改变上述依赖和安装身份。
 - 数据库路径由 Main 的 `app.getPath('userData')` 决定，位于 `data/mytracer.sqlite3`；当前 schemaVersion=3，WAL 模式，每步迁移事务化，拒绝高于已知版本的数据库。
@@ -114,15 +116,15 @@ baseline:
 
 私有分发采用已批准的本机只读凭据，限定分发仓库、可撤销且有有效期；发布用写权限凭据仅留在 CI。首期实现选择为 Main 读取专用本机环境变量 `MYTRACER_UPDATE_TOKEN`，不新增应用内凭据持久化或配置页面，不复用 AI key 或发布 token。不能将 token 编进安装包、SQLite、导出、日志或 Renderer；测试启动环境显式移除真实变量，仅注入合成值。未配置/过期时更新显示不可用，核心功能仍运行；鉴权失败与“无更新”严格区分。T082 文档说明首次配置、轮换、撤销和重启生效步骤。固定私有仓库已配置，专用凭据由 owner 本机管理；owner 报告真实检查/下载/更新通过，凭据值不写入文档。
 
-已批准采用“自动准备、owner 手动发布”：
+2026-10-06 owner 批准轻量维护改造为“main 自动准备、owner tag 批准、Actions 自动发布”，取代原五参数 workflow_dispatch 与逐版本审批 JSON 门禁：
 
-1. 现有 Verification 继续做只读校验；新建候选构建 workflow 只产出私有 Actions artifact 和版本/hash/测试摘要，不发布 Release，不更新客户端 feed。
-2. 独立 publish workflow 使用 workflow_dispatch，输入已验收 main 的完整 SHA、版本、候选 run/artifact 标识。owner 审阅具体产物后手动触发，即表示批准该次指定版本及产物的发布，无需再于会话重复批准。Agent 不自行 dispatch；如由 Agent 代为触发，则必须有针对该版本及产物的单独授权。
-3. 发布 job 检查触发者为配置的 owner、执行受信 main 上的 workflow、来源 SHA 与验收证据/构建 provenance 一致；选择不可变 artifact 并校验 hash，不使用浮动 latest，不接受任意分支脚本。过期/缺失产物重新构建并重新审阅，不能偷换已批准产物。
-4. 仅发布 job 获最小写权限；私有源和目标仓库必须显式指定。版本并发串行，拒绝覆盖既有版本。先上传和检查所有资产，再公开为私有仓库内可见的 Release；消费者不使用 draft。tag 创建如由流程负责，必须在同次批准摘要明确 tag 名及 main SHA；不自动合并或推进 main。
-5. 若账户套餐支持，可加 GitHub Environment required reviewer；单人流程不要开启 prevent self-review 导致自己无法批准。私有仓库下该能力受套餐限制，不能假定可用；不支持时采用上述 owner 手动 dispatch 与 workflow 内身份/来源验证。它不是通用多人审批系统。
+1. Verification 继续只读验证；Update candidate 在 main push 准备不可变候选、hash 和测试摘要，PR 候选仅供审阅。main 候选并发按源 SHA 分组，后续 main 提交不取消先前源的构建。
+2. Owner 审阅合格候选后，在对应 main 源提交上创建并推送严格稳定版本 tag，即批准该源及其通过校验的候选产物进入正式更新源。源可在 main 历史中，不必是最新 HEAD；tag/package/lock/manifest 版本须一致。Agent 不自行 tag，代 owner 操作须有具体版本授权。
+3. 只读 validate job 认证 owner login/numeric ID 与 push 新建事件、检查 main ancestry，并自动解析候选 run/attempt/artifact 和 hashes。选择固定 workflow、精确源、main 的最新成功 run 及唯一候选；失效或歧义停止。支持 annotated/lightweight tag，不依赖可伪造的 tagger 文本。
+4. Publish job 只重验 validate 固定的 selection，校验实际 tag object/source、不可变 archive/manifest/资产、成功命令证据、兼容边界及版本递增。已有 tag 必须正确；已有 Release 包括 draft 拒绝覆盖。仅 publish 获同库写权限，先 draft、上传和回读校验，最后再次检查 tag/main 来源才发布 stable/latest。部分失败保留现场，不自动清理或覆盖，不创建 tag、推进分支或回写账本。
+5. 过早 tag 可在合格候选就绪后由 owner 重跑。过期候选可在候选手动入口选择原 main 源 tag 重建；先只读验证其 main ancestry，manifest 保留实际 ref。发布始终拒绝 PR/dev 来源。真实 feed 变化只发生在 owner tag 授权后的正式发布；首次部署须包含新 workflow，并单独核验真实链路。
 
-目前仅发现 Verification workflow，有手动验证入口，无发布 workflow；未核查远端套餐或创建 environment/secrets。私有库的 required reviewer 在 Free/Pro/Team 下不可用，不能仅因已有环境功能就假设能审批；依据 [GitHub deployment review 文档](https://docs.github.com/en/actions/how-tos/managing-workflow-runs-and-deployments/managing-deployments/reviewing-deployments)。人工触发机制依据 [GitHub workflow dispatch 文档](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/manually-run-a-workflow)。配置 Actions 与实际执行发布是两个独立授权范围。
+具体操作和故障处置见[私有发布维护](../maintenance/RELEASE.md)。不引入 Environment 审批、套餐变更、凭据持久化或新的依赖。本次记录 owner 批准的发布机制变化，保留历史阶段证据，实际上线以 main 集成为准。
 
 ## 4. Task graph and shared surface
 
@@ -192,7 +194,7 @@ T083 当前账户例外由 owner 另行明确批准：不使用 VM/独立测试�
 
 首个无更新器版本需要手动原位安装一次 B；B→C 才能证明应用内更新。A/B/C 必须是明确不同版本和可追溯产物，不能用修改界面版本文案模拟升级。同 schema 比对全部业务字段及关联，忽略允许变化的导出时间和应用版本；凭据用合成值检查，同机解密后仅断言可用，不进入日志/证据。
 
-T083 的任务级验收按 2026-10-02 owner 决定拆分为真实 `0.1.2→0.1.3` 手动 NSIS 数据连续性和 `0.1.3` 应用内协调分层测试；保留 `0.1.3`，取消额外双包测试。原 T082 `0.1.2` 缺少确认安装入口，因此本次不声称完整应用内跨版本升级通过。真实应用成功交接安装器、新版启动及旧数据核对的连续流程留待后续版本/任务，仍须在 S8 最终门禁完成；不自动激活 T084。证据与限制作具体区分，见 [T083 合同](../implementation/T083_CONFIRM_INSTALL_SHUTDOWN.md) §9.5 和 [EV-T083-001](../implementation/ACCEPTANCE_EVIDENCE_V0.1.md#ev-t083-001)。
+T083 的任务级验收按 2026-10-02 owner 决定拆分为真实 `0.1.2→0.1.3` 手动 NSIS 数据连续性和 `0.1.3` 应用内协调分层测试；保留 `0.1.3`，取消额外双包测试。原 T082 `0.1.2` 缺少确认安装入口，因此本次不声称完整应用内跨版本升级通过。真实应用成功交接安装器、新版启动及旧数据核对的连续流程留待后续版本/任务，仍须在 S8 最终门禁完成；不自动激活 T084。证据与限制作具体区分，见 [T083 归档](../implementation/archive/S8_T081_T084_T809_ARCHIVE.md#t083)（原合同 §9.5 可从归档索引恢复） 和 [EV-T083-001](../implementation/ACCEPTANCE_EVIDENCE_V0.1.md#ev-t083-001)。
 
 ### 6.2 命令与证据
 
@@ -204,7 +206,7 @@ T083 的任务级验收按 2026-10-02 owner 决定拆分为真实 `0.1.2→0.1.3
 
 ### 6.3 人工验收与阶段门
 
-2026-10-06 owner 明确批准缩减本次真实验收范围：剩余真实故障矩阵及未覆盖退出保护/完整数据配置导出的实装复核记为 waived-by-owner，未执行且接受风险，不再阻塞本次 S8 收尾。下文原完整验证门作为原设计保留，本次执行以 [T809 最新豁免范围](../implementation/T809_S8_FINAL_ACCEPTANCE.md#2026-10-06-owner-明确豁免剩余真实验收)为准。豁免不等于测试通过，不改功能、自动化断言或来源/完整性/数据保护边界；正式发布和各 owner 集成门仍独立。
+2026-10-06 owner 明确批准缩减本次真实验收范围：剩余真实故障矩阵及未覆盖退出保护/完整数据配置导出的实装复核记为 waived-by-owner，未执行且接受风险，不再阻塞本次 S8 收尾。下文原完整验证门作为原设计保留，本次执行以 [EV-S8-001 豁免记录](../implementation/ACCEPTANCE_EVIDENCE_V0.1.md#ev-s8-001)为准。豁免不等于测试通过，不改功能、自动化断言或来源/完整性/数据保护边界；正式发布和各 owner 集成门仍独立。
 
 进入：正式设计、依赖版本、更新源、无签名信任边界、实施合同与测试隔离方式已批准；最新授权 dev 与兼容来源包已固定。
 

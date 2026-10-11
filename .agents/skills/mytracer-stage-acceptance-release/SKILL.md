@@ -19,7 +19,7 @@ Prove one approved stage on a fixed integration revision, preserve its complete 
    4. Relevant architecture and [`TEST_STRATEGY_V0.1.md`](../../../docs/architecture/TEST_STRATEGY_V0.1.md).
    5. Stage task contracts and metadata, [`TASK_INDEX_V0.1.md`](../../../docs/implementation/TASK_INDEX_V0.1.md), and [`ACCEPTANCE_EVIDENCE_V0.1.md`](../../../docs/implementation/ACCEPTANCE_EVIDENCE_V0.1.md).
    6. [`GITHUB_WORKFLOW_V0.1.md`](../../../docs/implementation/GITHUB_WORKFLOW_V0.1.md) and the active aggregate contract for Git and GitHub authority.
-5. Treat [`T803_S3_FINAL_ACCEPTANCE.md`](../../../docs/implementation/T803_S3_FINAL_ACCEPTANCE.md) and `EV-G3-S3-001` as a proven process example, not as authority to copy S3 requirements, commands, approvals, task IDs, or release facts into another stage.
+5. Treat the [S3/T803 archive](../../../docs/implementation/archive/S3_T031_T033_ARCHIVE.md) and `EV-G3-S3-001` as a proven process example, not as authority to copy S3 requirements, commands, approvals, task IDs, or release facts into another stage. The archive provides the Git recovery entry for the historical full contract.
 6. Never use `user/` documents as requirements, architecture, test, acceptance, or release authority.
 
 Extract allowed files, exclusions, exact validation, manual procedures, dependency and migration decisions, local and external write permissions, candidate closeout documents, and every Ready/merge/tag/release gate before acting.

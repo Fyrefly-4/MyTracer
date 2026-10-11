@@ -10,14 +10,23 @@ export async function publishCandidate({ context, directory, api }) {
   const manifestHash = await hashFile(manifestPath)
   requireCondition(manifestHash === context.dispatch.manifestSha256, 'manifest-integrity')
   validatePublication({ ...context, manifest })
-  await api.assertVersionAbsent(context.dispatch.tag)
+  await api.assertMainSource(manifest.sourceRevision)
+  await api.assertReleaseAvailable(
+    context.dispatch.tag,
+    manifest.sourceRevision,
+    context.dispatch.tagObjectRevision
+  )
+  validatePublication({
+    ...context,
+    manifest,
+    existingVersions: (await api.allReleases()).map((release) => release.tag_name)
+  })
   // Verify immediately before creating the first externally visible side effect.
   await validateBundle(manifestPath)
   const draft = await api.createDraft({
     tag_name: context.dispatch.tag,
-    target_commitish: manifest.sourceRevision,
     name: `MyTracer ${manifest.version}`,
-    body: `Windows x64 NSIS; unsigned. Source: ${manifest.sourceRevision}.\nData version: 3. Export version: 2.`,
+    body: `Windows x64 NSIS; unsigned. Source: ${manifest.sourceRevision}.\nData version: 3. Export version: 2.\nApproved by owner tag: ${context.dispatch.tag}.\nCandidate run/attempt: ${context.dispatch.runId}/${context.dispatch.runAttempt}. Artifact: ${context.dispatch.artifactId}.\nArchive digest: ${context.dispatch.artifactDigest}.\nManifest SHA-256: ${manifestHash}.`,
     draft: true,
     prerelease: false
   })
@@ -49,6 +58,19 @@ export async function publishCandidate({ context, directory, api }) {
   }
   // Re-read every uploaded byte before allowing the stable client to consume the release.
   await api.verifyAssets(draft.id, files)
+  await api.assertTagTarget(
+    context.dispatch.tag,
+    manifest.sourceRevision,
+    context.dispatch.tagObjectRevision
+  )
+  await api.assertMainSource(manifest.sourceRevision)
+  validatePublication({
+    ...context,
+    manifest,
+    existingVersions: (await api.allReleases())
+      .filter((release) => release.id !== draft.id)
+      .map((release) => release.tag_name)
+  })
   const visible = await api.makeVisible(draft.id)
   requireCondition(
     visible.id === draft.id &&
