@@ -64,14 +64,4 @@ Electron E2E 需要可启动 Windows 桌面进程的环境。数据测试必须�
 - **合同和执行记录**说明当时批准的范围与步骤。旧 active、review、pending 或执行授权按其记录日期理解，不能直接作为当前状态或新授权。
 - **阶段归档**总结已完成开发范围并提供 Git 恢复入口；需要完整旧合同才从历史恢复。
 
-| 历史范围 | 归档入口 |
-| --- | --- |
-| 工程基础 | [S0](implementation/archive/S0_T001_T004_ARCHIVE.md) |
-| 目标、行动与记录 | [S1](implementation/archive/S1_T011_T014_ARCHIVE.md) |
-| 例行与今日意向 | [S2](implementation/archive/S2_T021_T023_ARCHIVE.md) |
-| 数据控制与导出 | [S3](implementation/archive/S3_T031_T033_ARCHIVE.md) |
-| 中断恢复与轻量复盘 | [S4/S5](implementation/archive/S4_S5_T041_T052_ARCHIVE.md) |
-| AI 启动帮助 | [S6](implementation/archive/S6_T061_T063_ARCHIVE.md) |
-| 工作流与工程治理 | [治理归档](implementation/archive/GOVERNANCE_T090_T093_T804_ARCHIVE.md) |
-
-S7/S8 尚未统一阶段归档，现有合同与证据从任务索引查找。后续文档整理可逐项提炼长期操作说明；本次只建立导航，不移动或删除历史材料。
+统一从[历史归档索引](implementation/archive/INDEX.md)进入 S0～S8、工程治理、历史提案与 UX 记录。索引同时列出本批完整合同和阶段程序的精确 Git 恢复路径；维护入口不重复阶段目录。

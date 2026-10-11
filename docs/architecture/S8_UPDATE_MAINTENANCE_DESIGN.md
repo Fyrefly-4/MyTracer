@@ -37,7 +37,7 @@ baseline:
 ### 2.1 已核实事实与限制
 
 - 本地 `dev` HEAD 为上述 revision，提交说明为 T072 Demo 收敛（PR #56）；检查开始时工作区干净。[任务索引](../implementation/TASK_INDEX_V0.1.md) 将 T072 标为 done。
-- [T072 合同](../implementation/T072_DEMO_CONVERGENCE.md)及 [EV-T072-001](../implementation/ACCEPTANCE_EVIDENCE_V0.1.md)记录候选自动化与 owner 人工结果。证据仍保留 `dev_integration_revision=null` 的历史交接描述，与当前本地集成事实存在文档漂移；本次只报告，不修改旧账本。
+- [T072 归档](../implementation/archive/S7_T071_T072_ARCHIVE.md#t072)及 [EV-T072-001](../implementation/ACCEPTANCE_EVIDENCE_V0.1.md)记录候选自动化与 owner 人工结果。证据仍保留 `dev_integration_revision=null` 的历史交接描述，与当前本地集成事实存在文档漂移；本次只报告，不修改旧账本。
 - 未重新查询远端、重跑 T072、确认 G4 或正式 release；本地集成 revision 不是新阶段的验收结果。实施前重新核对最新授权 `dev` 与必要的 T072 最终证据。
 - 固定的先前 `dev@d8b211b...` 基线：`electron-builder.yml` 为 NSIS x64、每用户安装、`appId=io.mytracer.desktop`；`package.json` 应用版本 `0.1.0`、electron-builder 26.15.3、Electron 43.3.0，未声明 electron-updater。T081 候选仅将根应用版本升为 `0.1.1`，不改变上述依赖和安装身份。
 - 数据库路径由 Main 的 `app.getPath('userData')` 决定，位于 `data/mytracer.sqlite3`；当前 schemaVersion=3，WAL 模式，每步迁移事务化，拒绝高于已知版本的数据库。
@@ -124,7 +124,7 @@ baseline:
 4. Publish job 只重验 validate 固定的 selection，校验实际 tag object/source、不可变 archive/manifest/资产、成功命令证据、兼容边界及版本递增。已有 tag 必须正确；已有 Release 包括 draft 拒绝覆盖。仅 publish 获同库写权限，先 draft、上传和回读校验，最后再次检查 tag/main 来源才发布 stable/latest。部分失败保留现场，不自动清理或覆盖，不创建 tag、推进分支或回写账本。
 5. 过早 tag 可在合格候选就绪后由 owner 重跑。过期候选可在候选手动入口选择原 main 源 tag 重建；先只读验证其 main ancestry，manifest 保留实际 ref。发布始终拒绝 PR/dev 来源。真实 feed 变化只发生在 owner tag 授权后的正式发布；首次部署须包含新 workflow，并单独核验真实链路。
 
-具体操作和故障处置见 [T084_RELEASE_OPERATIONS.md](../maintenance/RELEASE.md)。不引入 Environment 审批、套餐变更、凭据持久化或新的依赖。本次记录 owner 批准的发布机制变化，保留历史阶段证据，实际上线以 main 集成为准。
+具体操作和故障处置见[私有发布维护](../maintenance/RELEASE.md)。不引入 Environment 审批、套餐变更、凭据持久化或新的依赖。本次记录 owner 批准的发布机制变化，保留历史阶段证据，实际上线以 main 集成为准。
 
 ## 4. Task graph and shared surface
 
@@ -194,7 +194,7 @@ T083 当前账户例外由 owner 另行明确批准：不使用 VM/独立测试�
 
 首个无更新器版本需要手动原位安装一次 B；B→C 才能证明应用内更新。A/B/C 必须是明确不同版本和可追溯产物，不能用修改界面版本文案模拟升级。同 schema 比对全部业务字段及关联，忽略允许变化的导出时间和应用版本；凭据用合成值检查，同机解密后仅断言可用，不进入日志/证据。
 
-T083 的任务级验收按 2026-10-02 owner 决定拆分为真实 `0.1.2→0.1.3` 手动 NSIS 数据连续性和 `0.1.3` 应用内协调分层测试；保留 `0.1.3`，取消额外双包测试。原 T082 `0.1.2` 缺少确认安装入口，因此本次不声称完整应用内跨版本升级通过。真实应用成功交接安装器、新版启动及旧数据核对的连续流程留待后续版本/任务，仍须在 S8 最终门禁完成；不自动激活 T084。证据与限制作具体区分，见 [T083 合同](../implementation/T083_CONFIRM_INSTALL_SHUTDOWN.md) §9.5 和 [EV-T083-001](../implementation/ACCEPTANCE_EVIDENCE_V0.1.md#ev-t083-001)。
+T083 的任务级验收按 2026-10-02 owner 决定拆分为真实 `0.1.2→0.1.3` 手动 NSIS 数据连续性和 `0.1.3` 应用内协调分层测试；保留 `0.1.3`，取消额外双包测试。原 T082 `0.1.2` 缺少确认安装入口，因此本次不声称完整应用内跨版本升级通过。真实应用成功交接安装器、新版启动及旧数据核对的连续流程留待后续版本/任务，仍须在 S8 最终门禁完成；不自动激活 T084。证据与限制作具体区分，见 [T083 归档](../implementation/archive/S8_T081_T084_T809_ARCHIVE.md#t083)（原合同 §9.5 可从归档索引恢复） 和 [EV-T083-001](../implementation/ACCEPTANCE_EVIDENCE_V0.1.md#ev-t083-001)。
 
 ### 6.2 命令与证据
 
@@ -206,7 +206,7 @@ T083 的任务级验收按 2026-10-02 owner 决定拆分为真实 `0.1.2→0.1.3
 
 ### 6.3 人工验收与阶段门
 
-2026-10-06 owner 明确批准缩减本次真实验收范围：剩余真实故障矩阵及未覆盖退出保护/完整数据配置导出的实装复核记为 waived-by-owner，未执行且接受风险，不再阻塞本次 S8 收尾。下文原完整验证门作为原设计保留，本次执行以 [T809 最新豁免范围](../implementation/T809_S8_FINAL_ACCEPTANCE.md#2026-10-06-owner-明确豁免剩余真实验收)为准。豁免不等于测试通过，不改功能、自动化断言或来源/完整性/数据保护边界；正式发布和各 owner 集成门仍独立。
+2026-10-06 owner 明确批准缩减本次真实验收范围：剩余真实故障矩阵及未覆盖退出保护/完整数据配置导出的实装复核记为 waived-by-owner，未执行且接受风险，不再阻塞本次 S8 收尾。下文原完整验证门作为原设计保留，本次执行以 [EV-S8-001 豁免记录](../implementation/ACCEPTANCE_EVIDENCE_V0.1.md#ev-s8-001)为准。豁免不等于测试通过，不改功能、自动化断言或来源/完整性/数据保护边界；正式发布和各 owner 集成门仍独立。
 
 进入：正式设计、依赖版本、更新源、无签名信任边界、实施合同与测试隔离方式已批准；最新授权 dev 与兼容来源包已固定。
 

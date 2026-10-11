@@ -67,3 +67,7 @@ git show 84b596e12e54db098857004497a4d1964dcdc23c:docs/implementation/T052_REVIE
 ## 后续集成事实补记
 
 2026-09-28 补核：PR #43 final head `605cb5433ca93d8f8353b93ca12e8596e16112f5` 的 [run 33323763973](https://github.com/Fyrefly-4/MyTracer/actions/runs/33323763973) 成功，supersedes candidate run `33314322219` 的失败；PR 于 2026-08-30 合入 `dev_integration_revision=1d02fd7a0a7b0bf29a5e39720d5818c9d68fdbc2`。原固定产品 source 与失败记录保留，不由集成事实推断新的人工或阶段接受。
+
+## T806
+
+聚合 T041～T052、AC-05/06、受影响回归、package、schema v3/export v2、证据与合同归档。固定产品 source、candidate migration timeout/test-only 修复、人工结果和最终 CI 均由[EV-S4-S5-001](../ACCEPTANCE_EVIDENCE_V0.1.md#ev-s4-s5-001)保留；后续 beta.2 的 owner-accepted 发布见[事实校准](../ACCEPTANCE_EVIDENCE_V0.1.md#ev-doc-calibration-001)。原聚合合同从[恢复索引](INDEX.md#完整文本恢复)恢复，不复制执行权限。

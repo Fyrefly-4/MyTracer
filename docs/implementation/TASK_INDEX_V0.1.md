@@ -1,6 +1,6 @@
 # MyTracer v0.1 任务索引
 
-> 2026-10-11 事实校准：本表 done 表示相应合同交付已闭合；T809/S8 包含 owner-approved waiver，不代表所有真实测试通过。下方“交付与门禁历史”保留原完成日期的叙述，后续结果以本表和 [EV-DOC-CALIBRATION-001](ACCEPTANCE_EVIDENCE_V0.1.md#ev-doc-calibration-001) 为准，不把历史 active/review 当作当前执行状态。
+> 2026-10-11 事实校准：本表 done 表示相应合同交付已闭合；T809/S8 包含 owner-approved waiver，不代表所有真实测试通过。历史叙述统一从归档索引查找，后续结果以本表和 [EV-DOC-CALIBRATION-001](ACCEPTANCE_EVIDENCE_V0.1.md#ev-doc-calibration-001) 为准，不把历史 active/review 当作当前执行状态。
 
 > 文档状态：v0.1 实施任务基线  
 > 当前阶段：S0～S6 已形成历史里程碑与 beta.1～beta.3 发布；S7/S8 已通过 PR #62 晋升 main；owner tag 发布改造仅进入 dev。当前核验与完整 revision/CI 见 EV-DOC-CALIBRATION-001。
@@ -31,26 +31,7 @@
 
 ## 3. 交付与门禁历史
 
-- T001～T004 的历史范围、批准、PR、验证和限制已统一归档于 [`archive/S0_T001_T004_ARCHIVE.md`](archive/S0_T001_T004_ARCHIVE.md)，详细结果见 `EV-T001-001`～`EV-T004-001`。
-- G2 已由项目所有者于 2026-08-09 确认通过，证据为 `EV-G2-001`；里程碑 PR #5 已将 T001～T004 从 `dev` 合入 `main`，并发布 `v0.1.0-alpha.1`。
-- T011～T014 与门禁修复 T801 的最终范围、批准、PR、验证和限制已由 PR #13 收敛为统一归档 [`archive/S1_T011_T014_ARCHIVE.md`](archive/S1_T011_T014_ARCHIVE.md) 并合入 `dev`；详细结果见 `EV-T011-001`～`EV-T014-001`、`EV-T801-001` 与 `EV-AC01-001`。
-- G3/S1 的首轮失败和 T801 修复结果均保留在 `EV-G3-S1-001`、`EV-G3-S1-002`；当前阶段状态不在本节重复展开。
-- T021～T023 的最终范围、批准、PR、验证和限制已由 T802 PR #20 收敛为统一归档 [`archive/S2_T021_T023_ARCHIVE.md`](archive/S2_T021_T023_ARCHIVE.md) 并合入 `dev`；原合同仅从 Git 历史恢复。
-- T802 的 partial 候选和最终聚合结果分别由 `EV-T802-001`、`EV-T802-002` 保留；最终验收基线为 `dev@a9db1eb26134dac83b01f4a4d7da30f92a271242`。
-- T031～T033/T803 的最终范围和结果已由 [`archive/S3_T031_T033_ARCHIVE.md`](archive/S3_T031_T033_ARCHIVE.md) 唯一收敛；S3 已发布 `v0.1.0-beta.1`，完整人工 AC-07 为 `pass`，失败和历史证据仍保留。
-- T090～T093、T804 的完整治理合同已收敛至 [`archive/GOVERNANCE_T090_T093_T804_ARCHIVE.md`](archive/GOVERNANCE_T090_T093_T804_ARCHIVE.md)；T803 不在此重复归档。
-- T093 已由 PR #33 合入当时 `dev@2b31bc6be50d805f0dcad73a7a64cc3735a05d09`；post-merge Verification run `32954788941` 的 required checks 通过，补充事实见 `EV-T093-002`。
-- T805 已由 PR #34 final head `979fa1cd11da9c0e4a28e6c37e63a3e8e695c95f` 的 required CI 验证，并合入 `dev@353a4d42921175374dec178a75ad2748eb184cdf`；最终事实见 `EV-T805-002`。
-- T094 实现 Candidate `543180b85960334808563af49d0aa96caab31b00` 已通过本地完整验证、Windows package smoke 和独立复核；PR #35 final-head `e2d75b16c142057ab43e600ae3d010464f9adf13` 的 required CI 通过，并由项目所有者合入 `dev@2632ff0638fb02533100a1f9d0aea9f1323dbde3`。任务结果见 `EV-T094-001`。
-- T041 task delivery revision `1e9ab2b80b5b81a8bedd192750281d4042f279d5` 已通过本地完整验证、独立只读复核、PR #39 implementation-candidate required CI 和项目所有者人工测试；任务结果见 `EV-T041-001`。PR #39 final head `64ac9dddd41413c22b0ec35f99ed9022d1555e25` 已由项目所有者合入为 `dev@695e7bcc25b33279d39e61e28a8730b9cdf16264`，T042 已启动。
-- T042 task delivery revision `b323a9f629699cbec156723700c021151eaf1506` 已通过本地完整验证、完整 diff/独立只读 review、PR #40 implementation-candidate required CI 和项目所有者完整人工 AC-05；任务结果见 `EV-T042-001`。PR #40 已合入 `dev@3f343b8af0216b5e568f2c8f1ed52ac4ef824da3`；S4 owner gate 尚未单独决定，但项目所有者已明确允许进入 S5 并激活 T051。
-- T051 task delivery revision `eccd00148ac6ca47f3215e03abffb98a732c2558` 已通过本地完整验证、完整 diff/独立只读 review、PR #41 required CI 和项目所有者人工 AC-06 步骤 1，并已集成至 `dev@3e5a14f1b5f90894e1e15a4b208aa5db254e7825`；任务结果见 `EV-T051-001`。T052 task delivery revision `7aced4fa3146ebb5d0bcf28b7dbc81e5b40e2cb2` 的本地/hosted 自动化、完整 diff/独立 review、完整人工 AC-06 与 owner-approved docs closeout 已通过，并由 PR #42 集成至 `dev@84b596e12e54db098857004497a4d1964dcdc23c`；结果见 `EV-T052-001`。
-- S4 前工程治理与 UI Foundation 聚合不登记为新任务；固定产品 source `dev@2632ff0638fb02533100a1f9d0aea9f1323dbde3`，范围为 T804、T092、T093、T805、T094。该 revision 的治理 metadata、AC-01/03/04/07 定向回归、完整 `verify`、Windows package/unpacked/隔离 NSIS smoke 与 `main..dev` 独立 review 已通过，候选证据见 `EV-PRE-S4-FOUNDATION-001`；人工视觉对比和聚合文档 PR 的 final-head hosted CI 分别记录，不由本地 candidate 代替。
-- T806 固定产品 source 为 `84b596e12e54db098857004497a4d1964dcdc23c`；candidate 超时失败与窄修复保留。PR #43 final-head CI、dev 集成及 beta.2 的 owner-accepted 发布已完成；精确结果见 EV-S4-S5-001 和 EV-DOC-CALIBRATION-001。
-- T061 task delivery revision `5f98b2f61026721f22fe6cd627c3b402678e9a93` 已通过 targeted/affected/完整 `verify`、完整 diff/独立 review、candidate CI、项目所有者人工测试和 owner-approved docs closeout；失败 run `33354175786` 由 final head `d60978917546f6547a1615c6aa03e87d08c0d2ce` 的成功 run `33355327790` supersede。PR #46 已 squash merge 为 `dev_integration_revision=4630878dacd0a15dbe8446cb26d9cea790d3ed6e`，post-merge run `33355939824` 成功；任务为 `done`，结果见 `EV-T061-001`。T061 自身不声明 T062/T063、AC-02 或 S6 final gate；后续状态见 T807。
-- T062 task delivery revision `bc5461e3bcc4e0ca94abbffe9ef2f898c7bbc4a9` 已通过本地 targeted/affected/完整 `verify`、Windows package smoke、完整 diff/独立 review 和 PR #47 candidate run `33379861872`；final head `a458171be3504492a5c581b595f272c1e1e0e097` 的 run `33381804748` 成功，并 squash merge 为 `dev_integration_revision=233d6790c6c5e11bb454b22eb027443eef54a01e`，post-merge run `33382653020` 成功。项目所有者已人工复核上述收口事实；结果见 `EV-T062-001`。
-- T063 task delivery revision `fee398e08ef687bd75d9dae10e6254f09e7c9896` 已通过本地 targeted/affected/完整 `verify`、Windows package/unpacked/隔离 NSIS smoke、完整 diff/独立 review和 PR #48 implementation-candidate run `33470990276`。docs closeout final head `2e3fc746fcafbe67a0c4a3bc24671e6a50c2ac94` 的失败 run `33474459495` 由同 revision 的成功重跑 `33475609355` supersede；PR #48 已 squash merge 为 `dev_integration_revision=f06b1e97da07dffc05814518ad8ad83ed3e051b9`，post-merge run `33476194961` 成功。任务为 `done`；项目所有者已在 T807 固定产品内容和边界修复上报告完整人工 AC-02 通过，结果见 `EV-T063-001` 与 `EV-T807-001`。
-- T807 固定产品 source 为 `f06b1e97da07dffc05814518ad8ad83ed3e051b9`；聚合自动/人工 AC-02、final-head CI、dev 集成及 beta.3 的 owner-accepted 发布已完成。专用 live 自动 contract timeout 不改为通过；见 EV-T807-001 和 EV-DOC-CALIBRATION-001。
+阶段范围、已批准的例外与完整文本恢复统一见[归档索引](archive/INDEX.md)。精确交付与最终 CI/main 晋升见[事实校准](ACCEPTANCE_EVIDENCE_V0.1.md#ev-doc-calibration-001)，其他历史命令与人工结果见[验收证据](ACCEPTANCE_EVIDENCE_V0.1.md)。本节不再重复各任务的交付叙述；任务状态仍由下表维护，历史失败与 owner waiver 不因归档改变。
 
 ## 4. 任务总表
 
@@ -77,12 +58,12 @@
 | T061 | E6-01           | AI 最小上下文选择器和隔离证明                                                               | FR-AI01/03/08/10；D-108；ED-011                                      | S1/S3；dev@1342cd7                                          | `done`   | `EV-T061-001`                                                                                                                                                |
 | T062 | E6-02           | 可替换 Provider、超时和失败降级                                                             | FR-AI02～AI04/AI07/AI09；D-012/013/015                               | T061、Provider 批准                                         | `done`   | `EV-T062-001`                                                                                                                                                |
 | T063 | E6-03           | AI 建议接受/修改/拒绝和确认命令                                                             | FR-AI05/06；FR-C02/C03；D-014/109；AC-02                             | T062                                                        | `done`   | `EV-T063-001`                                                                                                                                                |
-| T071 | S7 | [11 条 SHOULD 的既定处理结论](T071_SHOULD_CONVERGENCE.md) | Traceability §3；Implementation §10.1 | S1～S6 | `done` | EV-T071-001；delivery 6b6fb5f / dev 2483504；final-head run 35417697381；EV-DOC-CALIBRATION-001 |
-| T072 | S7 | [全量回归、AC-01～AC-07、Windows Demo 收敛](T072_DEMO_CONVERGENCE.md) | 全部 MUST/AC；Test Strategy §7～10 | T071 | `done` | EV-T072-001；delivery ba4c7ed / dev d8b211b；final-head milestone run 36450867255；EV-DOC-CALIBRATION-001 |
-| T081 | S8-A            | [Windows 原位升级与数据保留基线](T081_IN_PLACE_UPGRADE_BASELINE.md)                         | U-01；FR-D01～D05；AC-07；ED-018；S8 设计 §4                         | 最新授权 dev 与获批 Windows 账户                            | `done`   | `EV-T081-001`；PR #57 已进入 `dev@0724cbb`，owner 确认遗留缺口完成                                                                                           |
-| T082 | S8-B            | [私有源版本检查与下载](T082_PRIVATE_UPDATE_CHECK_DOWNLOAD.md)                               | U-02/03；S8 设计 §4                                                  | T081                                                        | `done`   | `EV-T082-001`；approved-2 将阶段实装责任交 T084/T809；后续正常更新与 owner 豁免结果见 EV-S8-001                                                                          |
-| T083 | S8-C            | [确认安装与退出协调](T083_CONFIRM_INSTALL_SHUTDOWN.md)                                      | U-04；S8 设计 §4                                                     | T082                                                        | `done`   | `EV-T083-001`；owner 批准 §9.5 替代验收和收口；后续正常应用内升级已回报，剩余实装矩阵获豁免，见 EV-S8-001                                                                          |
-| T084 | S8-D | [私有发布流程与阶段验收](T084_RELEASE_PIPELINE_STAGE_ACCEPTANCE.md) | U-01～05；S8 设计 §4 | T081～T083 | `done` | EV-T084-001/002；PR #60 final-head CI 与 dev 集成已核验；剩余阶段实装责任由 T809 的 owner 明确豁免闭合，未执行风险保留；EV-DOC-CALIBRATION-001 |
+| T071 | S7 | [11 条 SHOULD 的既定处理结论](archive/S7_T071_T072_ARCHIVE.md#t071) | Traceability §3；Implementation §10.1 | S1～S6 | `done` | EV-T071-001；delivery 6b6fb5f / dev 2483504；final-head run 35417697381；EV-DOC-CALIBRATION-001 |
+| T072 | S7 | [全量回归、AC-01～AC-07、Windows Demo 收敛](archive/S7_T071_T072_ARCHIVE.md#t072) | 全部 MUST/AC；Test Strategy §7～10 | T071 | `done` | EV-T072-001；delivery ba4c7ed / dev d8b211b；final-head milestone run 36450867255；EV-DOC-CALIBRATION-001 |
+| T081 | S8-A            | [Windows 原位升级与数据保留基线](archive/S8_T081_T084_T809_ARCHIVE.md#t081)                         | U-01；FR-D01～D05；AC-07；ED-018；S8 设计 §4                         | 最新授权 dev 与获批 Windows 账户                            | `done`   | `EV-T081-001`；PR #57 已进入 `dev@0724cbb`，owner 确认遗留缺口完成                                                                                           |
+| T082 | S8-B            | [私有源版本检查与下载](archive/S8_T081_T084_T809_ARCHIVE.md#t082)                               | U-02/03；S8 设计 §4                                                  | T081                                                        | `done`   | `EV-T082-001`；approved-2 将阶段实装责任交 T084/T809；后续正常更新与 owner 豁免结果见 EV-S8-001                                                                          |
+| T083 | S8-C            | [确认安装与退出协调](archive/S8_T081_T084_T809_ARCHIVE.md#t083)                                      | U-04；S8 设计 §4                                                     | T082                                                        | `done`   | `EV-T083-001`；owner 批准 §9.5 替代验收和收口；后续正常应用内升级已回报，剩余实装矩阵获豁免，见 EV-S8-001                                                                          |
+| T084 | S8-D | [私有发布流程与阶段验收](archive/S8_T081_T084_T809_ARCHIVE.md#t084) | U-01～05；S8 设计 §4 | T081～T083 | `done` | EV-T084-001/002；PR #60 final-head CI 与 dev 集成已核验；剩余阶段实装责任由 T809 的 owner 明确豁免闭合，未执行风险保留；EV-DOC-CALIBRATION-001 |
 | T090 | GOV-01          | V2 Agent 流程第一、二批文档规范                                                             | GW-001/002/004/005/006/009/010；T090 合同                            | dev@112b909                                                 | `done`   | `EV-T090-001`                                                                                                                                                |
 | T091 | GOV-02          | V2 第三批确定性证据采集、CI artifact 和 metadata 校验                                       | V2 Batch 3；GW-001/002/004/008/009/010；T091 合同                    | T090；dev@aeb0d68                                           | `done`   | `EV-T091-001`                                                                                                                                                |
 | T092 | GOV-04          | 定义 Standard Task Automation Profile、Workflow 优化目标与基础 metadata 校验                | GW-001/002/004/008～010；不改变 FR/AC/D                              | T090、T091、T804；dev@d00a0b3                               | `done`   | `EV-T092-001`                                                                                                                                                |
@@ -95,7 +76,7 @@
 | T805 | GOV-06          | 收敛 `/docs` 文档冗余、归档已完成治理合同并限定历史快照边界                                 | GW-001/003/004/009/010；不改变 FR/AC/D/ED                            | T090～T093、T804；dev@2b31bc6                               | `done`   | `EV-T805-001`、`EV-T805-002`                                                                                                                                 |
 | T806 | S4/S5 aggregate | 聚合验收 T041～T052、AC-05/06、package、migration/export、证据与合同归档 | FR-REC01～REC06；FR-RV01～RV06；AC-05/06；AC-01/03/04/07 回归 | T041、T042、T051、T052 | `done` | EV-S4-S5-001；PR #43 final-head CI/集成及 beta.2 的 owner-accepted 发布已核验；EV-DOC-CALIBRATION-001 |
 | T807 | S6 aggregate | 聚合验收 T061～T063、完整 AC-02、AI 隔离、package、证据收口与里程碑准备 | FR-AI01～AI10；FR-C02/C03；AC-02；AC-01/03/04/05/06/07 回归 | T061、T062、T063 | `done` | EV-T807-001；PR #49 final-head CI/集成及 beta.3 的 owner-accepted 发布已核验；live 自动 contract 失败仍保留；EV-DOC-CALIBRATION-001 |
-| T809 | S8 aggregate | [S8 最终聚合验收与发布交接](T809_S8_FINAL_ACCEPTANCE.md) | U-01～05；FR-D01～D05；AC-01～07；S8 final gate | T081～T084（开发集成审计；T084 未闭合验收项由聚合回链补验） | `done` | EV-S8-001；delivery 3fd1528 / dev 69c7f56，PR #62 晋升 main 9766760；done 按 owner-approved waivers 收口，不是全部真实矩阵通过或正式发布；EV-DOC-CALIBRATION-001 |
+| T809 | S8 aggregate | [S8 最终聚合验收与发布交接](archive/S8_T081_T084_T809_ARCHIVE.md#t809) | U-01～05；FR-D01～D05；AC-01～07；S8 final gate | T081～T084（开发集成审计；T084 未闭合验收项由聚合回链补验） | `done` | EV-S8-001；delivery 3fd1528 / dev 69c7f56，PR #62 晋升 main 9766760；done 按 owner-approved waivers 收口，不是全部真实矩阵通过或正式发布；EV-DOC-CALIBRATION-001 |
 
 T809 编号说明：T808 曾在 T807 历史中作为废弃任务出现，本次不复用。该句的原合同准备状态保留于合同历史；当前 T084/T809 按已核验交付、集成和 owner 明确豁免收口，未执行矩阵仍为接受风险。
 
@@ -122,11 +103,6 @@ T809 编号说明：T808 曾在 T807 历史中作为废弃任务出现，本次�
 - 修复使用原任务号的后续 PR，或创建 `T8xx` 缺陷任务并引用发现它的证据。
 - 新产品想法不直接加入本表；先按需求变更规则分类和批准。
 
-## 7. 当前结论
+## 7. 状态与证据边界
 
-- 当前任务状态以本表任务总表为唯一来源，具体验证以 Evidence 账本为准；归档文档只提供历史导航和最小有效事实。
-- S0～S6 已形成历史里程碑与 beta.1～beta.3 发布；T806/T807 的最终 CI、集成和 owner-accepted 发布已核验。T071/T072 与 T809 已完成交付，S7/S8 通过 PR #62 晋升 main；T809 按 owner-approved waiver 收口。首次正式更新发布未执行，owner tag 改造仅在 dev；精确事实见 EV-DOC-CALIBRATION-001，不补造 G4 签署或发布授权。
-- T041～T052 的 Recovery/Review 最终范围、revision、PR、兼容契约与恢复入口已统一归档于 [`archive/S4_S5_T041_T052_ARCHIVE.md`](archive/S4_S5_T041_T052_ARCHIVE.md)。四任务均进入固定产品 source `dev@84b596e12e54db098857004497a4d1964dcdc23c`，任务 Evidence 与完整人工 AC-05/06 保留；T806 后续 final-head CI 与 dev 集成见 EV-S4-S5-001，main 晋升不由本记录授权。
-- T061～T063 的 AI Start Help 最终范围、revision、PR、信任边界与恢复入口已统一归档于 [`archive/S6_T061_T063_ARCHIVE.md`](archive/S6_T061_T063_ARCHIVE.md)。三个任务均进入固定产品 source `dev@f06b1e97da07dffc05814518ad8ad83ed3e051b9`；T807 后续 final-head CI 与 dev 集成见 EV-T807-001，main 晋升不由本记录授权。
-- T090～T093、T804 的完整合同和 T803 的聚合合同均已按阶段/治理归档，失败、partial 和历史候选 Evidence 继续保留。
-- T094 只完成 Structural UI Refactor；它未实现 T041、S4～S7，也未改变产品语义、依赖、migration、IPC 或发布权限。S4 前聚合验收不等于 G4、AC-02/05/06、tag 或 release 完成，`dev -> main` merge 仍由项目所有者针对确切 PR 决定。
+本表是任务执行状态的唯一来源；具体验证以证据账本为准。归档与维护说明分别提供历史摘要和日常操作，不维护第二份任务状态，不因 done 推定新的阶段、依赖、Ready、merge、tag 或发布授权。

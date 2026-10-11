@@ -61,3 +61,7 @@ git show f06b1e97da07dffc05814518ad8ad83ed3e051b9:docs/implementation/T063_AI_SU
 ## 后续集成事实补记
 
 2026-09-28 补核：PR #49 final head `523be0a94a43a5bcfd0300f2abc4ec5d34d7abdb` 的 [run 33955746084](https://github.com/Fyrefly-4/MyTracer/actions/runs/33955746084) 成功，PR 于 2026-09-05 合入 `dev_integration_revision=fa3ac0a2ac9ec0854615478a14886d764f21c3fc`。原固定产品 source、delivery revision、失败与 live 限制保留；本次仅补记后续 CI/集成事实。
+
+## T807
+
+聚合 T061～T063、continuous AC-02、AI 隔离、安全边界、package 与 owner 人工体验，并准备 S6 里程碑。固定产品 source、专用 live 自动 contract timeout、人工结果和最终 CI 均由[EV-T807-001](../ACCEPTANCE_EVIDENCE_V0.1.md#ev-t807-001)保留；后续 beta.3 的 owner-accepted 发布见[事实校准](../ACCEPTANCE_EVIDENCE_V0.1.md#ev-doc-calibration-001)。原聚合合同从[恢复索引](INDEX.md#完整文本恢复)恢复，不把实际 UI 体验改称自动 live contract pass。

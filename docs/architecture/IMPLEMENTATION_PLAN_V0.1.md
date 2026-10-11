@@ -254,4 +254,4 @@ AI 放在核心数据和确认命令稳定后；存储基础在 S0 建立，但�
 
 ### 2026-10-06 S8 验收进度
 
-固定产品基线 dev@080c308；T809 本地验证/打包通过，owner 报告 0.1.3→0.1.4 简明真实应用内更新及正式凭据部署/重启检查完成。2026-10-06 owner 明确豁免剩余真实故障和实装复核，未执行项记为 waived-by-owner，不再阻塞本次收尾。独立 review、d57e653 head CI 和云端隔离安装 smoke 已通过；最终文档收口获授权，最新推送 head CI、交付和集成仍分别核验，不自动标阶段通过或发布。见 [T809](../implementation/T809_S8_FINAL_ACCEPTANCE.md) 和 [EV-S8-001](../implementation/ACCEPTANCE_EVIDENCE_V0.1.md#ev-s8-001)。
+固定产品基线 dev@080c308；T809 本地验证/打包通过，owner 报告 0.1.3→0.1.4 简明真实应用内更新及正式凭据部署/重启检查完成。2026-10-06 owner 明确豁免剩余真实故障和实装复核，未执行项记为 waived-by-owner，不再阻塞本次收尾。独立 review、d57e653 head CI 和云端隔离安装 smoke 已通过；最终文档收口获授权，最新推送 head CI、交付和集成仍分别核验，不自动标阶段通过或发布。见 [T809](../implementation/archive/S8_T081_T084_T809_ARCHIVE.md#t809) 和 [EV-S8-001](../implementation/ACCEPTANCE_EVIDENCE_V0.1.md#ev-s8-001)。
