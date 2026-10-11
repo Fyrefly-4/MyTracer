@@ -32,6 +32,13 @@
 - **Preserved failure / supersedes**：旧失败、取消及 skip 不删除；精确 head 上的最终成功解除相应等待，T809 的 37437517146 cancelled 由 37437619709 supersede；PR #64 的 37456618330/37456680672 cancelled 由 37456873206 supersede。同 head 的其他历史失败亦保留。未重新下载解读所有旧 command artifacts，不新增测试数量或 capture exit0 声明；旧 artifacts 已解读事实仍依各原条目和 PR #62 交接记录。
 - **Current document validation**：本批 25 个文档完整差异人工复核；`node .tmp/check-doc-repair.mjs` 使用仓库文档检查器的相同结构/链接规则，检查 25 个变更文档结构与全部 65 个 Markdown 的 278 个本地文件链接，并额外检查变更文档的 58 个标题锚点，exit0；排除 user/。`npm.cmd run governance:metadata:check` exit0（25 sidecars / 1 profile）；`git diff --check` exit0。`node tools/ci/classify-changes.mjs docs --paths-file .tmp/docs-repair-paths.txt` 未完成（exit1：本地缺少 prettier），不声称完整格式校验通过，也不为此安装依赖。未运行产品 verify；不把本次文档检查当作产品回归、hosted final-head CI 或发布验证。
 
+### EV-DOC-MAINTENANCE-001
+
+- **Scope / authority**：owner 要求先提交事实校准，再执行并提交维护入口；继续采用轻量文档流程。README 调整为项目介绍、功能、安装、本地运行、技术栈及文档链接；新增 docs/MAINTENANCE.md，以概况、事项导航、开发验证、变更和历史追溯组织维护入口。不改变 FR/AC/D、代码、依赖或发布权限，不处理 user/，不移动或删除旧合同与归档。
+- **Source / environment**：Windows；codex/docs-fact-calibration，base=`9b132f2086570d693f100115a6aa9360ce81b9fe`（事实校准已提交），加 README.md、docs/MAINTENANCE.md 和本账本三文件未提交状态。本次概况引用 2026-10-11 已核验快照，不声称重新查询远端或实时 CI。
+- **Validation / review**：Agent 已复核三个文档的完整变更，检查原 README 的基线和维护链接均能从新入口找到；命令对照 package.json。`node .tmp/check-doc-repair.mjs` exit0：三个变更文档结构、全部 66 个 Markdown 的 303 个本地文件链接、变更文档的 17 个标题锚点通过；排除 user/。`npm.cmd run governance:metadata:check` exit0（25 sidecars / 1 profile）；`git diff --check` exit0。
+- **Limitations**：本地仍缺少 Prettier，完整格式检查未完成；不安装或升级依赖。纯文档导航变更未运行产品 verify、真实安装、live AI 或新 hosted CI。本次只提交本地分支，不推送、合并、tag 或发布；历史失败与 owner waiver 保持原样。
+
 ## S8 最终聚合证据
 
 > 以下为 2026-10-06 历史记录；后续最终 CI 和集成结果见 EV-DOC-CALIBRATION-001。
