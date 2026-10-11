@@ -1,5 +1,7 @@
 # MyTracer S4/S5 / T041～T052 开发合同归档
 
+> 2026-10-11 事实校准：后续 PR #43 final-head CI/dev 集成及 beta.2 的 owner-accepted 发布已核验，旧候选等待不是当前状态；固定产品 source、失败和恢复入口不变，见 [EV-DOC-CALIBRATION-001](../ACCEPTANCE_EVIDENCE_V0.1.md#ev-doc-calibration-001)。
+
 > 状态：已归档；固定产品 source 和原人工证据保留；T806 后续 final-head CI 与 dev 集成已补记于下文。
 >
 > 归档日期：2026-08-31

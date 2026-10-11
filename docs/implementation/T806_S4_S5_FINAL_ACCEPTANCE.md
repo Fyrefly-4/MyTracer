@@ -1,8 +1,10 @@
 # T806 S4/S5 Recovery 与 Review 聚合验收任务合同
 
+> 2026-10-11 事实校准：PR #43 最终 head CI、dev 集成和 beta.2 已发布，旧 review 等待已闭合；固定产品 source 与失败历史不变。 任务状态以任务索引为准，见 [EV-DOC-CALIBRATION-001](ACCEPTANCE_EVIDENCE_V0.1.md#ev-doc-calibration-001)；下文执行权限与等待文字按原日期理解。
+
 > 任务类型：S4/S5 aggregate acceptance / documentation closeout / milestone preparation
 >
-> 合同状态：**review；聚合文档已获收口授权，等待 final-head hosted CI 与项目所有者 PR Gate**
+> 合同状态：已完成的历史合同；执行状态以任务索引为准，最终交付和发布结果见上方事实校准。
 >
 > 合同草案日期：2026-08-30
 >

@@ -1,5 +1,7 @@
 # MyTracer v0.1 需求追踪矩阵
 
+> 2026-10-11 事实校准：T071/T072 的最终 CI 和 dev 集成、S7/S8 的 main 晋升已核验，见 [EV-DOC-CALIBRATION-001](../implementation/ACCEPTANCE_EVIDENCE_V0.1.md#ev-doc-calibration-001)；下方候选范围/验证映射保留原 revision，不用后续文档 head 替换产品来源。
+
 > 文档状态：v0.1 最终架构基线（工程决策已批准）  
 > 基线：`PRODUCT_REQUIREMENTS_V0.1.md`、`DECISIONS.md` 2026-08-07 冻结版本  
 > 覆盖目标：87 条 FR、7 条 AC、28 条 D 均有设计、切片和测试/排除结论
@@ -272,7 +274,7 @@ T083/S8-C 的 U-04 定位于 `src/application/update-service.ts`、`src/infrastr
 - AC：7/7 均有对应纵向切片、E2E 和人工验收重点。
 - D：17 条已确认决定和 11 条暂定冻结决定均有架构与验证落点。
 - 冲突：截至本提案未发现 MUST 冲突。
-- 工程决定：ED-001～019 已批准；具体依赖版本和首个 AI Provider 留在工程初始化审批。
+- 工程决定：ED-001～019 已批准；S0 工具链与 T062 首个 Provider 已批准并实施，见工程决定 §6。后续依赖/Provider 改动仍须批准。
 - 范围变化：无；工程选择没有写回或改变需求基线。
 
 ## T072 同版本聚合证据

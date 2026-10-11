@@ -1,10 +1,12 @@
 # MyTracer S8：应用更新与维护阶段设计草案
 
+> 2026-10-11 事实校准：S8 已按 owner 明确豁免完成 T809 交付/集成，并由 PR #62 晋升 main；剩余真实矩阵未执行且接受风险。PR #64 的 tag 发布改造仅进入 dev，尚未进入 main；v0.1.4 为演练，正式发布未执行。当前证据见 [EV-DOC-CALIBRATION-001](../implementation/ACCEPTANCE_EVIDENCE_V0.1.md#ev-doc-calibration-001)；下文准备/执行快照均按原日期理解。
+
 ## 1. Stage information
 
 - **Stage**：S8 — Update Maintenance（owner 授权自主分配的后续维护阶段；不改变 S0～S7 的历史范围）。
 - **Title**：保留数据的 Windows 原位升级与用户主动更新。
-- **Status**：首期范围与分发/发布约定 approved；实现接口细节以各批准合同为准。T081 已由 PR #57 进入 `dev@0724cbb9990d328ee7ff68b7e5ac93fc8107e6d3`，owner 于 2026-09-29 确认其遗留缺口完成；既有证据见 [EV-T081-001](../implementation/ACCEPTANCE_EVIDENCE_V0.1.md#ev-t081-001)。T081～T084 开发已集成，T809 聚合执行中；owner 简明真实更新步骤已报告通过，完整阶段门未闭合；实时任务状态以任务索引为准。
+- **Status**：设计 approved；T081～T084/T809 交付与 main 晋升已核验，按 owner 明确豁免闭合本次验收；不把未执行矩阵或首次正式发布记为通过。任务状态以任务索引为准。
 - **Owner approval**：2026-09-29 owner 已批准首期 U-01～05、electron-updater 引入、S8/T081～T084 自主编号、个人私有且不配置代码签名的分发方式；在说明影响后进一步回复“同意，现在在合同中更新”，确认私有 GitHub Releases＋本机只读凭据，以及 Actions 自动准备、owner 手动确认发布的流程。上述决定已生效，不重复请求批准；本次为文档更新，不代表实际发布执行。
 - **Target branch**：后续实现进入 `dev`；T081 使用 `task/T081-in-place-upgrade`，T082 使用 `task/T082-private-update-download`，均不创建 worktree。任务激活与实施以各自合同和任务索引为准。
 - **Prior behavior revision**：`dev@d8b211b3c184cff8d0afdb09ff4b13164704290b`。

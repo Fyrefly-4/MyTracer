@@ -3,7 +3,7 @@
 > 文档状态：v0.1 最终架构基线（工程决策已批准）  
 > 适用范围：Demo v0.1 设计、工程初始化、任务拆分与验收  
 > 基线日期：2026-08-07  
-> 已批准组合：Electron + React + TypeScript + Vite + SQLite；AI 厂商保持可替换且尚未选择
+> 已批准组合：Electron + React + TypeScript + Vite + SQLite；AI Provider 保持可替换，已批准首个 LiteLLM Gateway 适配器
 
 ## 1. 依据与状态
 
@@ -23,7 +23,7 @@
 | 已批准工程决定 | 项目所有者已确认的 v0.1 实现边界；变更时需同步架构与计划 |
 | 延期排除 | 不进入 v0.1，也不得成为当前接口或模块的必需依赖 |
 
-当前未发现两条 MUST 无法同时满足的冲突。已批准工程决定记录在 `ENGINEERING_DECISIONS_V0.1.md`；具体依赖版本、测试框架和首个 AI Provider 属于工程初始化选择，仍需在安装前获得批准。
+当前未发现两条 MUST 无法同时满足的冲突。已批准工程决定记录在 `ENGINEERING_DECISIONS_V0.1.md`；S0 工具链、测试框架及 T062 首个 LiteLLM Gateway 已批准并实施，见工程决定 §6；后续新增/升级或替换仍须批准，不改变分层边界。
 
 ## 2. 架构目标
 

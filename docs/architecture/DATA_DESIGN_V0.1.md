@@ -147,7 +147,7 @@ MyTracerExport
     reviewResults[]
 ```
 
-导出采用 UTF-8 JSON，默认文件名 `mytracer-export-YYYY-MM-DD-v1.json`，通过系统保存对话框由用户选择位置。
+当前导出为 UTF-8 JSON，`exportVersion=2`、`sourceDataVersion=3`，默认文件名 `mytracer-export-YYYY-MM-DD-v2.json`，通过系统保存对话框由用户选择位置。S4/S5 已批准 schema v3/export v2；严格 export v1 验证只用于兼容契约，不是当前生成格式，也不提供自动导入恢复。当前可执行契约见 `src/application/complete-export.ts` 与 `src/application/ports/export.ts`，批准依据见 S4/S5 设计及 EV-T052-001。上方结构是逻辑概览，实际包括 `enumValues`、分开的 `actionRecords`/`routineRecords` 和十个 data 集合。
 
 ### 9.2 包含和排除
 

@@ -1,5 +1,7 @@
 # T084 — 私有发布流程与 S8 阶段验收
 
+> 2026-10-11 事实校准：PR #60 delivery=e9b3923bac93c0d13b8c6d29f219dfd703e71c65，dev integration=080c308ff511705bfd8ab21386a03d58ec311dcd；final-head Verification/Update candidate 成功；剩余阶段责任由 T809 owner 明确豁免收口。 任务状态以任务索引为准，见 [EV-DOC-CALIBRATION-001](ACCEPTANCE_EVIDENCE_V0.1.md#ev-doc-calibration-001)；下文执行权限与等待文字按原日期理解。
+
 > 合同状态：approved，2026-10-03；owner 明确批准并激活开发合同，同意验证版本与产物方向，并批准 §11 的任务分支、提交、普通 push 与 Draft PR 权限；本任务不新建独立 worktree。真实源演练与部署方案见 [具体提案](T084_PRIVATE_REHEARSAL_DEPLOYMENT_PROPOSAL.md)，方案批准前不写真实源。任务索引同步冲突已按 owner 授权解决，记录见 [升级提案](T084_INDEX_CONFLICT_PROPOSAL.md)。Owner 指定本步仅建分支、落实合同及提交，不直接开始开发。
 
 > 2026-10-04 执行授权更新：owner 已要求继续 T084，并批准只读独立评审子 agent、固定私有源演练安排及“当前 Windows 账户＋全新合成数据＋`0.1.0`→`0.1.3`→`0.1.4` 完整正常升级链路”。原合同准备时的“本步不开发”限制仅为历史记录，本次已解除。具体 Release/tag/source/hash 批准、凭据注入、人工验收及最终 docs closeout 门禁仍保留；本修订不签署验收或标 done。

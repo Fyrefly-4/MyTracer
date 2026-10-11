@@ -1,5 +1,7 @@
 # T072 — 全量回归、AC-01～AC-07 与 Windows Demo 收敛
 
+> 2026-10-11 事实校准：PR #56 delivery=ba4c7ed8f0d41da04c3ba8d6becde1ab696c9baf，dev integration=d8b211b3c184cff8d0afdb09ff4b13164704290b，final-head milestone run 36450867255 success；PR #62 已晋升 main，不补造 G4 命名签署。 任务状态以任务索引为准，见 [EV-DOC-CALIBRATION-001](ACCEPTANCE_EVIDENCE_V0.1.md#ev-doc-calibration-001)；下文执行权限与等待文字按原日期理解。
+
 > 合同版本：approved-1，2026-09-19；项目所有者已批准并激活。
 > owner 已授权按合同开发及合同所需 Git 权限；§5.2 实施、任务分支/commit/普通 push/Draft PR 生效。§14 保留合同准备阶段历史。
 > 采用 V2 / Batch 3 显式权限流程；不声明 Automation Profile。T072 提供 G4 决策输入，不自动签署 G4、启动真实自用或发布。

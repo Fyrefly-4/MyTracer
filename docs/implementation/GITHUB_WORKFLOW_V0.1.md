@@ -1,5 +1,7 @@
 # MyTracer v0.1 GitHub 工作流
 
+> 2026-10-11 事实校准：main/dev revisions、PR #62 单父提交历史差异及 PR #64 的 dev-only 部署见 [EV-DOC-CALIBRATION-001](ACCEPTANCE_EVIDENCE_V0.1.md#ev-doc-calibration-001)。旧 GitHub 配置快照仍按各日期解释，不用本次事实校准推断实时保护配置或授权外部写入。
+
 > 文档状态：已批准的开发工作流基线  
 > 批准范围：GW-001～GW-010  
 > 配置快照：截至 2026-08-26，PR template、分层 Actions、main milestone CI 与统一 `CI Gate` 已由 T093 实现；`dev`/`main` active rulesets 均要求 `CI Gate`
@@ -233,6 +235,12 @@ integration_freshness:
 
 GitHub 支持 merge commit、squash 和 rebase 等不同合并方式；MyTracer 对两类 PR 采用不同策略是为了同时保持任务历史清晰和长期分支祖先关系。参考：[GitHub merge methods](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/configuring-pull-request-merges/about-merge-methods-on-github)。
 
+### 已发现的里程碑历史差异（2026-10-11）
+
+当前 main=`97667606d1f21bbcece7705387cb1929d9ca6d47` 是 PR #62 形成的单父提交；源 dev=`69c7f566fa90d667d5c81cfe983e3d3ee09df39a` 不是其祖先，虽两者 tree 完全相同。该实际历史没有满足上面的 merge commit/祖先关系规则，不能写成合规 merge commit，也不能通过文档改写追认规则变化。
+
+本次保留全部历史，不 reset/rebase/force-push。下次里程碑须检查实际父提交、merge-base 与完整差异；需要恢复祖先关系时，可另行审阅普通 merge 的同步 PR，在 owner 明确批准后执行，重新验证结果并采用 merge commit。准确观察、可选方案与所需授权见 [历史差异提案](ESCALATION_DOC_BRANCH_ANCESTRY.md)。本次只修复文档事实，不授权任何同步或 main 写入。
+
 ## 7. GW-007 分支保护目标
 
 `dev` 和 `main` 的目标规则如下；实际配置差异见第 15 节：
@@ -419,7 +427,7 @@ Codex 的 `/review` 可以读取选择的 diff 并报告按优先级排序的问
 
 是否在每个候选节点推进 `main` 由项目所有者决定。任务或阶段通过不会自动创建 tag。
 
-S8 私有更新在 2026-10-06 获 owner 批准采用版本 tag 作为逐次发布授权：main 自动准备候选，owner 在有合格候选的 main 源提交上创建并推送稳定版本 tag，Actions 才自动发布该确切来源及验证后的产物。源可为 main 历史提交；已有 tag 必须正确指向来源，已有 Release 不覆盖。该约定取代 S8 的五参数手动 dispatch 和逐版本审批 JSON，不授权 Agent 创建 tag、执行真实发布、推进 main、修改 Secrets 或 rulesets。完整校验与故障处置见 [T084 发布操作](T084_RELEASE_OPERATIONS.md#owner-tag-正式发布2026-10-06-批准的维护改造)。
+S8 私有更新在 2026-10-06 获 owner 批准采用版本 tag 作为逐次发布授权：main 自动准备候选，owner 在有合格候选的 main 源提交上创建并推送稳定版本 tag，Actions 才自动发布该确切来源及验证后的产物。源可为 main 历史提交；已有 tag 必须正确指向来源，已有 Release 不覆盖。该约定取代 S8 的五参数手动 dispatch 和逐版本审批 JSON，不授权 Agent 创建 tag、执行真实发布、推进 main、修改 Secrets 或 rulesets。完整校验与故障处置见 [T084 发布操作](T084_RELEASE_OPERATIONS.md#owner-tag-正式发布已批准且进入-devmain-尚未部署)。
 
 Release PR 必须列出：
 

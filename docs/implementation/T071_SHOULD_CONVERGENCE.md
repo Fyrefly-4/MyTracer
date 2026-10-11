@@ -1,5 +1,7 @@
 # T071 — 11 条 SHOULD 既定处理结论收敛
 
+> 2026-10-11 事实校准：PR #55 delivery=6b6fb5f72af054a96d57d7c6f53da132a2cdc668，dev integration=248350409927923016de18f7c5d967aa064964ca，final-head run 35417697381 success；旧 null 为当时记录。 任务状态以任务索引为准，见 [EV-DOC-CALIBRATION-001](ACCEPTANCE_EVIDENCE_V0.1.md#ev-doc-calibration-001)；下文执行权限与等待文字按原日期理解。
+
 > 合同版本：approved-1 / owner-approved closeout，2026-09-19（保留 §14 的草案检查历史）
 > 项目所有者已批准合同并授权 checkout 分支、提交、推送，开始按合同开发。§5 本地实现/验证及 §11 任务分支 publication 生效。
 > 不声明 Automation Profile；docs closeout、人工验收、Ready、merge、tag/release 仍遵守独立 owner gate。

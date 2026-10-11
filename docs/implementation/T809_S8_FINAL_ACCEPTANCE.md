@@ -1,12 +1,14 @@
 # T809 — S8 最终聚合验收与发布交接合同
 
+> 2026-10-11 事实校准：任务交付和 dev/main 集成已闭合；delivery=3fd1528001c985cc10736a3a130230bf9c6eb30b，dev integration=69c7f566fa90d667d5c81cfe983e3d3ee09df39a，main=97667606d1f21bbcece7705387cb1929d9ca6d47。按既有 owner 明确豁免收口，未执行不计通过；当前状态只见任务索引，证据见 [EV-DOC-CALIBRATION-001](ACCEPTANCE_EVIDENCE_V0.1.md#ev-doc-calibration-001)。下文准备/执行/最终推送等待是当时的历史，不重启任务。
+
 > 合同准备日期：2026-10-05（Asia/Shanghai）。Owner 已同意 S8 收尾方案并明确“现在，建立聚合验收合同”；本轮授权合同、sidecar 和任务索引登记。方案中的首期范围和既有分发决定已批准，不重新设为待批准。任务登记为 ready，尚未开始验收执行；Git 写入、真实安装及发布权限见 §11～12。
 
 ## 1. 任务信息
 
 - **Task ID / Title**：T809 / S8 最终聚合验收与发布交接。
 - **Slice / Plan item**：S8 final gate；聚合 T081～T084，闭合 U-01～U-05。
-- **Status**：active（2026-10-06 本地验证完成，owner 已报告简明操作步骤的人工安装/应用内更新全部通过；其余阶段门待闭合，T084/S8 尚未整体通过）。
+- **Status**：执行状态以任务索引为准；2026-10-11 已核验原最终 head CI 与 PR #61/#62 集成，按 owner-approved waiver 收口；首次正式发布仍未执行。
 - **Base / target branch**：dev。
 - **Expected branch**：`task/T809-s8-final-acceptance`，本轮不创建。
 - **候选产品 source**：`080c308ff511705bfd8ab21386a03d58ec311dcd`。

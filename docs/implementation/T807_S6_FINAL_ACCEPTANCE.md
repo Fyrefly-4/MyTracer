@@ -1,8 +1,10 @@
 # T807 S6 AI Start Help 聚合验收与发布准备任务合同
 
+> 2026-10-11 事实校准：PR #49 最终 head CI、dev 集成和 beta.3 已发布，旧 review 等待已闭合；固定产品 source 与 live timeout 限制不变。 任务状态以任务索引为准，见 [EV-DOC-CALIBRATION-001](ACCEPTANCE_EVIDENCE_V0.1.md#ev-doc-calibration-001)；下文执行权限与等待文字按原日期理解。
+
 > 任务类型：S6 aggregate acceptance / evidence closeout / milestone preparation
 >
-> 合同状态：**review；实现、聚合自动验证、独立复核、人工 AC-02 与 owner-approved 文档收口已完成，等待文档 final-head hosted CI 与项目所有者后续 Gate**
+> 合同状态：已完成的历史合同；执行状态以任务索引为准，最终交付和发布结果见上方事实校准。
 >
 > 批准与激活日期：2026-09-01
 >
