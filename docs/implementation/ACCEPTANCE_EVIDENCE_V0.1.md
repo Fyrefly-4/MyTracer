@@ -39,6 +39,13 @@
 - **Validation / review**：Agent 已复核三个文档的完整变更，检查原 README 的基线和维护链接均能从新入口找到；命令对照 package.json。`node .tmp/check-doc-repair.mjs` exit0：三个变更文档结构、全部 66 个 Markdown 的 303 个本地文件链接、变更文档的 17 个标题锚点通过；排除 user/。`npm.cmd run governance:metadata:check` exit0（25 sidecars / 1 profile）；`git diff --check` exit0。
 - **Limitations**：本地仍缺少 Prettier，完整格式检查未完成；不安装或升级依赖。纯文档导航变更未运行产品 verify、真实安装、live AI 或新 hosted CI。本次只提交本地分支，不推送、合并、tag 或发布；历史失败与 owner waiver 保持原样。
 
+### EV-DOC-ARCHIVE-GUIDES-001
+
+- **Scope / authority**：owner 同意归档与去重计划并要求开始执行；第一批先提炼长期更新、凭据和私有发布说明。新入口为 docs/maintenance/UPDATE.md、RELEASE.md；旧操作页暂保留迁移入口，原文恢复 source 为 `346d508ac7976b55ba83d025432f50af0a211208`。本批只更新导航、相关引用和本账本，不改功能、批准边界或历史结果。
+- **Source / environment**：Windows；codex/docs-fact-calibration，base=`346d508ac7976b55ba83d025432f50af0a211208` 加本批九文档未提交变更。新说明来自既有 T082/T084 操作内容和已核验事实，未重新查询远端、不读取真实 token 或用户数据。
+- **Validation / review**：Agent 复核两份说明与原文的配置、轮换、确认安装、备用安装、不可变候选、main 来源、tag 身份与重跑约束；保持未签名、schema/export 和发布部署限制。`node .tmp/check-doc-repair.mjs`、`npm.cmd run governance:metadata:check`（25 sidecars / 1 profile）和 `git diff --check` 均 exit0；九个变更文档结构、全部 68 个 Markdown 的 298 个本地文件链接、变更文档的 29 个标题锚点通过；排除 user/。
+- **Limitations**：本地仍缺少 Prettier，完整格式校验未完成；未安装依赖、运行产品 verify/安装/live AI 或发布。文档迁移不证明首次正式发布或被豁免的实装故障矩阵通过。允许本地分批提交，不推送或合并。
+
 ## S8 最终聚合证据
 
 > 以下为 2026-10-06 历史记录；后续最终 CI 和集成结果见 EV-DOC-CALIBRATION-001。

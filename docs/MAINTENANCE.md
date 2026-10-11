@@ -16,8 +16,8 @@
 | --- | --- |
 | 在本地安装依赖并启动开发应用 | [README 本地运行](../README.md#本地运行) |
 | 构建、验证或生成 Windows 安装包 | [开发与验证](#开发与验证) |
-| 配置、轮换或撤销客户端更新凭据；处理更新失败 | [更新源操作：正式个人使用方案](implementation/T082_UPDATE_SOURCE_OPERATIONS.md#正式个人使用方案2026-10-06-owner-已批准) |
-| 审核候选产物、准备私有发布 | [发布操作](implementation/T084_RELEASE_OPERATIONS.md)；先确认其中的 main/dev 部署差异 |
+| 配置、轮换或撤销客户端更新凭据；处理更新失败 | [更新与凭据维护](maintenance/UPDATE.md#凭据配置) |
+| 审核候选产物、准备私有发布 | [私有发布维护](maintenance/RELEASE.md)；先确认其中的 main/dev 部署差异 |
 | 理解数据、删除、迁移和导出边界 | [数据设计](architecture/DATA_DESIGN_V0.1.md)、[领域模型](architecture/DOMAIN_MODEL_V0.1.md) |
 | 理解 AI 配置、上下文、确认和降级边界 | [AI 边界](architecture/AI_BOUNDARY_V0.1.md)、[Provider 批准证据](implementation/ACCEPTANCE_EVIDENCE_V0.1.md#ev-t062-001) |
 | 判断某个功能的范围和行为 | [产品需求](PRODUCT_REQUIREMENTS_V0.1.md)、[产品决定](DECISIONS.md) |

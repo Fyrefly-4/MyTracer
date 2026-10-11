@@ -28,7 +28,7 @@
 - **FR / AC**：FR-D01～D05、AC-07；最终阶段受影响回归 AC-01～AC-07。
 - **D**：D-008～010、D-014/015/106/109/111。
 - **ED / GW**：ED-004/010/014/017～019；GW 的验证、review、freshness、任务/里程碑集成与发布门禁。
-- **直接依据**：[S8 设计](../architecture/S8_UPDATE_MAINTENANCE_DESIGN.md) §3～7、[测试策略](../architecture/TEST_STRATEGY_V0.1.md)、[GitHub 工作流](GITHUB_WORKFLOW_V0.1.md)、[T084 合同](T084_RELEASE_PIPELINE_STAGE_ACCEPTANCE.md)、[实装程序](T084_STAGE_ACCEPTANCE_PROCEDURE.md)、[发布操作](T084_RELEASE_OPERATIONS.md)。
+- **直接依据**：[S8 设计](../architecture/S8_UPDATE_MAINTENANCE_DESIGN.md) §3～7、[测试策略](../architecture/TEST_STRATEGY_V0.1.md)、[GitHub 工作流](GITHUB_WORKFLOW_V0.1.md)、[T084 合同](T084_RELEASE_PIPELINE_STAGE_ACCEPTANCE.md)、[实装程序](T084_STAGE_ACCEPTANCE_PROCEDURE.md)、[发布操作](../maintenance/RELEASE.md)。
 - **规范优先级**：[PRD](../PRODUCT_REQUIREMENTS_V0.1.md) → [Decisions](../DECISIONS.md) → [变更规则](../REQUIREMENTS_CHANGE_POLICY.md) → 架构与合同。user/ 不作为验收依据。
 
 ## 4. 开始条件与 Dependencies
@@ -303,7 +303,7 @@ Owner 授权的一个只读独立 Agent 检查全部十一项聚合变更、四�
 
 Owner 要求在后续收尾之前综合考虑长期使用的生产方案，并对呈交方案回复“同意”。本次在现有允许文件中补充本文、T082_UPDATE_SOURCE_OPERATIONS.md 和 T084_RELEASE_OPERATIONS.md 的非开发交接内容：正式专用只读 token、180 天有效期/提前 14 天提醒、现有用户环境变量的限制、轮换/撤销、稳定源与候选区分、owner 手动发布、坏版本处置、原位安装备用途径和数据/unsigned 边界。上述方案已批准，不保留“待批准”表述；部署和实测事实分别记录。
 
-S8 正式使用交接增加以下 owner 实际回报条件：正式 token 的限定权限/到期日核对，本机替换、测试 token 撤销和到期提醒，重启电脑后正常入口更新检查及业务/导出可用，了解正式安装包来源和故障备用路径。详细操作与回报清单见 [正式个人使用方案](T082_UPDATE_SOURCE_OPERATIONS.md#正式个人使用方案2026-10-06-owner-已批准)。这些项目当前 pending；此前临时凭据更新成功不替代它们，也不替代原实装、真实故障和发布验收条件。不存在新 token 的实际操作结果时，不记录生产部署完成。
+S8 正式使用交接增加以下 owner 实际回报条件：正式 token 的限定权限/到期日核对，本机替换、测试 token 撤销和到期提醒，重启电脑后正常入口更新检查及业务/导出可用，了解正式安装包来源和故障备用路径。详细操作与回报清单见 [正式个人使用方案](../maintenance/UPDATE.md#凭据配置)。这些项目当前 pending；此前临时凭据更新成功不替代它们，也不替代原实装、真实故障和发布验收条件。不存在新 token 的实际操作结果时，不记录生产部署完成。
 
 继续暂停进入阶段通过或发布交接的后续结论。允许仅维护这三份文档和必要非破坏验证；不读取、创建或替换真实凭据，不配置本机环境变量/提醒服务，不改账户、Secrets、Release/feed 或权限，不执行安装/卸载。加密凭据存储读取、独立分发仓库、多用户授权、代码签名和数据库恢复只是后续独立改进方向，不授权新开发或改变当前首期语义。原 Git 普通提交/push/dev Draft PR 权限保持；Ready/merge/main/tag/release 等门禁不变。
 

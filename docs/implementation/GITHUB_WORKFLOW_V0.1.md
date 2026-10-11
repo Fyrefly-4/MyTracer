@@ -427,7 +427,7 @@ Codex 的 `/review` 可以读取选择的 diff 并报告按优先级排序的问
 
 是否在每个候选节点推进 `main` 由项目所有者决定。任务或阶段通过不会自动创建 tag。
 
-S8 私有更新在 2026-10-06 获 owner 批准采用版本 tag 作为逐次发布授权：main 自动准备候选，owner 在有合格候选的 main 源提交上创建并推送稳定版本 tag，Actions 才自动发布该确切来源及验证后的产物。源可为 main 历史提交；已有 tag 必须正确指向来源，已有 Release 不覆盖。该约定取代 S8 的五参数手动 dispatch 和逐版本审批 JSON，不授权 Agent 创建 tag、执行真实发布、推进 main、修改 Secrets 或 rulesets。完整校验与故障处置见 [T084 发布操作](T084_RELEASE_OPERATIONS.md#owner-tag-正式发布已批准且进入-devmain-尚未部署)。
+S8 私有更新在 2026-10-06 获 owner 批准采用版本 tag 作为逐次发布授权：main 自动准备候选，owner 在有合格候选的 main 源提交上创建并推送稳定版本 tag，Actions 才自动发布该确切来源及验证后的产物。源可为 main 历史提交；已有 tag 必须正确指向来源，已有 Release 不覆盖。该约定取代 S8 的五参数手动 dispatch 和逐版本审批 JSON，不授权 Agent 创建 tag、执行真实发布、推进 main、修改 Secrets 或 rulesets。完整校验与故障处置见 [T084 发布操作](../maintenance/RELEASE.md#owner-tag-正式发布)。
 
 Release PR 必须列出：
 
