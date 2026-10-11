@@ -39,7 +39,7 @@ MyTracer 是一款本地优先的 Windows 个人行动与成长记录应用，�
 
 目前处于个人自用 Demo 阶段，支持 Windows x64。安装包通过项目的私有 GitHub Releases 分发，需要相应访问权限；当前安装包未签名。
 
-产品概念与使用方式见[使用指南](user/MYTRACER_V0.1_USER_GUIDE.md)，安装与更新相关说明见[维护文档](docs/MAINTENANCE.md#按事项查找)。
+安装与更新相关说明见[维护文档](docs/MAINTENANCE.md#按事项查找)。
 
 ## 本地运行
 
@@ -77,7 +77,6 @@ npm.cmd run dev
 
 ## 文档
 
-- [使用指南](user/MYTRACER_V0.1_USER_GUIDE.md)：了解产品概念与日常使用方式。
 - [开发与维护](docs/MAINTENANCE.md)：构建、验证、打包与更新说明。
 - [总体架构](docs/architecture/ARCHITECTURE_V0.1.md)：技术结构与模块边界。
 - [产品需求](docs/PRODUCT_REQUIREMENTS_V0.1.md)：详细功能与行为说明。
