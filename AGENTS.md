@@ -34,7 +34,7 @@ Files under `user/` are explanatory documents written for the project owner or p
 - Domain: independent of Electron, React, SQLite, and concrete AI SDKs.
 - AI: user-triggered, minimal-context, replaceable, degradable, and unable to write data without confirmation.
 
-Exact dependency versions, package tooling, test frameworks, and the first AI Provider remain approval-gated until recorded as approved.
+The S0 tooling and T062 first AI Provider have recorded approvals; see docs/architecture/ENGINEERING_DECISIONS_V0.1.md §6 and the evidence ledger. Current locked versions are in package.json/package-lock.json. New or upgraded dependencies, replacement Provider choices, migrations and permission expansion still require owner approval; prior approval is not standing authority for changes.
 
 ## 4. Scope and autonomy
 

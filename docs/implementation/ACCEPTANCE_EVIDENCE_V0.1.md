@@ -1,10 +1,62 @@
 # MyTracer v0.1 验收证据
 
+> 2026-10-11 事实校准：已补记当前任务交付、main 晋升和发布事实；详细旧条目中的 pending/null/active 为记录当时的事实，不覆盖下列最新结果。失败、取消、skip、owner-reported 与 waived-by-owner 均分别保留。
+
 > 文档状态：证据账本已建立；已记录 T001～T004、T011～T014、T021～T023、T031～T033、T041/T042、T051/T052、T061～T063、T081/T082、T801～T807、AC-01～AC-07 及已执行阶段聚合证据
 > 作用：记录可复核的命令、版本、环境、产物和人工观察  
 > 禁止：用任务状态、测试名称、关键词存在或 Agent 自述替代实际结果
 
+## 2026-10-11 当前交付与集成事实
+
+### EV-DOC-CALIBRATION-001
+
+- **Scope / authority**：owner 于 2026-10-11 明确要求执行全部已报告文档修复；采用轻量文档流程，排除 user/。不修改产品、测试、依赖、workflow 或数据，不新增人工验收，不重写 Git 历史，不发布或合并。本项不是新的产品任务或下一阶段启动。
+- **Source / environment**：Windows；`codex/docs-fact-calibration` 基于 `dev@93fc14c1edfc93dafdb9357204dae08c349a8734`，加本批明确的未提交文档变更。通过已连接 GitHub 插件只读查询 PR、精确 head 的 Actions runs/jobs、branches 和 Releases；不是依赖本地缓存推断远端。
+- **Remote baseline**：查询时 dev=`93fc14c1edfc93dafdb9357204dae08c349a8734`，main=`97667606d1f21bbcece7705387cb1929d9ca6d47`，与本地记录一致。新发布列表中没有 0.1.5；PR #63 已关闭且未合并，不作为交付。
+
+| Task / PR | 最后 task/docs head（交付收口 revision） | 实际 dev integration revision | 精确 head 的最终 Verification |
+| --- | --- | --- | --- |
+| T806 / [#43](https://github.com/Fyrefly-4/MyTracer/pull/43) | `605cb5433ca93d8f8353b93ca12e8596e16112f5` | `1d02fd7a0a7b0bf29a5e39720d5818c9d68fdbc2` | [33323763973](https://github.com/Fyrefly-4/MyTracer/actions/runs/33323763973) success |
+| T807 / [#49](https://github.com/Fyrefly-4/MyTracer/pull/49) | `523be0a94a43a5bcfd0300f2abc4ec5d34d7abdb` | `fa3ac0a2ac9ec0854615478a14886d764f21c3fc` | [33955746084](https://github.com/Fyrefly-4/MyTracer/actions/runs/33955746084) success |
+| T071 / [#55](https://github.com/Fyrefly-4/MyTracer/pull/55) | `6b6fb5f72af054a96d57d7c6f53da132a2cdc668` | `248350409927923016de18f7c5d967aa064964ca` | [35417697381](https://github.com/Fyrefly-4/MyTracer/actions/runs/35417697381) success |
+| T072 / [#56](https://github.com/Fyrefly-4/MyTracer/pull/56) | `ba4c7ed8f0d41da04c3ba8d6becde1ab696c9baf` | `d8b211b3c184cff8d0afdb09ff4b13164704290b` | [36450867255](https://github.com/Fyrefly-4/MyTracer/actions/runs/36450867255) success |
+| T084 / [#60](https://github.com/Fyrefly-4/MyTracer/pull/60) | `e9b3923bac93c0d13b8c6d29f219dfd703e71c65` | `080c308ff511705bfd8ab21386a03d58ec311dcd` | [37317033399](https://github.com/Fyrefly-4/MyTracer/actions/runs/37317033399) success |
+| T809 / [#61](https://github.com/Fyrefly-4/MyTracer/pull/61) | `3fd1528001c985cc10736a3a130230bf9c6eb30b` | `69c7f566fa90d667d5c81cfe983e3d3ee09df39a` | [37437619709](https://github.com/Fyrefly-4/MyTracer/actions/runs/37437619709) success |
+| S8 tag maintenance / [#64](https://github.com/Fyrefly-4/MyTracer/pull/64) | `6a882064988254294a03bd8ecc926ea8badf0ca4` | `93fc14c1edfc93dafdb9357204dae08c349a8734` | [37456873206](https://github.com/Fyrefly-4/MyTracer/actions/runs/37456873206) success |
+
+以上 head 是最后 PR/文档交付身份；旧证据已命名的 implementation candidate、产品 source 和早期 delivery 身份继续保留，不用文档 head 替代运行产品版本。PR API 证明 merged，run metadata 证明对应 head，job summaries 证明实际成功/跳过：T806/T807/T072 的 Full Windows、Milestone packaging 和 Gates 成功；T071/T084/T809/tag maintenance 的 Full Windows 与 Gates 成功而该 Verification 的 Milestone packaging skipped。T084、T809、tag maintenance 各自独立的候选 run [37316888171](https://github.com/Fyrefly-4/MyTracer/actions/runs/37316888171)、[37437516976](https://github.com/Fyrefly-4/MyTracer/actions/runs/37437516976)、[37456618667](https://github.com/Fyrefly-4/MyTracer/actions/runs/37456618667) 的候选 job 成功，不能把它们描述为被跳过的 milestone job。
+
+- **Main handoff**：[PR #62](https://github.com/Fyrefly-4/MyTracer/pull/62) 已合并到 `97667606d1f21bbcece7705387cb1929d9ca6d47`；源 head=`69c7f566fa90d667d5c81cfe983e3d3ee09df39a`。最终 [Verification 37440110755](https://github.com/Fyrefly-4/MyTracer/actions/runs/37440110755) attempt 3 completed/success，Full Windows、milestone package/smoke、Gates 实际成功。该 main 与源 dev 的 tree 均为 `16e3871b2da387b1a7f5ae26b1975e3e28daba0f`；内容相同不等于 source 是 main 祖先，历史差异见 [提案](ESCALATION_DOC_BRANCH_ANCESTRY.md)。S8 原固定产品 source `080c308ff511705bfd8ab21386a03d58ec311dcd` 不变。
+- **Stage / manual interpretation**：[beta.2](https://github.com/Fyrefly-4/MyTracer/releases/tag/v0.1.0-beta.2) 和 [beta.3](https://github.com/Fyrefly-4/MyTracer/releases/tag/v0.1.0-beta.3) 的 owner-accepted S4/S5、S6 发布记录，结合最终 CI/集成和已有 owner AC-05/06/02，闭合 T806/T807 的旧 review 等待；本次不代做人工验收。T084 的开发交付与 T809 的剩余阶段责任分别记录。T809 done 按既有 owner-approved waiver 收口，剩余真实矩阵未执行且接受风险；不记为全部 pass。T072 人工 AC/UX 和 main 晋升已证明，但不补造独立 G4 命名签署。
+- **Release / deployment**：已发布 beta.1、beta.2、beta.3；[v0.1.4](https://github.com/Fyrefly-4/MyTracer/releases/tag/v0.1.4) 为稳定通道演练，body 明示 rehearsal，source=`a5759763adc18739f8f65bcfc48f01db8f1ecd7f`，不是 accepted-main 正式发布。owner tag 改造只在 dev，main 尚为五参数 dispatch；首次真实 tag 正式发布未执行。PR #64 merged 只闭合 EV-S8-TAG-001 的 CI/dev 等待，不证明 main 部署或实际发布。
+- **Preserved failure / supersedes**：旧失败、取消及 skip 不删除；精确 head 上的最终成功解除相应等待，T809 的 37437517146 cancelled 由 37437619709 supersede；PR #64 的 37456618330/37456680672 cancelled 由 37456873206 supersede。同 head 的其他历史失败亦保留。未重新下载解读所有旧 command artifacts，不新增测试数量或 capture exit0 声明；旧 artifacts 已解读事实仍依各原条目和 PR #62 交接记录。
+- **Current document validation**：本批 25 个文档完整差异人工复核；`node .tmp/check-doc-repair.mjs` 使用仓库文档检查器的相同结构/链接规则，检查 25 个变更文档结构与全部 65 个 Markdown 的 278 个本地文件链接，并额外检查变更文档的 58 个标题锚点，exit0；排除 user/。`npm.cmd run governance:metadata:check` exit0（25 sidecars / 1 profile）；`git diff --check` exit0。`node tools/ci/classify-changes.mjs docs --paths-file .tmp/docs-repair-paths.txt` 未完成（exit1：本地缺少 prettier），不声称完整格式校验通过，也不为此安装依赖。未运行产品 verify；不把本次文档检查当作产品回归、hosted final-head CI 或发布验证。
+
+### EV-DOC-MAINTENANCE-001
+
+- **Scope / authority**：owner 要求先提交事实校准，再执行并提交维护入口；继续采用轻量文档流程。README 调整为项目介绍、功能、安装、本地运行、技术栈及文档链接；新增 docs/MAINTENANCE.md，以概况、事项导航、开发验证、变更和历史追溯组织维护入口。不改变 FR/AC/D、代码、依赖或发布权限，不处理 user/，不移动或删除旧合同与归档。
+- **Source / environment**：Windows；codex/docs-fact-calibration，base=`9b132f2086570d693f100115a6aa9360ce81b9fe`（事实校准已提交），加 README.md、docs/MAINTENANCE.md 和本账本三文件未提交状态。本次概况引用 2026-10-11 已核验快照，不声称重新查询远端或实时 CI。
+- **Validation / review**：Agent 已复核三个文档的完整变更，检查原 README 的基线和维护链接均能从新入口找到；命令对照 package.json。`node .tmp/check-doc-repair.mjs` exit0：三个变更文档结构、全部 66 个 Markdown 的 303 个本地文件链接、变更文档的 17 个标题锚点通过；排除 user/。`npm.cmd run governance:metadata:check` exit0（25 sidecars / 1 profile）；`git diff --check` exit0。
+- **Limitations**：本地仍缺少 Prettier，完整格式检查未完成；不安装或升级依赖。纯文档导航变更未运行产品 verify、真实安装、live AI 或新 hosted CI。本次只提交本地分支，不推送、合并、tag 或发布；历史失败与 owner waiver 保持原样。
+
+### EV-DOC-ARCHIVE-GUIDES-001
+
+- **Scope / authority**：owner 同意归档与去重计划并要求开始执行；第一批先提炼长期更新、凭据和私有发布说明。新入口为 docs/maintenance/UPDATE.md、RELEASE.md；旧操作页暂保留迁移入口，原文恢复 source 为 `346d508ac7976b55ba83d025432f50af0a211208`。本批只更新导航、相关引用和本账本，不改功能、批准边界或历史结果。
+- **Source / environment**：Windows；codex/docs-fact-calibration，base=`346d508ac7976b55ba83d025432f50af0a211208` 加本批九文档未提交变更。新说明来自既有 T082/T084 操作内容和已核验事实，未重新查询远端、不读取真实 token 或用户数据。
+- **Validation / review**：Agent 复核两份说明与原文的配置、轮换、确认安装、备用安装、不可变候选、main 来源、tag 身份与重跑约束；保持未签名、schema/export 和发布部署限制。`node .tmp/check-doc-repair.mjs`、`npm.cmd run governance:metadata:check`（25 sidecars / 1 profile）和 `git diff --check` 均 exit0；九个变更文档结构、全部 68 个 Markdown 的 298 个本地文件链接、变更文档的 29 个标题锚点通过；排除 user/。
+- **Limitations**：本地仍缺少 Prettier，完整格式校验未完成；未安装依赖、运行产品 verify/安装/live AI 或发布。文档迁移不证明首次正式发布或被豁免的实装故障矩阵通过。允许本地分批提交，不推送或合并。
+
+### EV-DOC-ARCHIVE-CONSOLIDATION-001
+
+- **Scope / authority**：owner 已批准归档与去重并要求执行；第二批以 S7/S8 新摘要、S4/S5 的 T806、S6 的 T807 和治理的 T805/T094 摘要替代 11 份已完成合同；2 份阶段程序及 2 份旧操作说明也从当前树移出。10 份历史提案与 2 份 UX 记录保留全文，移入 archive/records。完整文件清单与恢复方式见[归档索引](archive/INDEX.md#完整文本恢复)。本批只整理文档，不改变 FR/AC/D、架构行为、任务状态、元数据或历史验收。
+- **Source / environment**：Windows；codex/docs-fact-calibration，base=`e928c97d10336cf725382b2929e35cfc1a423c91` 加本批明确的未提交文档变更。归档前完整快照为 `346d508ac7976b55ba83d025432f50af0a211208`，不是产品 source；27 个相关源 blob 均已读取并核对 SHA-256。未重新查询远端或下载旧 CI artifacts。
+- **Preservation / review**：`node .tmp/check-archive-preservation.mjs` exit0：27 个原始文本可恢复；12 份搬移正文除归档标注和链接目标外保持相同；15 个移出文件均有恢复条目；与 e928c97 比较，历史证据正文除链接目标外不变，任务状态不变，产品/测试/工具/workflow/依赖/元数据及 user/ 无 tracked 改动。Agent 复核摘要与原范围、T083 替代验收、T094 历史视觉 pending、T809 豁免和发布部署限制；精简任务索引重复叙述与维护入口重复阶段目录。
+- **Document validation / supersedes**：首次搬移检查发现 12 个新归档标注的相对索引链接错误，exit1；已修正，后续 `node .tmp/check-doc-repair.mjs` exit0 supersedes 该链接失败，未改变原记录正文。最终 24 个变更文档结构、全部 56 个 Markdown 的 294 个本地文件链接、变更文档的 77 个标题锚点通过；排除 user/。implementation 根目录 Markdown 从 34 份收敛为 7 份现行治理/导航文件。`npm.cmd run governance:metadata:check`（25 sidecars / 1 profile）和 `git diff --check` 均 exit0。
+- **Limitations**：完整 Prettier 检查仍因本地缺少依赖未完成；未安装依赖、运行产品 verify/真实安装/live AI 或新的 hosted CI。不移走未解决的 Git 祖先关系提案、不推进任何分支或发布。历史正文中原合同链接现指向摘要，原章节编号仍按原合同理解，全文从归档索引恢复；失败、skip、owner-reported 和 waived-by-owner 保留，不改作 pass。
+
 ## S8 最终聚合证据
+
+> 以下为 2026-10-06 历史记录；后续最终 CI 和集成结果见 EV-DOC-CALIBRATION-001。
 
 ### EV-S8-001
 
@@ -16,7 +68,7 @@
 
 Owner 报告正式凭据配置、测试凭据撤销、提醒和重启后的正常入口检查“已完成”；按 owner-reported 记录，不接触密钥核实，实际到期日未提供。Agent 只读核实 PR #61 head=d57e653da55cf529c94ab12bfb32d5a891b9dd95/base=080c308ff511705bfd8ab21386a03d58ec311dcd 的 Verification37433913791 和 Update candidate37433876479 均 success；同 head 较早 Verification37433876468 被替代取消，失败 gate 保留。仅核实运行状态，未下载解读 hosted artifacts，不归因于尚未提交的本次文档。
 
-在获知剩余测试及风险后，owner 明确“明确忽略这些测试”。其批准范围为剩余真实凭据鉴权故障、下载断网恢复、安装客户端元数据/损坏包/版本拒绝、拒绝安装/磁盘不足/安装中断与人工修复、真实发布故障，以及未覆盖退出保护和完整数据/配置/导出/隔离过新 schema 的实装复核。当前处理为 **waived-by-owner（未执行，接受风险）**，不再阻塞本次 S8 收尾；详细边界见 [T809 最新豁免记录](T809_S8_FINAL_ACCEPTANCE.md#2026-10-06-owner-明确豁免剩余真实验收)。下方原 pending、失败及 supersedes 为各日期历史事实，不删除、不改成 pass。
+在获知剩余测试及风险后，owner 明确“明确忽略这些测试”。其批准范围为剩余真实凭据鉴权故障、下载断网恢复、安装客户端元数据/损坏包/版本拒绝、拒绝安装/磁盘不足/安装中断与人工修复、真实发布故障，以及未覆盖退出保护和完整数据/配置/导出/隔离过新 schema 的实装复核。当前处理为 **waived-by-owner（未执行，接受风险）**，不再阻塞本次 S8 收尾；详细边界见 [T809 最新豁免记录](archive/S8_T081_T084_T809_ARCHIVE.md#t809)。下方原 pending、失败及 supersedes 为各日期历史事实，不删除、不改成 pass。
 
 未完整实证的现实故障下数据保护、拒绝更新与修复效果仍为已接受风险；本次只缩减验收范围，不删除自动化、放宽功能要求或批准产品改动。正式 accepted-main 发布及具体产物批准、hash/来源校验、Ready/merge/tag/release 和新文档 head CI 仍独立；此记录不是完整测试通过或发布完成，T809 delivery/integration 尚未建立。
 
@@ -33,7 +85,7 @@ Owner 报告正式凭据配置、测试凭据撤销、提醒和重启后的正�
 | T084 / #60 | e9b3923bac93c0d13b8c6d29f219dfd703e71c65      | 080c308ff511705bfd8ab21386a03d58ec311dcd | U-01～05；包、发布、完整实装与阶段缺口 |
 
 - **Requirement matrix**：U-01/FR-D01～05/AC-07/ED-014/017/018 由 verify 的持久化/完整导出/LocalDate/离线连续 fixture 与有限 owner 观察支持；完整实装配置/导出绑定仍 pending。U-02/03、ED-004/019、D-015 的检查、鉴权失败、确认下载、取消/迟到、版本/传输策略和校验由定向分层测试支持；真实中断恢复 pending。U-04、D-014/109、ED-010 的表单/AI 草稿、第二实例、门禁/排空由分层测试支持；安装故障恢复 pending。U-05/GW 的来源、不可变资产、回读及失败拒绝由 release tests 和 bundle 验证支持；真实发布故障/review/CI 门禁独立。AC-01～07、D-008～010/106/111 的核心流程、确认前 AI 不写入、五种 Routine、意向、恢复/复盘/导出由完整 verify 对应实际 E2E 支持，不从名称推断全部人工体验。
-- **Environment / commands**：Windows x64，Node24.18.0/npm11.16.0/Electron43.3.0；移除真实更新 token，fake Clock/Provider、唯一临时 SQLite/userData/export，未运行 live AI。全部通过 explicit-argv wrapper：`node tools/evidence/capture-command.mjs --task T809 --gate <gate> --base-revision 080c308ff511705bfd8ab21386a03d58ec311dcd --output .tmp/evidence -- <command>`。定向文件精确 argv 见 [T809 §10.1](T809_S8_FINAL_ACCEPTANCE.md) 和 capture JSON；下表 artifact 均在 `.tmp/evidence/`，回读 source/base=080c308、capture complete。
+- **Environment / commands**：Windows x64，Node24.18.0/npm11.16.0/Electron43.3.0；移除真实更新 token，fake Clock/Provider、唯一临时 SQLite/userData/export，未运行 live AI。全部通过 explicit-argv wrapper：`node tools/evidence/capture-command.mjs --task T809 --gate <gate> --base-revision 080c308ff511705bfd8ab21386a03d58ec311dcd --output .tmp/evidence -- <command>`。定向文件精确 argv 见 [T809 §10.1](archive/S8_T081_T084_T809_ARCHIVE.md#t809) 和 capture JSON；下表 artifact 均在 `.tmp/evidence/`，回读 source/base=080c308、capture complete。
 
 | gate / command                                                                                                            | artifact 文件名                                            | 实际结果                                                                    |
 | ------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | --------------------------------------------------------------------------- |
@@ -104,14 +156,14 @@ Owner 报告正式凭据配置、测试凭据撤销、提醒和重启后的正�
 - **Early / earlier candidate history**：初次实现 `014e4ff...` 的 run `36598812085` 通过；`a7fc5cc...` 的 run `36602804168` 通过；`9781882...` 的 [run 36604897822](https://github.com/Fyrefly-4/MyTracer/actions/runs/36604897822) 通过，artifact `verification-evidence-36604897822-1` id=`11050684456` 的 JSON 记录 head=`9781882f0e2c7f5f1990a4bc86761e9e582a0e5c`、test-merge=`89e2fe928e15008a5c4770394782c18f9c595b1d`、aggregate exit 0。这些成功均不能替代修复 delivery 或文档 final-head 的对应 CI。
 - **Review / preserved findings**：owner 批准只读子代理独立审查完整 base→`02591ad...` 38 文件差异，发现 P1 慢校验期间门禁未开、P2 排空期间 Renderer 失效未复查、P2 Review busy 隐藏草稿、P2 Renderer 重载丢失重启锁定。四项由 delivery 修复及定向测试闭合；独立复审所有五个修复文件和最终测试等待/面板呈现，结论为无新 material finding。Reviewer 未执行测试/安装/发布。2026-10-03 owner 人工 review 通过作为另一本人报告结果记录，不等同于完整真实更新体验人工验收。
 - **Preserved failures / supersedes**：早期 E2E Preload API 顺序断言失败，经 expected surface 修正后回归通过；错误账户 SID 安装尝试在预检阶段停止，正确批准账户的后续 3/3 结果 supersede，不称为曾成功安装。修复期受限账户 Vitest 在测试启动前遇 Vite-temp EPERM，后获准当前账户执行通过。新增 Electron 断言首次 2 failed（fallback 提示在 grid 中不可见、错误等待仅首次加载才出现的文字），修正面板呈现与按钮等待后 6/6，继而完整 36/36 pass。CI run `36602713561`、`36604857597`、`37029716046` 因 PR 更新/替代执行取消；取消及其缺失证据导致的 gate 失败保留，由相应后续候选成功取代，不解释为产品失败。失败事实不删除。
-- **Acceptance change / manual gaps**：原 T082 `0.1.2` 没有确认安装 UI，不能完成原 §9.5 应用内起点；冲突及直接批准见 [升级提案](ESCALATION_PROPOSAL_T083_APP_MEDIATED_UPGRADE.md)。2026-10-02 owner 保留 `0.1.3`、取消额外双包测试，批准真实手动 NSIS 与应用内协调分别验收，解除该项对 T083 的阻断。完整真实应用成功交接安装器、启动更高版本并验证旧数据仍 `pending subsequent version/task acceptance`，真实私有源、正式包与 unsigned 提示的最终 owner 体验也保持 pending；不削弱 S8 最终门禁、不代签或启动 T084。
+- **Acceptance change / manual gaps**：原 T082 `0.1.2` 没有确认安装 UI，不能完成原 §9.5 应用内起点；冲突及直接批准见 [升级提案](archive/records/ESCALATION_PROPOSAL_T083_APP_MEDIATED_UPGRADE.md)。2026-10-02 owner 保留 `0.1.3`、取消额外双包测试，批准真实手动 NSIS 与应用内协调分别验收，解除该项对 T083 的阻断。完整真实应用成功交接安装器、启动更高版本并验证旧数据仍 `pending subsequent version/task acceptance`，真实私有源、正式包与 unsigned 提示的最终 owner 体验也保持 pending；不削弱 S8 最终门禁、不代签或启动 T084。
 - **Documentation / handoff**：2026-10-03 owner 批准合同、任务索引、此证据、README、S8 设计、实施计划、追踪和派生用户说明的最小收口及模板化 PR 正文；文档提交与推送后的 final-head CI/Ready/merge 状态留在 PR。未新增或升级依赖、改 schema/migration/export/AI 权限、推进 main、创建 tag/Release 或执行 merge。记录于 2026-10-03。
 
 ## T082 实现候选证据
 
 ### EV-T082-001
 
-- **Status / scope**：`pass`（T082/S8-B 任务交付）；U-02/U-03 与 U-05 候选、元数据和当前包 hash 追踪子集由受控源自动化、包校验、云端 CI 与 owner 人工代码 review 支持。Owner 于 2026-09-29 批准 [T082 范围冲突提案](T082_ESCALATION_PROPOSAL.md)：真实私有稳定 Release、只读凭据下的安装版体验及最终发布包证据归 T084，均未由 T082 验证。FR-D01～D05、AC-07 是数据和核心功能边界，不因此条重新宣称完整 AC-07 通过。T083 安装确认、T084 发布及 S8 阶段验收不在此条。
+- **Status / scope**：`pass`（T082/S8-B 任务交付）；U-02/U-03 与 U-05 候选、元数据和当前包 hash 追踪子集由受控源自动化、包校验、云端 CI 与 owner 人工代码 review 支持。Owner 于 2026-09-29 批准 [T082 范围冲突提案](archive/records/T082_ESCALATION_PROPOSAL.md)：真实私有稳定 Release、只读凭据下的安装版体验及最终发布包证据归 T084，均未由 T082 验证。FR-D01～D05、AC-07 是数据和核心功能边界，不因此条重新宣称完整 AC-07 通过。T083 安装确认、T084 发布及 S8 阶段验收不在此条。
 - **Source / freshness**：分支 `task/T082-private-update-download`、PR [#58](https://github.com/Fyrefly-4/MyTracer/pull/58)→`dev`；`implementation_candidate=b1525d18494dd5f38807f907b947df5ea15607ae`，首轮文档 head `7b5baa9a5e758f942e4cc59197c08fb7f64b7b54`。`original_base_revision=latest_authorized_dev_revision=verified_against_revision=0724cbb9990d328ee7ff68b7e5ac93fc8107e6d3`；2026-09-29 再次核对远端 `dev` 未变，`Integration Freshness=fresh`、`refresh_method=none`。本次 approved-2 文档修订后的最新 PR head 须以 final-head CI 另验；`task_delivery_revision=null`、`dev_integration_revision=null`、`stage_final_integration_revision=null`。
 - **Implementation / isolation**：根应用版本由 `0.1.1` 升至 `0.1.2`，精确增加生产依赖 `electron-updater@6.8.10`；固定 `Fyrefly-4/MyTracer` 私有稳定通道。Main 启动时读取专用 `MYTRACER_UPDATE_TOKEN`，更新服务校验候选版本、预期资产名和 SHA-512，并将检查、确认下载、进度、取消、重试及脱敏状态经窄 IPC/Preload 提供给现有应用级面板。`autoDownload=false`、`autoInstallOnAppQuit=false`；不调用安装器，不持久化 token，不改变 schema、业务 Domain 或 AI 权限。自动化使用 fake/受控源及临时数据根，无真实凭据。
 - **Hosted candidate CI**：[run 36542314738](https://github.com/Fyrefly-4/MyTracer/actions/runs/36542314738) `success`，PR head `b1525d18494dd5f38807f907b947df5ea15607ae`、test-merge `2ab23eaa890dd12f626509061fd4ad455d1e710f`、base `0724cbb9990d328ee7ff68b7e5ac93fc8107e6d3`。Windows full verification 的 `npm.cmd run verify`、Governance、PR quality、Milestone packaging 的 `npm.cmd run package -- --publish never` 与 `npm.cmd run test:package-smoke`、CI Gate 和 Windows required gate 全部通过。云端 Windows x64 环境使用 Node `v24.18.0`、Electron `43.3.0`；未执行正式发布。package smoke 覆盖 unpacked 与隔离 NSIS 安装应用的 T082 窄 API 和缺 token 状态；不等于真实私有 Release 下载。
@@ -140,6 +192,8 @@ Owner 报告正式凭据配置、测试凭据撤销、提醒和重启后的正�
 ## T072 交付证据
 
 ### EV-T072-001
+
+> 当前后续交付/集成结果见 [EV-DOC-CALIBRATION-001](#ev-doc-calibration-001)；以下候选、等待和限制为原记录日期的事实。
 
 - **Status**：pass；实现候选的本地完整验证、独立 review、hosted full/milestone CI 与 owner 人工 AC/UX 均通过，owner 已批准本次文档收口。文档提交后的 final-head CI 属于后续 PR 集成门禁，不能由 candidate green 替代；不声明 G4、Ready、merge 或 release。
 - **Source**：`task/T072-demo-convergence`，早期结果绑定 base/HEAD `248350409927923016de18f7c5d967aa064964ca` 加未提交实现，不能归给裸 HEAD。`.tmp/evidence/T072-local-candidate-source.json` 于 `2026-09-19T04:07:35.2866157Z` 记录 8 个改动实现/测试文件的 SHA-256；其余实现继承 base。上述源码映射到 `implementation_candidate=a78a31f335b95296df9c942912aa79f8eb9f725d`，并有下述干净 exact-source 复验。`task_delivery_revision` 等文档 final-head CI 后在 PR #56 绑定；`dev_integration_revision=null`、`stage_final_integration_revision=null`。
@@ -282,6 +336,8 @@ Owner 报告正式凭据配置、测试凭据撤销、提醒和重启后的正�
 ## T071 交付证据
 
 ### EV-T071-001
+
+> 当前后续交付/集成结果见 [EV-DOC-CALIBRATION-001](#ev-doc-calibration-001)；以下候选、等待和限制为原记录日期的事实。
 
 - **Status**：pass；T071 实现候选的本地验证、独立审查、owner 人工验收和 hosted candidate CI 通过；owner 已批准文档收口。文档提交后的 final-head CI 与 merge 属于后续 PR 集成门禁，不声明 S7/T072 聚合验收。
 - **Task / requirements**：T071；FR-G07/A08/R08/T06/T07/L06/C04/P05/P06/REC05/RV05；D-004/008/009/010/106；ED-004/008/012/013/016/017/019。AC-01～07 仅为受影响自动回归，不代签 owner 人工或 T072 聚合。
@@ -469,9 +525,9 @@ Artifact 位于 ignored `.tmp/evidence/`，可由 GitHub Actions 作为短期 ar
 | `EV-T061-001`              | T061 / S6 E6-01               | task `5f98b2f...` / dev `4630878...`                                | 窄 AI 上下文 Query、纯 selector、Main-only manifest、fake capture 与零调用/隔离证明                 | pass    | pass         | candidate、人工测试、owner-approved closeout、修复后的 final-head CI、PR #46 merge 与 post-merge CI 均通过；不声明 T062/T063、AC-02 或 S6 final gate                              |
 | `EV-T062-001`              | T062 / S6 E6-02               | task `bc5461e3...` / dev `233d6790...`                              | 可替换 Provider、严格响应验证、deadline/cancel/generation、Main-only 配置与失败降级                 | pass    | not-required | 本地完整验证/package smoke、独立 review、candidate/final-head CI、PR #47 merge、post-merge CI 与 owner-approved closeout 通过；不声明 T063、完整 AC-02 或 S6 final gate           |
 | `EV-T063-001`              | T063 / S6 E6-03               | task `fee398e...` / dev `f06b1e9...`                                | 临时建议编辑/拒绝/关闭/retry、普通确认 Commands、原子 current-next、逐项 Understanding 与零写入守恒 | pass    | pass         | task 自动化/CI/merge 已通过；项目所有者在 T807 固定产品内容及边界修复上完成完整人工 AC-02，任务原始 pending 由聚合人工结果闭合                                                    |
-| `EV-T807-001`              | T807 / S6 aggregate           | product `f06b1e9...` / delivery `449ad4f...`                        | continuous AC-02、AI 隔离及 owner-approved SDK 日志/异常降级/live contract 边界修复                 | partial | pass         | exact delivery head hosted aggregate/package、独立复核及人工 AC-02 通过；owner-approved docs closeout 已执行，等待文档 final-head CI 与 owner-controlled merge/release gates      |
+| `EV-T807-001` | T807 / S6 aggregate | product `f06b1e9` / docs `523be0a` / dev `fa3ac0a` | continuous AC-02、AI 隔离及 owner-approved SDK 日志/异常降级/live contract 边界修复 | pass | pass | 后续 final-head CI、dev 集成与 beta.3 已闭合；live 自动 contract timeout 保留，见 EV-DOC-CALIBRATION-001 |
 | `EV-T041-001`              | T041 / E4-01                  | task `1e9ab2b80b5b81a8bedd192750281d4042f279d5`                     | RecoveryContext 只读事实、LocalDate、单事务 snapshot、窄 IPC/Preload、Goals 入口与 AC-05 步骤 1～4  | pass    | pass         | 本地完整验证、独立复核、PR #39 implementation-candidate CI 与项目所有者人工测试通过；不声明完整 AC-05、FR-P05、T042、Ready 或 merge                                               |
-| `EV-S4-S5-001`             | T806 / S4-S5 aggregate        | product `84b596e` / docs final head pending                         | T041～T052、AC-05/06、migration/export、package、证据与合同归档                                     | partial | pass         | 固定产品 source 的本地聚合与人工绑定通过；PR #43 candidate CI 因单 migration 用例默认超时失败，test-only 窄修复及 docs closeout 已完成，final-head hosted CI pending              |
+| `EV-S4-S5-001` | T806 / S4-S5 aggregate | product `84b596e` / docs `605cb54` / dev `1d02fd7` | T041～T052、AC-05/06、migration/export、package、证据与合同归档 | pass | pass | 后续 final-head CI、dev 集成与 beta.2 已闭合；原 candidate failure 保留，见 EV-DOC-CALIBRATION-001 |
 | `EV-PRE-S4-FOUNDATION-001` | S4 前工程/UI 基线（无新任务） | product/dev `2632ff0638fb02533100a1f9d0aea9f1323dbde3`              | T804/T092/T093/T805/T094 同 revision 治理、流程、UI Foundation 与 AC-01/03/04/07 回归               | pass    | pending      | 本地完整门禁、package smoke、完整 `main..dev` 独立 review 与 exact-dev post-merge CI 通过；视觉对比和聚合文档 final-head CI 分开记录                                              |
 | `EV-G3-S1-001`             | G3/S1                         | `623007dd4269df02771f6a526db269de1fe95a03`                          | T011～T014 同 revision 核心闭环、Windows package 与发布门禁                                         | fail    | pending      | `verify`、AC-01 和 package 构建通过；package smoke 因旧 Preload API 断言在 unpacked 阶段失败，NSIS 安装态未验证                                                                   |
 | `EV-G3-S1-002`             | G3/S1                         | `74ebe346a86cf431d87e02e8a1220b713b33901c`                          | T011～T014/T801 同 revision 核心闭环、Windows package 与发布门禁                                    | pass    | pass         | 验收门禁通过；项目所有者后续另行批准 PR #14 合入 `main@3912e80...` 并发布 `v0.1.0-alpha.2`                                                                                        |
@@ -1671,6 +1727,8 @@ Agent 只提供步骤和观察位置，不得替项目所有者签署人工验�
 
 ### EV-S4-S5-001
 
+> 当前后续交付/集成结果见 [EV-DOC-CALIBRATION-001](#ev-doc-calibration-001)；以下候选、等待和限制为原记录日期的事实。
+
 - **Status**：原收口时为 partial；后续 final-head CI 与 dev 集成已核实，见下方补记。本次不以 merge 自动重签 T806 任务或阶段接受。
 - **Task / Gate**：T806 / S4-S5 aggregate；聚合 T041～T052、FR-REC01～REC06、FR-RV01～RV06、AC-05/06，并回归 AC-01/03/04/07；不声明 AC-02、G4、AI、S6、S7、自动导入/恢复、Ready、merge、tag 或 Release
 - **Stage final integration revision**：`84b596e12e54db098857004497a4d1964dcdc23c`。该固定产品 source 包含 T041 `695e7bc...`、T042 `3f343b8...`、T051 `3e5a14f...`、T052 `84b596e...`；T806 后续测试/文档 revision 不替代它
@@ -1689,6 +1747,8 @@ Agent 只提供步骤和观察位置，不得替项目所有者签署人工验�
 - **Recorded at**：2026-08-31
 
 ### EV-T807-001
+
+> 当前后续交付/集成结果见 [EV-DOC-CALIBRATION-001](#ev-doc-calibration-001)；以下候选、等待和限制为原记录日期的事实。
 
 - **Status**：原收口时为 partial；后续文档 final-head CI 与 dev 集成已核实，见下方补记。本次不以 merge 自动重签 T807 任务或阶段接受。
 - **Task / Gate**：T807 / S6 aggregate acceptance；聚合 T061～T063、FR-AI01～AI10、FR-C02/C03、AC-02 与 AC-01/03/04/05/06/07 受影响回归；真实 LiteLLM 仅声明 owner-reported UI 人工结果，不声明专用自动 contract pass、Ready、merge、`dev → main`、tag 或 Release
@@ -1812,6 +1872,8 @@ Agent 只提供步骤和观察位置，不得替项目所有者签署人工验�
 - **Recorded at**：2026-08-31
 
 ### EV-S8-TAG-001
+
+> 当前后续交付/集成结果见 [EV-DOC-CALIBRATION-001](#ev-doc-calibration-001)；以下候选、等待和限制为原记录日期的事实。
 
 - **Status**：local/implementation-head hosted automation pass；独立工具 review 无 actionable findings，真实 tag 发布及 main 集成未执行。本条仅证明 owner 于 2026-10-06 授权的轻量发布维护改造，不重开 T084/T809、不推进任何阶段或分支。
 - **Scope / basis**：S8 §3.5、GW-009 和 owner 批准的“main 自动准备 → owner stable tag 批准 → Actions 私有发布”约定。允许 main 历史来源；自动解析并跨 job 固定 run/attempt/artifact/digest/manifest hash；正确已有 tag 为必要条件，已有 Release 包括 draft 拒绝覆盖。FR/AC/D、客户端确认安装、数据/schema/export、unsigned、私有源与依赖均未改变。

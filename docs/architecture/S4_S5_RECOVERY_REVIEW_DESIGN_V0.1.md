@@ -83,7 +83,7 @@ baseline:
     - docs/implementation/TASK_INDEX_V0.1.md
     - docs/implementation/TASK_TEMPLATE.md
     - docs/implementation/GITHUB_WORKFLOW_V0.1.md
-    - docs/implementation/T094_STRUCTURAL_UI_REFACTOR.md
+    - docs/implementation/archive/GOVERNANCE_T090_T093_T804_ARCHIVE.md
   current_design_source: dev@27485d0ab69eb84041c784c9a407b68fc304152b
   prior_behavior_revision: dev@2632ff0638fb02533100a1f9d0aea9f1323dbde3
   current_schema_version: 2

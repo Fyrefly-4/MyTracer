@@ -1,4 +1,4 @@
-# MyTracer v0.1 治理任务归档：T090～T093、T804
+# MyTracer v0.1 治理与界面基础归档：T090～T094、T804/T805
 
 > 状态：已归档；本文只保留已完成治理任务对后续维护、验证和审计仍有价值的最小信息
 >
@@ -71,3 +71,13 @@ T803 的完整合同恢复入口和最终聚合结果继续保留在 `S3_T031_T0
 - 当前运行规则使用 [`GITHUB_WORKFLOW_V0.1.md`](../GITHUB_WORKFLOW_V0.1.md)、[`AUTOMATION_PROFILES_V0.1.md`](../AUTOMATION_PROFILES_V0.1.md) 和任务模板；不从本文恢复 Profile、Skill、Workflow 或外部写入权限。
 - 当前任务状态只看 [`TASK_INDEX_V0.1.md`](../TASK_INDEX_V0.1.md)；归档表中的 revision 是审计导航，不是第二份状态账本。
 - 当前验证和失败保留只看 [`ACCEPTANCE_EVIDENCE_V0.1.md`](../ACCEPTANCE_EVIDENCE_V0.1.md)；本文不重复完整命令日志、CI artifact 或人工验收记录。
+
+## T805
+
+整理已完成治理合同、精简重复状态叙述并建立历史边界，不改需求、架构或 GitHub 配置。PR #34 final head 979fa1cd11da9c0e4a28e6c37e63a3e8e695c95f，dev integration 353a4d42921175374dec178a75ad2748eb184cdf。结果见[EV-T805-001/002](../ACCEPTANCE_EVIDENCE_V0.1.md#ev-t805-002)，完整合同见[恢复索引](INDEX.md#完整文本恢复)。
+
+## T094
+
+只重构 Renderer ownership：App 组合 ErrorBoundary/AppShell，AppShell 管理壳层与 section，各 feature 拥有页面状态、DTO、IPC、刷新和错误文案。没有改变 CSS、布局、文案、Main/Preload/Domain/SQLite、依赖或产品语义；不创建全局 Store、Router 或通用 service。
+
+候选与 task delivery 为 543180b85960334808563af49d0aa96caab31b00；PR #35 final head e2d75b16c142057ab43e600ae3d010464f9adf13，dev integration 2632ff0638fb02533100a1f9d0aea9f1323dbde3。自动化、打包、独立 review 与后续 CI 见[EV-T094-001](../ACCEPTANCE_EVIDENCE_V0.1.md#ev-t094-001)。原合同同环境六 section 视觉对比仍是历史 pending，本次不由后续自动化或合并代签。完整合同见[恢复索引](INDEX.md#完整文本恢复)。

@@ -1,5 +1,7 @@
 # T031 Escalation Proposal 002
 
+> 历史归档（2026-10-11）：正文状态、失败和权限按原记录日期理解，不作为当前任务状态或新授权。导航见[归档索引](../INDEX.md)。
+
 ```yaml
 type: contract_scope_change
 task: T031

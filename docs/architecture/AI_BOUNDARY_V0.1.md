@@ -2,7 +2,7 @@
 
 > 文档状态：v0.1 最终架构基线（工程决策已批准）  
 > 冻结职责：用户主动触发的温和启动帮助  
-> 已批准边界：Electron Main 请求、safeStorage 凭据、最近 5 条相关 Record、1～3 条建议；厂商/模型保持未绑定
+> 已批准边界：Electron Main 请求、safeStorage 凭据、最近 5 条相关 Record、1～3 条建议；接口保持可替换，首个适配器为已批准 LiteLLM Gateway/gemini-3.7-flash
 
 ## 1. 目标与非目标
 
@@ -211,4 +211,4 @@ Provider 输出必须经过结构、长度和允许字段验证。解析失败�
 5. 本次会话可在内存保留重试输入，关闭流程即丢弃；
 6. 不保存对话历史、不建立长期记忆、不扩大 Provider 写权限。
 
-实现期仍需批准首个 Provider、模型、SDK 依赖、环境变量名及其总文本预算。它们只能实现本接口，不能改变上述边界，因此不阻塞 Goal—Action—Record 基础切片。
+T062 已批准并实施首个 LiteLLM Gateway、gemini-3.7-flash、openai@7.8.0、MYTRACER_LITELLM_API_KEY、固定 origin、超时及文本预算，具体值和证据见 [EV-T062-001](../implementation/ACCEPTANCE_EVIDENCE_V0.1.md#ev-t062-001)。这是可替换端口的首个适配器，不是 Domain/Provider 永久绑定；后续替换或扩大预算/权限仍须批准。
