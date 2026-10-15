@@ -87,7 +87,7 @@ try {
     exportVersion: 2,
     signing: 'unsigned',
     build,
-    compatibleFrom: ['0.1.3'],
+    compatibleFrom: ['0.1.4'],
     assets,
     tests
   }

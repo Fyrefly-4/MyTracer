@@ -138,7 +138,7 @@ test('preserves one fixture through manual A to B and application-installed B to
   const directory = join(root.root, 'installed-app'),
     executable = join(directory, 'MyTracer.exe')
   const targetVersion = required('MYTRACER_INSTALLED_UPDATE_TARGET_VERSION')
-  expect(targetVersion).toBe('0.1.4')
+  expect(targetVersion).toBe('0.1.5')
   let application: ElectronApplication | undefined
   // Retain the owned installation and synthetic data for review; no automatic uninstall or deletion.
   try {
@@ -176,7 +176,7 @@ test('preserves one fixture through manual A to B and application-installed B to
     })
     expect(bridgeInstallation.status).toBe(0)
     application = await launch(root, executable)
-    expect(await application.evaluate(({ app }) => app.getVersion())).toBe('0.1.3')
+    expect(await application.evaluate(({ app }) => app.getVersion())).toBe('0.1.4')
     expect(await application.evaluate(({ app }) => app.getPath('userData'))).toBe(userData)
     const bridge = await exportInstalledFacts(application, join(root.exports, 'bridge.json'))
     expect(bridge.data).toEqual(before.data)

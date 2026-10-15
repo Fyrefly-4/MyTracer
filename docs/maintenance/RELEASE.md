@@ -2,11 +2,21 @@
 
 ## 部署状态与发布前提
 
-截至 2026-10-11 已核验的远端快照：owner tag 改造已进入 dev，main 尚保留旧五参数 dispatch。下面是新流程进入 main 后的操作，不能用于当前旧 main。部署及首次真实正式发布尚未执行；精确 revisions 和 CI 见[事实校准证据](../implementation/ACCEPTANCE_EVIDENCE_V0.1.md#ev-doc-calibration-001)。执行前重新核对远端和确切 workflow。
+截至 2026-10-15 的远端检查，owner tag 发布入口及仅手动触发的候选工作流均已进入 main；#70 已合并，main 来源为 `0a58305ea7b60b3944b199b52324b08d4819d581`。这是本次版本准备前的来源，最终发布须重新绑定版本变更合入后的确切 main SHA。旧部署快照保留在[事实校准证据](../implementation/ACCEPTANCE_EVIDENCE_V0.1.md#ev-doc-calibration-001)，不作为当前运行状态。
 
 现有 v0.1.4 是 owner 授权的稳定通道演练，保留 tag、Release 和原始资产，不追认为正式 accepted-main 发布。首次正式版本须更高，并通过独立版本变更、集成与发布授权。本文说明操作，不授予 Agent 合并、tag、发布、Secrets 或 ruleset 写入权限。
 
 ## 候选与审核
+
+### 0.1.5 发布准备
+
+Owner 已确认版本 `0.1.5`，重点升级来源为 `0.1.4`。package/lock 同步版本，候选 manifest 的 `compatibleFrom` 设为 `['0.1.4']`；该声明不是已通过实装测试的结论。
+
+候选审核前，在隔离 Windows 身份和合成数据根中，使用已核对来源与 hash 的 `0.1.4` 安装包及确切 `0.1.5` 候选运行原位置升级测试，验证既有事实、配置、导出和重启持久化。`windows-in-place-upgrade` 的默认版本对已更新；实装仍须显式 opt-in、输入安装包及通过身份预检，普通 verify 不执行实装。
+
+正式稳定 feed 出现 `0.1.5` 后，再验证应用内检查、确认下载与安装。现有 A→B→C 实装测试保留 `0.1.0` 作为合成事实的基线安装，SOURCE 安装包须提供 `0.1.4`，TARGET 版本须为 `0.1.5`，并提供对应 hash 和现有只读凭据；不要为测试在正式源提前创建 Release。当前候选构建、实装验证和正式发布均待执行，版本确认不等于 tag/发布授权。
+
+### 候选内容
 
 `Update candidate` 仅通过 Actions 的 workflow_dispatch 手动运行；普通 PR 与 main push 不再自动打包。构建明确 checkout 手动选择的 branch/tag 对应 SHA，使用锁定依赖及只读权限，分别捕获 aggregate、禁止发布的 NSIS build、隔离 smoke；检查 unsigned 后生成 `.tmp/release/candidate/candidate-manifest.json`。
 
