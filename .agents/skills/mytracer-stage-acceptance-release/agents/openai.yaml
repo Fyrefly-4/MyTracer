@@ -1,7 +1,7 @@
 interface:
   display_name: 'MyTracer Stage Acceptance & Release'
   short_description: 'Verify a MyTracer stage and prepare release handoff'
-  default_prompt: 'Use $mytracer-stage-acceptance-release to aggregate one approved MyTracer stage on dev, verify its final revision, and prepare an owner-gated release handoff.'
+  default_prompt: 'Use $mytracer-stage-acceptance-release to aggregate one approved MyTracer stage on main, verify its final revision, and prepare an owner-gated release handoff.'
 
 policy:
   allow_implicit_invocation: false

@@ -4,7 +4,8 @@
 
 > 2026-10-11 事实校准：main/dev revisions、PR #62 单父提交历史差异及 PR #64 的 dev-only 部署见 [EV-DOC-CALIBRATION-001](ACCEPTANCE_EVIDENCE_V0.1.md#ev-doc-calibration-001)。旧 GitHub 配置快照仍按各日期解释，不用本次事实校准推断实时保护配置或授权外部写入。
 
-> 文档状态：已批准的开发工作流基线
+> 分支迁移：当前分支模型以 main 为唯一长期集成线。下文历史快照不恢复 dev；新合同与 Skill 使用 main。旧合同中的 dev 字段须在重新启用时显式调整，不能自动恢复旧授权。
+> 文档状态：显式阶段流程参考，分支操作服从当前日常工作流
 > 批准范围：GW-001～GW-010
 > 配置快照：截至 2026-08-26（历史快照），PR template、分层 Actions、main milestone CI 与统一 `CI Gate` 已由 T093 实现；`dev`/`main` active rulesets 均要求 `CI Gate`
 > 适用对象：项目所有者、Codex 和其他经授权 Agent
@@ -16,62 +17,29 @@
 - 隔离每个 Agent 任务，避免直接污染集成分支；
 - 让代码、测试、评审和验收证据绑定到明确 PR；
 - 保留项目所有者对产品语义、合并、里程碑和发布的控制；
-- 使 `dev` 可以持续集成，`main` 始终代表已验收里程碑；
+- 使 `main` 承接已接受的维护变更，阶段验收和正式发布分别绑定固定 revision；
 - 支持 Codex worktree，但不要求为了并行而并行。
 
-GitHub 官方将 GitHub Flow 定义为轻量分支工作流：独立分支承载一组相关变更，通过 PR 评审和检查后合并，再删除任务分支。MyTracer 在此基础上增加 `dev` 集成门，以适配 v0.1 的阶段验收。参考：[GitHub Flow](https://docs.github.com/en/get-started/using-github/github-flow)。
+GitHub 官方将 GitHub Flow 定义为轻量分支工作流：独立分支承载一组相关变更，通过 PR 评审和检查后合并，再删除任务分支。MyTracer 使用 main 加短期工作分支；显式阶段验收继续绑定固定来源，不增加长期集成分支。参考：[GitHub Flow](https://docs.github.com/en/get-started/using-github/github-flow)。
 
 ## 2. GW-001 分支模型
 
-```mermaid
-flowchart LR
-    D["dev：当前集成版本"]
-    T["task/Txxx-short-name"]
-    P["Draft PR：task → dev"]
-    R["里程碑 PR：dev → main"]
-    M["main：已验收里程碑"]
-    H["hotfix/Txxx-short-name"]
+从最新核实的 main 创建 `codex/<short-name>`，通过 PR 检查和必要验收后，经 owner 授权合入 main。main 是已接受的维护基线；tag、Release 与确切候选产物标识已发布版本，合入不自动发布。
 
-    D --> T --> P --> D
-    D --> R --> M
-    M --> H --> M
-    H -->|"同步 PR"| D
-```
-
-### `main`
-
-- 已由项目所有者验收的里程碑和发布来源。
-- 常规功能分支不得直接以 `main` 为 base。
-- 只接受 `dev -> main` 里程碑 PR，或从 `main` 创建的紧急 hotfix PR。
-- tag 和 release 只从 `main` 创建。
-
-### `dev`
-
-- v0.1 当前集成线。
-- 只包含已经完成任务级验证并经项目所有者批准合并的工作。
-- 本地主检出应尽量保持干净，用于集成检查、Electron 前台运行和人工体验验收。
-
-### 短期分支
-
-- `task/Txxx-short-name`：正常实现任务。
-- `fix/Txxx-short-name`：基于 `dev` 的缺陷修复。
-- `docs/Txxx-short-name`：独立文档任务。
-- `hotfix/Txxx-short-name`：基于 `main` 的紧急发布修复。
-
-合并后删除短期远端分支；保留的事实位于 PR、commit、证据和长期分支中。
+dev 不再作为集成目标，不创建晋级或回流 PR。历史任务和证据中的 dev 保留原日期含义。短期远端分支删除仍需要 owner 授权。
 
 ## 3. GW-002 Codex worktree
 
 每个任务优先使用独立 Codex worktree 或普通任务分支：
 
 ```text
-最新授权的 origin/dev
+最新授权的 origin/main
   → 独立 worktree
+  → 创建 codex/<short-name>
   → 实现和本地验证
-  → 创建 task/Txxx-short-name
   → commit
   → push
-  → Draft PR to dev
+  → Draft PR to main（push/PR 均需明确授权）
 ```
 
 Codex 桌面版 worktree 可让多个任务使用独立检出；默认可能以 detached HEAD 开始，需要在发布前创建正式分支。同一分支不能同时被多个 worktree checkout。参考：[OpenAI Docs：Worktrees](https://learn.chatgpt.com/docs/environments/git-worktrees)。
@@ -89,17 +57,17 @@ Codex 桌面版 worktree 可让多个任务使用独立检出；默认可能以 
 分支使用任务而非执行者作为主标识：
 
 ```text
-task/T001-electron-shell
-task/T003-sqlite-migrations
-fix/T034-cross-midnight-date
-docs/T090-agent-workflow
+codex/electron-shell
+codex/sqlite-migrations
+codex/cross-midnight-date
+codex/agent-workflow
 ```
 
 不使用 `temp1`、`test-final`、`new-fix` 等无法追踪的名称。
 
 任务分支可以有多个有意义的本地提交。每个提交应表达一个可理解、可撤销的变化，不要求为每个微小修改单独提交，也不把整个阶段压成无法审查的单一开发提交。
 
-PR 标题将作为 task PR 的 squash commit 标题，格式为：
+PR 技术标题应清楚描述任务；若选择 squash，PR 标题可作为 squash commit 标题。例如：
 
 ```text
 T001: initialize the Electron application shell
@@ -115,79 +83,47 @@ T034: fix cross-midnight record assignment
 
 ## 5.1 Integration Freshness Gate
 
-任务进入最终可合入 `dev` 状态前，必须比较任务验证基线与最新授权 `dev`：
+任务进入最终可合入 `main` 状态前，必须比较任务验证基线与最新授权 `main`：
 
 | 状态 | 含义 |
 |---|---|
-| `fresh` | 验证基线就是最新授权 `dev` |
+| `fresh` | 验证基线就是最新授权 `main` |
 | `refreshed-and-passed` | 任务曾基于旧基线，普通 merge 刷新后 affected regression 和 candidate CI 通过 |
 | `blocked` | 最新基线不可用、刷新不安全或冲突未解决 |
-| `not-required` | 合同明确任务不进入当前 `dev` 集成 |
+| `not-required` | 合同明确任务不进入当前 `main` 集成 |
 
-stale base 必须按以下顺序处理：获取最新授权 `dev`、以普通 merge 刷新任务分支、解决冲突、运行 affected regression、必要时重新 review、运行 candidate CI。不得 force-push 改写已发布任务历史。
+stale base 必须按以下顺序处理：获取最新授权 `main`、以普通 merge 刷新任务分支、解决冲突、运行 affected regression、必要时重新 review、运行 candidate CI。不得 force-push 改写已发布任务历史。
 
 Evidence 至少记录：
 
 ```yaml
 integration_freshness:
   original_base_revision: abc123
-  latest_authorized_dev_revision: def456
+  latest_authorized_main_revision: def456
   verified_against_revision: def456
   status: refreshed-and-passed
-  refresh_method: merge-dev-into-task-branch
+  refresh_method: merge-main-into-task-branch
 ```
 
-`task_delivery_revision` 证明任务自身合同，`dev_integration_revision` 证明任务实际进入 `dev`，`stage_final_integration_revision` 只证明阶段最终集成 revision；三者不能互相替代。
+历史证据中的 `dev_integration_revision` 保留原字段；新记录使用 `main_integration_revision`，不改写旧合同或历史结果。
+
+`task_delivery_revision` 证明任务自身合同，`main_integration_revision` 证明任务实际进入 `main`，`stage_final_integration_revision` 只证明阶段最终集成 revision；三者不能互相替代。
 
 如果刷新发现需求、架构、合同范围、权限、依赖、migration、测试能力或证据问题，停止受影响工作并使用 [`ESCALATION_PROPOSAL_TEMPLATE.md`](ESCALATION_PROPOSAL_TEMPLATE.md)。
 
 ## 6. GW-005/GW-006 合并策略
 
-### 任务 PR：Squash and merge 到 `dev`
+任务和阶段汇总工作分支均通过 PR 合入 main；合并需要 owner 对具体动作的授权。按提交结构和审阅需要选择 merge、squash 或 rebase，不限制为单一方式。PR 保留开发提交、讨论和检查历史。没有 dev 到 main 的二次晋级。
 
-- 把一个任务收敛为 `dev` 上的一个提交。
-- PR 仍保留开发提交、讨论和检查历史。
-- squash commit 标题使用 PR 标题。
-- 合并动作必须由项目所有者明确批准。
+任务分支需要刷新时普通 merge 最新授权 main，运行受影响回归并重新检查相关差异，不 force-push 改写已发布历史。
 
-### 里程碑 PR：Merge commit 从 `dev` 到 `main`
-
-- 保持 `dev` 是 `main` 的祖先，避免长期分支因 squash/rebase 产生反复比较和回灌问题。
-- `main` 不启用“Require linear history”。
-- 里程碑 PR 必须通过完整门禁和人工验收。
-- merge commit、tag 和 release 均由项目所有者批准。
-
-GitHub 支持 merge commit、squash 和 rebase 等不同合并方式；MyTracer 对两类 PR 采用不同策略是为了同时保持任务历史清晰和长期分支祖先关系。参考：[GitHub merge methods](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/configuring-pull-request-merges/about-merge-methods-on-github)。
-
-### 已发现的里程碑历史差异（2026-10-11）
-
-当前 main=`97667606d1f21bbcece7705387cb1929d9ca6d47` 是 PR #62 形成的单父提交；源 dev=`69c7f566fa90d667d5c81cfe983e3d3ee09df39a` 不是其祖先，虽两者 tree 完全相同。该实际历史没有满足上面的 merge commit/祖先关系规则，不能写成合规 merge commit，也不能通过文档改写追认规则变化。
-
-本次保留全部历史，不 reset/rebase/force-push。下次里程碑须检查实际父提交、merge-base 与完整差异；需要恢复祖先关系时，可另行审阅普通 merge 的同步 PR，在 owner 明确批准后执行，重新验证结果并采用 merge commit。准确观察、可选方案与所需授权见 [历史差异提案](ESCALATION_DOC_BRANCH_ANCESTRY.md)。本次只修复文档事实，不授权任何同步或 main 写入。
+2026-10-11 的 PR #62 祖先关系差异是历史事实，见[历史差异提案](ESCALATION_DOC_BRANCH_ANCESTRY.md)；它不要求新流程恢复 dev 或执行回流。
 
 ## 7. GW-007 分支保护目标
 
-`dev` 和 `main` 的目标规则如下；实际配置差异见第 15 节：
+main 要求 PR、有效 required checks、讨论解决，并禁止强推和未授权删除。单人项目不要求另一名评审者批准；owner 的合并授权仍须满足实际保护规则。
 
-| 规则 | `dev` | `main` |
-|---|---:|---:|
-| 必须通过 PR | 是 | 是 |
-| 必须通过 required checks | 是 | 是 |
-| 必须解决所有讨论 | 是 | 是 |
-| 禁止 force push | 是 | 是 |
-| 禁止删除 | 是 | 是 |
-| 要求分支基于最新目标分支 | 是 | 是 |
-| 要求他人批准 | 否 | 否 |
-| 允许管理员常规绕过 | 否 | 否 |
-| 要求线性历史 | 否 | 否 |
-
-当前是单人项目，不设置“一名他人批准”，避免 PR 作者无法批准自己的 PR而永久阻塞。项目所有者亲自执行 merge 是产品与发布批准，但仍必须满足 PR、检查和讨论门禁。
-
-两个长期分支均不启用 GitHub 的线性历史限制。历史整洁度由“任务 PR squash、里程碑与回流 PR merge commit”的合并策略保证，同时保留 hotfix 从 `main` 回流 `dev` 的自然祖先关系。
-
-GitHub 保护规则可以要求 PR、状态检查、讨论解决、禁止强推和删除；具体可用性受仓库类型和订阅方案影响。参考：[GitHub protected branches](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)。
-
-当前保护通过 repository rulesets 实现，而非 classic branch protection API；报告必须引用实时 ruleset 查询，不能把 classic endpoint 的 404 误写为“分支无保护”。
+实时 rulesets、旧 required checks 和来源限制需要只读核实；配置修改与 dev 删除均需独立授权。不能把 classic protection API 的 404 解释为没有保护。具体切换检查见[日常工作流](GITHUB_WORKFLOW_V0.1.md#5-分支保护与远端事实)。
 
 ## 8. GW-008 CI 门禁
 
@@ -201,10 +137,9 @@ GitHub 保护规则可以要求 PR、状态检查、讨论解决、禁止强推�
 | 创建本地 worktree/任务分支 | 活跃任务明确授权 Git 工作流后允许 |
 | 创建本地提交 | 活跃任务明确授权后允许 |
 | 推送任务分支 | 任务明确授权“发布 Draft PR”后允许 |
-| 创建/更新 Draft PR 到 `dev` | 同上 |
+| 创建/更新 Draft PR 到 `main` | 同上 |
 | 标记 Ready | 默认由项目所有者确认或执行 |
-| 合并到 `dev` | 每次必须项目所有者明确授权 |
-| 创建或合并 `dev -> main` | 每次必须项目所有者明确授权 |
+| 合并到 `main` | 每次必须项目所有者明确授权 |
 | tag / GitHub Release | 每次必须项目所有者明确授权 |
 | force push | 默认禁止；必须针对确切分支单独授权 |
 | 修改 branch protection、Actions secrets、部署设置 | 必须针对确切目标单独授权 |
@@ -218,7 +153,7 @@ GitHub 保护规则可以要求 PR、状态检查、讨论解决、禁止强推�
 在 Ready 前使用 Codex review 检查：
 
 - 未提交变更；或
-- 相对 `dev` 的完整分支 diff；或
+- 相对 `main` 的完整分支 diff；或
 - 指定 commit。
 
 Codex 的 `/review` 可以读取选择的 diff 并报告按优先级排序的问题，默认不修改工作树。参考：[OpenAI Docs：Code review](https://learn.chatgpt.com/docs/code-review)。
@@ -240,45 +175,17 @@ Codex 的 `/review` 可以读取选择的 diff 并报告按优先级排序的问
 
 ## 11. 里程碑、tag 和 release
 
-建议的 `dev -> main` 节点：
+阶段验收绑定固定的 main 产品来源；阶段汇总有待集成的变更时，使用工作分支 PR 到 main，并在授权合并后重新核实实际集成 revision。阶段通过、汇总文档集成、候选构建、tag 和 release 分别报告，不互相推定。
 
-| 节点 | 最低范围 | tag 候选 |
-|---|---|---|
-| G2 工程就绪 | T001～T004 | `v0.1.0-alpha.1` |
-| 核心闭环可试用 | T011～T014 | `v0.1.0-alpha.2` |
-| 数据安全可试用 | T031～T033 | `v0.1.0-beta.1` |
-| G4 Demo 就绪 | AC-01～AC-07 | `v0.1.0-rc.1` 或 `v0.1.0` |
+发布交接列出包含的任务和需求、确切 main 来源、实际 CI、候选及 hash、自动化与人工验收、迁移恢复情况、已知限制和待 owner 执行的动作。
 
-是否在每个候选节点推进 `main` 由项目所有者决定。任务或阶段通过不会自动创建 tag。
-
-S8 私有更新在 2026-10-06 获 owner 批准采用版本 tag 作为逐次发布授权（当前候选已改为手动构建）：owner 在有合格候选的 main 源提交上创建并推送稳定版本 tag，Actions 才自动发布该确切来源及验证后的产物。源可为 main 历史提交；已有 tag 必须正确指向来源，已有 Release 不覆盖。该约定取代 S8 的五参数手动 dispatch 和逐版本审批 JSON，不授权 Agent 创建 tag、执行真实发布、推进 main、修改 Secrets 或 rulesets。完整校验与故障处置见 [T084 发布操作](../maintenance/RELEASE.md#owner-tag-正式发布)。
-
-Release PR 必须列出：
-
-- 包含的任务和需求；
-- source `dev` revision；
-- required CI run；
-- Windows 打包产物；
-- AC 自动化和人工验收状态；
-- 数据迁移与恢复说明；
-- 已知限制、未完成 SHOULD 和延期项扫描；
-- 建议 tag，但不自动发布。
+正式发布使用 main 来源的手动候选和 owner 版本 tag 授权，具体校验见[发布维护](../maintenance/RELEASE.md)。不得从历史里程碑建议自动创建 tag 或发布。
 
 ## 12. Hotfix
 
-只有已发布或已验收 `main` 出现阻断问题时使用：
+维护修复默认同样从最新核实的 main 创建 codex 工作分支，经受影响验证、PR 检查和 owner 授权合并。若必须针对旧发布 tag 修复，先明确目标来源、与 main 的差异及发布方案，不自行创建长期维护线。
 
-```text
-main
-  → hotfix/Txxx-name
-  → PR to main
-  → full affected verification
-  → owner-approved merge and patch tag
-  → immediate synchronization PR from main to dev
-```
-
-不得只修 `main` 而让 `dev` 保留缺陷。若 hotfix 会改变冻结语义，仍需先走需求变更流程。
-`main -> dev` 的同步 PR 使用 merge commit，不适用普通任务 PR 的 squash 规则。
+修复合入 main 后独立准备候选和版本发布，不再回流 dev。改变冻结语义仍需 owner 批准。
 
 ## 13. GitHub Issues 和 Projects
 

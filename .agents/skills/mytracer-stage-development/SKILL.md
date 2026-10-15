@@ -9,7 +9,7 @@ Complete one approved `Txxx` task as a focused, traceable delivery. Preserve fro
 
 ## Activation boundary
 
-Once this workflow is explicitly activated, read [the stage workflow reference](../../../docs/implementation/STAGE_WORKFLOW_REFERENCE.md) for contract, freshness, formal evidence, and closeout procedures. Read [the daily GitHub workflow](../../../docs/implementation/GITHUB_WORKFLOW_V0.1.md) for current CI, PR, integration, and release operations; this Skill does not restore obsolete CI checks. Historical stage execution records under `docs/implementation/archive/stage-execution/` are only provenance or examples, never new authority.
+Once this workflow is explicitly activated, read [the stage workflow reference](../../../docs/implementation/STAGE_WORKFLOW_REFERENCE.md) for contract, freshness, formal evidence, and closeout procedures. Read [the daily GitHub workflow](../../../docs/implementation/GITHUB_WORKFLOW_V0.1.md) for current CI, PR, integration, and release operations; this Skill does not restore obsolete CI checks. New work uses `main_integration_revision`; historical `dev_integration_revision` fields remain historical evidence and are not rewritten or treated as new merge authority. Historical stage execution records under `docs/implementation/archive/stage-execution/` are only provenance or examples, never new authority.
 
 Apply the workflow below only when the owner explicitly invokes this Skill or explicitly requests its named stage workflow for the current work. Reading this file for inspection, encountering a Txxx reference, or receiving an ordinary implementation, fix, design, review, validation, or maintenance request does not activate it. If it is not activated, return to the current request under `AGENTS.md`; do not demand a contract or stage approval. Earlier stage approvals do not activate a new request.
 
@@ -99,7 +99,7 @@ For an applicable `standard-task@1`, use the existing sections rather than creat
 |---|---|---|
 | `local_development` | Sections 1-4 and authorized checkpoint commits in Section 8 | A scoped local implementation candidate or a stop condition |
 | `validation_execution` | Sections 5-7, including targeted checks, affected regression, evidence, complete diff review, and independent review | A reviewed validation candidate |
-| `task_branch_publish` | Initial task-branch push and Draft PR creation in Section 9 | The exact task branch has one Draft PR to `dev` |
+| `task_branch_publish` | Initial task-branch push and Draft PR creation in Section 9 | The exact task branch has one Draft PR to `main` |
 | `draft_pr_maintenance` | Sections 3.1, 5, 6, and 9 for the same Draft PR | An Implementation Candidate on a fresh authorized base |
 | `review_handoff` | Sections 10.1-10.2 | A factual documentation impact matrix, followed by the `docs_closeout_scope` owner gate |
 
@@ -109,7 +109,7 @@ Treat `additional_constraints` conservatively:
 - `pause_before` requires a pause immediately before the named phase even when every other Profile check passes.
 - Constraints may only remove continuity or add a pause; they never grant an action or remove a Repository Safety Gate.
 
-The following owner gates always pause Profile execution: final `docs_closeout_scope`, `ready_for_review`, `merge_dev`, `merge_main`, `tag`, `release`, `dependency_change`, `migration_change`, `non_task_publication_external_write`, and `ai_provider_or_permission_change`. A Profile also never authorizes force-push, remote branch deletion, ruleset or secret changes, automatic task activation, or starting the next task.
+The following owner gates always pause Profile execution: final `docs_closeout_scope`, `ready_for_review`, `merge_dev`, `merge_main`, `tag`, `release`, `dependency_change`, `migration_change`, `non_task_publication_external_write`, and `ai_provider_or_permission_change`. The registry retains `merge_dev` only for historical Profile compatibility; it does not enable dev integration or restore an old branch target. A Profile also never authorizes force-push, remote branch deletion, ruleset or secret changes, automatic task activation, or starting the next task.
 
 Exit Profile continuity and use the applicable stop or escalation path when work encounters a dependency or migration change, product-semantics or major-architecture change, broader AI Provider/context/write authority, destructive data behavior, a non-task external write, or any scope or permission expansion. Safe read-only diagnosis may continue, but the affected mutation must wait for explicit authority.
 
@@ -124,18 +124,18 @@ Perform read-only preflight checks before implementation:
 - Confirm tests use temporary data roots, fake clocks, and fake AI providers.
 - Confirm the task's Git permissions before creating a branch, worktree, commit, push, or PR.
 
-Base a task branch or worktree on the latest authorized `dev` revision when Git workflow is authorized. Never switch, clean, reset, overwrite, or move unrelated work merely to obtain a clean tree.
+Base a task branch or worktree on the latest authorized `main` revision when Git workflow is authorized. Never switch, clean, reset, overwrite, or move unrelated work merely to obtain a clean tree.
 
 ### 3.1 Integration Freshness Gate
 
-Before treating a task as merge-ready, compare the revision used for task validation with the latest authorized `dev` revision.
+Before treating a task as merge-ready, compare the revision used for task validation with the latest authorized `main` revision.
 
-- `fresh`: the validation base is the latest authorized `dev`.
-- `refreshed-and-passed`: the task was stale, was refreshed with an ordinary traceable merge from `dev`, and affected regression plus candidate validation passed.
+- `fresh`: the validation base is the latest authorized `main`.
+- `refreshed-and-passed`: the task was stale, was refreshed with an ordinary traceable merge from `main`, and affected regression plus candidate validation passed.
 - `blocked`: the latest base is unavailable, the refresh cannot be completed safely, or a conflict remains unresolved.
-- `not-required`: the contract explicitly says the task does not enter the current `dev` integration.
+- `not-required`: the contract explicitly says the task does not enter the current `main` integration.
 
-Record `original_base_revision`, `latest_authorized_dev_revision`, `verified_against_revision`, `status`, and `refresh_method` from actual Git and validation results. Never infer freshness from an earlier green run. Never force-push to rewrite published task history. Re-review the affected diff when refreshing changes the prior review conclusion.
+Record `original_base_revision`, `latest_authorized_main_revision`, `verified_against_revision`, `status`, and `refresh_method` from actual Git and validation results. Never infer freshness from an earlier green run. Never force-push to rewrite published task history. Re-review the affected diff when refreshing changes the prior review conclusion.
 
 ## 4. Implement one complete vertical slice
 
@@ -203,7 +203,7 @@ Do not edit user-owned unrelated changes. If overlap prevents safe isolation, st
 
 ## 7. Prepare evidence and task records
 
-Record provisional evidence during implementation only from real results and only when the task authorizes the target file. Bind each claim to its Evidence ID, task and requirements, source revision, environment, procedure, result, artifacts, manual status, and limitations. For V2 tasks, distinguish `task_delivery_revision`, `dev_integration_revision`, and `stage_final_integration_revision`; record early, candidate, final-head, and post-merge CI separately. Preserve failed records and link later results with `supersedes`.
+Record provisional evidence during implementation only from real results and only when the task authorizes the target file. Bind each claim to its Evidence ID, task and requirements, source revision, environment, procedure, result, artifacts, manual status, and limitations. For V2 tasks, distinguish `task_delivery_revision`, `main_integration_revision`, and `stage_final_integration_revision`; record early, candidate, final-head, and post-merge CI separately. Preserve failed records and link later results with `supersedes`.
 
 When a CI workflow uploads a deterministic artifact, record the artifact name and exact CI run/head revision in the Evidence ledger after inspection. Artifact upload, metadata validation and command wrapping do not automatically update the ledger or mark a task complete.
 
@@ -213,11 +213,11 @@ Include documentation required to explain or operate the implemented behavior in
 
 ## 8. Create meaningful commits when authorized
 
-Use the repository naming rules, normally `task/Txxx-short-name`, `fix/Txxx-short-name`, or `docs/Txxx-short-name`. Use English for branch names, commit subjects, code, and PR technical text.
+Use descriptive `codex/<short-name>` branches from the current repository workflow. Use English for branch names, commit subjects, code, and PR technical text.
 
 For every non-trivial task, plan and create reviewable commits at meaningful development checkpoints instead of waiting to create one large commit at the end. Split by coherent, independently understandable and reversible concerns, such as domain behavior and tests, application or persistence integration, IPC/UI wiring, and final documentation or evidence; include only the checkpoints that the task actually needs.
 
-A single commit is acceptable only when the task is genuinely atomic and splitting it would create incomplete or noisy commits. Do not create artificial micro-commits. Optimize the task-branch history for incremental review and diagnosis; the task PR's squash merge will still produce one task-level commit on `dev`. Before each commit:
+A single commit is acceptable only when the task is genuinely atomic and splitting it would create incomplete or noisy commits. Do not create artificial micro-commits. Optimize the task-branch history for incremental review and diagnosis; choose merge, squash, or rebase according to the commit structure and review needs, subject to the actual repository settings. Before each commit:
 
 1. Inspect the staged diff.
 2. Confirm it contains one coherent concern and no unrelated user changes.
@@ -230,7 +230,7 @@ Do not rewrite published history, force-push, or delete remote branches. Force-p
 
 ## 9. Publish only within the task grant
 
-Push and create or update a Draft PR to `dev` only when the active contract explicitly authorizes publication. Open the Draft after the first meaningful commit when early CI is useful, then keep its scope, verification, evidence, risks, and dependency section current.
+Push and create or update a Draft PR to `main` only when the active contract explicitly authorizes publication. Open the Draft after the first meaningful commit when early CI is useful, then keep its scope, verification, evidence, risks, and dependency section current.
 
 Use this PR structure:
 
@@ -247,7 +247,7 @@ Use this PR structure:
 
 After the implementation commits, local verification, final diff review, and independent review are complete, push the implementation candidate and obtain required hosted CI on that exact PR head or test-merge revision. Follow the [stage workflow long-running-work policy](../../../docs/implementation/STAGE_WORKFLOW_REFERENCE.md#16-long-running-work): if no meaningful work remains after confirming that CI started, preserve the target revision and PR/run/job/head/test-merge identifiers and issue an accurate pending handoff. On resume, verify those identifiers still match the current target revision before using the result. Treat the first green hosted CI as an implementation-complete candidate, not final task completion, and continue into the documentation closeout gate after it is verified.
 
-Never mark Ready, merge to `dev`, create or merge `dev -> main`, tag, release, change branch protection, or modify secrets without the exact additional owner authorization required by the workflow.
+Never mark Ready, merge to `main`, tag, release, change branch protection, or modify secrets without the exact additional owner authorization required by the workflow.
 
 ## 10. Close documentation after implementation CI
 

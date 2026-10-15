@@ -2,7 +2,7 @@
 
 ## 部署状态与发布前提
 
-截至 2026-10-11 已核验的远端快照：owner tag 改造已进入 dev，main 尚保留旧五参数 dispatch。下面是新流程进入 main 后的操作，不能用于当前旧 main。部署及首次真实正式发布尚未执行；精确 revisions 和 CI 见[事实校准证据](../implementation/ACCEPTANCE_EVIDENCE_V0.1.md#ev-doc-calibration-001)。执行前重新核对远端和确切 workflow。
+发布 tag 改造与手动候选流程已包含在 main 的 PR #70 集成提交 `0a58305` 中。main 作为已接受的维护基线，合入不自动发布；正式版本由 tag、Release 和固定候选产物标识。代码进入 main 不证明首次真实正式发布成功；执行前仍需核对远端、确切 workflow、候选与发布结果。2026-10-11 的 dev-only 部署状态保留为[历史事实快照](../implementation/ACCEPTANCE_EVIDENCE_V0.1.md#ev-doc-calibration-001)。
 
 现有 v0.1.4 是 owner 授权的稳定通道演练，保留 tag、Release 和原始资产，不追认为正式 accepted-main 发布。首次正式版本须更高，并通过独立版本变更、集成与发布授权。本文说明操作，不授予 Agent 合并、tag、发布、Secrets 或 ruleset 写入权限。
 

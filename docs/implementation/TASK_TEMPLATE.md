@@ -11,8 +11,8 @@
 - **Title**：
 - **Slice / Plan item**：S_ / E_-__
 - **Status**：ready
-- **Base branch**：dev
-- **Expected branch**：`task/T___-short-name`
+- **Base branch**：main
+- **Expected branch**：`codex/<short-name>`
 
 ## 2. 目标结果
 
@@ -66,7 +66,7 @@ dependencies:
     prefer_after: []
     conflicts_with: []
   revisions:
-    required_dev_base: dev@<revision>
+    required_main_base: main@<revision>
   shared_surfaces: []
   external: []
 ```
@@ -239,10 +239,9 @@ The wrapper must use explicit argv, keep child stdout/stderr out of the JSON, pr
 - [ ] 允许创建本地 worktree/任务分支。
 - [ ] 允许创建本地提交。
 - [ ] 允许推送任务分支。
-- [ ] 允许创建或更新 Draft PR 到 `dev`。
+- [ ] 允许创建或更新 Draft PR 到 `main`。
 - [ ] 允许将 Draft 标记为 Ready。
-- [ ] 不允许 Agent 合并到 `dev`。
-- [ ] 不允许 Agent 创建或合并 `dev -> main` PR。
+- [ ] 不允许 Agent 合并到 `main`。
 - [ ] 不允许 Agent 创建 tag 或 release。
 
 ### 11.1 Structured permissions
@@ -258,7 +257,6 @@ permissions:
   push_task_branch: false
   create_or_update_draft_pr: false
   mark_ready: false
-  merge_dev: false
   merge_main: false
   tag: false
   release: false
@@ -281,12 +279,12 @@ permissions:
 
 ```yaml
 integration:
-  target_branch: dev
-  base_revision: dev@<revision>
+  target_branch: main
+  base_revision: main@<revision>
   freshness_required: true
   affected_regression_required: true
   task_delivery_revision: null
-  dev_integration_revision: null
+  main_integration_revision: null
   stage_final_integration_revision: null
 ```
 
