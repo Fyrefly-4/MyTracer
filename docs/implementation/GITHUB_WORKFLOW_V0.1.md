@@ -1,5 +1,7 @@
 # MyTracer v0.1 GitHub 工作流
 
+> 流程启用边界：本文的 Txxx 合同、阶段门、Profile、freshness、证据与文档收口步骤，仅适用于 owner 为当前工作明确启用的阶段流程。普通请求的 Git 权限按根目录 AGENTS.md 与当次授权判断；查阅本文不启用阶段流程。现有 CI、分支保护、禁止绕过检查及 merge/tag/release 的 owner 授权要求继续适用于相关操作。 以根目录 [AGENTS.md](../../AGENTS.md) 为准。
+
 > 2026-10-11 事实校准：main/dev revisions、PR #62 单父提交历史差异及 PR #64 的 dev-only 部署见 [EV-DOC-CALIBRATION-001](ACCEPTANCE_EVIDENCE_V0.1.md#ev-doc-calibration-001)。旧 GitHub 配置快照仍按各日期解释，不用本次事实校准推断实时保护配置或授权外部写入。
 
 > 文档状态：已批准的开发工作流基线  
@@ -485,3 +487,17 @@ main
 - PR template、到 `main` 的 milestone CI、change classifier、PR Quality 和统一 Gate 已由 T093 落地；GitHub Milestones 列表为空，不影响本文件定义的 milestone PR 概念。
 - 项目已通过 PR #5/#14/#22/#30 四次将 `dev` 里程碑合入 `main`，并发布 `v0.1.0-alpha.1`、`alpha.2`、`alpha.3` 和 `beta.1` prereleases。
 - 任何 ruleset、workflow、template、merge、tag 或 release 后续写入仍须独立授权和验证。
+
+## 16. Long-running work
+
+> Waiting is not work. Do not spend agent turns observing an unchanged state.
+>
+> Elapsed time alone is not sufficient justification for another status check.
+
+Choose the waiting mode from the work, expected output, command timeout, observed history, and available tool behavior; do not impose one fixed interval on every task:
+
+- **BLOCK:** For a local test, build, lint, typecheck, or other command whose result directly determines the next action, use one practical blocking wait when the tool supports it. Size the wait to the command and tool limits instead of replacing an available blocking operation with short polling.
+- **SPARSE_POLL:** Use only when effective blocking is unavailable and the result is still required in the current run. Every status check needs a fresh, explicit reason, such as expected concrete output, suspected interactive input, an approaching known timeout or failure boundary, a known state-changing event, or an explicit owner request to monitor. Increase the interval after an unchanged result. Entering an expected completion window justifies one check; another elapsed interval does not by itself justify the next one. When repeated checks yield no decision-relevant information and no new reason exists, stop polling and reassess for handoff.
+- **HANDOFF:** For GitHub Actions or another external asynchronous operation, confirm that it started, then record the target revision and the applicable PR, run, job, source-head, and test-merge identifiers. If no other meaningful work remains, report what is pending and return control to the project owner. Also hand off when sparse polling has no justified next check. Continuous monitoring occurs only when the project owner explicitly requests it and still follows the sparse-poll requirements.
+
+On resume after a handoff, first verify that the saved identifiers still correspond to the current target revision. Check for a new head, replacement run, cancellation, or superseding execution before interpreting results. Use only evidence bound to the current target revision; a successful older run does not prove the current state.

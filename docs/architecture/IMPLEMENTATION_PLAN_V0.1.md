@@ -1,5 +1,7 @@
 # MyTracer v0.1 实施计划
 
+> 流程启用边界：本计划用于阶段设计依据与历史追溯，不是当前默认工作流程。只有 owner 为当前工作明确启用阶段流程后，相关开始条件和阶段门才适用；不得据此自行续接任务。 以根目录 [AGENTS.md](../../AGENTS.md) 为准。
+
 > 2026-10-11 事实校准：工具链和首个 Provider 已获批准并实施；当前任务交付/集成见 [EV-DOC-CALIBRATION-001](../implementation/ACCEPTANCE_EVIDENCE_V0.1.md#ev-doc-calibration-001)。计划内尚未开始/等待措辞属于原设计日期，不作为新任务启动或发布授权。
 
 > 文档状态：v0.1 最终架构基线（工程决策已批准）

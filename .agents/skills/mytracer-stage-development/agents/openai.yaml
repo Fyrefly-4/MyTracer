@@ -2,3 +2,6 @@ interface:
   display_name: "MyTracer Stage Development"
   short_description: "Run one MyTracer task through CI and merge handoff"
   default_prompt: "Use $mytracer-stage-development to deliver one approved MyTracer task through implementation, CI, documentation closeout, and merge handoff."
+
+policy:
+  allow_implicit_invocation: false

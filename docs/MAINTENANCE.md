@@ -46,14 +46,16 @@
 
 构建输出位于 `out/`，打包输出位于 `release/`。`verify` 包含 E2E 所需构建，不包含打包、真实安装或 live AI 测试；构建通过不等于人工验收通过。
 
-Electron E2E 需要可启动 Windows 桌面进程的环境。数据测试必须使用唯一临时数据根，不得指向真实用户数据库；日期边界使用 fake Clock，常规 AI 测试使用 fake Provider。验证层级与证据要求见[测试策略](architecture/TEST_STRATEGY_V0.1.md)和 [Agent 工作规约](../AGENTS.md#9-validation-and-evidence)。
+Electron E2E 需要可启动 Windows 桌面进程的环境。数据测试必须使用唯一临时数据根，不得指向真实用户数据库；日期边界使用 fake Clock，常规 AI 测试使用 fake Provider。验证层级与证据要求见[测试策略](architecture/TEST_STRATEGY_V0.1.md)和 [Agent 工作规约](../AGENTS.md#5-validation-and-handoff)。
 
 ## 开始变更前
 
-1. 先核对[产品需求](PRODUCT_REQUIREMENTS_V0.1.md)、[产品决定](DECISIONS.md)和[需求变更规则](REQUIREMENTS_CHANGE_POLICY.md)，确认变更范围与批准依据。需求和验收语义的调整须由 owner 决定。
-2. 阅读相关架构与[工程决定](architecture/ENGINEERING_DECISIONS_V0.1.md)，用[需求追踪矩阵](architecture/REQUIREMENTS_TRACEABILITY_V0.1.md)定位受影响范围。原[实施计划](architecture/IMPLEMENTATION_PLAN_V0.1.md)说明历史切片安排，不启动新任务。
-3. 核对[任务索引](implementation/TASK_INDEX_V0.1.md)及最新证据。实施任务使用[任务合同模板](implementation/TASK_TEMPLATE.md)，Agent 按[仓库规约](../AGENTS.md)工作；本入口不代替具体授权。
-4. Git、PR 和 CI 按[GitHub 工作流](implementation/GITHUB_WORKFLOW_V0.1.md)执行。下一次里程碑集成须核对已记录的[祖先关系差异](implementation/ESCALATION_DOC_BRANCH_ANCESTRY.md)；合并、推进 main、tag 和发布仍需相应 owner 授权。
+默认按 owner 当次请求和[仓库规约](../AGENTS.md)工作；不因请求涉及开发、修复、设计、验证或维护而自动采用历史阶段流程。下列资料按事项读取，不要求每次全量遍历。
+
+1. 涉及产品行为或范围时，核对[产品需求](PRODUCT_REQUIREMENTS_V0.1.md)、[产品决定](DECISIONS.md)和[需求变更规则](REQUIREMENTS_CHANGE_POLICY.md)，确认变更范围与批准依据。需求和验收语义的调整须由 owner 决定。
+2. 涉及架构或实现边界时，阅读相关架构与[工程决定](architecture/ENGINEERING_DECISIONS_V0.1.md)，用[需求追踪矩阵](architecture/REQUIREMENTS_TRACEABILITY_V0.1.md)定位受影响范围。原[实施计划](architecture/IMPLEMENTATION_PLAN_V0.1.md)说明历史切片安排，不启动新任务。
+3. 只有 owner 明确启用相应阶段流程时，才按该流程使用[任务索引](implementation/TASK_INDEX_V0.1.md)、证据和[任务合同模板](implementation/TASK_TEMPLATE.md)。普通请求无需创建 Txxx 合同、启用 Profile 或执行阶段文档收口；查阅旧记录不恢复执行权限。
+4. 普通 Git 操作按[仓库规约](../AGENTS.md#4-safety-and-authorization)与当次授权执行；阶段流程或具体 CI、集成、发布事项再查阅[GitHub 工作流](implementation/GITHUB_WORKFLOW_V0.1.md)。现有 CI、分支保护和发布安全边界继续生效。下一次里程碑集成须核对已记录的[祖先关系差异](implementation/ESCALATION_DOC_BRANCH_ANCESTRY.md)；合并、推进 main、tag 和发布仍需相应 owner 授权。
 
 ## 历史追溯
 

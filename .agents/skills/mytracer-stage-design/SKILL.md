@@ -1,11 +1,15 @@
 ---
 name: mytracer-stage-design
-description: Design or revise one owner-authorized MyTracer stage by fixing its approved baseline, stage delta, architecture boundaries, task graph, validation, and stage gates. Use for milestone or stage architecture design; do not implement tasks, invent product semantics, activate the task graph, or perform release actions.
+description: Design an approved MyTracer stage and task graph only when the owner explicitly invokes this Skill or requests that stage design workflow. Ordinary design discussions, architecture questions, and maintenance requests do not activate it.
 ---
 
 # MyTracer Stage Design
 
 Turn one approved stage scope into a traceable architecture and delivery design. Preserve frozen product semantics and distinguish a design proposal from authority to create or execute implementation tasks.
+
+## Activation boundary
+
+Apply the workflow below only when the owner explicitly invokes this Skill or explicitly requests its named stage workflow for the current work. Reading this file for inspection, encountering a Txxx reference, or receiving an ordinary implementation, fix, design, review, validation, or maintenance request does not activate it. If it is not activated, return to the current request under `AGENTS.md`; do not demand a contract or stage approval. Earlier stage approvals do not activate a new request.
 
 ## 1. Establish design authority
 

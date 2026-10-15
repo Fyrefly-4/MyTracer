@@ -1,6 +1,6 @@
 ## Task
 
-<!-- Required before Ready: Txxx for a task PR, or explicit stage/milestone context otherwise. -->
+<!-- Required before Ready: describe the current request. Use Txxx only for an explicitly activated task workflow; ordinary changes need no invented task ID or contract. -->
 
 ## Summary
 
@@ -8,7 +8,7 @@
 
 ## Requirements
 
-<!-- List the governing FR/AC/D/ED references. -->
+<!-- List relevant FR/AC/D/ED references for product behavior, or explain that the change does not affect product semantics. -->
 
 ## Scope
 
@@ -24,7 +24,7 @@
 
 ## Evidence
 
-<!-- Link or identify revision-bound evidence and known limitations. -->
+<!-- Identify actual command results, source revision or uncommitted state, and limitations. A formal acceptance-ledger entry is needed only when explicitly required by the owner or an activated stage workflow. -->
 
 ## Risk
 
