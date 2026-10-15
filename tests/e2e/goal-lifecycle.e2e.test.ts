@@ -33,6 +33,9 @@ test('creates a new next Action from Goal management after completing the previo
   try {
     application = await launchApplication(root)
     let page = await application.firstWindow()
+    // Seed while Today is unmounted so entering it below reads the newly created Action.
+    await page.getByRole('button', { name: '目标', exact: true }).click()
+    await expect(page.getByRole('heading', { name: '目标', exact: true })).toBeVisible()
     const seeded = await page.evaluate(async () => {
       const goal = await window.myTracer.goals.create({
         name: '连续推进目标',
