@@ -27,6 +27,135 @@ async function expectGoalDescriptionKeyboardInput(detail: Locator, suffix: strin
   await input.fill(originalValue)
 }
 
+test('creates a new next Action from Goal management after completing the previous one', async () => {
+  const root = await createTemporaryTestRoot()
+  let application: ElectronApplication | undefined
+  try {
+    application = await launchApplication(root)
+    let page = await application.firstWindow()
+    // Seed while Today is unmounted so entering it below reads the newly created Action.
+    await page.getByRole('button', { name: '目标', exact: true }).click()
+    await expect(page.getByRole('heading', { name: '目标', exact: true })).toBeVisible()
+    const seeded = await page.evaluate(async () => {
+      const goal = await window.myTracer.goals.create({
+        name: '连续推进目标',
+        initialNextAction: { title: '完成旧步骤' }
+      })
+      if (!goal.ok || !goal.value.currentNextActionId) throw new Error('Goal setup failed.')
+      const actionId = goal.value.currentNextActionId
+      const context = await window.myTracer.records.begin({ actionId })
+      if (!context.ok) throw new Error('Recording setup failed.')
+      const record = await window.myTracer.records.record({
+        actionId,
+        recordingContextId: context.value.recordingContextId,
+        durationMinutes: 10,
+        outcome: 'completed'
+      })
+      if (!record.ok) throw new Error('Record setup failed.')
+      return { goalId: goal.value.id, oldActionId: actionId }
+    })
+
+    await page.getByRole('button', { name: '今天', exact: true }).click()
+    await page.getByRole('button', { name: /完成旧步骤.*待行动/ }).click()
+    const actionDetail = page.getByLabel('完成旧步骤 行动详情')
+    await openManagement(actionDetail, '行动')
+    await actionDetail.getByRole('button', { name: '标记完成' }).click()
+    await actionDetail.getByRole('alertdialog').getByRole('button', { name: '确认完成' }).click()
+    await expect(actionDetail.getByText('已完成', { exact: true })).toBeVisible()
+
+    await page.getByRole('button', { name: '目标', exact: true }).click()
+    await page.getByRole('button', { name: /连续推进目标.*下一步为空/ }).click()
+    let detail = page.getByLabel('连续推进目标 详情')
+    await openManagement(detail, '目标')
+    await expect(detail.getByLabel('选择当前下一步')).toBeEnabled()
+    await expect(detail.getByRole('button', { name: '保存当前下一步' })).toBeDisabled()
+    await expect(detail.getByText('暂无待行动，可以在下拉框中选择“新建下一步…”。')).toBeVisible()
+    await expect(detail.getByRole('option', { name: '清空当前下一步' })).toHaveCount(1)
+    await expect(detail.getByLabel('下一步名称', { exact: true })).toHaveCount(0)
+    await detail.getByLabel('选择当前下一步').selectOption({ label: '新建下一步…' })
+    await expect(detail.getByRole('button', { name: '保存当前下一步' })).toHaveCount(0)
+    await detail.getByLabel('下一步名称', { exact: true }).fill('   ')
+    await detail.getByRole('button', { name: '创建并设为当前下一步' }).click()
+    await expect(detail.getByRole('alert')).toHaveText('请填写下一步名称。')
+    await detail.getByLabel('下一步名称', { exact: true }).fill('执行新步骤')
+    await detail.getByLabel('下一步说明（选填）').fill('从这里继续')
+    await detail.getByLabel('选择当前下一步').selectOption('')
+    await expect(detail.getByLabel('下一步名称', { exact: true })).toHaveCount(0)
+    await expect(detail.getByRole('button', { name: '保存当前下一步' })).toBeDisabled()
+    await detail.getByLabel('选择当前下一步').selectOption({ label: '新建下一步…' })
+    await expect(detail.getByLabel('下一步名称', { exact: true })).toHaveValue('执行新步骤')
+    await expect(detail.getByLabel('下一步说明（选填）')).toHaveValue('从这里继续')
+    expect(
+      await page.evaluate((goalId) => window.myTracer.goals.getDetail({ goalId }), seeded.goalId)
+    ).toMatchObject({
+      ok: true,
+      value: {
+        currentNextActionId: null,
+        actions: [expect.objectContaining({ id: seeded.oldActionId })]
+      }
+    })
+    await detail.getByRole('button', { name: '创建并设为当前下一步' }).click()
+    await expect(detail.locator('.next-action-panel strong')).toHaveText('执行新步骤')
+    await expect(detail.getByLabel('下一步名称', { exact: true })).toHaveCount(0)
+    await expect(detail.getByLabel('选择当前下一步').locator('option:checked')).toHaveText(
+      '执行新步骤'
+    )
+    await detail.getByLabel('选择当前下一步').selectOption({ label: '新建下一步…' })
+    await expect(detail.getByLabel('下一步名称', { exact: true })).toHaveValue('')
+    await expect(detail.getByLabel('下一步说明（选填）')).toHaveValue('')
+    await detail.getByLabel('选择当前下一步').selectOption({ label: '执行新步骤' })
+    await expect(detail.getByLabel('下一步名称', { exact: true })).toHaveCount(0)
+
+    const afterCreate = await page.evaluate(
+      (goalId) => window.myTracer.goals.getDetail({ goalId }),
+      seeded.goalId
+    )
+    expect(afterCreate).toMatchObject({
+      ok: true,
+      value: {
+        currentNextAction: {
+          title: '执行新步骤',
+          description: '从这里继续',
+          status: 'pending',
+          selectedForToday: false
+        },
+        actions: expect.arrayContaining([
+          expect.objectContaining({ id: seeded.oldActionId, status: 'completed' })
+        ]),
+        records: [expect.objectContaining({ actionId: seeded.oldActionId, durationMinutes: 10 })]
+      }
+    })
+
+    await detail.getByRole('button', { name: '暂停目标' }).click()
+    await expect(detail.getByLabel('下一步名称', { exact: true })).toHaveCount(0)
+    await detail.getByRole('button', { name: '恢复目标' }).click()
+    await detail.getByLabel('选择当前下一步').selectOption('')
+    await detail.getByRole('button', { name: '保存当前下一步' }).click()
+    await expect(detail.locator('.next-action-panel strong')).toHaveText('暂未设置')
+    await detail.getByLabel('选择当前下一步').selectOption({ label: '执行新步骤' })
+    await detail.getByRole('button', { name: '保存当前下一步' }).click()
+    await expect(detail.locator('.next-action-panel strong')).toHaveText('执行新步骤')
+
+    const beforeReopen = await page.evaluate(
+      (goalId) => window.myTracer.goals.getDetail({ goalId }),
+      seeded.goalId
+    )
+    await application.close()
+    application = await launchApplication(root)
+    page = await application.firstWindow()
+    await page.getByRole('button', { name: '目标', exact: true }).click()
+    await page.getByRole('button', { name: /连续推进目标.*有下一步/ }).click()
+    detail = page.getByLabel('连续推进目标 详情')
+    await expect(detail.locator('.next-action-panel strong')).toHaveText('执行新步骤')
+    expect(
+      await page.evaluate((goalId) => window.myTracer.goals.getDetail({ goalId }), seeded.goalId)
+    ).toEqual(beforeReopen)
+  } finally {
+    await application?.close()
+    await removeTemporaryTestRoot(root)
+  }
+})
+
 test('runs the Goal lifecycle and preserves it across a complete Electron and SQLite reopen', async () => {
   const root = await createTemporaryTestRoot()
   const databasePath = join(root.electronUserData, 'data', 'mytracer.sqlite3')
