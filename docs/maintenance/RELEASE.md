@@ -8,6 +8,16 @@
 
 ## 候选与审核
 
+### 0.1.5 发布准备
+
+Owner 已确认版本 `0.1.5`，重点升级来源为 `0.1.4`。package/lock 同步版本，候选 manifest 的 `compatibleFrom` 设为 `['0.1.4']`；该声明不是已通过实装测试的结论。
+
+候选审核前，在隔离 Windows 身份和合成数据根中，使用已核对来源与 hash 的 `0.1.4` 安装包及确切 `0.1.5` 候选运行原位置升级测试，验证既有事实、配置、导出和重启持久化。`windows-in-place-upgrade` 的默认版本对已更新；实装仍须显式 opt-in、输入安装包及通过身份预检，普通 verify 不执行实装。
+
+正式稳定 feed 出现 `0.1.5` 后，再验证应用内检查、确认下载与安装。现有 A→B→C 实装测试保留 `0.1.0` 作为合成事实的基线安装，SOURCE 安装包须提供 `0.1.4`，TARGET 版本须为 `0.1.5`，并提供对应 hash 和现有只读凭据；不要为测试在正式源提前创建 Release。当前候选构建、实装验证和正式发布均待执行，版本确认不等于 tag/发布授权。
+
+### 候选内容
+
 `Update candidate` 仅通过 Actions 的 workflow_dispatch 手动运行；普通 PR 与 main push 不再自动打包。构建明确 checkout 手动选择的 branch/tag 对应 SHA，使用锁定依赖及只读权限，分别捕获 aggregate、禁止发布的 NSIS build、隔离 smoke；检查 unsigned 后生成 `.tmp/release/candidate/candidate-manifest.json`。
 
 产物包含 NSIS、其 blockmap、`latest.yml`、`SHA256SUMS.txt` 和 manifest。Manifest 记录 source、版本、schema=3/export=2、run/attempt、每个资产的大小/SHA-256/SHA-512 和脱敏命令结果；不含绝对路径、用户内容、数据库或凭据。`compatibleFrom` 是需实装证明的兼容来源声明，不自动代表已完成兼容矩阵。

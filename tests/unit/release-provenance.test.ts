@@ -29,6 +29,20 @@ function run(expression: string) {
 }
 
 describe('release acceptance binds exact trusted artifacts before publication', () => {
+  test('accepts 0.1.5 publication over stable 0.1.4 with matching compatibility and assets', () => {
+    const result = run(`
+      manifest.version='0.1.5';
+      manifest.compatibleFrom=['0.1.4'];
+      manifest.assets=manifest.assets.map(asset=>({...asset,name:asset.name.replace('0.1.4','0.1.5')}));
+      context.dispatch.version='0.1.5';
+      context.dispatch.ref='refs/tags/v0.1.5';
+      context.dispatch.tag='v0.1.5';
+      context.existingVersions=['v0.1.4'];
+      validatePublication(context);
+    `)
+    expect(result.status, result.stderr).toBe(0)
+  })
+
   test('accepts exact owner tag/main/run/artifact and stable source compatibility', () => {
     expect(run('validatePublication(context);').status).toBe(0)
   })

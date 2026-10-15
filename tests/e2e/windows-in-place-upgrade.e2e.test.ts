@@ -19,8 +19,8 @@ test.skip(
   'Cross-version NSIS installation requires an owner-approved Windows test mode.'
 )
 
-const oldVersion = process.env.MYTRACER_UPGRADE_OLD_VERSION ?? '0.1.0'
-const newVersion = process.env.MYTRACER_UPGRADE_NEW_VERSION ?? '0.1.1'
+const oldVersion = process.env.MYTRACER_UPGRADE_OLD_VERSION ?? '0.1.4'
+const newVersion = process.env.MYTRACER_UPGRADE_NEW_VERSION ?? '0.1.5'
 const installTimeout = 300_000
 
 function requiredEnvironment(name: string): string {
