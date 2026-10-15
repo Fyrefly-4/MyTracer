@@ -64,19 +64,44 @@ test('creates a new next Action from Goal management after completing the previo
     await page.getByRole('button', { name: /连续推进目标.*下一步为空/ }).click()
     let detail = page.getByLabel('连续推进目标 详情')
     await openManagement(detail, '目标')
-    await expect(detail.getByLabel('选择当前下一步')).toBeDisabled()
+    await expect(detail.getByLabel('选择当前下一步')).toBeEnabled()
     await expect(detail.getByRole('button', { name: '保存当前下一步' })).toBeDisabled()
-    await expect(detail.getByText('暂无待行动，可以在下方新建下一步。')).toBeVisible()
-    await expect(detail.getByRole('option', { name: '清空当前下一步' })).toHaveCount(0)
+    await expect(detail.getByText('暂无待行动，可以在下拉框中选择“新建下一步…”。')).toBeVisible()
+    await expect(detail.getByRole('option', { name: '清空当前下一步' })).toHaveCount(1)
+    await expect(detail.getByLabel('下一步名称', { exact: true })).toHaveCount(0)
+    await detail.getByLabel('选择当前下一步').selectOption({ label: '新建下一步…' })
+    await expect(detail.getByRole('button', { name: '保存当前下一步' })).toHaveCount(0)
     await detail.getByLabel('下一步名称', { exact: true }).fill('   ')
     await detail.getByRole('button', { name: '创建并设为当前下一步' }).click()
     await expect(detail.getByRole('alert')).toHaveText('请填写下一步名称。')
     await detail.getByLabel('下一步名称', { exact: true }).fill('执行新步骤')
     await detail.getByLabel('下一步说明（选填）').fill('从这里继续')
+    await detail.getByLabel('选择当前下一步').selectOption('')
+    await expect(detail.getByLabel('下一步名称', { exact: true })).toHaveCount(0)
+    await expect(detail.getByRole('button', { name: '保存当前下一步' })).toBeDisabled()
+    await detail.getByLabel('选择当前下一步').selectOption({ label: '新建下一步…' })
+    await expect(detail.getByLabel('下一步名称', { exact: true })).toHaveValue('执行新步骤')
+    await expect(detail.getByLabel('下一步说明（选填）')).toHaveValue('从这里继续')
+    expect(
+      await page.evaluate((goalId) => window.myTracer.goals.getDetail({ goalId }), seeded.goalId)
+    ).toMatchObject({
+      ok: true,
+      value: {
+        currentNextActionId: null,
+        actions: [expect.objectContaining({ id: seeded.oldActionId })]
+      }
+    })
     await detail.getByRole('button', { name: '创建并设为当前下一步' }).click()
     await expect(detail.locator('.next-action-panel strong')).toHaveText('执行新步骤')
+    await expect(detail.getByLabel('下一步名称', { exact: true })).toHaveCount(0)
+    await expect(detail.getByLabel('选择当前下一步').locator('option:checked')).toHaveText(
+      '执行新步骤'
+    )
+    await detail.getByLabel('选择当前下一步').selectOption({ label: '新建下一步…' })
     await expect(detail.getByLabel('下一步名称', { exact: true })).toHaveValue('')
     await expect(detail.getByLabel('下一步说明（选填）')).toHaveValue('')
+    await detail.getByLabel('选择当前下一步').selectOption({ label: '执行新步骤' })
+    await expect(detail.getByLabel('下一步名称', { exact: true })).toHaveCount(0)
 
     const afterCreate = await page.evaluate(
       (goalId) => window.myTracer.goals.getDetail({ goalId }),

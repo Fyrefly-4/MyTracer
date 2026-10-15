@@ -29,8 +29,12 @@ interface PendingGoalEnd {
   readonly goalName: string
 }
 
+const newNextActionOption = '__new-next-action__'
+const unsetNextActionOption = '__unset-next-action__'
+
 function NewNextActionForm(props: {
   readonly goalId: string
+  readonly visible: boolean
   readonly onSaved: () => Promise<void>
 }): ReactNode {
   const activeRef = useUiLifetime()
@@ -69,6 +73,8 @@ function NewNextActionForm(props: {
       if (activeRef.current) setBusy(false)
     }
   }
+
+  if (!props.visible) return null
 
   return (
     <form className="current-action-control" onSubmit={(event) => void submit(event)}>
@@ -126,7 +132,7 @@ function GoalWorkspace(): ReactNode {
   const [createNextAction, setCreateNextAction] = useState('')
   const [editName, setEditName] = useState('')
   const [editDescription, setEditDescription] = useState('')
-  const [selectedActionId, setSelectedActionId] = useState('')
+  const [selectedActionId, setSelectedActionId] = useState(unsetNextActionOption)
   const [pendingGoalEnd, setPendingGoalEnd] = useState<PendingGoalEnd | null>(null)
   const [recoveryGoalId, setRecoveryGoalId] = useState<string | null>(session.recoveryGoalId)
   useUnsavedContent(
@@ -203,7 +209,7 @@ function GoalWorkspace(): ReactNode {
             setDetail(result.value)
             setEditName(result.value.name)
             setEditDescription(result.value.description ?? '')
-            setSelectedActionId(result.value.currentNextActionId ?? '')
+            setSelectedActionId(result.value.currentNextActionId ?? unsetNextActionOption)
           } else {
             if (result.error.code === 'not-found') session.selectGoal(null)
             setSelectionError(goalErrorText[result.error.code])
@@ -229,7 +235,7 @@ function GoalWorkspace(): ReactNode {
     setDetail(nextDetail)
     setEditName(nextDetail.name)
     setEditDescription(nextDetail.description ?? '')
-    setSelectedActionId(nextDetail.currentNextActionId ?? '')
+    setSelectedActionId(nextDetail.currentNextActionId ?? unsetNextActionOption)
     setPendingGoalEnd(null)
     if (session.recoveryGoalId !== nextDetail.id) {
       session.setRecoveryGoal(null)
@@ -265,7 +271,7 @@ function GoalWorkspace(): ReactNode {
       setDetail(result.value)
       setEditName(result.value.name)
       setEditDescription(result.value.description ?? '')
-      setSelectedActionId(result.value.currentNextActionId ?? '')
+      setSelectedActionId(result.value.currentNextActionId ?? unsetNextActionOption)
       setRefreshVersion((version) => version + 1)
       setError(null)
     } else {
@@ -360,7 +366,12 @@ function GoalWorkspace(): ReactNode {
   }
 
   const saveCurrentNextAction = async (): Promise<void> => {
-    if (!detail) return
+    if (
+      !detail ||
+      selectedActionId === newNextActionOption ||
+      selectedActionId === unsetNextActionOption
+    )
+      return
     setBusy(true)
     const result = await window.myTracer.goals.setCurrentNextAction({
       goalId: detail.id,
@@ -612,19 +623,19 @@ function GoalWorkspace(): ReactNode {
 
                 {detail.status === 'active' ? (
                   <div className="current-action-control">
-                    <h3>选择已有行动</h3>
                     <label>
                       选择当前下一步
                       <select
                         value={selectedActionId}
-                        disabled={
-                          busy || !detail.actions.some((action) => action.status === 'pending')
-                        }
+                        disabled={busy}
                         onChange={(event) => setSelectedActionId(event.target.value)}
                       >
-                        <option value="">
-                          {detail.currentNextActionId ? '清空当前下一步' : '暂未设置当前下一步'}
-                        </option>
+                        {!detail.currentNextActionId ? (
+                          <option value={unsetNextActionOption} disabled>
+                            暂未设置当前下一步
+                          </option>
+                        ) : null}
+                        <option value="">清空当前下一步</option>
                         {detail.actions
                           .filter((action) => action.status === 'pending')
                           .map((action) => (
@@ -632,22 +643,30 @@ function GoalWorkspace(): ReactNode {
                               {action.title}
                             </option>
                           ))}
+                        <option value={newNextActionOption}>新建下一步…</option>
                       </select>
                     </label>
                     {!detail.actions.some((action) => action.status === 'pending') ? (
-                      <p className="empty-copy">暂无待行动，可以在下方新建下一步。</p>
+                      <p className="empty-copy">暂无待行动，可以在下拉框中选择“新建下一步…”。</p>
                     ) : null}
-                    <button
-                      className="secondary-button"
-                      type="button"
-                      disabled={busy || selectedActionId === (detail.currentNextActionId ?? '')}
-                      onClick={() => void saveCurrentNextAction()}
-                    >
-                      保存当前下一步
-                    </button>
+                    {selectedActionId !== newNextActionOption ? (
+                      <button
+                        className="secondary-button"
+                        type="button"
+                        disabled={
+                          busy ||
+                          selectedActionId === unsetNextActionOption ||
+                          selectedActionId === (detail.currentNextActionId ?? '')
+                        }
+                        onClick={() => void saveCurrentNextAction()}
+                      >
+                        保存当前下一步
+                      </button>
+                    ) : null}
                     <NewNextActionForm
                       key={detail.id}
                       goalId={detail.id}
+                      visible={selectedActionId === newNextActionOption}
                       onSaved={() => reloadDetail(detail.id)}
                     />
                   </div>
