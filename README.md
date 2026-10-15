@@ -78,5 +78,5 @@ npm.cmd run dev
 ## 文档
 
 - [开发与维护](docs/MAINTENANCE.md)：构建、验证、打包与更新说明。
-- [总体架构](docs/architecture/ARCHITECTURE_V0.1.md)：技术结构与模块边界。
+- [架构阅读入口](docs/architecture/README.md)：按问题查阅技术结构、模块边界与专题设计。
 - [产品需求](docs/PRODUCT_REQUIREMENTS_V0.1.md)：详细功能与行为说明。

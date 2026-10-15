@@ -1,69 +1,16 @@
 # MyTracer v0.1 S1 核心闭环整体设计
 
-> 文档状态：已获项目所有者批准；批准不构成 T011～T014 实现授权。
+> 阅读范围：本文保留相关技术设计、产品约束与风险验证目标；任务编号和版本只表达原设计来源，不是当前执行清单。当前实现与锁定版本需结合代码、测试和工程决定判断。
 >
-> 后续交付结果：T011～T014/T801 已完成并由 PR #13 归档到 `dev`；里程碑 PR #14 合入 `main@3912e8082909a8ea99c4ca7aa8ec2f39fdc6cec7`，并发布 `v0.1.0-alpha.2`。任务实时状态以 `TASK_INDEX_V0.1.md` 为准。
->
-> 审批结果：S1-Q01 = A；S1-Q02～S1-Q10 = 各自原推荐项。
->
-> 适用范围：S1 / E1-01～E1-04 的任务合同、实现、测试与验收设计输入
->
-> 提案及批准日期：2026-08-09
->
-> 核心验收：AC-01 React 学习完整流程
+> 普通工作不需要本阶段合同、账本、审批或聚合验收；当前范围与权限以根目录 [AGENTS.md](../../AGENTS.md) 和 owner 当次请求为准。任务顺序、旧授权与阶段门已移至[历史执行记录](../implementation/archive/stage-execution/S1_EXECUTION.md)，仅在追溯或 owner 明确启用相应阶段流程时查阅。
 
-## 0. 文档用途与权限边界
+<a id="0-文档用途与权限边界"></a>
 
-本文把已冻结产品语义和已批准工程决定收敛为 T011～T014 的整体设计，目的是让四个后续任务在同一闭环、同一状态语义和同一数据边界下编写独立任务合同。
+<a id="1-基线核对结论"></a>
 
-本文依据以下规范，解释顺序保持不变：
+<a id="11-设计审批时的基线事实"></a>
 
-1. [`PRODUCT_REQUIREMENTS_V0.1.md`](../PRODUCT_REQUIREMENTS_V0.1.md)；
-2. [`DECISIONS.md`](../DECISIONS.md)；
-3. [`REQUIREMENTS_CHANGE_POLICY.md`](../REQUIREMENTS_CHANGE_POLICY.md)；
-4. 本目录的总体架构、领域、数据、测试、追踪、实施计划与工程决定；
-5. [`TASK_INDEX_V0.1.md`](../implementation/TASK_INDEX_V0.1.md)、[`TASK_TEMPLATE.md`](../implementation/TASK_TEMPLATE.md) 和 [`GITHUB_WORKFLOW_V0.1.md`](../implementation/GITHUB_WORKFLOW_V0.1.md)。
-
-`user/` 不属于本文依据，也不得成为后续开发依赖。
-
-本文使用三类结论：
-
-| 标记 | 含义 |
-|---|---|
-| **冻结/已批准** | 直接来自 FR、AC、D、ED 或现行仓库基线，后续任务不得改变 |
-| **已批准设计** | 第 11 节记录项目所有者选择；可写入后续任务合同，但不等于实现授权 |
-| **延期/非范围** | 不进入 S1，不得成为 T011～T014 的接口、数据或验收前置 |
-
-本次批准允许以本文编写 T011～T014 的独立任务合同，并按 S1-Q01-A 同时确认 G2 通过、允许准备 T011。它仍不等于：
-
-- 启动 T011 或任何实现；
-- 批准依赖、migration、分支、commit、push、Draft PR、Ready、merge、tag 或 release；
-- 通过 AC-01 人工验收。
-
-## 1. 基线核对结论
-
-### 1.1 设计审批时的基线事实
-
-- 本文设计审批读取基线时，`TASK_INDEX_V0.1.md` 记录 T001～T004 `done`、T011～T014 `pending`，G2 为独立门禁；项目所有者当时通过 S1-Q01-A 明确确认 G2 通过。该段保留审批时事实，不代表页首所列后续交付状态。
-- 设计审批时 SQLite `schemaVersion = 1` 已包含 S1 所需的 `goals`、`actions`、`today_selections`、`action_records`、`understandings` 和 `confusions` 表。
-- 设计审批时 `RepositoryPort`、`UnitOfWorkPort`、`ClockPort`、安全 IPC sender/origin 校验和隔离测试根已经存在，但尚无 S1 业务命令、查询或 UI；T011 后续交付不改写这条历史基线。
-- 已批准 S1-Q06-A：S1 不需要新增或升级依赖，也不需要新 migration；不得修改已执行的 `001_initial.sql`。
-- 设计审批时识别到部分较早架构/工作流正文仍保留“等待工程初始化”之类状态性描述；后续实施状态始终以任务索引和实时只读核验为准。
-
-### 1.2 冲突结论
-
-未发现两条 MUST 或已批准 D/ED 无法同时满足的冲突，因此可以继续完成 S1 设计。
-
-发现的缺口属于任务分配或实现级细化，不是产品语义冲突：
-
-- FR-L07 同时被 T013 的 `FR-L01～L09` 范围和 T031 明确引用；
-- FR-A05 同时出现在 T012 的 `FR-A01～A06` 范围和 T013 的记录范围，需要区分 Action 侧不变量与用户可见 Record 交付；
-- FR-A08 被实施计划放入 S1，但任务索引未明确归属某个 Txxx；
-- Action 改换 Goal 后的历史 Progress 归属尚未冻结；
-- Goal pause/end 对当日 TodaySelection 的处理尚未冻结；
-- ActionRecord 保存与 Action 状态/新下一步更新采用一个还是多个应用命令尚未冻结。
-
-这些事项已由项目所有者按第 11 节完成审批；后续任务合同必须使用已批准结果，不得继续把其他选项当作开放决定。
+<a id="12-冲突结论"></a>
 
 ## 2. S1 目标、范围与非范围
 
@@ -265,7 +212,7 @@ openConfusions       = children of filtered records where status = open
 
 ## 6. Application、IPC 与事务设计
 
-以下方法名是已批准的设计级命名，不是冻结的公共 API。后续合同可以在语义不变时调整名称，但不得合并成任意 channel、raw SQL 或通用 CRUD 入口。
+以下方法名是已批准的设计级命名，不是冻结的公共 API。后续变更可以在语义不变时调整名称，但不得合并成任意 channel、raw SQL 或通用 CRUD 入口。
 
 ### 6.1 Commands
 
@@ -334,7 +281,7 @@ create-and-use(title, description?)
 - `BeginActionRecording`、`CancelActionRecording` 和 `RecordAction` 是三个固定 IPC 边界；Renderer reload/navigation、sender/window 销毁和应用退出都必须使对应 context 失效，不能保留可跨页面复用的 token。
 - S1 不新增运行时校验依赖；若手写校验无法可靠完成，后续任务必须先单独申请依赖批准。
 - ID、Instant、LocalDate、枚举、必填非空文本、整数分钟、可选字段和未知多余字段都必须有明确校验规则；`recordingContextId` 还必须校验 Main 内存中的 sender/action 绑定，不能只检查字符串格式。
-- S1 不凭空增加用户可见文本长度上限，也不把“超长文本拒绝”列为验收条件；如实现确需防御性 IPC payload 上限，必须在具体任务合同中给出不会静默截断的方案并获得批准。
+- S1 不凭空增加用户可见文本长度上限，也不把“超长文本拒绝”列为验收条件；如实现确需防御性 IPC payload 上限，须说明不会静默截断的方案；涉及用户可见语义变化时由 owner 批准。
 - 成功和失败使用可判别结果 DTO，或由 Preload 统一映射为同等窄化错误；Renderer 只能看到稳定错误码与中性消息，不得看到 SQL、堆栈、绝对路径或用户正文。
 - 建议错误码至少区分：`validation`、`not-found`、`invalid-transition`、`invariant-violation`、`date-confirmation-required`、`persistence-failed`。
 - IPC 测试必须覆盖受信 sender、伪造 sender/origin、缺字段、错误枚举、非法 LocalDate、负数/小数分钟、必填空白文本和多余参数。
@@ -410,6 +357,8 @@ SQLite 外键只负责防悬空。以下跨行规则必须由 Application/Domain
 
 ## 8. T011～T014 任务边界
 
+本节保留技术能力、非范围与可观察行为；Txxx 是来源标识。原任务依赖和交付手续见[历史执行记录](../implementation/archive/stage-execution/S1_EXECUTION.md#8-t011t014-任务边界)；以下验证目标按当前变更影响面选用。
+
 ### 8.1 T011 — Goal 生命周期和当前下一步
 
 **范围**
@@ -428,12 +377,6 @@ SQLite 外键只负责防悬空。以下跨行规则必须由 Application/Domain
 - Action 删除、Goal 硬删除或任何 S3 能力；
 - 自动候选、软数量提示和 Recovery UI。
 
-**依赖**
-
-- 项目所有者已按 S1-Q01-A 确认 G2 通过并允许准备 T011；
-- 依据本文形成独立 T011 合同；
-- S1-Q02、S1-Q05 已确认并写入 T011 合同；
-- 任务启动、文件范围、依赖和 Git/GitHub 权限另行明确。
 
 **完成条件**
 
@@ -454,7 +397,6 @@ SQLite 外键只负责防悬空。以下跨行规则必须由 Application/Domain
 - 当前下一步 Action 状态变化时的原子清空/替换；
 - 用户选入/移出当前日 Today focus；
 - rescheduled 复用同一 Action，再次选入时恢复 pending；
-- Today 不自动搬运历史 Action；
 - `GetActionDetail`、`GetToday`、IPC 和 UI 纵向路径。
 
 **非范围**
@@ -463,10 +405,6 @@ SQLite 外键只负责防悬空。以下跨行规则必须由 Application/Domain
 - 未来日期、截止日期、逾期、自动滚动和复杂日程；
 - Action 硬删除。
 
-**依赖**
-
-- T011 完成并有证据；
-- S1-Q05、S1-Q06、S1-Q07 已确认并写入 T012 合同。
 
 **完成条件**
 
@@ -475,7 +413,6 @@ SQLite 外键只负责防悬空。以下跨行规则必须由 Application/Domain
 - reschedule 前后 Action ID 相同，旧 Record 不变，当天 focus 被移除；
 - 用户再次选择才恢复 pending，Query 不产生写入；
 - 同一 Action/LocalDate 只有一个 focus；按已批准 S1-Q07-A，complete/cancel 后保留并显示不可开始的终态，且与 reschedule 的已批准移除行为保持清楚区分；
-- 新一天为空，不自动搬运旧 focus；
 - 当前下一步处理在故障时完整回滚；
 - 不声称 AC-01 完整通过，只记录步骤 3 的贡献覆盖。
 
@@ -486,7 +423,6 @@ SQLite 外键只负责防悬空。以下跨行规则必须由 Application/Domain
 - ActionRecord 创建；快速层仅分钟和 outcome 必填；
 - 可选 Understanding、Confusion、下一步文本和 note；
 - `completed | partial | stopped` 记录语义，0 分钟语义；
-- partial 不自动改变 Action；
 - `BeginActionRecording`、`CancelActionRecording`、`RecordAction` 及 Main 临时 context 的完整生命周期；
 - 只对 S1-Q10-A 批准的 Action/Goal 状态开放记录入口：只允许无 Goal 或 active Goal 下的 pending Action；
 - 用户已确认的 post-record 选择，具体按 S1-Q04；
@@ -500,16 +436,11 @@ SQLite 外键只负责防悬空。以下跨行规则必须由 Application/Domain
 - AI 候选 Understanding；
 - Progress 聚合和评分类展示。
 
-**依赖**
-
-- T012 完成并有证据；
-- S1-Q03、S1-Q04、S1-Q07、S1-Q08、S1-Q10 已确认。
 
 **完成条件**
 
 - 只填写快速层可成功保存；深入字段全部空也合法；
 - 父记录或任一子实体失败时零变化；
-- partial/stopped 各计为真实记录但不自动转 Action；
 - pending/active 或无 Goal 的合法入口可记录；terminal、rescheduled、paused/ended Goal 下入口均被拒绝且零写入；
 - 伪造、已失效（取消、替换、reload/navigation、窗口关闭）、已消费或 action/sender 不匹配的 recording context 不写入；跨午夜未选择时不写入，选择后发生日准确；
 - 重开后记录及子实体一致；
@@ -524,7 +455,6 @@ SQLite 外键只负责防悬空。以下跨行规则必须由 Application/Domain
 - 按可选 Goal 和/或包含端点的 LocalDate 范围聚合；
 - 累计分钟、每条 ActionRecord 的真实行动次数、未撤销 Understanding、open Confusion；
 - 稳定排序、空状态、中性文案；
-- 单元、集成、IPC、E2E 和 AC-01 人工验收准备；
 - 同一 revision 上的 AC-01 完整自动化与重开验证。
 
 **非范围**
@@ -534,10 +464,6 @@ SQLite 外键只负责防悬空。以下跨行规则必须由 Application/Domain
 - 完成数、达标数、连续天数主指标、评分、掌握度、失败率或人格评价；
 - Review、Recovery、AI 或导出。
 
-**依赖**
-
-- T013 完成并有证据；
-- S1-Q06、S1-Q08、S1-Q09 已确认。
 
 **完成条件**
 
@@ -546,8 +472,6 @@ SQLite 外键只负责防悬空。以下跨行规则必须由 Application/Domain
 - Query 只读，重复调用不改变数据库；
 - 关闭重开后结果由事实重算且一致；
 - E2E-AC-01 在最终 revision 连续通过；
-- 人工 AC-01 未由项目所有者执行时明确为 `pending`；
-- T011～T014 全部证据齐全后，只能形成 G3/S1 候选，不自动推进 `main` 或创建 tag。
 
 ## 9. 测试与 AC-01 验收矩阵
 
@@ -563,19 +487,7 @@ SQLite 外键只负责防悬空。以下跨行规则必须由 Application/Domain
 | 边界与降级 | Query 不写；错误不泄露正文 | AI 未配置仍可执行 S1 已批准 Commands/Queries | 未信任 sender/origin 全拒绝 | 隔离临时 `userData`，无 live AI | AI 未配置不阻塞核心流程 |
 | 范围扫描 | 无新状态/延期概念 | 无 schema/migration 扩张 | 无通用 channel/SQL/路径 | 无 Routine/intention/AI 假完成 | 不出现评分、提醒、复杂任务概念 |
 
-每个 Txxx 的任务合同都必须列出针对性测试，再执行受影响范围回归。现行最低命令为：
-
-```powershell
-npm.cmd run format:check
-npm.cmd run lint
-npm.cmd run typecheck
-npm.cmd run test:unit
-npm.cmd run test:integration
-npm.cmd run test:e2e
-npm.cmd run verify
-```
-
-`verify` 已包含 build 和 Electron E2E，但不证明 package、hosted CI、人工验收或未列入命令的行为。证据必须绑定最终 revision、Windows 环境、隔离数据根、命令结果和已知缺口。
+本节验证矩阵用于选择相关风险用例；实际命令见[维护入口](../MAINTENANCE.md#开发与验证)，按当前变更影响面选用。
 
 ## 10. FR / AC / D / ED → Txxx → 测试追踪
 
@@ -620,13 +532,7 @@ npm.cmd run verify
 | S1-Q09 | A | A |
 | S1-Q10 | A | A |
 
-### S1-Q01：G2 与本文批准是否分离
-
-- **选项 A**：批准本文时同时视为 G2 通过并允许准备 T011。
-- **选项 B**：本文只批准设计；另做一次 G2 证据核对和明确通过指令。
-- **原推荐**：选项 B。
-- **批准结果**：选项 A。
-- **已批准影响**：本次批准同时构成 G2 通过并允许准备 T011 合同；仍不构成 T011 启动或实现授权，也不授予依赖、Git/GitHub 或发布权限。
+<a id="s1-q01g2-与本文批准是否分离"></a>
 
 ### S1-Q02：T011 与 T012 的 Action 边界
 
@@ -646,7 +552,7 @@ FR-A05 已批准保持双重落点：T012 证明 `partial` 不是 Action 状态�
 - **选项 C**：拆分 T013 子任务并同步修改既有任务账本。
 - **原推荐**：选项 B。
 - **批准结果**：选项 B。
-- **影响**：AC-01 不受影响，S1 保持聚焦；T013 不得声明 FR-L07 完成，FR-L07 直到 T031 才有完整证据。后续任务合同/账本协调必须反映该归属，本次不修改任务索引；如需改为 S1 具备记录纠错，必须重新审批范围变化。
+- **影响**：AC-01 不受影响，S1 保持聚焦；T013 不得声明 FR-L07 完成，FR-L07 直到 T031 才有完整证据。任务归属仅用于历史追溯；如需改为 S1 具备记录纠错，必须重新审批范围变化。
 
 ### S1-Q04：记录后的 Action/下一步处理
 
@@ -717,7 +623,6 @@ FR-A05 已批准保持双重落点：T012 证明 `partial` 不是 Action 状态�
 
 | 风险 | 影响 | 控制/停止条件 |
 |---|---|---|
-| 把 G2 通过或“允许准备 T011”误当成实现授权 | 权限边界失真 | S1-Q01-A 只批准 G2 和合同准备；T011 合同、启动、依赖和 Git/GitHub 权限继续分开确认 |
 | T013/T031 范围重叠 | 重复实现、证据虚报 | 按 S1-Q03-B，T013 报告中明确未完成 FR-L07 |
 | 循环外键或跨行约束处理错误 | Goal/Action 半写入或非法当前下一步 | 三步插入、单事务、故障注入、同 Goal/pending 测试 |
 | partial 或 completed 被自动联动 | 改写真实行为语义 | 所有 post-record 变化必须显式；领域测试证明无推断 |
@@ -727,23 +632,8 @@ FR-A05 已批准保持双重落点：T012 证明 `partial` 不是 Action 状态�
 | 跨午夜静默移动记录 | 历史日期错误 | Main 捕获日期、显式选择、FakeClock 边界测试 |
 | IPC 只做 TypeScript 类型检查 | 恶意/错误 DTO 穿透到 Main | 运行时校验、sender/origin 校验、错误映射和负面 IPC 测试 |
 | S1 页面名导致误报 S2/S3 能力 | 需求追踪失真 | SCOPE 扫描；明确不声明 FR-T02/T03、FR-L07、AC-03/04/07 |
-| G2 审批与任务账本尚未同步 | Agent 使用旧前置或错误声称 T011 active | 本文保留所有者审批事实；另行授权同步 TASK_INDEX，每个任务启动前实时只读核验 |
 | 人工体验未执行却声称通过 | AC-01 证据不真实 | 项目所有者未执行时始终记录 `pending` |
 
 若实施发现必须新增依赖、修改 schema、改变状态/日期/partial/Today/Progress 语义、引入延期能力或扩大文件/Git/外部写入权限，必须停止受影响任务并重新申请批准。
 
-## 13. 本文审批完成记录
-
-项目所有者已确认：
-
-- [x] 接受第 2～7 节的 S1 闭环、领域、Application、IPC、事务和数据设计；
-- [x] S1-Q01 选择 A；S1-Q02～S1-Q10 选择各自原推荐项；
-- [x] 接受 T011～T014 的范围、非范围、依赖和完成条件；
-- [x] 接受 FR-L07 在 T031 完整交付、T013 不提前声明完成；
-- [x] 接受 AC-01 只有在 T014 后才进行完整自动化和人工验收；
-- [x] 接受 S1-Q06-A：S1 不新增依赖或 migration，不实施 S2～S7；
-- [x] 理解本次批准同时通过 G2、允许准备 T011，但不构成任何 Txxx 实现、Git/GitHub、合并或发布授权。
-
-设计审批当时的下一步是依据本文准备 T011 的简洁任务合同/Prompt；T012～T014 仍按任务索引串行准备和启动。本文本身不能把任何任务从 `pending` 改为 `ready` 或 `active`。
-
-以上审批记录保留当时的权限事实；后续独立授权与实际执行状态见本文页首交付状态、S1 合同归档、验收证据和任务索引。当前 T011～T014/T801 已完成并归档到 `dev`；G3/S1 验收通过和里程碑 PR 创建仍不构成合入 `main`、tag 或 release 授权。
+<a id="13-本文审批完成记录"></a>

@@ -1,5 +1,7 @@
 # MyTracer v0.1 任务索引
 
+> 阅读边界：本表记录既有 Txxx 阶段任务，不是所有后续维护工作的总任务表。以下合同、状态与证据规则仅在 owner 明确启用相应阶段流程时适用；普通请求不要求新增任务或更新本表，旧状态不恢复权限。
+
 > 2026-10-11 事实校准：本表 done 表示相应合同交付已闭合；T809/S8 包含 owner-approved waiver，不代表所有真实测试通过。历史叙述统一从归档索引查找，后续结果以本表和 [EV-DOC-CALIBRATION-001](ACCEPTANCE_EVIDENCE_V0.1.md#ev-doc-calibration-001) 为准，不把历史 active/review 当作当前执行状态。
 
 > 文档状态：v0.1 实施任务基线  

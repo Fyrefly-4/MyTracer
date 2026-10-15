@@ -19,9 +19,9 @@ Start with relevant current code, tests, and configuration. Consult these source
 | Subject | Source |
 | --- | --- |
 | Product behavior and acceptance | [Product requirements](docs/PRODUCT_REQUIREMENTS_V0.1.md), [decisions](docs/DECISIONS.md), then [change policy](docs/REQUIREMENTS_CHANGE_POLICY.md), in that authority order |
-| Architecture and approved engineering choices | Relevant documents under [docs/architecture](docs/architecture/) |
+| Architecture and approved engineering choices | Use the [architecture reading entry](docs/architecture/README.md) to select relevant technical documents |
 | Running, testing, packaging, or operating the app | [Maintenance entry](docs/MAINTENANCE.md); exact commands and locked versions are in `package.json` and `package-lock.json` |
-| Specific CI, integration, or release procedures; explicitly activated stage workflows | [GitHub workflow](docs/implementation/GITHUB_WORKFLOW_V0.1.md) and the applicable Skill |
+| Specific Git, CI, integration, or release procedures | [GitHub workflow](docs/implementation/GITHUB_WORKFLOW_V0.1.md) |
 
 Do not traverse the whole baseline or historical records for unrelated work. Architecture and execution documents cannot change frozen product semantics; report conflicts rather than silently choosing. Files under `user/` are explanatory material, not requirements or development authority; report drift against the normative sources.
 
