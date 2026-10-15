@@ -2,30 +2,9 @@ name: Verification
 
 on:
   pull_request:
-    branches:
-      - dev
-      - main
-    types:
-      - opened
-      - synchronize
-      - reopened
-      - edited
-      - ready_for_review
-      - converted_to_draft
-  push:
-    branches:
-      - dev
-      - main
+    branches: [dev, main]
+    types: [opened, synchronize, reopened]
   workflow_dispatch:
-    inputs:
-      ci_mode:
-        description: Minimum verification mode
-        required: true
-        default: full
-        type: choice
-        options:
-          - full
-          - milestone
 
 permissions:
   contents: read
@@ -35,261 +14,66 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  classify:
-    name: Classify changes
-    runs-on: windows-2025
-    timeout-minutes: 5
-    outputs:
-      category: ${{ steps.classify.outputs.category }}
-      level: ${{ steps.classify.outputs.level }}
-      run_pr_quality: ${{ steps.classify.outputs.run_pr_quality }}
-      run_documentation: ${{ steps.classify.outputs.run_documentation }}
-      run_governance: ${{ steps.classify.outputs.run_governance }}
-      run_verification: ${{ steps.classify.outputs.run_verification }}
-      run_milestone: ${{ steps.classify.outputs.run_milestone }}
-      base_revision: ${{ steps.classify.outputs.base_revision }}
-      head_revision: ${{ steps.classify.outputs.head_revision }}
-    env:
-      MYTRACER_CI_MODE: ${{ github.event.inputs.ci_mode || 'automatic' }}
-    steps:
-      - name: Checkout repository history
-        uses: actions/checkout@v6.0.2
-        with:
-          fetch-depth: 0
-      - name: Set up Node.js
-        uses: actions/setup-node@v6.4.0
-        with:
-          node-version: 24.18.0
-          package-manager-cache: false
-      - name: Classify changed paths and CI mode
-        id: classify
-        run: node tools/ci/classify-changes.mjs classify
-
-  pr_quality:
-    name: PR quality
-    needs: classify
-    if: needs.classify.outputs.run_pr_quality == 'true'
-    runs-on: windows-2025
-    timeout-minutes: 5
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6.0.2
-        with:
-          fetch-depth: 0
-      - name: Set up Node.js
-        uses: actions/setup-node@v6.4.0
-        with:
-          node-version: 24.18.0
-          package-manager-cache: false
-      - name: Validate PR context
-        run: node tools/governance/validate-pr-context.mjs
-
-  documentation:
-    name: Documentation checks
-    needs: classify
-    if: needs.classify.outputs.run_documentation == 'true'
-    runs-on: windows-2025
-    timeout-minutes: 5
-    env:
-      BASE_REVISION: ${{ needs.classify.outputs.base_revision }}
-      HEAD_REVISION: ${{ needs.classify.outputs.head_revision }}
-    steps:
-      - name: Checkout repository history
-        uses: actions/checkout@v6.0.2
-        with:
-          fetch-depth: 0
-      - name: Set up Node.js
-        uses: actions/setup-node@v6.4.0
-        with:
-          node-version: 24.18.0
-          package-manager-cache: false
-      - name: Check changed documentation
-        run: node tools/ci/classify-changes.mjs docs --base $env:BASE_REVISION --head $env:HEAD_REVISION
-      - name: Check diff integrity
-        shell: pwsh
-        run: |
-          if ($env:BASE_REVISION -and $env:BASE_REVISION -notmatch '^0+$') {
-            git diff --check $env:BASE_REVISION $env:HEAD_REVISION
-          } else {
-            git show --check --format= $env:HEAD_REVISION
-          }
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-
-  governance:
-    name: Governance checks
-    needs: classify
-    if: needs.classify.outputs.run_governance == 'true'
-    runs-on: windows-2025
-    timeout-minutes: 15
-    env:
-      BASE_REVISION: ${{ needs.classify.outputs.base_revision }}
-      HEAD_REVISION: ${{ needs.classify.outputs.head_revision }}
-    steps:
-      - name: Checkout repository history
-        uses: actions/checkout@v6.0.2
-        with:
-          fetch-depth: 0
-      - name: Set up Node.js
-        uses: actions/setup-node@v6.4.0
-        with:
-          node-version: 24.18.0
-          package-manager-cache: false
-      - name: Install locked dependencies
-        run: npm.cmd ci
-      - name: Validate governance metadata
-        run: npm.cmd run governance:metadata:check
-      - name: Run governance unit tests
-        run: npm.cmd run test:unit -- tests/unit/process-governance.test.ts tests/unit/ci-governance.test.ts
-      - name: Check formatting
-        run: npm.cmd run format:check
-      - name: Check diff integrity
-        shell: pwsh
-        run: |
-          if ($env:BASE_REVISION -and $env:BASE_REVISION -notmatch '^0+$') {
-            git diff --check $env:BASE_REVISION $env:HEAD_REVISION
-          } else {
-            git show --check --format= $env:HEAD_REVISION
-          }
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-
-  verification:
-    name: Full Windows verification
-    needs: classify
-    if: needs.classify.outputs.run_verification == 'true'
-    runs-on: windows-2025
-    timeout-minutes: 25
-    env:
-      CI: 'true'
-      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6.0.2
-      - name: Set up Node.js
-        uses: actions/setup-node@v6.4.0
-        with:
-          node-version: 24.18.0
-          package-manager-cache: false
-      - name: Install locked dependencies
-        run: npm.cmd ci
-      - name: Install pinned Electron binary
-        run: npm.cmd exec -- install-electron --no
-      - name: Validate governance metadata
-        run: npm.cmd run governance:metadata:check
-      - name: Capture aggregate verification evidence
-        run: npm.cmd run evidence:verify
-      - name: Upload verification evidence
-        if: always()
-        uses: actions/upload-artifact@v4.6.2
-        with:
-          name: verification-evidence-${{ github.run_id }}-${{ github.run_attempt }}
-          path: .tmp/evidence/*.json
-          if-no-files-found: error
-          retention-days: 14
-
-  milestone:
-    name: Milestone packaging checks
-    needs:
-      - classify
-      - verification
-    if: needs.classify.outputs.run_milestone == 'true' && needs.verification.result == 'success'
-    runs-on: windows-2025
-    timeout-minutes: 35
-    env:
-      CI: 'true'
-      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6.0.2
-      - name: Set up Node.js
-        uses: actions/setup-node@v6.4.0
-        with:
-          node-version: 24.18.0
-          package-manager-cache: false
-      - name: Install locked dependencies
-        run: npm.cmd ci
-      - name: Install pinned Electron binary
-        run: npm.cmd exec -- install-electron --no
-      - name: Capture package evidence
-        run: node tools/evidence/capture-command.mjs --task unscoped --gate package --output .tmp/evidence -- npm.cmd run package
-      - name: Capture package smoke evidence
-        run: node tools/evidence/capture-command.mjs --task unscoped --gate package-smoke --output .tmp/evidence -- npm.cmd run test:package-smoke
-      - name: Upload milestone evidence
-        if: always()
-        uses: actions/upload-artifact@v4.6.2
-        with:
-          name: milestone-evidence-${{ github.run_id }}-${{ github.run_attempt }}
-          path: .tmp/evidence/*.json
-          if-no-files-found: error
-          retention-days: 14
-
-  ci_gate:
+  ci:
     name: CI Gate
-    if: always()
-    needs:
-      - classify
-      - pr_quality
-      - documentation
-      - governance
-      - verification
-      - milestone
     runs-on: windows-2025
-    timeout-minutes: 5
+    timeout-minutes: 30
     env:
-      MYTRACER_EXPECT_PR_QUALITY: ${{ needs.classify.outputs.run_pr_quality }}
-      MYTRACER_EXPECT_DOCUMENTATION: ${{ needs.classify.outputs.run_documentation }}
-      MYTRACER_EXPECT_GOVERNANCE: ${{ needs.classify.outputs.run_governance }}
-      MYTRACER_EXPECT_VERIFICATION: ${{ needs.classify.outputs.run_verification }}
-      MYTRACER_EXPECT_MILESTONE: ${{ needs.classify.outputs.run_milestone }}
-      MYTRACER_RESULT_CLASSIFY: ${{ needs.classify.result }}
-      MYTRACER_RESULT_PR_QUALITY: ${{ needs.pr_quality.result }}
-      MYTRACER_RESULT_DOCUMENTATION: ${{ needs.documentation.result }}
-      MYTRACER_RESULT_GOVERNANCE: ${{ needs.governance.result }}
-      MYTRACER_RESULT_VERIFICATION: ${{ needs.verification.result }}
-      MYTRACER_RESULT_MILESTONE: ${{ needs.milestone.result }}
+      CI: 'true'
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
     steps:
-      - name: Checkout repository
+      - name: Checkout PR test merge or selected revision
         uses: actions/checkout@v6.0.2
-      - name: Set up Node.js
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Set up locked Node
         uses: actions/setup-node@v6.4.0
         with:
           node-version: 24.18.0
           package-manager-cache: false
-      - name: Evaluate required outcomes
-        run: node tools/ci/classify-changes.mjs gate
-
-  windows_required:
-    name: Windows required gate
-    if: always()
-    needs:
-      - classify
-      - pr_quality
-      - documentation
-      - governance
-      - verification
-      - milestone
-      - ci_gate
-    runs-on: windows-2025
-    timeout-minutes: 5
-    env:
-      MYTRACER_EXPECT_PR_QUALITY: ${{ needs.classify.outputs.run_pr_quality }}
-      MYTRACER_EXPECT_DOCUMENTATION: ${{ needs.classify.outputs.run_documentation }}
-      MYTRACER_EXPECT_GOVERNANCE: ${{ needs.classify.outputs.run_governance }}
-      MYTRACER_EXPECT_VERIFICATION: ${{ needs.classify.outputs.run_verification }}
-      MYTRACER_EXPECT_MILESTONE: ${{ needs.classify.outputs.run_milestone }}
-      MYTRACER_RESULT_CLASSIFY: ${{ needs.classify.result }}
-      MYTRACER_RESULT_PR_QUALITY: ${{ needs.pr_quality.result }}
-      MYTRACER_RESULT_DOCUMENTATION: ${{ needs.documentation.result }}
-      MYTRACER_RESULT_GOVERNANCE: ${{ needs.governance.result }}
-      MYTRACER_RESULT_VERIFICATION: ${{ needs.verification.result }}
-      MYTRACER_RESULT_MILESTONE: ${{ needs.milestone.result }}
-      MYTRACER_RESULT_CI_GATE: ${{ needs.ci_gate.result }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6.0.2
-      - name: Set up Node.js
+      - name: Select checks for changed files
+        id: changes
+        run: node tools/ci/classify-changes.mjs classify
+      - name: Check changed documentation
+        env:
+          BASE_REVISION: ${{ steps.changes.outputs.base_revision }}
+          HEAD_REVISION: ${{ steps.changes.outputs.head_revision }}
+        run: node tools/ci/classify-changes.mjs docs
+      - name: Check diff integrity
+        shell: pwsh
+        env:
+          BASE_REVISION: ${{ steps.changes.outputs.base_revision }}
+          HEAD_REVISION: ${{ steps.changes.outputs.head_revision }}
+        run: |
+          if ($env:BASE_REVISION -and $env:BASE_REVISION -notmatch '^0+$') {
+            git diff --check $env:BASE_REVISION $env:HEAD_REVISION
+          } else {
+            git show --check --format= $env:HEAD_REVISION
+          }
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Enable npm download cache
+        if: steps.changes.outputs.run_verification == 'true'
         uses: actions/setup-node@v6.4.0
         with:
           node-version: 24.18.0
-          package-manager-cache: false
-      - name: Evaluate legacy required outcome
-        run: node tools/ci/classify-changes.mjs gate
+          cache: npm
+      - name: Install locked dependencies
+        if: steps.changes.outputs.run_verification == 'true'
+        run: npm.cmd ci
+      - name: Install pinned Electron binary
+        if: steps.changes.outputs.run_verification == 'true'
+        run: npm.cmd exec -- install-electron --no
+      - name: Verify application
+        if: steps.changes.outputs.run_verification == 'true'
+        run: npm.cmd run verify
+      - name: Upload failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: ci-failures-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            test-results/
+            playwright-report/
+          if-no-files-found: ignore
+          retention-days: 7

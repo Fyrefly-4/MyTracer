@@ -8,7 +8,7 @@
 
 ## 候选与审核
 
-`Update candidate` 对同库 dev/main PR、main push 和手动入口运行。构建明确 checkout PR head 或 push SHA，使用锁定依赖及只读权限，分别捕获 aggregate、禁止发布的 NSIS build、隔离 smoke；检查 unsigned 后生成 `.tmp/release/candidate/candidate-manifest.json`。
+`Update candidate` 仅通过 Actions 的 workflow_dispatch 手动运行；普通 PR 与 main push 不再自动打包。构建明确 checkout 手动选择的 branch/tag 对应 SHA，使用锁定依赖及只读权限，分别捕获 aggregate、禁止发布的 NSIS build、隔离 smoke；检查 unsigned 后生成 `.tmp/release/candidate/candidate-manifest.json`。
 
 产物包含 NSIS、其 blockmap、`latest.yml`、`SHA256SUMS.txt` 和 manifest。Manifest 记录 source、版本、schema=3/export=2、run/attempt、每个资产的大小/SHA-256/SHA-512 和脱敏命令结果；不含绝对路径、用户内容、数据库或凭据。`compatibleFrom` 是需实装证明的兼容来源声明，不自动代表已完成兼容矩阵。
 
@@ -18,7 +18,7 @@
 
 新流程以 owner 推送稳定 tag 取代逐版本 `release-approval` JSON 和五参数 dispatch。历史演练、失败和豁免不成为新的发布输入；首次使用须选择包含该 publish workflow 的 main 提交。
 
-1. 在代码合入 main 前同步 package.json 与 package-lock.json 中的版本。main push 自动运行 Update candidate，完成 verify、禁止发布的 NSIS 打包、隔离安装 smoke、unsigned 和 bundle 校验。候选 Summary 提供源 SHA、版本、run/artifact 链接与 manifest hash。PR 候选不能正式发布。
+1. 在代码合入 main 前同步 package.json 与 package-lock.json 中的版本。owner 在 Actions 手动选择 main 运行 Update candidate，完成 verify、禁止发布的 NSIS 打包、隔离安装 smoke、unsigned 和 bundle 校验。候选 Summary 提供源 SHA、版本、run/artifact 链接与 manifest hash。PR 候选不能正式发布。
 2. Owner 查看该 main 候选成功结果，在对应完整源 SHA 上创建并推送稳定版本 tag，例如 `v0.1.5`。Owner 的认证账号推送新 tag 即批准该源提交及其通过发布校验的候选产物进入现有私有正式更新源；支持 lightweight 和 annotated tag，tagger/commit author 文本不是身份凭证。不要通过 GitHub 的 Publish release 按钮抢先创建 Release。
 3. Tag 可指向仍在 main 历史中的提交，不要求等于当前 main HEAD。版本必须与该提交的 package/lock 版本一致。只接受配置 owner 的 login/numeric ID，并检查原始事件及重跑者；拒绝 prerelease、tag 更新、删除和强推事件。Agent 代 owner 创建 tag 仍需该版本的独立授权。
 4. 只读 validate job 查询固定 candidate workflow、精确 SHA、main、成功状态的 runs，按 run ID 降序选最新成功 run，再选该 run/attempt 下唯一的候选 artifact。选定产物缺失、过期或校验失败即停止，不退回更早 artifact，不改用其他 SHA。自动取得实际 artifact ID/digest，下载并校验 ZIP、五个扁平文件、manifest、每个资产、latest.yml 和 checksum list。

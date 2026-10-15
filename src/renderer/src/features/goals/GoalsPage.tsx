@@ -29,6 +29,87 @@ interface PendingGoalEnd {
   readonly goalName: string
 }
 
+const newNextActionOption = '__new-next-action__'
+const unsetNextActionOption = '__unset-next-action__'
+
+function NewNextActionForm(props: {
+  readonly goalId: string
+  readonly visible: boolean
+  readonly onSaved: () => Promise<void>
+}): ReactNode {
+  const activeRef = useUiLifetime()
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  useUnsavedContent(`goal-next-action-${props.goalId}`, Boolean(title || description))
+
+  const submit = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
+    event.preventDefault()
+    if (busy) return
+    if (!title.trim()) {
+      setError('请填写下一步名称。')
+      return
+    }
+    setBusy(true)
+    setError(null)
+    try {
+      const result = await window.myTracer.goals.createAndSetCurrentNextAction({
+        goalId: props.goalId,
+        title: title.trim(),
+        description: description.trim() || null
+      })
+      if (!activeRef.current) return
+      if (!result.ok) {
+        setError(goalErrorText[result.error.code])
+        return
+      }
+      setTitle('')
+      setDescription('')
+      await props.onSaved()
+    } catch {
+      if (activeRef.current) setError(goalErrorText['persistence-failed'])
+    } finally {
+      if (activeRef.current) setBusy(false)
+    }
+  }
+
+  if (!props.visible) return null
+
+  return (
+    <form className="current-action-control" onSubmit={(event) => void submit(event)}>
+      <h3>新建下一步</h3>
+      <label>
+        下一步名称
+        <input
+          required
+          value={title}
+          disabled={busy}
+          onChange={(event) => setTitle(event.target.value)}
+        />
+      </label>
+      <label>
+        下一步说明（选填）
+        <textarea
+          rows={2}
+          value={description}
+          disabled={busy}
+          onChange={(event) => setDescription(event.target.value)}
+        />
+      </label>
+      <p className="empty-copy">创建后设为当前下一步，不会自动加入今天；已有行动和记录会保留。</p>
+      {error ? (
+        <p className="form-error" role="alert">
+          {error}
+        </p>
+      ) : null}
+      <button className="secondary-button" type="submit" disabled={busy}>
+        创建并设为当前下一步
+      </button>
+    </form>
+  )
+}
+
 function GoalWorkspace(): ReactNode {
   const activeRef = useUiLifetime()
   const session = useUiSession()
@@ -51,7 +132,7 @@ function GoalWorkspace(): ReactNode {
   const [createNextAction, setCreateNextAction] = useState('')
   const [editName, setEditName] = useState('')
   const [editDescription, setEditDescription] = useState('')
-  const [selectedActionId, setSelectedActionId] = useState('')
+  const [selectedActionId, setSelectedActionId] = useState(unsetNextActionOption)
   const [pendingGoalEnd, setPendingGoalEnd] = useState<PendingGoalEnd | null>(null)
   const [recoveryGoalId, setRecoveryGoalId] = useState<string | null>(session.recoveryGoalId)
   useUnsavedContent(
@@ -128,7 +209,7 @@ function GoalWorkspace(): ReactNode {
             setDetail(result.value)
             setEditName(result.value.name)
             setEditDescription(result.value.description ?? '')
-            setSelectedActionId(result.value.currentNextActionId ?? '')
+            setSelectedActionId(result.value.currentNextActionId ?? unsetNextActionOption)
           } else {
             if (result.error.code === 'not-found') session.selectGoal(null)
             setSelectionError(goalErrorText[result.error.code])
@@ -154,7 +235,7 @@ function GoalWorkspace(): ReactNode {
     setDetail(nextDetail)
     setEditName(nextDetail.name)
     setEditDescription(nextDetail.description ?? '')
-    setSelectedActionId(nextDetail.currentNextActionId ?? '')
+    setSelectedActionId(nextDetail.currentNextActionId ?? unsetNextActionOption)
     setPendingGoalEnd(null)
     if (session.recoveryGoalId !== nextDetail.id) {
       session.setRecoveryGoal(null)
@@ -190,7 +271,7 @@ function GoalWorkspace(): ReactNode {
       setDetail(result.value)
       setEditName(result.value.name)
       setEditDescription(result.value.description ?? '')
-      setSelectedActionId(result.value.currentNextActionId ?? '')
+      setSelectedActionId(result.value.currentNextActionId ?? unsetNextActionOption)
       setRefreshVersion((version) => version + 1)
       setError(null)
     } else {
@@ -285,7 +366,12 @@ function GoalWorkspace(): ReactNode {
   }
 
   const saveCurrentNextAction = async (): Promise<void> => {
-    if (!detail) return
+    if (
+      !detail ||
+      selectedActionId === newNextActionOption ||
+      selectedActionId === unsetNextActionOption
+    )
+      return
     setBusy(true)
     const result = await window.myTracer.goals.setCurrentNextAction({
       goalId: detail.id,
@@ -541,8 +627,14 @@ function GoalWorkspace(): ReactNode {
                       选择当前下一步
                       <select
                         value={selectedActionId}
+                        disabled={busy}
                         onChange={(event) => setSelectedActionId(event.target.value)}
                       >
+                        {!detail.currentNextActionId ? (
+                          <option value={unsetNextActionOption} disabled>
+                            暂未设置当前下一步
+                          </option>
+                        ) : null}
                         <option value="">清空当前下一步</option>
                         {detail.actions
                           .filter((action) => action.status === 'pending')
@@ -551,16 +643,32 @@ function GoalWorkspace(): ReactNode {
                               {action.title}
                             </option>
                           ))}
+                        <option value={newNextActionOption}>新建下一步…</option>
                       </select>
                     </label>
-                    <button
-                      className="secondary-button"
-                      type="button"
-                      disabled={busy}
-                      onClick={() => void saveCurrentNextAction()}
-                    >
-                      保存当前下一步
-                    </button>
+                    {!detail.actions.some((action) => action.status === 'pending') ? (
+                      <p className="empty-copy">暂无待行动，可以在下拉框中选择“新建下一步…”。</p>
+                    ) : null}
+                    {selectedActionId !== newNextActionOption ? (
+                      <button
+                        className="secondary-button"
+                        type="button"
+                        disabled={
+                          busy ||
+                          selectedActionId === unsetNextActionOption ||
+                          selectedActionId === (detail.currentNextActionId ?? '')
+                        }
+                        onClick={() => void saveCurrentNextAction()}
+                      >
+                        保存当前下一步
+                      </button>
+                    ) : null}
+                    <NewNextActionForm
+                      key={detail.id}
+                      goalId={detail.id}
+                      visible={selectedActionId === newNextActionOption}
+                      onSaved={() => reloadDetail(detail.id)}
+                    />
                   </div>
                 ) : null}
 

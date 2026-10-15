@@ -1,6 +1,6 @@
 # 历史归档索引
 
-归档只用于理解已完成范围和恢复原记录。当前状态看[任务索引](../TASK_INDEX_V0.1.md)，验证、失败与豁免看[验收证据](../ACCEPTANCE_EVIDENCE_V0.1.md)，日常操作看[维护入口](../../MAINTENANCE.md)。产品、架构、模板、元数据与仍待处理的[分支历史提案](../ESCALATION_DOC_BRANCH_ANCESTRY.md)保留在现行位置。
+归档只用于历史追溯，不是普通工作的执行入口。既有阶段任务状态见[任务索引](../TASK_INDEX_V0.1.md)，验证、失败与豁免见[验收证据](../ACCEPTANCE_EVIDENCE_V0.1.md)；它们不维护所有后续修复的状态，也不恢复旧权限。日常操作从[维护入口](../../MAINTENANCE.md)开始，原设计中的任务依赖、批准状态和阶段门见[阶段执行归档](stage-execution/INDEX.md)。产品、架构、模板、元数据与仍待处理的[分支历史提案](../ESCALATION_DOC_BRANCH_ANCESTRY.md)保留在现行位置。
 
 ## 阶段摘要
 
