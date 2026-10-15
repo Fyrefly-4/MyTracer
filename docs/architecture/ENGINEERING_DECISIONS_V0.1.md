@@ -133,7 +133,7 @@
 
 - S0 工具链：Node 24.18.0、npm 11.16.0、Electron/React/TypeScript/Vite、better-sqlite3、electron-builder、Vitest、Playwright、ESLint/Prettier。批准与验证见 EV-T001-001/EV-T002-001 及 S0 归档；当前精确依赖以 package.json/package-lock.json 为准，不在本文维护第二份版本表。
 - T062 首个适配器：LiteLLM Gateway、模型 `gemini-3.7-flash`、SDK `openai@7.8.0`；环境变量 `MYTRACER_LITELLM_API_KEY`，配置与 safeStorage 仅在 Main。固定 origin、超时、预算及无自动重试的批准值见 [EV-T062-001](../implementation/ACCEPTANCE_EVIDENCE_V0.1.md#ev-t062-001)，不扩大既有上下文或写权限。
-- S8 更新依赖 `electron-updater@6.8.10` 已独立批准；private/unsigned/schema3/export2 与用户确认安装边界不变。发布 tag 改造仅进入 dev，main 尚未部署，见 [EV-DOC-CALIBRATION-001](../implementation/ACCEPTANCE_EVIDENCE_V0.1.md#ev-doc-calibration-001)。
+- S8 更新依赖 `electron-updater@6.8.10` 已独立批准；private/unsigned/schema3/export2 与用户确认安装边界不变。2026-10-11 的发布改造 dev-only 状态见历史 [EV-DOC-CALIBRATION-001](../implementation/ACCEPTANCE_EVIDENCE_V0.1.md#ev-doc-calibration-001)；该改造后续已随 PR #70 进入 main（`0a58305`），不据此推定真实发布成功。当前操作见[发布维护](../maintenance/RELEASE.md)。
 
 任何后续依赖新增/升级、Provider/模型/权限调整和迁移仍需其自身批准；现有批准不授权延期功能。
 

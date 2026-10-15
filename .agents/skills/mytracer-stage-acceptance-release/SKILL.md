@@ -9,7 +9,7 @@ Prove one approved stage on a fixed integration revision, preserve its complete 
 
 ## Activation boundary
 
-Once this workflow is explicitly activated, read [the stage workflow reference](../../../docs/implementation/STAGE_WORKFLOW_REFERENCE.md) for contract, freshness, formal evidence, and closeout procedures. Read [the daily GitHub workflow](../../../docs/implementation/GITHUB_WORKFLOW_V0.1.md) for current CI, PR, integration, and release operations; this Skill does not restore obsolete CI checks. Historical stage execution records under `docs/implementation/archive/stage-execution/` are only provenance or examples, never new authority.
+Once this workflow is explicitly activated, read [the stage workflow reference](../../../docs/implementation/STAGE_WORKFLOW_REFERENCE.md) for contract, freshness, formal evidence, and closeout procedures. Read [the daily GitHub workflow](../../../docs/implementation/GITHUB_WORKFLOW_V0.1.md) for current CI, PR, integration, and release operations; this Skill does not restore obsolete CI checks. New work uses `main_integration_revision`; historical `dev_integration_revision` fields remain historical evidence and are not rewritten or treated as new merge authority. Historical stage execution records under `docs/implementation/archive/stage-execution/` are only provenance or examples, never new authority.
 
 Apply the workflow below only when the owner explicitly invokes this Skill or explicitly requests its named stage workflow for the current work. Reading this file for inspection, encountering a Txxx reference, or receiving an ordinary implementation, fix, design, review, validation, or maintenance request does not activate it. If it is not activated, return to the current request under `AGENTS.md`; do not demand a contract or stage approval. Earlier stage approvals do not activate a new request.
 
@@ -34,26 +34,26 @@ Extract allowed files, exclusions, exact validation, manual procedures, dependen
 
 Before claiming aggregate eligibility:
 
-- verify the latest authorized `dev` revision from repository and, when required, remote facts;
-- prove every in-stage task's implementation actually entered that `dev` history or content tree;
+- verify the latest authorized `main` revision from repository and, when required, remote facts;
+- prove every in-stage task's implementation actually entered that `main` history or content tree;
 - compare task contracts, Task Index, merge commits or PRs, and Evidence rather than trusting any one source;
-- audit the approved stage range and `main...dev` merge base, commits, files, dependencies, migrations, and main-only content;
+- audit the range from the approved prior integration boundary to the fixed stage source on `main`, including commits, files, dependencies, and migrations;
 - report unrelated or unapproved content instead of silently including it in the stage.
 
 Bind revision roles explicitly:
 
 - `task_delivery_revision`: the exact revision that satisfies an individual task contract; the aggregate task has its own delivery revision.
-- `dev_integration_revision`: the revision by which that task actually entered `dev`; it may differ from the task branch head because of squash or merge.
+- `main_integration_revision`: the revision by which that task actually entered `main`; it may differ from the task branch head because of squash or merge.
 - `stage_final_integration_revision`: the one fixed product-content revision used for the complete stage validation and manual-acceptance binding.
 
-An aggregate documentation revision, a later `dev` documentation merge, a test-merge revision, and a `main` milestone merge do not silently replace `stage_final_integration_revision`. Record each role separately. If `dev` advances during acceptance, run the contract's freshness procedure and repeat every affected check and review before continuing.
+An aggregate documentation revision, a later `main` documentation merge, a test-merge revision, and a later `main` aggregate merge do not silently replace `stage_final_integration_revision`. Record each role separately. If `main` advances during acceptance, run the contract's freshness procedure and repeat every affected check and review before continuing.
 
 ## 3. Audit requirements, tasks, and evidence
 
 Build a stage matrix that maps each approved FR, AC, D, ED, and GW item to:
 
 - the owning task and observable behavior;
-- task delivery and dev integration revisions;
+- task delivery and main integration revisions;
 - automated commands and artifacts;
 - hosted CI head and test-merge revisions;
 - owner-reported manual acceptance;
@@ -114,15 +114,15 @@ After authorized closeout, run document and Skill checks plus every contract-req
 
 ## 7. Prepare the release handoff
 
-Only when the aggregate task contract explicitly authorizes it, prepare or create a `dev -> main` Draft PR after the aggregate delivery has entered the latest authorized `dev`. The handoff must report:
+Only when the aggregate task contract explicitly authorizes it, prepare or update the aggregate work branch Draft PR to `main` if integration work remains. After its authorized merge, verify the exact main integration and prepare the separate candidate/tag release handoff. Do not create a promotion PR between long-lived branches. The handoff must report:
 
-- included tasks, requirements, stage source, aggregate delivery, and current `dev` revision;
+- included tasks, requirements, stage source, aggregate delivery, and current `main` revision;
 - candidate, final-head, and post-merge CI as distinct facts;
 - package artifacts, checksums, signature status, security and platform limitations;
 - migration, restart, export, recovery, and manual acceptance status;
 - known gaps, deferred behavior, and exact owner actions still required.
 
-Stop at each owner gate. This Skill does not mark Ready, merge to `dev` or `main`, create or move a tag, publish or edit a release, upload unapproved assets, change rulesets or Secrets, or start the next stage. After an owner performs an action, verify it read-only before recording it as fact; do not attribute the action to the Agent.
+Stop at each owner gate. This Skill does not mark Ready, merge to `main`, create or move a tag, publish or edit a release, upload unapproved assets, change rulesets or Secrets, or start the next stage. After an owner performs an action, verify it read-only before recording it as fact; do not attribute the action to the Agent.
 
 When candidate, final-head, milestone, or owner-controlled release work is pending and no other meaningful work remains, record the fixed stage revision plus the relevant PR/run/job/head/test-merge identifiers and hand control to the project owner. On resume, verify that they still identify the current target before interpreting success or continuing the release handoff.
 
@@ -132,7 +132,7 @@ Stop the affected acceptance or release handoff when:
 
 - any stage task is missing, not actually integrated, or outside its approved contract;
 - the latest authorized integration base or stage source cannot be fixed reliably;
-- `main...dev` contains unexplained or main-only product content;
+- the approved prior-boundary-to-stage-source range contains unexplained or unapproved content;
 - a required automated, package, hosted, or manual check fails or cannot bind the fixed revision;
 - evidence is incomplete, contradictory, destructive, sensitive, or cannot preserve failure history;
 - completion would require a product fix, requirement change, dependency, migration, Provider, broader permission, or external write outside the contract;
@@ -144,4 +144,4 @@ Use [`ESCALATION_PROPOSAL_TEMPLATE.md`](../../../docs/implementation/ESCALATION_
 
 Report in Chinese to the project owner unless requested otherwise. Include the fixed stage source, all three revision roles, included tasks and requirements, exact commands and artifacts, local and hosted results, failed and superseding evidence, manual status, documentation state, branch and PR state, release artifacts and limitations, residual risks, owner gates, and whether any requirement conflict or scope change was found.
 
-Describe partial outcomes honestly. Stage acceptance, documentation closeout, `dev` integration, `main` integration, tag, and release are separate facts and never imply one another.
+Describe partial outcomes honestly. Stage acceptance, documentation closeout, `main` integration, tag, and release are separate facts and never imply one another.

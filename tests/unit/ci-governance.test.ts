@@ -191,6 +191,7 @@ describe('workflow safety boundaries', () => {
         ?.map((line) => line.trim())
     ).toEqual(['ci:'])
     expect(source).toContain('name: CI Gate')
+    expect(source.match(/^\s+branches: \[([^\]]+)\]/m)?.[1]).toBe('main')
     expect(source).toContain('types: [opened, synchronize, reopened]')
     expect(source).toContain('workflow_dispatch:')
     expect(source).not.toMatch(/^ {2}push:|^\s+paths(?:-ignore)?:/m)

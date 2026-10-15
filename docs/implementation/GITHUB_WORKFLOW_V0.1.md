@@ -5,7 +5,9 @@
 ## 1. 分支与本地工作
 
 - 普通变更使用描述性的 `codex/<short-name>` 分支，保留无关本地修改；不要把例行修复写成 Txxx 合同。
-- 以 owner 指定的起点开展工作；准备集成时检查与目标分支的差异、冲突和验证结果。普通变更 PR 目标为 `dev`，`main` 用于已接受的版本和发布来源。
+- 默认从最新核实的 `main` 创建工作分支，owner 另行指定来源时按其要求执行；PR 目标为 `main`。准备集成时检查与目标分支的差异、冲突和验证结果。
+- `main` 是已接受的维护基线；正式版本由 tag、Release 和确切候选产物标识。合入 `main` 不自动发布。
+- 停用 `dev` 作为集成目标，不再创建 `dev -> main` 晋级或 `main -> dev` 回流 PR。历史分支、提交与验收记录保留原含义，不据此恢复旧流程。
 - 本地 branch/worktree/commit 可由当次请求授权。push、PR 写入和其他外部写入需要明确授权；已有授权不重复询问。
 - worktree 不复制凭据或真实用户数据；同一分支不能同时在多个 worktree 检出。具体命令以当前 Git 状态和环境为准。
 
@@ -15,7 +17,7 @@
 
 审查完整 diff，关注行为、数据与安全边界及回归。是否需要另一个独立评审由 owner 或明确启用的工作流决定；PR 正文与标题结构不是 CI 门禁。
 
-Ready、合并到 dev/main、推进 main、tag、release、force push 和删除远端分支均按 owner 对具体动作的授权执行；不得绕过 required checks 或 branch protection。普通变更合入 dev 采用 squash；dev 到 main 和 main 回流 dev 的同步采用普通 merge，保留祖先关系。执行合并前核对实际父提交、merge-base 和差异，不从历史文档推定分支状态。
+Ready、合并到 main、tag、release、force push 和删除远端分支均按 owner 对具体动作的授权执行；不得绕过 required checks 或 branch protection。工作分支通过 PR 合入 main；可根据提交结构和审阅需要选择 merge、squash 或 rebase，不限制为单一合并方式。PR 保留开发提交、讨论和检查历史。刷新已发布工作分支时可普通 merge 最新 main，重新检查受影响范围，不 force-push 改写已发布历史。执行合并前核对实际来源、目标和完整差异，不从历史文档推定分支状态。
 
 ## 3. 日常 CI
 
@@ -23,9 +25,9 @@ Ready、合并到 dev/main、推进 main、tag、release、force push 和删除�
 
 | 触发 | 行为 |
 | --- | --- |
-| 目标为 dev/main 的 PR opened、synchronize、reopened | 按变更文件选择轻检查或完整验证 |
+| 目标为 main 的 PR opened、synchronize、reopened | 按变更文件选择轻检查或完整验证 |
 | 手动运行 Verification | 完整验证 |
-| 编辑 PR 正文/标题、切换 Draft/Ready、dev/main push | 不自动重复日常 CI |
+| 编辑 PR 正文/标题、切换 Draft/Ready、main push | 不自动重复日常 CI |
 
 | 变更范围 | 检查 |
 | --- | --- |
@@ -52,6 +54,8 @@ CI 不检查 PR 正文，不校验历史任务账本或 Profile，不创建正�
 必需 workflow 不使用 paths/paths-ignore 跳过整个运行，确保文档 PR 也报告 `CI Gate`。远端 rulesets 是实时事实；执行集成前核对实际 required checks、讨论解决和分支限制。当前 workflow 已移除 `Windows required gate`，不能用 `CI Gate` 绿色推定其他 required checks 已解除。
 
 需要核实的远端配置用只读查询确认；本地文档不证明远端已部署。不要把 classic branch protection API 的 404 解释为采用 rulesets 的分支没有保护。
+
+切换时核实 main 为默认分支、允许普通工作分支 PR、要求当前有效的 `CI Gate` 和讨论解决，并保留禁止强推等保护；排查旧 required checks、来源限制、未完成 PR 和外部自动化对 dev 的依赖。远端配置修改需要明确授权。确认所需内容已进入 main 且依赖已解除后，才在独立删除授权下处置远端 dev；本地流程变更不表示远端分支已经删除。
 
 ## 6. 历史与显式阶段流程
 
