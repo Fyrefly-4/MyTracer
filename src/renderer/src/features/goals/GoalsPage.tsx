@@ -29,6 +29,81 @@ interface PendingGoalEnd {
   readonly goalName: string
 }
 
+function NewNextActionForm(props: {
+  readonly goalId: string
+  readonly onSaved: () => Promise<void>
+}): ReactNode {
+  const activeRef = useUiLifetime()
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  useUnsavedContent(`goal-next-action-${props.goalId}`, Boolean(title || description))
+
+  const submit = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
+    event.preventDefault()
+    if (busy) return
+    if (!title.trim()) {
+      setError('请填写下一步名称。')
+      return
+    }
+    setBusy(true)
+    setError(null)
+    try {
+      const result = await window.myTracer.goals.createAndSetCurrentNextAction({
+        goalId: props.goalId,
+        title: title.trim(),
+        description: description.trim() || null
+      })
+      if (!activeRef.current) return
+      if (!result.ok) {
+        setError(goalErrorText[result.error.code])
+        return
+      }
+      setTitle('')
+      setDescription('')
+      await props.onSaved()
+    } catch {
+      if (activeRef.current) setError(goalErrorText['persistence-failed'])
+    } finally {
+      if (activeRef.current) setBusy(false)
+    }
+  }
+
+  return (
+    <form className="current-action-control" onSubmit={(event) => void submit(event)}>
+      <h3>新建下一步</h3>
+      <label>
+        下一步名称
+        <input
+          required
+          value={title}
+          disabled={busy}
+          onChange={(event) => setTitle(event.target.value)}
+        />
+      </label>
+      <label>
+        下一步说明（选填）
+        <textarea
+          rows={2}
+          value={description}
+          disabled={busy}
+          onChange={(event) => setDescription(event.target.value)}
+        />
+      </label>
+      <p className="empty-copy">创建后设为当前下一步，不会自动加入今天；已有行动和记录会保留。</p>
+      {error ? (
+        <p className="form-error" role="alert">
+          {error}
+        </p>
+      ) : null}
+      <button className="secondary-button" type="submit" disabled={busy}>
+        创建并设为当前下一步
+      </button>
+    </form>
+  )
+}
+
 function GoalWorkspace(): ReactNode {
   const activeRef = useUiLifetime()
   const session = useUiSession()
@@ -537,13 +612,19 @@ function GoalWorkspace(): ReactNode {
 
                 {detail.status === 'active' ? (
                   <div className="current-action-control">
+                    <h3>选择已有行动</h3>
                     <label>
                       选择当前下一步
                       <select
                         value={selectedActionId}
+                        disabled={
+                          busy || !detail.actions.some((action) => action.status === 'pending')
+                        }
                         onChange={(event) => setSelectedActionId(event.target.value)}
                       >
-                        <option value="">清空当前下一步</option>
+                        <option value="">
+                          {detail.currentNextActionId ? '清空当前下一步' : '暂未设置当前下一步'}
+                        </option>
                         {detail.actions
                           .filter((action) => action.status === 'pending')
                           .map((action) => (
@@ -553,14 +634,22 @@ function GoalWorkspace(): ReactNode {
                           ))}
                       </select>
                     </label>
+                    {!detail.actions.some((action) => action.status === 'pending') ? (
+                      <p className="empty-copy">暂无待行动，可以在下方新建下一步。</p>
+                    ) : null}
                     <button
                       className="secondary-button"
                       type="button"
-                      disabled={busy}
+                      disabled={busy || selectedActionId === (detail.currentNextActionId ?? '')}
                       onClick={() => void saveCurrentNextAction()}
                     >
                       保存当前下一步
                     </button>
+                    <NewNextActionForm
+                      key={detail.id}
+                      goalId={detail.id}
+                      onSaved={() => reloadDetail(detail.id)}
+                    />
                   </div>
                 ) : null}
 
