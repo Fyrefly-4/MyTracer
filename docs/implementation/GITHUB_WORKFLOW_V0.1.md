@@ -6,7 +6,7 @@
 
 > 文档状态：已批准的开发工作流基线  
 > 批准范围：GW-001～GW-010  
-> 配置快照：截至 2026-08-26，PR template、分层 Actions、main milestone CI 与统一 `CI Gate` 已由 T093 实现；`dev`/`main` active rulesets 均要求 `CI Gate`
+> 配置快照：截至 2026-08-26（历史快照），PR template、分层 Actions、main milestone CI 与统一 `CI Gate` 已由 T093 实现；`dev`/`main` active rulesets 均要求 `CI Gate`
 > 适用对象：项目所有者、Codex 和其他经授权 Agent
 
 ## 1. 目标
@@ -109,87 +109,11 @@ T034: fix cross-midnight record assignment
 
 代码、commit、分支和 PR 技术标题使用英文；面向项目所有者的说明和报告可以使用中文。
 
-## 5. GW-004 Draft PR 生命周期
+## 5. GW-004 PR 说明与检查
 
-第一个有意义提交完成并获得发布授权后，创建：
+创建或更新 PR 前读取仓库根目录的 [PR 模板](../../.github/pull_request_template.md)，以变更说明、验证和可选风险作为起点；简单变更可合并栏目。不强制 Txxx、FR/AC 编号、合同、Evidence 或固定正文结构。Agent 的读取要求见 [AGENTS.md](../../AGENTS.md#5-validation-and-handoff)，CI 不检查标题或正文格式。
 
-```text
-base: dev
-head: task/Txxx-short-name
-state: Draft
-```
-
-Draft PR 用于展示进行中工作和提前运行 CI，不表示已经完成或请求最终验收。GitHub Draft PR 在 Ready 前不能合并。参考：[GitHub Pull Requests](https://docs.github.com/en/pull-requests/reference/pull-requests)。
-
-PR 正文至少包含：
-
-```markdown
-## Task
-Txxx
-
-## Goal
-目标结果
-
-## Requirements
-FR-* / AC-* / D-* / ED-* / GW-*
-
-## Scope
-实际允许和修改的范围
-
-## Exclusions
-明确没有实施的内容
-
-## Changes
-实现摘要
-
-## Verification
-本地命令、环境和结果
-
-## Evidence
-Evidence ID、CI、截图或产物
-
-## Risks and gaps
-风险、未验证项和后续工作
-
-## Dependency changes
-无 / 已批准依赖
-```
-
-PR Quality 对既有正文保持兼容：`Goal`/`Summary`、`Verification`/`Validation`、`Risks and gaps`/`Risk` 分别视为同一类必要上下文。普通任务 PR 的 `Task` 应以单个 `Txxx` 开头；阶段设计、阶段验收、里程碑或明确的非任务治理 PR 可以在 `Task` 中写明对应上下文，不得为了通过校验虚构任务编号。校验器只从明确的任务声明中提取 Task ID，不从排除项或说明句中的 `Txxx` 引用推断当前任务。
-
-### Draft 转 Ready 条件
-
-- 任务合同范围已经完成；
-- 针对性测试和受影响回归实际通过；
-- 最终 diff 已自查，没有意外或无关修改；
-- 没有未批准依赖、延期功能或静默语义变化；
-- 文档和需求追踪与实现一致；
-- 已知缺口明确列出；
-- 分支基于保护规则要求的最新 `dev`；
-- Implementation Candidate 的完整 diff 已检查；
-- Integration Freshness 状态为 `fresh` 或 `refreshed-and-passed`；
-- affected regression 和 candidate required checks 已针对对应 revision 运行；
-- 独立 Codex review 针对最终 candidate，且没有未处理的重大问题；
-- docs closeout 后的 final-head required checks 已针对最新 PR head 运行；
-- 项目所有者已授权标记 Ready，或亲自执行该操作。
-
-### Early、Candidate 和 Final-head CI
-
-- **early hosted CI**：Draft PR 创建后尽早运行，用于发现平台、依赖、Windows runner、Electron、打包和 CI 问题；结果只能标记为反馈或中间验证。
-- **candidate hosted CI**：Implementation Candidate 完成完整 diff 检查、独立 review、Integration Freshness Gate 和 affected regression 后运行，是任务交付证据的一部分。
-- **final-head CI**：owner-approved docs closeout commit 形成新的 PR head 后重新运行；较早 candidate CI 不能替代它。
-
-顺序固定为：
-
-```text
-candidate CI green
-  → owner confirms exact docs closeout scope
-  → docs closeout commit
-  → final-head CI
-  → Task Delivery Revision
-```
-
-Draft PR、early CI 和中间 revision 都不表示任务完成。
+Draft 与 Ready 使用相同的变更分类；编辑正文、标题或切换 Draft/Ready 不重跑代码检查。Ready、merge、tag 和 release 仍按 owner 授权执行。显式启用阶段流程时，其独立评审、freshness、文档收口和确切 revision 要求仍由相应 Skill 与合同定义，不会恢复已移除的 CI job 或正文检查器。
 
 ## 5.1 Integration Freshness Gate
 
@@ -269,107 +193,23 @@ GitHub 保护规则可以要求 PR、状态检查、讨论解决、禁止强推�
 
 ## 8. GW-008 CI 门禁
 
-### Task PR 到 `dev`
+当前源码定义一个 Windows job，稳定检查名为 `CI Gate`。PR 目标为 dev 或 main 时，在 opened、synchronize、reopened 运行；支持 workflow_dispatch 手动完整验证。不再按 PR 正文、Draft/Ready 或 main 目标提升验证等级，也不在 dev/main push 后重复运行日常 CI。
 
-S0 必须建立一个名称稳定、所有相关 PR 都会报告的 required gate。初始目标阶段：
+| 变更范围 | 检查 |
+| --- | --- |
+| 纯 Markdown 文档、AGENTS、Skill 说明与 agents/openai.yaml 展示/调用元数据 | 本地链接、Markdown 结构和 diff integrity；不安装应用依赖 |
+| src、tests、tools、工作流、依赖、构建配置、混合或未知路径 | 上述轻检查，加锁定依赖安装、格式、lint、类型、单元、集成、构建和真实 Electron E2E |
+| 手动运行 Verification | 完整验证，不受文档分类影响 |
 
-```text
-clean install
-  → format check
-  → lint
-  → TypeScript typecheck
-  → domain/application unit tests
-  → SQLite and adapter integration tests
-  → application build
-```
+分类器优先识别 src/tests/tools 和工作流目录，防止其中的 Markdown 或 YAML 被当作普通文档。PR 默认 checkout GitHub test-merge revision，分类和验证绑定这一实际检出的 revision；不能以旧 head 或其他 revision 的成功结果代替。分类、文档或验证步骤失败均使单一 job 失败，不使用 continue-on-error。
 
-随着基础设施完成，加入：
+日常 CI 不执行 PR 正文结构检查、历史任务 metadata/Profile 检查、正式阶段证据捕获或打包。任务治理工具可供明确启用的阶段流程按需使用。失败时保留隔离测试诊断；不记录真实用户数据或凭据。npm 下载缓存按 lockfile 管理，依赖仍使用 npm ci 安装。
 
-- Main/Preload IPC 契约测试；
-- Electron E2E smoke；
-- migration、重开和导出测试；
-- Windows `better-sqlite3` 原生模块加载验证。
+`Update candidate` 仅由 workflow_dispatch 手动触发，对所选确切来源执行完整 verify、禁止发布的 NSIS 打包、隔离安装 smoke、unsigned 和 bundle 校验。普通 PR 和 main push 不再自动产生候选；准备正式更新时先手动构建 main 候选，历史版本按稳定 tag 重建。确切 source/run/artifact/hash 与 owner tag 发布校验继续保留，详见 [发布维护](../maintenance/RELEASE.md)。`Publish accepted update` 的 tag 触发与权限未改变。
 
-### `dev -> main` 里程碑 PR
+兼容 `Windows required gate` 已从当前 workflow 移除；迁移部署前核对远端 rulesets 是否仍要求它，并在 owner 授权下调整，不能用绿色 `CI Gate` 推定其他 required checks 已解除。远端配置不是本地文档事实，必须实时查询。必需 workflow 不使用 paths/paths-ignore 过滤，确保文档 PR 也会报告 `CI Gate`。手动运行仅用于额外验证，不代替 PR required checks。
 
-在 task gate 基础上增加：
-
-- 完整 E2E；
-- Windows build/package；
-- packaged/unpacked app 启动冒烟；
-- SQLite migration 和重开；
-- 完整 JSON 导出契约；
-- Electron 安全设置；
-- 对应 AC 自动化路径；
-- 人工验收状态检查和已知缺口确认。
-
-### CI 设计约束
-
-- Windows runner 是必需验证环境；其他平台只能作为额外快速反馈，不得替代 Windows 证据。
-- required job 名称在 workflows 间保持唯一。
-- required workflow 不使用会导致整个 workflow 不运行的路径过滤；若需要条件，必须保证最终 gate 总是报告明确状态。
-- required check 必须对应 PR 最新 revision。
-- AI 自动化测试使用 fake provider，不向普通 PR 暴露真实 provider key。
-- 只有验证逻辑确实依赖 Git 历史时才使用完整 checkout 历史，并记录原因。
-- 精确 command、Node/Electron 版本和 workflow 文件需在依赖批准和 T002 执行时固定。
-当前 `.github/workflows/verify.yml` 监听到 `dev`/`main` 的 `pull_request`、到 `dev`/`main` 的 `push` 和带 `full`/`milestone` mode 的手工触发。它以 change classifier 路由 PR Quality、documentation、governance、full Windows verification 和 milestone package/smoke，并始终汇总为 `CI Gate`；`Windows required gate` 作为迁移兼容 context 继续报告。
-
-
-### V2 Batch 3 evidence artifact
-
-采用 Batch 3 的任务应先运行 `npm.cmd run governance:metadata:check`，再用 `npm.cmd run evidence:verify` 包装现有 `npm.cmd run verify`。包装器必须保持原验证命令的退出码，并只在 ignored `.tmp/evidence/*.json` 生成脱敏事实 artifact。
-
-Full Windows verification job 使用以下固定上传约束：
-
-```yaml
-- name: Upload verification evidence
-  if: always()
-  uses: actions/upload-artifact@v4.6.2
-  with:
-    path: .tmp/evidence/*.json
-    if-no-files-found: warn
-    retention-days: 7
-```
-
-上传步骤不得写入 repository contents、Secrets、任务账本或长期文档。Artifact 不是 acceptance；Agent 仍须区分 early、candidate、final-head 和 post-merge CI，并把实际 artifact/run/head revision 绑定到 Evidence。
-
-GitHub required checks 必须成功后才允许合并；被路径过滤跳过的 required workflow 可能长期 Pending。参考：[GitHub status checks](https://docs.github.com/en/pull-requests/reference/status-checks) 和 [required checks troubleshooting](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks)。
-
-### Workflow 分层与协作自动化
-
-本节最初由 T092 定义目标，并由 T093 实现真实 YAML、PR template、PR Quality Check、统一 gate 和 ruleset required-context 切换。Commit/PR-title 仍只是推荐规范，不是 required check。
-
-GitHub Actions 的定位是 Repository Safety Gate：负责确定性的质量验证和流程约束，不解释 Task Contract、不计算 Agent 权限，也不授权 Agent 操作。默认 `permissions` 保持 `contents: read`；不引入自动 merge、tag、release、deployment 或 Agent 权限解析逻辑。
-
-CI 按变更面分层；混合变更执行其中最高等级，合同明确要求的验证不能被路径分类跳过：
-
-| 类别 | 典型范围 | 目标验证 |
-|---|---|---|
-| Source Change | `src/**`、`tests/**`、依赖/构建配置、工具脚本、Workflow YAML | 完整 verification，包括 build、unit、integration 和 Electron E2E |
-| Governance Change | AGENTS、任务/阶段模板、metadata/Profile JSON、治理规范 | metadata、governance、format 和 diff integrity；治理工具或测试代码变化同时按 Source Change |
-| Documentation Only | 不改变治理规则、稳定命令或产品语义的普通说明文档 | 轻量 format、链接/结构和 diff integrity |
-
-当前结构为：
-
-```text
-CI Router / Change Classifier
-  ├─ verification：代码、测试、构建与 Electron 验证
-  ├─ governance：metadata、Profile 与治理一致性检查
-  ├─ documentation：纯文档轻量检查
-  └─ milestone：dev -> main 与 main 集成验证
-          ↓
-       CI Gate
-```
-
-- `dev` 继续持续集成；`main` 和 `dev -> main` PR 增加 milestone 验证，但不自动 merge、tag 或 release。
-- `CI Gate` 是始终报告的稳定终端 context；active Dev/Main rulesets 只绑定该 context，内部 job 可以演进，路径过滤不得令 required gate 永久 Pending。兼容 `Windows required gate` 暂时保留，但不是 ruleset required context。
-- Draft PR 默认提供按类别的反馈，Ready PR 执行完整验证；Draft 可通过 PR body 的 `CI mode: full` 或 `CI mode: milestone` 只提高验证等级，不得通过自动标记 Ready 绕过 owner gate。
-- 按 PR number 或 branch/ref 设置 concurrency，并用 `cancel-in-progress: true` 取消同一 PR/分支已被新 revision 取代的旧 CI。
-- 上述优化不改变 merge handoff：`Implementation Candidate → owner-approved docs closeout → final-head CI → owner-controlled Ready → owner-approved merge`。CI 只提供进入下一 Gate 的事实，不自动改变任务/PR 状态。
-
-当前 PR template 包含 `Task`、`Summary`、`Requirements`、`Scope`、`Exclusions`、`Validation`、`Evidence`、`Risk`、`Dependency changes` 和可选 `CI mode`。PR Quality Check 只检查必要上下文是否存在，并接受 §5 所列的既有标题别名和非任务工作上下文；它不判断实现正确性，也不替代完整 diff review、独立 review、CI、人工体验或 owner merge 决策。
-
-推荐任务提交和 task PR squash 标题采用 `<type>(Txxx): description`，建议 `type` 为 `feat`、`fix`、`test`、`docs`、`refactor`、`chore`、`build` 或 `ci`。这是可读性规范，不是当前 required check，不追溯重写历史；若未来升级为强制检查，必须另行定义例外、迁移和失败语义。
+旧阶段分层 job、PR Quality、CI mode 正文指令及自动 milestone 打包的历史定义保存在 Git 历史中；已完成任务的验收记录不回写。阶段流程授权不会自动恢复旧 CI。完整验证命令仍是 `npm.cmd run verify`，不安装依赖、不打包、不发布、不执行 live AI，也不修改 tracked 文件。
 
 ## 9. GW-009 Agent Git 权限
 
@@ -429,7 +269,7 @@ Codex 的 `/review` 可以读取选择的 diff 并报告按优先级排序的问
 
 是否在每个候选节点推进 `main` 由项目所有者决定。任务或阶段通过不会自动创建 tag。
 
-S8 私有更新在 2026-10-06 获 owner 批准采用版本 tag 作为逐次发布授权：main 自动准备候选，owner 在有合格候选的 main 源提交上创建并推送稳定版本 tag，Actions 才自动发布该确切来源及验证后的产物。源可为 main 历史提交；已有 tag 必须正确指向来源，已有 Release 不覆盖。该约定取代 S8 的五参数手动 dispatch 和逐版本审批 JSON，不授权 Agent 创建 tag、执行真实发布、推进 main、修改 Secrets 或 rulesets。完整校验与故障处置见 [T084 发布操作](../maintenance/RELEASE.md#owner-tag-正式发布)。
+S8 私有更新在 2026-10-06 获 owner 批准采用版本 tag 作为逐次发布授权（当前候选已改为手动构建）：owner 在有合格候选的 main 源提交上创建并推送稳定版本 tag，Actions 才自动发布该确切来源及验证后的产物。源可为 main 历史提交；已有 tag 必须正确指向来源，已有 Release 不覆盖。该约定取代 S8 的五参数手动 dispatch 和逐版本审批 JSON，不授权 Agent 创建 tag、执行真实发布、推进 main、修改 Secrets 或 rulesets。完整校验与故障处置见 [T084 发布操作](../maintenance/RELEASE.md#owner-tag-正式发布)。
 
 Release PR 必须列出：
 
@@ -466,7 +306,7 @@ main
 - PR 通过 Task ID 关联任务索引；若存在 Issue，再额外关联 Issue。
 - 当前不引入 GitHub Projects，除非任务数量或协作者数量使文档索引不再有效。
 
-## 14. 启用顺序
+## 14. 历史启用记录（不代表当前 CI 配置）
 
 1. [x] GitHub 远端、`dev` 和 `main` 已建立；default branch 为 `main`。
 2. [x] 依赖、工具链和精确验证命令已批准并锁定。
@@ -479,7 +319,7 @@ main
 
 以上是 2026-08-26 的配置快照，不替代实时 GitHub 查询，也不自动授权任何配置写入。
 
-## 15. 当前结论
+## 15. 历史部署结论（当前 CI 以第 8 节及源码为准）
 
 - GW-001～GW-010 是 MyTracer v0.1 的批准流程；实时配置是其部分实现，差异不得靠文档假定消失。
 - 仓库为 private、default branch 为 `main`；T093 PR #33 实现候选 `189decb...` 的 run `32942810086` 已实际通过 full Windows verification、milestone package/smoke、`CI Gate` 和兼容 `Windows required gate`。

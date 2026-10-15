@@ -1,22 +1,18 @@
 name: Update candidate
 
 on:
-  pull_request:
-    branches: [dev, main]
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: update-candidate-${{ github.event.pull_request.number || github.sha }}
+  group: update-candidate-${{ github.sha }}
   cancel-in-progress: true
 
 jobs:
   candidate:
-    if: github.repository == 'Fyrefly-4/MyTracer' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    if: github.repository == 'Fyrefly-4/MyTracer'
     runs-on: windows-2025
     timeout-minutes: 40
     env:
@@ -27,14 +23,14 @@ jobs:
       - name: Checkout exact source revision
         uses: actions/checkout@v6.0.2
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: false
       - name: Set up locked Node
         uses: actions/setup-node@v6.4.0
         with:
           node-version: 24.18.0
-          package-manager-cache: false
+          cache: npm
       - name: Validate historical main source for a tag rebuild
         if: github.event_name == 'workflow_dispatch' && startsWith(github.ref, 'refs/tags/')
         env:
@@ -44,8 +40,6 @@ jobs:
         run: npm.cmd ci
       - name: Install pinned Electron binary
         run: npm.cmd exec -- install-electron --no
-      - name: Check task metadata
-        run: npm.cmd run governance:metadata:check
       - name: Capture exact-source aggregate
         run: node tools/evidence/capture-command.mjs --task T084 --gate aggregate --output .tmp/evidence -- npm.cmd run verify
       - name: Build NSIS without publication
@@ -75,7 +69,7 @@ jobs:
         env:
           TASK_ARTIFACT_ID: ${{ steps.candidate_upload.outputs.artifact-id }}
           TASK_ARTIFACT_DIGEST: ${{ steps.candidate_upload.outputs.artifact-digest }}
-          TASK_SOURCE_REVISION: ${{ github.event.pull_request.head.sha || github.sha }}
+          TASK_SOURCE_REVISION: ${{ github.sha }}
           TASK_CANDIDATE_REF: ${{ github.ref }}
         run: |
           "Candidate artifact ID: $env:TASK_ARTIFACT_ID" >> $env:GITHUB_STEP_SUMMARY
@@ -90,7 +84,7 @@ jobs:
           if ($env:TASK_CANDIDATE_REF -eq 'refs/heads/main' -or $env:TASK_CANDIDATE_REF -like 'refs/tags/v*') {
             "After this run succeeds, owner may approve this source by pushing tag v$taskVersion." >> $env:GITHUB_STEP_SUMMARY
           }
-          "PR candidates cannot be formally published; accepted main sources are required." >> $env:GITHUB_STEP_SUMMARY
+          "Only candidates from accepted main sources can be formally published." >> $env:GITHUB_STEP_SUMMARY
       - name: Preserve command evidence including failures
         if: always()
         uses: actions/upload-artifact@v4.6.2

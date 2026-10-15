@@ -1,39 +1,11 @@
-## Task
+## 变更说明
 
-<!-- Required before Ready: describe the current request. Use Txxx only for an explicitly activated task workflow; ordinary changes need no invented task ID or contract. -->
+<!-- 解决什么问题，以及修改后的行为。简单变更用一两句话即可。 -->
 
-## Summary
+## 验证
 
-<!-- Describe the observable outcome and why this PR exists. -->
+<!-- 实际执行的检查和结果；未验证的内容请说明。 -->
 
-## Requirements
+## 风险与注意事项
 
-<!-- List relevant FR/AC/D/ED references for product behavior, or explain that the change does not affect product semantics. -->
-
-## Scope
-
-<!-- List the files, modules, or behavior intentionally changed. -->
-
-## Exclusions
-
-<!-- List explicit non-goals and deferred work. -->
-
-## Validation
-
-<!-- Record exact commands or manual procedures and their results. -->
-
-## Evidence
-
-<!-- Identify actual command results, source revision or uncommitted state, and limitations. A formal acceptance-ledger entry is needed only when explicitly required by the owner or an activated stage workflow. -->
-
-## Risk
-
-<!-- Describe residual risk, rollback considerations, and unresolved gaps. -->
-
-## Dependency changes
-
-<!-- State "None" or identify each separately approved dependency change. -->
-
-## CI mode
-
-<!-- Optional escalation only: CI mode: full or CI mode: milestone -->
+<!-- 有实际风险、兼容性影响或需要人工确认的事项时填写；否则可删除。 -->

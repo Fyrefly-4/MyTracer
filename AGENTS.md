@@ -41,6 +41,8 @@ The current request may authorize necessary local branch/worktree and commit ope
 
 ## 5. Validation and handoff
 
+Before creating or updating a PR, read `.github/pull_request_template.md` and use it as the starting point. Match detail to the change; remove unused headings and prompts, and combine sections for simple changes. Add stage-specific fields only when the owner explicitly requires that workflow.
+
 - Choose validation and regression checks by affected behavior and risk; add or update tests where useful. Prose-only changes do not require application builds or Electron E2E. Run `verify` when full application verification is warranted or explicitly required; it must not rewrite tracked files or invoke installation, packaging, release, migrations, or live AI.
 - Review the complete diff for correctness, safety, scope, and accidental changes. Separate independent review and formal task/evidence records apply only when the owner or an explicitly activated workflow requires them.
 - Report the result, changed files, actual checks, and material risks or gaps concisely. Bind validation claims to the tested revision or identified uncommitted state; distinguish local, hosted, and manual results. Unperformed manual acceptance stays pending. Update affected documentation without rewriting historical acceptance records as routine closeout.

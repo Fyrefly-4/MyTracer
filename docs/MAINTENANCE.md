@@ -41,8 +41,8 @@
 | 单元测试 | `npm.cmd run test:unit` |
 | 集成测试 | `npm.cmd run test:integration` |
 | 构建并运行真实 Electron E2E | `npm.cmd run test:e2e` |
-| 必需的聚合验证，包含上述格式、lint、类型及测试检查 | `npm.cmd run verify` |
-| 校验任务元数据与流程配置 | `npm.cmd run governance:metadata:check` |
+| 完整应用聚合验证，包含上述格式、lint、类型及测试检查 | `npm.cmd run verify` |
+| 显式阶段流程按需校验任务元数据 | `npm.cmd run governance:metadata:check` |
 
 构建输出位于 `out/`，打包输出位于 `release/`。`verify` 包含 E2E 所需构建，不包含打包、真实安装或 live AI 测试；构建通过不等于人工验收通过。
 
