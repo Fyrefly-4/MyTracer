@@ -12,8 +12,8 @@
 - **Title**：
 - **Status**：draft / approved / historical
 - **Owner approval**：
-- **Target branch**：`dev`
-- **Prior behavior revision**：`dev@<revision>`
+- **Target branch**：`main`
+- **Prior behavior revision**：`main@<revision>`
 
 ## 2. Baseline manifest
 
@@ -30,7 +30,7 @@ baseline:
     - docs/architecture/DOMAIN_MODEL_V0.1.md
     - docs/architecture/DATA_DESIGN_V0.1.md
     - docs/architecture/TEST_STRATEGY_V0.1.md
-  prior_behavior_revision: dev@<revision>
+  prior_behavior_revision: main@<revision>
 ```
 
 Baseline 是本阶段的输入边界。若基线文件或 prior behavior revision 改变，必须重新评估受影响任务和验收。
@@ -115,7 +115,7 @@ shared_surfaces:
 - 需求、决定或 MUST/AC 冲突；
 - 需要改变冻结状态、日期、删除、AI 或确认语义；
 - 需要未批准依赖、migration、权限或外部写入；
-- 无法在最终 dev revision 上完成可靠阶段验收。
+- 无法在最终 main revision 上完成可靠阶段验收。
 
 ### Required authorization
 
