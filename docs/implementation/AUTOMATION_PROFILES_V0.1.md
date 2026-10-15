@@ -1,5 +1,7 @@
 # MyTracer Automation Profiles v0.1
 
+> 流程启用边界：只有 owner 为当前工作明确启用阶段开发流程后，本文的合同和 Profile 规则才适用。缺失、失效或未激活 Profile 不会将普通请求转入合同或逐项阶段授权流程；本文后续回退规则仅限已显式启用的阶段流程。 以根目录 [AGENTS.md](../../AGENTS.md) 为准。
+
 > 文档状态：T092 定义已由 T093 接入 development Skill 与仓库 Workflow；具体任务仍须由项目所有者批准并激活 Profile
 >
 > 适用范围：普通 MyTracer Txxx 的任务运行模式；不改变产品需求、任务范围或 Repository Safety Rules

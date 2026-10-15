@@ -1,11 +1,17 @@
 ---
 name: mytracer-stage-development
-description: Execute one approved MyTracer Txxx implementation or fix task within an S0-S8 slice, from task-contract and authority checks through scoped development, layered validation, independent review, meaningful commits, hosted CI, owner-approved documentation closeout, final-head CI, and merge handoff. Use when a development agent is asked to build or fix a concrete MyTracer task; do not use it to invent product requirements, batch an entire stage, or treat review-only requests as implementation authorization.
+description: Execute the S0-S8 Txxx development lifecycle only when the owner explicitly invokes this Skill or requests that stage development workflow. Includes contract gates, validation, CI, documentation closeout, and merge handoff. Ordinary implementation, repair, or maintenance requests do not activate it.
 ---
 
 # MyTracer Stage Development
 
 Complete one approved `Txxx` task as a focused, traceable delivery. Preserve frozen product semantics, user data, process boundaries, and the project owner's control over dependencies, publication, merge, and release.
+
+## Activation boundary
+
+Once this workflow is explicitly activated, read [the stage workflow reference](../../../docs/implementation/STAGE_WORKFLOW_REFERENCE.md) for contract, freshness, formal evidence, and closeout procedures. Read [the daily GitHub workflow](../../../docs/implementation/GITHUB_WORKFLOW_V0.1.md) for current CI, PR, integration, and release operations; this Skill does not restore obsolete CI checks. Historical stage execution records under `docs/implementation/archive/stage-execution/` are only provenance or examples, never new authority.
+
+Apply the workflow below only when the owner explicitly invokes this Skill or explicitly requests its named stage workflow for the current work. Reading this file for inspection, encountering a Txxx reference, or receiving an ordinary implementation, fix, design, review, validation, or maintenance request does not activate it. If it is not activated, return to the current request under `AGENTS.md`; do not demand a contract or stage approval. Earlier stage approvals do not activate a new request.
 
 ## 1. Establish authority and task scope
 
@@ -161,7 +167,7 @@ Run validation in this order, using only established commands:
 4. The repository aggregate verification command when required.
 5. Windows build, package, restart, migration, export, or manual procedures when the task or gate requires them.
 
-Apply the [`AGENTS.md`](../../../AGENTS.md) long-running-work policy to command execution. Local result-gating commands normally use `BLOCK`; use `SPARSE_POLL` only when effective blocking is unavailable, and use its required exit assessment rather than observing an unchanged process indefinitely.
+Apply the [stage workflow long-running-work policy](../../../docs/implementation/STAGE_WORKFLOW_REFERENCE.md#16-long-running-work) to command execution. Local result-gating commands normally use `BLOCK`; use `SPARSE_POLL` only when effective blocking is unavailable, and use its required exit assessment rather than observing an unchanged process indefinitely.
 
 For every execution, retain the exact command, working directory, environment, source revision or timestamped uncommitted state, result, and relevant artifact. Distinguish local proof from hosted CI and source-branch revisions from test-merge revisions.
 
@@ -239,7 +245,7 @@ Use this PR structure:
 - Risks and gaps
 - Dependency changes
 
-After the implementation commits, local verification, final diff review, and independent review are complete, push the implementation candidate and obtain required hosted CI on that exact PR head or test-merge revision. Follow the [`AGENTS.md`](../../../AGENTS.md) long-running-work policy: if no meaningful work remains after confirming that CI started, preserve the target revision and PR/run/job/head/test-merge identifiers and issue an accurate pending handoff. On resume, verify those identifiers still match the current target revision before using the result. Treat the first green hosted CI as an implementation-complete candidate, not final task completion, and continue into the documentation closeout gate after it is verified.
+After the implementation commits, local verification, final diff review, and independent review are complete, push the implementation candidate and obtain required hosted CI on that exact PR head or test-merge revision. Follow the [stage workflow long-running-work policy](../../../docs/implementation/STAGE_WORKFLOW_REFERENCE.md#16-long-running-work): if no meaningful work remains after confirming that CI started, preserve the target revision and PR/run/job/head/test-merge identifiers and issue an accurate pending handoff. On resume, verify those identifiers still match the current target revision before using the result. Treat the first green hosted CI as an implementation-complete candidate, not final task completion, and continue into the documentation closeout gate after it is verified.
 
 Never mark Ready, merge to `dev`, create or merge `dev -> main`, tag, release, change branch protection, or modify secrets without the exact additional owner authorization required by the workflow.
 
@@ -304,7 +310,7 @@ After the final-head CI passes, update the PR body with the latest revision, CI 
 
 ## 11. Handle merge handoff
 
-For a published task PR, report the merge-ready state and hand control to the project owner unless the owner explicitly requests continued monitoring. Do not merge on the owner's behalf without exact authorization. Apply the [`AGENTS.md`](../../../AGENTS.md) long-running-work policy to any requested monitoring.
+For a published task PR, report the merge-ready state and hand control to the project owner unless the owner explicitly requests continued monitoring. Do not merge on the owner's behalf without exact authorization. Apply the [stage workflow long-running-work policy](../../../docs/implementation/STAGE_WORKFLOW_REFERENCE.md#16-long-running-work) to any requested monitoring.
 
 - Preserve the PR number, target branch, current head, required-check revision, and remaining owner action in the handoff.
 - On resume, verify that the saved PR/head still identifies the current target before interpreting reviews, checks, or merge state; do not reuse an older green run for a newer head.

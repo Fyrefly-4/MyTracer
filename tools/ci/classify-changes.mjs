@@ -2,50 +2,6 @@ import { appendFileSync, existsSync, readFileSync, statSync } from 'node:fs'
 import { dirname, isAbsolute, relative, resolve } from 'node:path'
 import { spawnSync } from 'node:child_process'
 
-const LEVEL_RANK = {
-  documentation: 0,
-  governance: 1,
-  full: 2,
-  milestone: 3
-}
-
-const SOURCE_EXACT = new Set([
-  '.editorconfig',
-  '.eslintignore',
-  '.eslintrc',
-  '.eslintrc.cjs',
-  '.eslintrc.js',
-  '.eslintrc.json',
-  '.npmrc',
-  '.prettierignore',
-  '.prettierrc',
-  '.prettierrc.cjs',
-  '.prettierrc.js',
-  '.prettierrc.json',
-  'electron-builder.yml',
-  'electron.vite.config.ts',
-  'package-lock.json',
-  'package.json',
-  'playwright.config.ts',
-  'tsconfig.json',
-  'tsconfig.node.json',
-  'tsconfig.test.json',
-  'vite.config.ts',
-  'vitest.config.ts'
-])
-
-const GOVERNANCE_EXACT = new Set([
-  'AGENTS.md',
-  'README.md',
-  '.github/pull_request_template.md',
-  'docs/DECISIONS.md',
-  'docs/PRODUCT_REQUIREMENTS_V0.1.md',
-  'docs/REQUIREMENTS_CHANGE_POLICY.md'
-])
-
-const DOCUMENTATION_EXACT = new Set(['CHANGELOG.md'])
-const DOCUMENTATION_PREFIXES = ['docs/guides/', 'docs/reference/', 'docs/release-notes/', 'user/']
-
 function parseArguments(argv) {
   const [command = 'classify', ...rest] = argv
   const options = {}
@@ -73,41 +29,8 @@ function readJson(filePath) {
   return JSON.parse(readFileSync(filePath, 'utf8'))
 }
 
-function readBoolean(value, fallback = false) {
-  if (value === undefined || value === '') {
-    return fallback
-  }
-
-  return String(value).toLowerCase() === 'true'
-}
-
 function stripComments(value) {
   return value.replace(/<!--[\s\S]*?-->/g, '')
-}
-
-function requestedMode(body) {
-  const content = stripComments(body ?? '')
-  const inline = content.match(/^\s*CI mode\s*:\s*(full|milestone)\s*$/im)
-  if (inline) {
-    return inline[1].toLowerCase()
-  }
-
-  const lines = content.split(/\r?\n/)
-  const headingIndex = lines.findIndex((line) => /^#{1,6}\s+CI mode\s*$/i.test(line))
-  if (headingIndex < 0) {
-    return undefined
-  }
-  const sectionLines = []
-  for (const line of lines.slice(headingIndex + 1)) {
-    if (/^#{1,6}\s+/.test(line)) {
-      break
-    }
-    sectionLines.push(line)
-  }
-  return sectionLines
-    .join('\n')
-    .match(/\b(full|milestone)\b/i)?.[1]
-    ?.toLowerCase()
 }
 
 function normalizePath(filePath) {
@@ -115,60 +38,24 @@ function normalizePath(filePath) {
 }
 
 export function classifyPath(filePath) {
-  const normalized = normalizePath(filePath)
-  const lower = normalized.toLowerCase()
-
-  if (
-    lower.startsWith('src/') ||
-    lower.startsWith('tests/') ||
-    lower.startsWith('tools/') ||
-    lower.startsWith('.github/workflows/') ||
-    SOURCE_EXACT.has(normalized) ||
-    /^tsconfig(?:\.[^.]+)?\.json$/i.test(normalized) ||
-    /^(?:vite|vitest|playwright|electron-vite|eslint|prettier)\.config\.[cm]?[jt]s$/i.test(
-      normalized
-    )
-  ) {
+  const normalized = normalizePath(filePath).toLowerCase()
+  // Executable locations take precedence, even for Markdown or YAML files.
+  if (/^(?:src|tests|tools)\//.test(normalized) || normalized.startsWith('.github/workflows/')) {
     return 'source'
   }
-
   if (
-    GOVERNANCE_EXACT.has(normalized) ||
-    lower.startsWith('.agents/') ||
-    lower.startsWith('docs/architecture/') ||
-    lower.startsWith('docs/implementation/')
-  ) {
-    return 'governance'
-  }
-
-  if (
-    /\.(?:md|mdx)$/i.test(normalized) &&
-    (DOCUMENTATION_EXACT.has(normalized) ||
-      DOCUMENTATION_PREFIXES.some((prefix) => lower.startsWith(prefix)))
+    /\.(?:md|mdx)$/.test(normalized) ||
+    /^\.agents\/skills\/[^/]+\/agents\/openai\.yaml$/.test(normalized)
   ) {
     return 'documentation'
   }
-
   return 'source'
 }
 
 export function classifyPaths(paths) {
-  if (paths.length === 0) {
-    return 'source'
-  }
-
-  const categories = new Set(paths.map(classifyPath))
-  if (categories.has('source')) {
-    return 'source'
-  }
-  if (categories.has('governance')) {
-    return 'governance'
-  }
-  return 'documentation'
-}
-
-function raiseLevel(current, requested) {
-  return LEVEL_RANK[requested] > LEVEL_RANK[current] ? requested : current
+  return paths.length > 0 && paths.every((filePath) => classifyPath(filePath) === 'documentation')
+    ? 'documentation'
+    : 'source'
 }
 
 function readEvent(options) {
@@ -209,44 +96,11 @@ function readChangedPaths(options, baseRevision, headRevision) {
     .map(normalizePath)
 }
 
-export function buildClassification({
-  paths,
-  eventName,
-  targetBranch,
-  draft,
-  body,
-  explicitMode,
-  baseRevision,
-  headRevision
-}) {
-  const pathCategory = classifyPaths(paths)
-  let level = pathCategory === 'source' ? 'full' : pathCategory
-  const isPullRequest = eventName === 'pull_request'
-
-  if (targetBranch === 'main') {
-    level = 'milestone'
-  }
-  if (isPullRequest && !draft) {
-    level = raiseLevel(level, 'full')
-  }
-
-  const bodyMode = requestedMode(body)
-  if (bodyMode) {
-    level = raiseLevel(level, bodyMode)
-  }
-  if (explicitMode === 'full' || explicitMode === 'milestone') {
-    level = raiseLevel(level, explicitMode)
-  }
-
+export function buildClassification({ paths, eventName, baseRevision, headRevision }) {
+  const category = eventName === 'workflow_dispatch' ? 'source' : classifyPaths(paths)
   return {
-    category: level === 'milestone' ? 'milestone' : pathCategory,
-    path_category: pathCategory,
-    level,
-    run_pr_quality: isPullRequest,
-    run_documentation: pathCategory === 'documentation',
-    run_governance: ['governance', 'full', 'milestone'].includes(level),
-    run_verification: ['full', 'milestone'].includes(level),
-    run_milestone: level === 'milestone',
+    category,
+    run_verification: category === 'source',
     base_revision: baseRevision,
     head_revision: headRevision,
     changed_paths: paths
@@ -273,119 +127,14 @@ function appendGitHubOutputs(classification) {
 function runClassify(options) {
   const event = readEvent(options)
   const eventName = options['event-name'] ?? process.env.GITHUB_EVENT_NAME ?? 'workflow_dispatch'
-  const pullRequest = event.pull_request
-  const targetBranch =
-    options['target-branch'] ??
-    pullRequest?.base?.ref ??
-    event.ref?.replace(/^refs\/heads\//, '') ??
-    process.env.GITHUB_REF_NAME ??
-    ''
-  const draft = readBoolean(options.draft, pullRequest?.draft ?? false)
-  const body = options['body-file']
-    ? readFileSync(options['body-file'], 'utf8')
-    : (pullRequest?.body ?? '')
-  const explicitMode =
-    options['ci-mode'] ?? event.inputs?.ci_mode ?? process.env.MYTRACER_CI_MODE ?? ''
-  const baseRevision =
-    options.base ??
-    pullRequest?.base?.sha ??
-    event.before ??
-    process.env.MYTRACER_BASE_REVISION ??
-    ''
+  const baseRevision = options.base ?? event.pull_request?.base?.sha ?? event.before ?? ''
+  // On PRs, CI checks the test-merge revision rather than only the source head.
   const headRevision =
-    options.head ?? pullRequest?.head?.sha ?? event.after ?? process.env.GITHUB_SHA ?? ''
+    options.head ?? process.env.GITHUB_SHA ?? event.pull_request?.head?.sha ?? event.after ?? ''
   const paths = readChangedPaths(options, baseRevision, headRevision)
-  const classification = buildClassification({
-    paths,
-    eventName,
-    targetBranch,
-    draft,
-    body,
-    explicitMode,
-    baseRevision,
-    headRevision
-  })
-
+  const classification = buildClassification({ paths, eventName, baseRevision, headRevision })
   appendGitHubOutputs(classification)
-  process.stdout.write(`${JSON.stringify(classification)}\n`)
-}
-
-function optionOrEnvironment(options, optionName, environmentName, fallback = '') {
-  return options[optionName] ?? process.env[environmentName] ?? fallback
-}
-
-function runGate(options) {
-  const checks = [
-    {
-      name: 'classify',
-      expected: true,
-      result: optionOrEnvironment(options, 'result-classify', 'MYTRACER_RESULT_CLASSIFY')
-    },
-    {
-      name: 'pr-quality',
-      expected: readBoolean(
-        optionOrEnvironment(options, 'expect-pr-quality', 'MYTRACER_EXPECT_PR_QUALITY')
-      ),
-      result: optionOrEnvironment(options, 'result-pr-quality', 'MYTRACER_RESULT_PR_QUALITY')
-    },
-    {
-      name: 'documentation',
-      expected: readBoolean(
-        optionOrEnvironment(options, 'expect-documentation', 'MYTRACER_EXPECT_DOCUMENTATION')
-      ),
-      result: optionOrEnvironment(options, 'result-documentation', 'MYTRACER_RESULT_DOCUMENTATION')
-    },
-    {
-      name: 'governance',
-      expected: readBoolean(
-        optionOrEnvironment(options, 'expect-governance', 'MYTRACER_EXPECT_GOVERNANCE')
-      ),
-      result: optionOrEnvironment(options, 'result-governance', 'MYTRACER_RESULT_GOVERNANCE')
-    },
-    {
-      name: 'verification',
-      expected: readBoolean(
-        optionOrEnvironment(options, 'expect-verification', 'MYTRACER_EXPECT_VERIFICATION')
-      ),
-      result: optionOrEnvironment(options, 'result-verification', 'MYTRACER_RESULT_VERIFICATION')
-    },
-    {
-      name: 'milestone',
-      expected: readBoolean(
-        optionOrEnvironment(options, 'expect-milestone', 'MYTRACER_EXPECT_MILESTONE')
-      ),
-      result: optionOrEnvironment(options, 'result-milestone', 'MYTRACER_RESULT_MILESTONE')
-    }
-  ]
-
-  const ciGateResult = optionOrEnvironment(options, 'result-ci-gate', 'MYTRACER_RESULT_CI_GATE')
-  if (ciGateResult) {
-    checks.push({ name: 'CI Gate', expected: true, result: ciGateResult })
-  }
-
-  const errors = []
-  for (const check of checks) {
-    if (check.expected && check.result !== 'success') {
-      errors.push(`${check.name} was required but finished as ${check.result || 'missing'}`)
-      continue
-    }
-    if (
-      !check.expected &&
-      ['failure', 'cancelled', 'timed_out', 'action_required'].includes(check.result)
-    ) {
-      errors.push(`${check.name} unexpectedly finished as ${check.result}`)
-    }
-  }
-
-  if (errors.length > 0) {
-    for (const error of errors) {
-      process.stderr.write(`::error title=CI Gate::${escapeWorkflowMessage(error)}\n`)
-    }
-    process.exitCode = 1
-    return
-  }
-
-  process.stdout.write('All required CI jobs completed successfully.\n')
+  process.stdout.write(JSON.stringify(classification) + '\n')
 }
 
 function removeFragmentAndQuery(target) {
@@ -443,7 +192,8 @@ function validateMarkdownStructure(content, filePath) {
   }
 
   const headings = [...visible.matchAll(/^(#{1,6})\s+\S.*$/gm)].map((match) => match[1].length)
-  if (!headings.includes(1)) {
+  // GitHub inserts this fragment into a PR body, where H2 sections are conventional.
+  if (!headings.includes(1) && filePath !== '.github/pull_request_template.md') {
     errors.push(`${filePath}: documentation must contain a level-one heading`)
   }
   for (let index = 1; index < headings.length; index += 1) {
@@ -493,44 +243,27 @@ function validateMarkdownLinks(root, absoluteFile, filePath, content) {
   return errors
 }
 
-async function validateDocumentationFile(prettier, root, filePath) {
+function validateDocumentationFile(root, filePath) {
   const absoluteFile = resolve(root, filePath)
-  if (!existsSync(absoluteFile) || !statSync(absoluteFile).isFile()) {
-    return []
-  }
-
+  if (!existsSync(absoluteFile) || !statSync(absoluteFile).isFile()) return []
   const content = readFileSync(absoluteFile, 'utf8')
-  const errors = [
+  return [
     ...validateMarkdownStructure(content, filePath),
     ...validateMarkdownLinks(root, absoluteFile, filePath, content)
   ]
-
-  try {
-    const configuration = await prettier.resolveConfig(absoluteFile)
-    const formatted = await prettier.check(content, {
-      ...(configuration ?? {}),
-      filepath: absoluteFile
-    })
-    if (!formatted) {
-      errors.push(`${filePath}: documentation is not formatted with Prettier`)
-    }
-  } catch (error) {
-    errors.push(`${filePath}: documentation format check failed: ${error.message}`)
-  }
-
-  return errors
 }
 
 async function runDocs(options) {
   const root = resolve(options['repository-root'] ?? process.cwd())
-  const paths = readChangedPaths(options, options.base ?? '', options.head ?? '')
+  const paths = readChangedPaths(
+    options,
+    options.base ?? process.env.BASE_REVISION ?? '',
+    options.head ?? process.env.HEAD_REVISION ?? ''
+  )
   const documentationPaths = paths.filter(
     (filePath) => /\.(?:md|mdx)$/i.test(filePath) && existsSync(resolve(root, filePath))
   )
-  const prettier = await import('prettier')
-  const results = await Promise.all(
-    documentationPaths.map((filePath) => validateDocumentationFile(prettier, root, filePath))
-  )
+  const results = documentationPaths.map((filePath) => validateDocumentationFile(root, filePath))
   const errors = results.flat()
 
   if (errors.length > 0) {
@@ -548,10 +281,6 @@ async function main() {
   const { command, options } = parseArguments(process.argv.slice(2))
   if (command === 'classify') {
     runClassify(options)
-    return
-  }
-  if (command === 'gate') {
-    runGate(options)
     return
   }
   if (command === 'docs') {

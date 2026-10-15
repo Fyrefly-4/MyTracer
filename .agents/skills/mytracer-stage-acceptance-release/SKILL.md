@@ -1,11 +1,17 @@
 ---
 name: mytracer-stage-acceptance-release
-description: Aggregate and verify one owner-authorized MyTracer stage after its tasks enter dev, bind exact delivery and integration revisions, close evidence and documentation, and prepare an owner-gated release handoff. Use for stage or milestone acceptance; do not implement fixes, sign manual acceptance, mark Ready, merge, tag, release, or start the next stage.
+description: Verify an approved MyTracer stage and prepare its release handoff only when the owner explicitly invokes this Skill or requests that stage acceptance workflow. Ordinary validation, review, packaging, or release questions do not activate it.
 ---
 
 # MyTracer Stage Acceptance and Release
 
 Prove one approved stage on a fixed integration revision, preserve its complete evidence history, and prepare a release handoff without taking product-owner actions. This is an aggregate verification workflow, not a development or repair workflow.
+
+## Activation boundary
+
+Once this workflow is explicitly activated, read [the stage workflow reference](../../../docs/implementation/STAGE_WORKFLOW_REFERENCE.md) for contract, freshness, formal evidence, and closeout procedures. Read [the daily GitHub workflow](../../../docs/implementation/GITHUB_WORKFLOW_V0.1.md) for current CI, PR, integration, and release operations; this Skill does not restore obsolete CI checks. Historical stage execution records under `docs/implementation/archive/stage-execution/` are only provenance or examples, never new authority.
+
+Apply the workflow below only when the owner explicitly invokes this Skill or explicitly requests its named stage workflow for the current work. Reading this file for inspection, encountering a Txxx reference, or receiving an ordinary implementation, fix, design, review, validation, or maintenance request does not activate it. If it is not activated, return to the current request under `AGENTS.md`; do not demand a contract or stage approval. Earlier stage approvals do not activate a new request.
 
 ## 1. Establish aggregate authority
 
@@ -68,7 +74,7 @@ Run the contract's checks from narrow to broad on the fixed stage source:
 5. Windows package, unpacked and installed smoke, restart, migration, export, security, or other platform checks required by the stage design.
 6. Exact owner manual acceptance steps or a revision-safe binding to an already reported result.
 
-Apply the [`AGENTS.md`](../../../AGENTS.md) long-running-work policy to these commands. Local result-gating validation normally uses `BLOCK`; when effective blocking is unavailable, `SPARSE_POLL` must retain a justified next check and exit to `HANDOFF` when it does not.
+Apply the [stage workflow long-running-work policy](../../../docs/implementation/STAGE_WORKFLOW_REFERENCE.md#16-long-running-work) to these commands. Local result-gating validation normally uses `BLOCK`; when effective blocking is unavailable, `SPARSE_POLL` must retain a justified next check and exit to `HANDOFF` when it does not.
 
 Use the repository evidence wrapper with explicit argv when command facts must be retained. Every automated run uses unique temporary SQLite, export, Electron `userData`, installation, and other data roots; fake clocks and fake Providers remain mandatory for normal automation. Never access real user data, credentials, or a live Provider without separate exact authority.
 
