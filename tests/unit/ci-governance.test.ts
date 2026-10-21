@@ -204,6 +204,56 @@ describe('workflow safety boundaries', () => {
     expect(source).toContain("if: steps.changes.outputs.run_verification == 'true'")
   })
 
+  test('isolates the release App token from selection, builds and publication', () => {
+    const source = readFileSync(
+      join(repositoryRoot, '.github/workflows/release.yml'),
+      'utf8'
+    ).replaceAll('\r\n', '\n')
+    const [releaseJob, downstream] = source.split('\n  build:')
+    expect(releaseJob).toContain('contents: write\n      pull-requests: read')
+    expect(releaseJob).toContain('run: node tools/release/check-app-config.mjs')
+    expect(releaseJob).toContain(
+      'actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510'
+    )
+    expect(releaseJob).toContain('client-id: ${{ vars.MYTRACER_RELEASE_APP_CLIENT_ID }}')
+    expect(releaseJob).toContain('private-key: ${{ secrets.MYTRACER_RELEASE_APP_PRIVATE_KEY }}')
+    expect(releaseJob).toContain('owner: ${{ github.repository_owner }}')
+    expect(releaseJob).toContain('repositories: MyTracer')
+    expect(releaseJob).toContain('permission-contents: write')
+    expect(releaseJob).toContain('permission-pull-requests: write')
+    expect(releaseJob).toContain('skip-token-revoke: false')
+    expect(source.match(/steps\.release-app\.outputs\.token/g)).toHaveLength(1)
+    expect(releaseJob).toContain('token: ${{ steps.release-app.outputs.token }}')
+    expect(releaseJob).toContain('GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}')
+    expect(downstream).not.toMatch(/release-app|RELEASE_APP|create-github-app-token/)
+    expect(downstream).toContain('GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}')
+    expect(source).not.toMatch(/permission-(actions|administration|workflows|issues):/)
+    expect(source).not.toContain('|| secrets.GITHUB_TOKEN')
+  })
+
+  test.each([
+    ['', '', 1],
+    ['fake-client-id', '', 1],
+    ['', 'fake-private-key', 1],
+    [' ', 'fake-private-key', 1],
+    ['fake-client-id', 'fake-private-key', 0]
+  ])('checks App setup without revealing credentials: case %#', (clientId, privateKey, status) => {
+    const result = spawnSync(process.execPath, ['tools/release/check-app-config.mjs'], {
+      cwd: repositoryRoot,
+      encoding: 'utf8',
+      windowsHide: true,
+      env: {
+        ...process.env,
+        RELEASE_APP_CLIENT_ID: String(clientId),
+        RELEASE_APP_PRIVATE_KEY: String(privateKey)
+      }
+    })
+    expect(result.status).toBe(status)
+    expect(result.stdout).toBe('')
+    expect(result.stderr).not.toMatch(/fake-client-id|fake-private-key/)
+    if (status === 1) expect(result.stderr).toContain('release-app-not-configured')
+  })
+
   test('uses a release PR as the only publication decision', () => {
     const release = readFileSync(join(repositoryRoot, '.github/workflows/release.yml'), 'utf8')
     expect(release).toContain('branches: [main]')

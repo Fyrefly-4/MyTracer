@@ -17,8 +17,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
+      # Listing draft releases for safe retry requires push access.
       contents: write
-      pull-requests: write
+      pull-requests: read
     outputs:
       selection: ${{ steps.select.outputs.selection }}
     steps:
@@ -32,11 +33,27 @@ jobs:
         with:
           node-version: 24.18.0
           package-manager-cache: false
+      - name: Require release App configuration
+        env:
+          RELEASE_APP_CLIENT_ID: ${{ vars.MYTRACER_RELEASE_APP_CLIENT_ID }}
+          RELEASE_APP_PRIVATE_KEY: ${{ secrets.MYTRACER_RELEASE_APP_PRIVATE_KEY }}
+        run: node tools/release/check-app-config.mjs
+      - name: Create repository-scoped release App token
+        id: release-app
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3
+        with:
+          client-id: ${{ vars.MYTRACER_RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.MYTRACER_RELEASE_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: MyTracer
+          permission-contents: write
+          permission-pull-requests: write
+          skip-token-revoke: false
       - name: Maintain release PR or create approved draft
         id: release
         uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ steps.release-app.outputs.token }}
           target-branch: main
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json

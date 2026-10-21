@@ -75,9 +75,31 @@ CI 使用 GitHub Actions 的发布权限，客户端继续使用专用只读 `MY
 
 ## GitHub 配置与验证限制
 
-Release Please 需要仓库允许 GitHub Actions 创建 PR，且 workflow token 具备声明的最小权限。当前实现使用 `GITHUB_TOKEN`。[GitHub 当前文档](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow)说明，它创建或更新 PR 的 opened/synchronize/reopened 事件会产生等待批准的 CI。仓库保留 required `CI Gate`：若发布 PR 显示 **Approve workflows to run**，需有写权限的 owner 批准运行后才能合并；不能把这个额外点击假装成已经自动解决。手动或自动 `workflow_dispatch` 不能代替这个 required check：[GitHub 说明](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks)该事件的 job 检查不满足 branch ruleset。
+Release Please 使用专用 GitHub App 的短期 installation token 创建/更新发布 PR、创建批准后的 tag 和 draft Release；选择发布源、Windows 构建和最终上传/公开仍使用各自 job 的 `GITHUB_TOKEN`。App token 不传入后续 job，不写入安装包或客户端；客户端的只读更新 token 不变。
 
-若希望这一步也自动化，需另外评估获准的 GitHub App 认证，让 PR 事件直接触发检查；不能仅添加 dispatch 权限来声称已解决。本次不创建凭据、不更改仓库权限设置。不要为减少点击而移除 `CI Gate` 或绕过分支保护。仓库是否允许 Actions 创建 PR 的管理设置在当前连接权限下无法确认，首次运行若被拒绝需 owner 检查该设置。
+[GitHub 当前文档](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow)说明，`GITHUB_TOKEN` 创建或更新 PR 的 opened/synchronize/reopened 事件会产生等待批准的 CI，而 GitHub App token 可直接触发 PR 检查。本方案保留 required `CI Gate`，不加入 dispatch、不绕过 ruleset、不自动合并发布 PR；正常目标是 owner 只需决定何时合并发布 PR。首次真实 App PR 的行为仍需验收，不能仅凭配置代码承诺已经实现。
+
+### Owner 一次性设置（合并本接入 PR 前完成）
+
+以下是待 owner 单独授权/操作的步骤，提交本配置不代表已经创建 App、安装或保存私钥。不要把私钥粘贴到聊天、issue、PR、源码或日志。
+
+1. 在个人 GitHub Settings → Developer settings → GitHub Apps 创建专用于 MyTracer 发布的 App。可填写仓库主页作为 Homepage URL；不需要 OAuth 回调、服务器或事件接收，取消 Webhook Active。选择仅本账户安装。
+2. Repository permissions 仅设置 **Contents: Read and write**、**Pull requests: Read and write**；Metadata 的只读权限为 GitHub 必需。其他权限不授予，尤其不授予 Actions、Administration、Workflows 或 Issues 写权限，也不将 App 加入 ruleset bypass。这里的 Contents 写权限用于版本提交、tag 与 draft Release，不意味着可绕过受保护分支。
+3. 将 App 安装到 `Fyrefly-4`，选择 **Only select repositories → MyTracer**，不要安装到全部仓库。记录 App 的 **Client ID**（不是 Installation ID，也不是旧 App ID）。
+4. 经授权生成 App private key，由 owner 安全保管。到 MyTracer Settings → Secrets and variables → Actions，创建 repository variable `MYTRACER_RELEASE_APP_CLIENT_ID` 和 repository secret `MYTRACER_RELEASE_APP_PRIVATE_KEY`（完整 PEM 内容）。本流程不使用 environment secret，也不需要 PAT。
+5. 确认仓库允许所用 Actions，原有 `CI Gate` 与分支保护保持不变。然后正常审查/合并本接入 PR。不要为了部署代码而合并任何待发布的 release PR。
+
+Workflow 固定使用 [create-github-app-token v3](https://github.com/actions/create-github-app-token/tree/64ab729a6294000f5aa4a4bc0b73d1f32bc45510)，明确限制 owner、`MyTracer` 单仓库和以上两项写权限；token 在 job 结束时撤销，通常也在一小时后失效。Release Please job 的 `GITHUB_TOKEN` 保留 Contents write（[列出 draft Release 需要 push 权限](https://docs.github.com/en/rest/releases/releases#list-releases)，用于安全重试），Pull requests 只读；它不传给 Release Please，也不作为 App 的回退凭据。
+
+配置缺失时，`Require release App configuration` 会以 `release-app-not-configured` 明确失败，后续步骤不运行，**不回退到 GITHUB_TOKEN**。非空只代表配置存在，不保证私钥有效；App 未安装、权限不足、Client ID/私钥不匹配由创建 token 或 Release Please 步骤失败体现。不要用输出凭据或完整环境变量的方式排查。配置完成后可重跑失败的那次普通 main push；若已涉及批准版本的构建/发布失败，仍遵守上面的精确 SHA 重试规则。
+
+### 首次验证与维护
+
+- 在一次正常 main push 后，确认 Release Please 使用 App 身份创建或更新发布 PR；检查该 PR **最新 head SHA** 的 `CI Gate` 自动启动并通过，无需额外点击 **Approve workflows to run**。旧的 `GITHUB_TOKEN` PR 若未更新，不会因保存设置自动获得一次新事件；等待 App 的正常更新，不移除 required check。
+- 检查 App 未获得额外仓库/权限，发布 PR 仍须 owner 主动合并；本接入不应自行发布版本。
+- [Issue #75](https://github.com/Fyrefly-4/MyTracer/issues/75) 在真实 App PR 自动 CI 验收前保持打开；本实现 PR 的 CI 通过只证明源码检查通过，不证明 App 安装或真实事件链已经成功。
+- 私钥轮换由 owner 授权完成：更新仓库 secret、验证下一次 token 创建成功后撤销旧 key。疑似泄露时立即撤销相关 key/安装授权，发布维护暂时停止；不得把旧 key 写入回滚提交。
+- 撤销 App 安装或删除配置后，新发布维护会明确失败；已发布资产和客户端现有更新凭据不因此改变。若回退到旧 `GITHUB_TOKEN` 方案，需要单独审查代码回退，并接受发布 PR 可能需额外批准 CI，而非静默降级。
 
 同一 workflow 使用 Release Please 的输出连接打包，不依赖 `GITHUB_TOKEN` 创建的 tag/Release 继续触发另一条 workflow。不要同时保留旧 `update-candidate.yml` 与 `update-publish.yml` 的发布路径。
 
