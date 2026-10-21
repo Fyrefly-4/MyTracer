@@ -204,23 +204,30 @@ describe('workflow safety boundaries', () => {
     expect(source).toContain("if: steps.changes.outputs.run_verification == 'true'")
   })
 
-  test('builds candidates only on manual dispatch and keeps tag-only owner-controlled publication', () => {
-    const candidate = readFileSync(
-      join(repositoryRoot, '.github/workflows/update-candidate.yml'),
-      'utf8'
-    )
-    const publish = readFileSync(
-      join(repositoryRoot, '.github/workflows/update-publish.yml'),
-      'utf8'
-    )
-    expect(candidate).toContain('workflow_dispatch:')
-    expect(candidate).not.toMatch(/^ {2}(?:pull_request|push):/m)
-    expect(candidate).not.toContain('contents: write')
-    expect(candidate).toContain('validate-candidate-source.mjs')
-    expect(candidate).toContain('create-candidate.mjs')
-    expect(publish).toContain("tags: ['v*']")
-    expect(publish).toContain("github.actor == 'Fyrefly-4'")
-    expect(publish).toContain('publish.mjs prepare')
-    expect(publish).toContain('publish.mjs publish')
+  test('uses a release PR as the only publication decision', () => {
+    const release = readFileSync(join(repositoryRoot, '.github/workflows/release.yml'), 'utf8')
+    expect(release).toContain('branches: [main]')
+    expect(release).not.toContain('workflow_dispatch:')
+    expect(release).not.toContain('pull_request_target')
+    expect(release).not.toContain('tags:')
+    expect(release).toContain('googleapis/release-please-action@')
+    expect(release).toContain('release-pr.mjs select')
+    expect(release).toContain('release-pr.mjs bundle')
+    expect(release).toContain('release-pr.mjs publish')
+    expect(release).toContain('sourceRevision')
+    expect(release).toContain('--publish never')
+    expect(release).toContain('cancel-in-progress: false')
+    expect(release).not.toContain('create-candidate.mjs')
+    expect(release).not.toContain('publish.mjs prepare')
+    const config = JSON.parse(readFileSync(join(repositoryRoot, 'release-please-config.json'), 'utf8'))
+    expect(config).toMatchObject({
+      'release-type': 'node',
+      'include-component-in-tag': false,
+      'bump-minor-pre-major': true,
+      'bump-patch-for-minor-pre-major': false,
+      draft: true,
+      'force-tag-creation': true,
+      packages: { '.': {} }
+    })
   })
 })

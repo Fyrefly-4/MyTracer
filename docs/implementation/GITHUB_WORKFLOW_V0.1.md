@@ -6,7 +6,7 @@
 
 - 普通变更使用描述性的 `codex/<short-name>` 分支，保留无关本地修改；不要把例行修复写成 Txxx 合同。
 - 默认从最新核实的 `main` 创建工作分支，owner 另行指定来源时按其要求执行；PR 目标为 `main`。准备集成时检查与目标分支的差异、冲突和验证结果。
-- `main` 是已接受的维护基线；正式版本由 tag、Release 和确切候选产物标识。合入 `main` 不自动发布。
+- `main` 是已接受的维护基线；正式版本由 tag、Release 和确切发布源及资产标识。普通代码合入 `main` 不自动发布；合并 Release Please 的发布 PR 是该版本的发布决定。
 - 停用 `dev` 作为集成目标，不再创建 `dev -> main` 晋级或 `main -> dev` 回流 PR。历史分支、提交与验收记录保留原含义，不据此恢复旧流程。
 - 本地 branch/worktree/commit 可由当次请求授权。push、PR 写入和其他外部写入需要明确授权；已有授权不重复询问。
 - worktree 不复制凭据或真实用户数据；同一分支不能同时在多个 worktree 检出。具体命令以当前 Git 状态和环境为准。
@@ -40,14 +40,16 @@ CI 不检查 PR 正文，不校验历史任务账本或 Profile，不创建正�
 
 完整验证命令为 `npm.cmd run verify`；该命令不安装依赖、不打包、不发布、不执行 live AI，也不修改 tracked 文件。测试范围、隔离与本地命令见[维护入口](../MAINTENANCE.md#开发与验证)。
 
-## 4. 候选构建与正式发布
+## 4. 发布 PR 与自动发布
 
-- [Update candidate](../../.github/workflows/update-candidate.yml) 仅由手动 workflow_dispatch 触发。对所选确切来源执行完整 verify、禁止发布的 NSIS 打包、隔离安装 smoke、unsigned 和 bundle 校验。
-- 普通 PR 和 main push 不自动生成候选。准备正式更新时先手动构建 main 候选；历史来源按稳定 tag 重建，并核对 main ancestry。
-- [Publish accepted update](../../.github/workflows/update-publish.yml) 仅由合规版本 tag 触发。Owner 身份、确切 source/run/artifact/hash、版本递增、不覆盖已有 Release 及重新验证固定产物的边界保持不变。
-- 候选成功不等于正式发布；Agent 不因候选或 CI 通过而自行创建 tag、合并或发布。
+- [Release workflow](../../.github/workflows/release.yml) 在 main push 时维护 Release Please 的发布 PR。普通代码合入只积累版本和更新记录，不自动打包发布。
+- owner 想发布时合并发布 PR；这一次决定授权 workflow 固定发布 SHA，自动验证、NSIS 打包、隔离安装 smoke、上传完整更新资产并将草稿转为正式 stable Release，不再另行下载候选或批准 tag。
+- 版本由约定式提交计算；推荐普通功能 PR squash merge，最终标题使用 `fix:`、`feat:` 等前缀，中文说明可以保留。需要手动指定下一版时使用进入 main 的提交正文 `Release-As: X.Y.Z`。
+- `package.json`、lock、tag 与更新元数据必须一致；发布完整文件后才公开版本。同版本失败仅能恢复经身份校验的草稿，不覆盖正式版本，也不重新选择最新 main 构建旧版本。
+- 旧手动候选和 owner tag 发布 workflow 退出有效流程，避免两条入口并行。Agent 不因 CI 通过或发布 PR 已准备好而自行合并、创建 tag 或发布。
+- bot PR 的检查和权限按 GitHub 实际配置执行；不得移除 required checks 或私自配置长期凭据来绕过限制。
 
-具体操作、凭据与故障处置见[发布维护](../maintenance/RELEASE.md)和[更新维护](../maintenance/UPDATE.md)。
+详细规则、首次基线、故障重试和验证限制见[发布维护](../maintenance/RELEASE.md)，客户端凭据和本地更新见[更新维护](../maintenance/UPDATE.md)。
 
 ## 5. 分支保护与远端事实
 
