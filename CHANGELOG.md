@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/Fyrefly-4/MyTracer/compare/v0.2.0...v0.2.1) (2026-10-21)
+
+
+### Miscellaneous Chores
+
+* request release 0.2.1 ([#81](https://github.com/Fyrefly-4/MyTracer/issues/81)) ([54cd112](https://github.com/Fyrefly-4/MyTracer/commit/54cd112afd38eb7fab7f8aca91f67964f5fca6dd))
+
 ## [0.2.0](https://github.com/Fyrefly-4/MyTracer/compare/v0.1.4...v0.2.0) (2026-10-21)
 
 
