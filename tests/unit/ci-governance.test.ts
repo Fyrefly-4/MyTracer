@@ -277,6 +277,7 @@ describe('workflow safety boundaries', () => {
       'include-component-in-tag': false,
       'bump-minor-pre-major': true,
       'bump-patch-for-minor-pre-major': false,
+      'always-update': true,
       draft: true,
       'force-tag-creation': true,
       packages: { '.': {} }
