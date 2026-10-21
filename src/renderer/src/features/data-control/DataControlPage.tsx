@@ -1,6 +1,7 @@
 import {
   createContext,
   type ReactNode,
+  type RefObject,
   useContext,
   useEffect,
   useLayoutEffect,
@@ -53,6 +54,29 @@ function useDataDraft(source: string, dirty: boolean): void {
   }, [drafts, source, dirty])
 }
 
+function useEditorFocus<T extends HTMLElement>(
+  editing: boolean,
+  saving: boolean
+): {
+  editButtonRef: RefObject<HTMLButtonElement | null>
+  firstFieldRef: RefObject<T | null>
+} {
+  const editButtonRef = useRef<HTMLButtonElement>(null)
+  const firstFieldRef = useRef<T>(null)
+  const previous = useRef({ editing, saving })
+  useLayoutEffect(() => {
+    if (previous.current.editing !== editing) {
+      if (editing) firstFieldRef.current?.focus()
+      else editButtonRef.current?.focus()
+    } else if (editing && previous.current.saving && !saving) {
+      // Failed saves retain the draft; restore focus after disabled controls recover.
+      firstFieldRef.current?.focus()
+    }
+    previous.current = { editing, saving }
+  }, [editing, saving])
+  return { editButtonRef, firstFieldRef }
+}
+
 function recordDuration(value: number | null): string {
   return value === null ? '时长未记录' : value === 0 ? '少于 1 分钟' : `${value} 分钟`
 }
@@ -65,6 +89,7 @@ function ActionRecordEditor(props: {
 }): ReactNode {
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
+  const { editButtonRef, firstFieldRef } = useEditorFocus<HTMLInputElement>(editing, saving)
   const [occurredOn, setOccurredOn] = useState(props.record.occurredOn)
   const [duration, setDuration] = useState(String(props.record.durationMinutes))
   const [outcome, setOutcome] = useState(props.record.outcome)
@@ -123,6 +148,7 @@ function ActionRecordEditor(props: {
         </div>
         {!editing ? (
           <button
+            ref={editButtonRef}
             className="secondary-button"
             type="button"
             onClick={() => {
@@ -165,6 +191,7 @@ function ActionRecordEditor(props: {
           <div className="data-edit-grid">
             <Field label="发生日期（必填）" hint="选择实际发生的本地日期。">
               <input
+                ref={firstFieldRef}
                 aria-label="行动发生日期"
                 type="date"
                 value={occurredOn}
@@ -265,6 +292,7 @@ function RoutineRecordEditor(props: {
 }): ReactNode {
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
+  const { editButtonRef, firstFieldRef } = useEditorFocus<HTMLInputElement>(editing, saving)
   const [occurredOn, setOccurredOn] = useState(props.record.occurredOn)
   const [duration, setDuration] = useState(
     props.record.durationMinutes === null ? '' : String(props.record.durationMinutes)
@@ -339,6 +367,7 @@ function RoutineRecordEditor(props: {
         </div>
         {!editing ? (
           <button
+            ref={editButtonRef}
             className="secondary-button"
             type="button"
             onClick={() => {
@@ -386,6 +415,7 @@ function RoutineRecordEditor(props: {
           <div className="data-edit-grid">
             <Field label="发生日期（必填）" hint="选择实际发生的本地日期。">
               <input
+                ref={firstFieldRef}
                 aria-label="例行发生日期"
                 type="date"
                 value={occurredOn}
@@ -493,6 +523,7 @@ function UnderstandingEditor(props: {
   const [text, setText] = useState(props.fact.text)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const { editButtonRef, firstFieldRef } = useEditorFocus<HTMLTextAreaElement>(editing, saving)
   useDataDraft(`understanding-edit-${props.fact.id}`, text !== props.fact.text)
   const run = async (kind: 'update' | 'revoke'): Promise<void> => {
     if (saving) return
@@ -522,6 +553,7 @@ function UnderstandingEditor(props: {
       {editing ? (
         <Field label="理解成果内容">
           <textarea
+            ref={firstFieldRef}
             aria-label="理解成果内容"
             rows={4}
             value={text}
@@ -558,6 +590,7 @@ function UnderstandingEditor(props: {
           </>
         ) : (
           <button
+            ref={editButtonRef}
             className="quiet-button"
             type="button"
             onClick={() => {
@@ -591,6 +624,7 @@ function ConfusionEditor(props: {
   const [resolution, setResolution] = useState(props.fact.resolution ?? '')
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const { editButtonRef, firstFieldRef } = useEditorFocus<HTMLTextAreaElement>(editing, saving)
   useDataDraft(
     `confusion-edit-${props.fact.id}`,
     text !== props.fact.text || resolution !== (props.fact.resolution ?? '')
@@ -630,6 +664,7 @@ function ConfusionEditor(props: {
       {editing ? (
         <Field label="困惑内容">
           <textarea
+            ref={firstFieldRef}
             aria-label="困惑内容"
             rows={4}
             disabled={saving}
@@ -666,6 +701,7 @@ function ConfusionEditor(props: {
           </>
         ) : (
           <button
+            ref={editButtonRef}
             className="quiet-button"
             type="button"
             onClick={() => {

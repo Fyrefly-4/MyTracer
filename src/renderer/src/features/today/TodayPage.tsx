@@ -1190,7 +1190,7 @@ function TodayWorkspace(): ReactNode {
           <section className="goal-card goal-list-card today-priority" aria-label="今日重点">
             <div className="card-heading">
               <p className="eyebrow">今日重点</p>
-              <p className="empty-copy">先从一件想继续的事开始。</p>
+              <p className="empty-copy">先选少量重点就好，也可以按需要继续添加。</p>
               <h2>现在可以继续什么</h2>
             </div>
             <div className="action-list">

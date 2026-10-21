@@ -442,8 +442,9 @@ function GoalWorkspace(): ReactNode {
               />
             </label>
             <label className="form-field-wide">
-              说明（可选）
+              <span id="goal-create-description-label">说明（可选）</span>
               <textarea
+                aria-labelledby="goal-create-description-label"
                 rows={2}
                 value={createDescription}
                 onChange={(event) => setCreateDescription(event.target.value)}
@@ -625,8 +626,9 @@ function GoalWorkspace(): ReactNode {
                     />
                   </label>
                   <label>
-                    说明（可选）
+                    <span id="goal-edit-description-label">说明（可选）</span>
                     <textarea
+                      aria-labelledby="goal-edit-description-label"
                       rows={2}
                       value={editDescription}
                       onChange={(event) => setEditDescription(event.target.value)}

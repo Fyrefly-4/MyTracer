@@ -120,10 +120,14 @@ test('supports keyboard Goal creation and optional quick recording at the minimu
     await expect(page.getByLabel('目标名称', { exact: true })).toBeFocused()
     await page.keyboard.type('Keyboard Goal')
     await page.keyboard.press('Tab')
-    await expect(page.getByLabel('说明（可选）', { exact: true })).toBeFocused()
-    await page.keyboard.press('Tab')
     await expect(page.getByLabel('当前下一步（可选）')).toBeFocused()
     await page.keyboard.type('Keyboard Action')
+    await page.keyboard.press('Tab')
+    await expect(page.getByLabel('说明（可选）', { exact: true })).toBeFocused()
+    await page.keyboard.type('Keyboard description')
+    await expect(page.getByLabel('说明（可选）', { exact: true })).toHaveValue(
+      'Keyboard description'
+    )
     await page.keyboard.press('Tab')
     const create = page.getByRole('button', { name: '创建目标', exact: true })
     await expect(create).toBeFocused()

@@ -14,7 +14,7 @@
   line-height: 1.6;
 }
 
-.goal-workspace > .workspace-form,
+.goal-workspace > .goal-create.workspace-form,
 .routine-workspace > .workspace-form {
   max-width: none;
   width: 100%;
@@ -138,7 +138,7 @@
     margin-left: 0;
   }
 
-  .goal-workspace > .workspace-form,
+  .goal-workspace > .goal-create.workspace-form,
   .routine-workspace > .workspace-form {
     padding: 18px;
   }

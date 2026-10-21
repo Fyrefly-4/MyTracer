@@ -94,7 +94,7 @@ test('shows factual dates, unlimited soft guidance and explicitly scoped weekly 
     for (let index = 1; index <= 6; index += 1) {
       const candidates = page.locator('details.action-candidates')
       if (!(await candidates.evaluate((element) => (element as HTMLDetailsElement).open)))
-        await candidates.locator('summary').click()
+        await candidates.locator(':scope > summary').click()
       await candidates
         .locator('.candidate-row')
         .filter({ hasText: `SHOULD 行动 ${index}` })

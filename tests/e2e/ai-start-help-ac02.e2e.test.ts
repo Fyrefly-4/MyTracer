@@ -505,7 +505,7 @@ test('continuous E2E-AC-02 proves isolation, every temporary branch, confirmatio
     if (!beforeRecording.ok) throw new Error('Progress query failed before confirmed Action record')
     const candidates = page.locator('details.action-candidates')
     if ((await candidates.getAttribute('open')) === null)
-      await candidates.locator('summary').click()
+      await candidates.locator(':scope > summary').click()
     await page.getByRole('button', { name: /__ac02_final_edited_action__.*待行动/ }).click()
     const recordingPanel = page.getByLabel('__ac02_final_edited_action__ 行动记录')
     await recordingPanel.getByRole('button', { name: '开始记录' }).click()
