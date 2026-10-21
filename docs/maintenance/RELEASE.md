@@ -32,13 +32,26 @@ MyTracer 已用于 owner 的日常使用。发布流程服务于快速迭代：�
 
 0.x 行为通过 `bump-minor-pre-major: true` 和 `bump-patch-for-minor-pre-major: false` 显式配置。进入 `1.0.0` 由 owner 明确决定；1.x 之后的破坏性变更遵循 major 递增。
 
-需要指定下一版时，在一个进入 main 的提交正文中加入，例如：
+### 手动指定下一版本
 
-```text
-Release-As: 0.2.0
-```
+默认让 bot 按上表计算；owner 也可以指定尚未发布的目标版本，例如 `0.3.0`（这里只是示例，不代表已经发布或本次必须发布）。
 
-可以把该字段保留在普通 PR 的 squash commit 正文中。这不是普通 PR 评论命令，也不要仅修改 bot PR 的标题或某一个版本文件，避免自动更新覆盖或文件不一致。纯发布基础设施修复需要发版时也可明确指定版本，不必伪装成业务新功能。
+1. 在普通变更 PR 的最终 **squash commit 正文**保留下面的字段，标题仍按实际变更使用 `fix:`、`feat:` 等。合并前在 GitHub 的 squash 确认框核对正文，不能只放在 PR 评论中：
+
+   ```text
+   Release-As: 0.3.0
+   ```
+
+2. 该提交合入 main 后，等待 Release Please 创建或更新发布 PR。这个步骤只提出版本，**不会发布应用**。
+3. 检查 bot PR 中的版本、`package.json`、`package-lock.json`、`.release-please-manifest.json` 和 changelog 已同步，再等**最新 head SHA** 的 `CI Gate` 通过。准备好发布时，才由 owner 合并发布 PR，或在 owner 对这次合并明确授权后由 Agent 操作。
+
+**已有发布 PR 想改号：**先保持它未合并，按上述方法把新的目标版本带入 main，等 bot 更新后再审查。不要仅改 bot PR 标题或某一个版本文件；自动更新可能覆盖手工修改，文件也可能不一致。这里改的是“下一版提案”，不是已经发布的版本。
+
+**暂时没有业务代码要改：**可以随实际需要的文档或维护 PR 携带上述正文，不必伪装成新功能。若只有改号需求，可通过正常 PR 在 `release-please-config.json` 的 `packages["."]` 中临时设置 `"release-as": "0.3.0"`；不要改 manifest 冒充已发布基线。该配置会持续生效，发布 PR 合并后须另开普通 PR 移除它，恢复自动计算；不要同时保留冲突的配置和提交指令。优先使用一次性的提交正文方式，不为改号绕过分支保护直推 main，也不要求创建没有文件差异的空 PR。
+
+目标必须是高于已发布版本的稳定三段版本号。已发布版本/tag 不覆盖，客户端不降级；发现发布错误应发更高版本修复。只是调整版本不改变[内置更新流程](UPDATE.md)，也不代表安装、数据或迁移已经验证。
+
+操作依据：[提交正文 Release-As](https://github.com/googleapis/release-please#how-do-i-change-the-version-number)、[manifest 配置 release-as](https://github.com/googleapis/release-please/blob/main/docs/manifest-releaser.md#configfile)。
 
 ## 首次接入与历史基线
 

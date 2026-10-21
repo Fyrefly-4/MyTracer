@@ -39,6 +39,8 @@ Owner approval is required for changes to frozen product/acceptance semantics, d
 
 The current request may authorize necessary local branch/worktree and commit operations without a contract; do not ask again for authority already granted. Start descriptive `codex/<short-name>` branches from the latest verified `main` unless the owner specifies another source, and target PRs at `main`. `main` is the accepted maintenance baseline; published versions are identified separately by tags, Releases, exact source revisions, and published assets. Ordinary code merges do not publish; an owner-authorized merge of a Release Please release PR is the decision that starts that version’s automated build and publication. `dev` is retired as an integration target; do not recreate it or restore promotion/backflow steps from historical workflows. Pushes, PR writes, and other external writes need explicit authorization. Ready, merges into `main`, tags, releases, force pushes, and remote branch deletion require explicit owner authorization for the action; never bypass branch protection or required checks.
 
+For manual next-version overrides, follow [the release guide](docs/maintenance/RELEASE.md#手动指定下一版本); keep the detailed procedure there. Creating or updating a normal PR or changing a proposed version does not authorize merging a Release Please release PR. Obtain explicit owner authorization for that release-PR merge before acting.
+
 ## 5. Validation and handoff
 
 Before creating or updating a PR, read `.github/pull_request_template.md` and use it as the starting point. Match detail to the change; remove unused headings and prompts, and combine sections for simple changes. Add stage-specific fields only when the owner explicitly requires that workflow.
