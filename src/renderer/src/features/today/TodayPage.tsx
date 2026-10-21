@@ -26,6 +26,7 @@ import {
 } from '../../app/ui-session'
 import { RoutineRecordingPanel } from '../routines/RoutinesPage'
 import { AiStartHelpPanel } from './AiStartHelpPanel'
+import './today-workspace.css'
 
 const goalErrorText: Record<GoalErrorCode, string> = {
   validation: '请检查必填内容。',
@@ -401,13 +402,13 @@ function ActionRecordingPanel(props: {
   return (
     <section
       ref={panelRef}
-      className="recording-panel"
+      className={`recording-panel ${context ? 'is-recording' : ''}`}
       aria-label={`${props.action.title} 行动记录`}
     >
       <div className="recording-heading">
         <div>
-          <p className="eyebrow">行动记录</p>
-          <h3>{props.action.title}</h3>
+          <p className="eyebrow">{context ? '正在记录' : '留下一点行动'}</p>
+          <h3>{context ? props.action.title : '记录与回顾'}</h3>
         </div>
         {!context && props.action.canStart ? (
           <button
@@ -440,7 +441,7 @@ function ActionRecordingPanel(props: {
             void save()
           }}
         >
-          <fieldset className="recording-fields" disabled={busy}>
+          <fieldset className="recording-fields today-recording-fields" disabled={busy}>
             <p className="draft-notice" role="status">
               {restoredNotice
                 ? '未保存的记录草稿已恢复。它仍未写入记录，你可以继续填写、保存或放弃。'
@@ -595,6 +596,8 @@ function ActionRecordingPanel(props: {
                 ) : null}
               </div>
             ) : null}
+          </fieldset>
+          <div className="today-recording-footer">
             <p className="save-impact">{saveImpact}</p>
 
             {dateConfirmation ? (
@@ -639,7 +642,7 @@ function ActionRecordingPanel(props: {
                 </button>
               ) : null}
             </div>
-          </fieldset>
+          </div>
         </form>
       ) : !props.action.canStart ? (
         <p className="empty-copy">该行动当前不可开始，因此不能新增记录。</p>
@@ -947,8 +950,11 @@ function TodayWorkspace(): ReactNode {
   const renderActionCandidates = (): ReactNode => (
     <details className="goal-card action-candidates" open={!today?.focuses.length}>
       <summary>其它行动（{availableCandidates.length}）</summary>
-      <p className="empty-copy">浏览候选不会自动改变今日重点或目标的当前下一步。</p>
-      {activity ? <p className="empty-copy">目标行动日期截至 {activity.asOfLocalDate}</p> : null}
+      <details className="today-help">
+        <summary>关于候选行动</summary>
+        <p className="empty-copy">浏览候选不会自动改变今日重点或目标的当前下一步。</p>
+        {activity ? <p className="empty-copy">目标行动日期截至 {activity.asOfLocalDate}</p> : null}
+      </details>
       {activityError ? (
         <p role="status">
           行动日期暂时无法读取。
@@ -1104,7 +1110,7 @@ function TodayWorkspace(): ReactNode {
     ) ?? []
 
   return (
-    <section className="today-workspace" aria-label="今日行动">
+    <section className="today-workspace today-experiment" aria-label="今日行动">
       {selectionError ? (
         <p className="form-error" role="alert">
           {selectionError}
@@ -1116,13 +1122,18 @@ function TodayWorkspace(): ReactNode {
         </p>
       ) : null}
       {notice ? (
-        <p className="success-message" role="status">
-          {notice}
-        </p>
+        <div className="today-notice">
+          <p role="status">{notice}</p>
+          <button type="button" aria-label="关闭操作提示" onClick={() => setNotice(null)}>
+            ×
+          </button>
+        </div>
       ) : null}
       <div className="today-date-row">
-        <span>当前本地日期</span>
-        <strong>{today?.localDate ?? '读取中'}</strong>
+        <div className="today-date-label">
+          <span>今天</span>
+          <strong>{today?.localDate ?? '读取中'}</strong>
+        </div>
         <button
           type="button"
           className="secondary-button"
@@ -1560,7 +1571,7 @@ function TodayWorkspace(): ReactNode {
                 ◎
               </div>
               <h2>选择一个行动查看详情</h2>
-              <p>完成或取消会保留当天选择；重新安排会移出今天并保留历史。</p>
+              <p>从左侧挑选一个行动，在这里开始记录。没有记录，也不代表没有行动。</p>
             </div>
           )}
         </div>

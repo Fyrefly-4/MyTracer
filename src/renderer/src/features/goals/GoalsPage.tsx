@@ -1,3 +1,4 @@
+import '../forms-workspace.css'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import type {
   GoalDetailDto,
@@ -397,7 +398,12 @@ function GoalWorkspace(): ReactNode {
           {error}
         </p>
       ) : null}
-      <div className="page-actions">
+      <div className="page-actions workspace-toolbar">
+        <p className="workspace-count">
+          {goals.length
+            ? `${goals.length} 个目标 · 留下方向，也留一点余地`
+            : '从一个想继续的方向开始'}
+        </p>
         <button
           type="button"
           className="secondary-button"
@@ -408,42 +414,52 @@ function GoalWorkspace(): ReactNode {
         </button>
       </div>
       {creating ? (
-        <form className="goal-card goal-create" onSubmit={(event) => void submitCreate(event)}>
+        <form
+          className="goal-card goal-create workspace-form"
+          aria-label="新建目标表单"
+          onSubmit={(event) => void submitCreate(event)}
+        >
           <div className="card-heading">
             <p className="eyebrow">新目标</p>
             <h2>留下方向与一个可开始的步骤</h2>
           </div>
-          <label>
-            目标名称
-            <input
-              autoFocus
-              required
-              value={createName}
-              onChange={(event) => setCreateName(event.target.value)}
-            />
-          </label>
-          <label>
-            说明（可选）
-            <textarea
-              rows={2}
-              value={createDescription}
-              onChange={(event) => setCreateDescription(event.target.value)}
-            />
-          </label>
-          <label>
-            当前下一步（可选）
-            <input
-              value={createNextAction}
-              onChange={(event) => setCreateNextAction(event.target.value)}
-              placeholder="例如：运行一个 React 状态更新示例"
-            />
-          </label>
-          <button className="primary-button" type="submit" disabled={busy}>
-            创建目标
-          </button>
-          <button type="button" onClick={() => setCreating(false)}>
-            取消新建
-          </button>
+          <div className="workspace-form-fields">
+            <label>
+              目标名称
+              <input
+                autoFocus
+                required
+                value={createName}
+                onChange={(event) => setCreateName(event.target.value)}
+              />
+            </label>
+            <label>
+              当前下一步（可选）
+              <input
+                value={createNextAction}
+                onChange={(event) => setCreateNextAction(event.target.value)}
+                placeholder="例如：运行一个 React 状态更新示例"
+              />
+            </label>
+            <label className="form-field-wide">
+              <span id="goal-create-description-label">说明（可选）</span>
+              <textarea
+                aria-labelledby="goal-create-description-label"
+                rows={2}
+                value={createDescription}
+                onChange={(event) => setCreateDescription(event.target.value)}
+              />
+            </label>
+          </div>
+          <div className="workspace-form-actions">
+            <button className="primary-button" type="submit" disabled={busy}>
+              创建目标
+            </button>
+            <button type="button" disabled={busy} onClick={() => setCreating(false)}>
+              取消新建
+            </button>
+            <span>先留下方向，下一步可以稍后再补。</span>
+          </div>
         </form>
       ) : null}
       <div className="goal-grid">
@@ -452,7 +468,7 @@ function GoalWorkspace(): ReactNode {
             <div className="card-heading inline-heading">
               <div>
                 <p className="eyebrow">目标列表</p>
-                <h2>按当前状态查看</h2>
+                <h2>我的目标</h2>
               </div>
               <label className="compact-field">
                 状态
@@ -526,13 +542,14 @@ function GoalWorkspace(): ReactNode {
             >
               <div className="detail-title-row">
                 <div>
-                  <p className="eyebrow">{goalStatusText[detail.status]}</p>
+                  <p className="eyebrow">目标详情</p>
                   <h2>{detail.name}</h2>
                 </div>
                 <span className={`status-badge status-${detail.status}`}>
                   {goalStatusText[detail.status]}
                 </span>
               </div>
+              {detail.description ? <p className="goal-description">{detail.description}</p> : null}
               <div className="next-action-panel">
                 <span>当前下一步</span>
                 <strong>{detail.currentNextAction?.title ?? '暂未设置'}</strong>
@@ -609,8 +626,9 @@ function GoalWorkspace(): ReactNode {
                     />
                   </label>
                   <label>
-                    说明（可选）
+                    <span id="goal-edit-description-label">说明（可选）</span>
                     <textarea
+                      aria-labelledby="goal-edit-description-label"
                       rows={2}
                       value={editDescription}
                       onChange={(event) => setEditDescription(event.target.value)}
