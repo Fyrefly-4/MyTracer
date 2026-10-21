@@ -205,7 +205,10 @@ describe('workflow safety boundaries', () => {
   })
 
   test('isolates the release App token from selection, builds and publication', () => {
-    const source = readFileSync(join(repositoryRoot, '.github/workflows/release.yml'), 'utf8')
+    const source = readFileSync(
+      join(repositoryRoot, '.github/workflows/release.yml'),
+      'utf8'
+    ).replaceAll('\r\n', '\n')
     const [releaseJob, downstream] = source.split('\n  build:')
     expect(releaseJob).toContain('contents: write\n      pull-requests: read')
     expect(releaseJob).toContain('run: node tools/release/check-app-config.mjs')
