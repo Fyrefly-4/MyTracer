@@ -219,7 +219,9 @@ describe('workflow safety boundaries', () => {
     expect(release).toContain('cancel-in-progress: false')
     expect(release).not.toContain('create-candidate.mjs')
     expect(release).not.toContain('publish.mjs prepare')
-    const config = JSON.parse(readFileSync(join(repositoryRoot, 'release-please-config.json'), 'utf8'))
+    const config = JSON.parse(
+      readFileSync(join(repositoryRoot, 'release-please-config.json'), 'utf8')
+    )
     expect(config).toMatchObject({
       'release-type': 'node',
       'include-component-in-tag': false,
