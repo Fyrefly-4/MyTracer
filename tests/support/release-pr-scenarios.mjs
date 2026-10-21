@@ -339,7 +339,6 @@ test('a partial failed upload can be replaced on retry', async (t) => {
 })
 
 for (const [name, mutate, code] of [
-  ['published version', (f) => (f.state.release.draft = false), 'published-version-immutable'],
   [
     'newer stable release',
     (f) => f.state.releases.push({ id: 12, tag_name: 'v0.2.0', draft: false, prerelease: false }),
@@ -517,3 +516,42 @@ test('artifact selection rejects no matching directories without output', async 
   assert.match(result.stderr, /missing-build-artifact/)
   await assert.rejects(readFile(join(f.root, '.tmp', 'release-pr', 'marker')), { code: 'ENOENT' })
 })
+
+test('published retry verifies identical bytes without republishing historical latest', async (t) => {
+  const f = await fixture(t)
+  await f.publish()
+  f.calls.length = 0
+  f.state.releases.push({ id: 12, tag_name: 'v0.2.0', draft: false, prerelease: false })
+  assert.equal(await f.publish(), f.state.release)
+  assert(f.calls.includes('verify'))
+  noWrites(f)
+  assert.equal(f.state.release.draft, false)
+})
+
+for (const [name, mutate] of [
+  ['missing asset', (f) => f.state.remote.pop()],
+  [
+    'different bytes',
+    (f) => {
+      const asset = f.state.remote[0]
+      const bytes = Buffer.from(f.state.bytes.get(asset.id))
+      bytes[0] ^= 1
+      f.state.bytes.set(asset.id, bytes)
+    }
+  ],
+  [
+    'extra asset',
+    (f) => f.state.remote.push({ id: 999, name: 'extra.txt', size: 0, state: 'uploaded' })
+  ]
+]) {
+  test(`published retry rejects ${name} without mutation`, async (t) => {
+    const f = await fixture(t)
+    await f.publish()
+    mutate(f)
+    f.calls.length = 0
+    await assert.rejects(f.publish)
+    assert(f.calls.includes('verify'))
+    noWrites(f)
+    assert.equal(f.state.release.draft, false)
+  })
+}

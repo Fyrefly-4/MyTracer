@@ -185,6 +185,12 @@ export async function publishRelease({ api, selection, directory }) {
   await assertRepository(api)
   const assets = await validateAssets(directory, selection)
   let release = await assertRelease(api, selection)
+  if (release.draft === false) {
+    // The final visibility request may have succeeded before its response was lost.
+    // A retry may confirm identical published bytes, never overwrite or repromote them.
+    await api.verifyAssets(selection.releaseId, assets)
+    return release
+  }
   check(release.draft === true, 'published-version-immutable')
   assertNewest(await api.allReleases(), selection)
   const remote = await api.get(`/releases/${selection.releaseId}/assets?per_page=100`)
@@ -278,7 +284,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
   run(mode).catch((error) => {
     const stage = ['select', 'bundle', 'publish'].includes(mode) ? mode : 'command'
     process.stderr.write(
-      `Release ${stage} failed: ${safeErrorCode(error)}. Draft remains unpublished on failure.\n`
+      `Release ${stage} failed: ${safeErrorCode(error)}. Inspect the release state before retrying.\n`
     )
     process.exitCode = 1
   })
