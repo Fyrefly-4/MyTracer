@@ -14,10 +14,10 @@ test('keeps Today feedback out of flow and record controls visible while preserv
       args: [join(process.cwd(), 'out/main/index.js'), `--user-data-dir=${root.electronUserData}`],
       env: minimalElectronEnvironment(root)
     })
+    const page = await application.firstWindow()
     await application.evaluate(({ BrowserWindow }) => {
       BrowserWindow.getAllWindows()[0].setContentSize(1200, 800)
     })
-    const page = await application.firstWindow()
     const actionId = await page.evaluate(async () => {
       const result = await window.myTracer.actions.create({ title: '阅读一段，留下一个自己的理解' })
       if (!result.ok) throw new Error('Cannot create isolated action fixture')
