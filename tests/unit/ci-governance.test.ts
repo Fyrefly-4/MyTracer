@@ -335,7 +335,7 @@ describe('workflow safety boundaries', () => {
   test('the tooling command retains governance and every allowlisted release regression', () => {
     const { scripts } = JSON.parse(readFileSync(join(repositoryRoot, 'package.json'), 'utf8'))
     const command = scripts['verify:release-tooling'] as string
-    expect(command).toContain('npm run format:check && npm run lint')
+    expect(command).toContain('npm run format:check && npm run lint && npm run typecheck')
     expect(command).toContain('tests/unit/ci-governance.test.ts')
     expect(command).toContain('vitest run --project unit')
     expect(command).toContain('vitest run --project integration')
