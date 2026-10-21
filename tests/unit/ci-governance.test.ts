@@ -2,6 +2,7 @@ import { spawnSync } from 'node:child_process'
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { afterEach, describe, expect, test } from 'vitest'
 
 const repositoryRoot = process.cwd()
@@ -14,7 +15,7 @@ function temporaryDirectory() {
   return directory
 }
 
-function run(command: string, options: string[] = []) {
+function cleanEnvironment() {
   const environment = { ...process.env }
   for (const name of [
     'GITHUB_EVENT_NAME',
@@ -22,15 +23,22 @@ function run(command: string, options: string[] = []) {
     'GITHUB_SHA',
     'GITHUB_OUTPUT',
     'BASE_REVISION',
-    'HEAD_REVISION'
+    'HEAD_REVISION',
+    'GIT_DIR',
+    'GIT_WORK_TREE',
+    'GIT_INDEX_FILE'
   ]) {
     delete environment[name]
   }
+  return environment
+}
+
+function run(command: string, options: string[] = []) {
   return spawnSync(process.execPath, [classifier, command, ...options], {
     cwd: repositoryRoot,
     encoding: 'utf8',
     windowsHide: true,
-    env: environment
+    env: cleanEnvironment()
   })
 }
 
@@ -230,16 +238,57 @@ describe('dependency-free documentation checks', () => {
     expect(run('docs', ['--repository-root', root, '--paths-file', paths]).status).toBe(0)
   })
 
-  test('accepts an absent comparison base on manual execution without empty shell arguments', () => {
-    const result = spawnSync(process.execPath, [classifier, 'docs'], {
-      cwd: repositoryRoot,
-      encoding: 'utf8',
-      windowsHide: true,
-      env: { ...process.env, BASE_REVISION: '', HEAD_REVISION: 'HEAD' }
-    })
-    expect(result.status, result.stderr).toBe(0)
-    expect(result.stdout).toMatch(/Validated \d+ changed documentation file/)
-  })
+  test.each(['full', 'shallow'])(
+    'checks an absent comparison base in an isolated %s history',
+    (history) => {
+      const root = temporaryDirectory()
+      const source = join(root, 'source')
+      mkdirSync(source)
+      const environment = {
+        ...cleanEnvironment(),
+        GIT_CONFIG_NOSYSTEM: '1',
+        GIT_CONFIG_GLOBAL: join(root, 'gitconfig')
+      }
+      writeFileSync(environment.GIT_CONFIG_GLOBAL, '')
+      const git = (...args: string[]) => {
+        const result = spawnSync('git', args, {
+          cwd: source,
+          encoding: 'utf8',
+          windowsHide: true,
+          env: environment
+        })
+        expect(result.status, result.stderr).toBe(0)
+      }
+      git('init', '--quiet')
+      // An old broken link must not be scanned as a change in complete history.
+      writeFileSync(join(source, 'old.md'), '# Old\n\n[Missing](missing.md)\n')
+      git('add', '.')
+      const commit = ['-c', 'user.name=CI', '-c', 'user.email=ci@example.invalid', 'commit', '-qm']
+      git(...commit, 'old documentation')
+      writeFileSync(join(source, 'guide.md'), '# Guide\n')
+      git('add', '.')
+      git(...commit, 'current documentation')
+      const checkout = history === 'shallow' ? join(root, 'shallow') : source
+      if (history === 'shallow') {
+        git('clone', '--quiet', '--depth', '1', pathToFileURL(source).href, checkout)
+      }
+      const result = spawnSync(process.execPath, [classifier, 'docs'], {
+        cwd: checkout,
+        encoding: 'utf8',
+        windowsHide: true,
+        env: { ...environment, BASE_REVISION: '', HEAD_REVISION: 'HEAD' }
+      })
+      if (history === 'full') {
+        expect(result.status, result.stderr).toBe(0)
+        expect(result.stdout).toContain('Validated 1 changed documentation file(s).')
+      } else {
+        // Git sees a shallow boundary as a root: keep the link checker strict.
+        expect(result.status).toBe(1)
+        expect(result.stderr).toContain('old.md: broken local link: missing.md')
+      }
+    },
+    15_000
+  )
 
   test.each([
     ['# Guide\n\n[Missing](missing.md)\n', 'broken local link'],
@@ -348,7 +397,10 @@ describe('workflow safety boundaries', () => {
   })
 
   test('uses a release PR as the only publication decision', () => {
-    const release = readFileSync(join(repositoryRoot, '.github/workflows/release.yml'), 'utf8')
+    const release = readFileSync(
+      join(repositoryRoot, '.github/workflows/release.yml'),
+      'utf8'
+    ).replaceAll('\r\n', '\n')
     expect(release).toContain('branches: [main]')
     expect(release).not.toContain('workflow_dispatch:')
     expect(release).not.toContain('pull_request_target')
@@ -359,6 +411,11 @@ describe('workflow safety boundaries', () => {
     expect(release).toContain('release-pr.mjs publish')
     expect(release).toContain('sourceRevision')
     expect(release).toContain('--publish never')
+    const build = release.split('\n  build:')[1].split('\n  publish:')[0]
+    expect(build).toContain(
+      'ref: ${{ fromJSON(needs.release-pr.outputs.selection).sourceRevision }}\n' +
+        '          fetch-depth: 0\n          persist-credentials: false'
+    )
     expect(release).toContain('npm.cmd run verify')
     expect(release).toContain('npm.cmd run test:package-smoke')
     expect(release).not.toContain('verify:release-tooling')
