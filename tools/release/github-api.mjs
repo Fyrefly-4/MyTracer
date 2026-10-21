@@ -66,6 +66,7 @@ export class GithubApi {
       return bytes(download)
     }
     requireCondition(response.ok, `github-http-${response.status}`)
+    if (response.status === 204) return null
     const result = await bytes(response)
     return binary ? result : JSON.parse(result.toString('utf8'))
   }
