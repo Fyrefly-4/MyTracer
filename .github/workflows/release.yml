@@ -82,6 +82,7 @@ jobs:
         uses: actions/checkout@v6.0.2
         with:
           ref: ${{ fromJSON(needs.release-pr.outputs.selection).sourceRevision }}
+          fetch-depth: 0
           persist-credentials: false
       - name: Set up locked Node
         uses: actions/setup-node@v6.4.0

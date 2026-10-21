@@ -2,6 +2,7 @@ import { spawnSync } from 'node:child_process'
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { afterEach, describe, expect, test } from 'vitest'
 
 const repositoryRoot = process.cwd()
@@ -14,7 +15,7 @@ function temporaryDirectory() {
   return directory
 }
 
-function run(command: string, options: string[] = []) {
+function cleanEnvironment() {
   const environment = { ...process.env }
   for (const name of [
     'GITHUB_EVENT_NAME',
@@ -22,15 +23,22 @@ function run(command: string, options: string[] = []) {
     'GITHUB_SHA',
     'GITHUB_OUTPUT',
     'BASE_REVISION',
-    'HEAD_REVISION'
+    'HEAD_REVISION',
+    'GIT_DIR',
+    'GIT_WORK_TREE',
+    'GIT_INDEX_FILE'
   ]) {
     delete environment[name]
   }
+  return environment
+}
+
+function run(command: string, options: string[] = []) {
   return spawnSync(process.execPath, [classifier, command, ...options], {
     cwd: repositoryRoot,
     encoding: 'utf8',
     windowsHide: true,
-    env: environment
+    env: cleanEnvironment()
   })
 }
 
@@ -62,8 +70,53 @@ describe('CI check selection', () => {
     expect(classify([file])).toMatchObject({ category: 'documentation', run_verification: false })
   })
 
+  test.each([
+    'release-please-config.json',
+    '.release-please-manifest.json',
+    'tools/release/check-app-config.mjs',
+    'tools/release/extract-artifact.ps1',
+    'tools/release/github-api.mjs',
+    'tools/release/provenance.mjs',
+    'tools/release/publication.mjs',
+    'tools/release/publish.mjs',
+    'tools/release/release-pr.mjs',
+    'tools/release/select-run-assets.mjs',
+    'tools/release/tag-approval.mjs',
+    'tools/release/validate-candidate-source.mjs',
+    'tools/release/validate.mjs',
+    'tests/unit/release-provenance.test.ts',
+    'tests/unit/release-tag-approval.test.ts',
+    'tests/integration/release-artifact-extraction.test.ts',
+    'tests/integration/release-github-transport.test.ts',
+    'tests/integration/release-pr-flow.test.ts',
+    'tests/integration/release-publication.test.ts',
+    'tests/integration/release-tag-flow.test.ts',
+    'tests/support/release-fixture.mjs',
+    'tests/support/release-pr-scenarios.mjs'
+  ])('selects release regressions for allowlisted paths, including mixed docs: %s', (file) => {
+    expect(classify([file])).toMatchObject({ category: 'release-tooling', run_verification: false })
+    expect(classify(['README.md', file])).toMatchObject({ category: 'release-tooling' })
+  })
+
   test.each(
     [
+      ['tools/release/create-candidate.mjs'],
+      ['tools/release/run-installed-test.mjs'],
+      ['tools/release/new-script.mjs'],
+      ['tools/ci/classify-changes.mjs'],
+      ['tests/unit/ci-governance.test.ts'],
+      ['tests/unit/update-release-metadata.test.ts'],
+      ['package.json'],
+      ['vitest.config.ts'],
+      ['playwright.config.ts'],
+      ['eslint.config.js'],
+      ['tsconfig.test.json'],
+      ['.github/workflows/release.yml'],
+      ['tools/release/README.md'],
+      ['tools/release/release-pr.mjs', 'src/main/index.ts'],
+      ['release-please-config.json', 'package-lock.json'],
+      [' tools/release/release-pr.mjs'],
+      ['TOOLS/release/release-pr.mjs'],
       ['src/main/index.ts'],
       ['tests/unit/example.test.ts'],
       ['tools/ci/check.mjs'],
@@ -96,11 +149,39 @@ describe('CI check selection', () => {
     })
   })
 
-  test('manual verification always runs the complete suite', () => {
-    expect(classify(['README.md'], ['--event-name', 'workflow_dispatch'])).toMatchObject({
-      category: 'source',
-      run_verification: true
-    })
+  test.each(['README.md', 'release-please-config.json'])(
+    'manual verification always runs the complete suite: %s',
+    (file) => {
+      expect(classify([file], ['--event-name', 'workflow_dispatch'])).toMatchObject({
+        category: 'source',
+        run_verification: true
+      })
+    }
+  )
+
+  test('does not downgrade executable Markdown renames', () => {
+    const root = temporaryDirectory()
+    const git = (...args: string[]) => {
+      const result = spawnSync('git', args, { cwd: root, encoding: 'utf8', windowsHide: true })
+      expect(result.status, result.stderr).toBe(0)
+      return result.stdout.trim()
+    }
+    git('init', '--quiet')
+    mkdirSync(join(root, 'src'))
+    writeFileSync(join(root, 'src', 'help.md'), '# Help\n')
+    git('add', '.')
+    const base = git('write-tree')
+    git('mv', 'src/help.md', 'README.md')
+    const head = git('write-tree')
+    const result = spawnSync(
+      process.execPath,
+      [classifier, 'classify', '--base', base, '--head', head, '--event-name', 'pull_request'],
+      { cwd: root, encoding: 'utf8', windowsHide: true }
+    )
+    expect(result.status, result.stderr).toBe(0)
+    const classification = JSON.parse(result.stdout)
+    expect(classification).toMatchObject({ category: 'source', run_verification: true })
+    expect(classification.changed_paths).toEqual(['README.md', 'src/help.md'])
   })
 
   test('uses the actual PR test merge revision and reports comparison failures', () => {
@@ -157,16 +238,57 @@ describe('dependency-free documentation checks', () => {
     expect(run('docs', ['--repository-root', root, '--paths-file', paths]).status).toBe(0)
   })
 
-  test('accepts an absent comparison base on manual execution without empty shell arguments', () => {
-    const result = spawnSync(process.execPath, [classifier, 'docs'], {
-      cwd: repositoryRoot,
-      encoding: 'utf8',
-      windowsHide: true,
-      env: { ...process.env, BASE_REVISION: '', HEAD_REVISION: 'HEAD' }
-    })
-    expect(result.status, result.stderr).toBe(0)
-    expect(result.stdout).toMatch(/Validated \d+ changed documentation file/)
-  })
+  test.each(['full', 'shallow'])(
+    'checks an absent comparison base in an isolated %s history',
+    (history) => {
+      const root = temporaryDirectory()
+      const source = join(root, 'source')
+      mkdirSync(source)
+      const environment = {
+        ...cleanEnvironment(),
+        GIT_CONFIG_NOSYSTEM: '1',
+        GIT_CONFIG_GLOBAL: join(root, 'gitconfig')
+      }
+      writeFileSync(environment.GIT_CONFIG_GLOBAL, '')
+      const git = (...args: string[]) => {
+        const result = spawnSync('git', args, {
+          cwd: source,
+          encoding: 'utf8',
+          windowsHide: true,
+          env: environment
+        })
+        expect(result.status, result.stderr).toBe(0)
+      }
+      git('init', '--quiet')
+      // An old broken link must not be scanned as a change in complete history.
+      writeFileSync(join(source, 'old.md'), '# Old\n\n[Missing](missing.md)\n')
+      git('add', '.')
+      const commit = ['-c', 'user.name=CI', '-c', 'user.email=ci@example.invalid', 'commit', '-qm']
+      git(...commit, 'old documentation')
+      writeFileSync(join(source, 'guide.md'), '# Guide\n')
+      git('add', '.')
+      git(...commit, 'current documentation')
+      const checkout = history === 'shallow' ? join(root, 'shallow') : source
+      if (history === 'shallow') {
+        git('clone', '--quiet', '--depth', '1', pathToFileURL(source).href, checkout)
+      }
+      const result = spawnSync(process.execPath, [classifier, 'docs'], {
+        cwd: checkout,
+        encoding: 'utf8',
+        windowsHide: true,
+        env: { ...environment, BASE_REVISION: '', HEAD_REVISION: 'HEAD' }
+      })
+      if (history === 'full') {
+        expect(result.status, result.stderr).toBe(0)
+        expect(result.stdout).toContain('Validated 1 changed documentation file(s).')
+      } else {
+        // Git sees a shallow boundary as a root: keep the link checker strict.
+        expect(result.status).toBe(1)
+        expect(result.stderr).toContain('old.md: broken local link: missing.md')
+      }
+    },
+    15_000
+  )
 
   test.each([
     ['# Guide\n\n[Missing](missing.md)\n', 'broken local link'],
@@ -191,6 +313,12 @@ describe('workflow safety boundaries', () => {
         ?.map((line) => line.trim())
     ).toEqual(['ci:'])
     expect(source).toContain('name: CI Gate')
+    expect(source).toContain('runs-on: windows-2025')
+    expect(source).toContain("@('documentation', 'release-tooling', 'source')")
+    expect(source).toContain("throw 'Missing or invalid CI classification'")
+    expect(source).toContain("if: steps.changes.outputs.category == 'release-tooling'")
+    expect(source).toContain('run: npm.cmd ci --ignore-scripts')
+    expect(source).toContain('run: npm.cmd run verify:release-tooling')
     expect(source.match(/^\s+branches: \[([^\]]+)\]/m)?.[1]).toBe('main')
     expect(source).toContain('types: [opened, synchronize, reopened]')
     expect(source).toContain('workflow_dispatch:')
@@ -201,7 +329,21 @@ describe('workflow safety boundaries', () => {
     expect(source).not.toContain('Windows required gate')
     expect(source).not.toMatch(/contents: write|run: .*package/)
     expect(source).toContain('run: npm.cmd run verify')
-    expect(source).toContain("if: steps.changes.outputs.run_verification == 'true'")
+    expect(source).toContain("if: steps.changes.outputs.category == 'source'")
+  })
+
+  test('the tooling command retains governance and every allowlisted release regression', () => {
+    const { scripts } = JSON.parse(readFileSync(join(repositoryRoot, 'package.json'), 'utf8'))
+    const command = scripts['verify:release-tooling'] as string
+    expect(command).toContain('npm run format:check && npm run lint && npm run typecheck')
+    expect(command).toContain('tests/unit/ci-governance.test.ts')
+    expect(command).toContain('vitest run --project unit')
+    expect(command).toContain('vitest run --project integration')
+    const source = readFileSync(classifier, 'utf8')
+    const testPaths = [...source.matchAll(/'(tests\/(?:unit|integration)\/release-[^']+)'/g)]
+    expect(testPaths.length).toBeGreaterThan(0)
+    for (const [, path] of testPaths) expect(command).toContain(path)
+    expect(command).not.toMatch(/test:e2e|npm run build|package|publish|test:installed/)
   })
 
   test('isolates the release App token from selection, builds and publication', () => {
@@ -255,7 +397,10 @@ describe('workflow safety boundaries', () => {
   })
 
   test('uses a release PR as the only publication decision', () => {
-    const release = readFileSync(join(repositoryRoot, '.github/workflows/release.yml'), 'utf8')
+    const release = readFileSync(
+      join(repositoryRoot, '.github/workflows/release.yml'),
+      'utf8'
+    ).replaceAll('\r\n', '\n')
     expect(release).toContain('branches: [main]')
     expect(release).not.toContain('workflow_dispatch:')
     expect(release).not.toContain('pull_request_target')
@@ -266,6 +411,14 @@ describe('workflow safety boundaries', () => {
     expect(release).toContain('release-pr.mjs publish')
     expect(release).toContain('sourceRevision')
     expect(release).toContain('--publish never')
+    const build = release.split('\n  build:')[1].split('\n  publish:')[0]
+    expect(build).toContain(
+      'ref: ${{ fromJSON(needs.release-pr.outputs.selection).sourceRevision }}\n' +
+        '          fetch-depth: 0\n          persist-credentials: false'
+    )
+    expect(release).toContain('npm.cmd run verify')
+    expect(release).toContain('npm.cmd run test:package-smoke')
+    expect(release).not.toContain('verify:release-tooling')
     expect(release).toContain('cancel-in-progress: false')
     expect(release).not.toContain('create-candidate.mjs')
     expect(release).not.toContain('publish.mjs prepare')

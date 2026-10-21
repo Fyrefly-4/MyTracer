@@ -24,6 +24,7 @@
     "test:ai-contract": "set \"MYTRACER_AI_LIVE_CONTRACT=1\" && vitest run --project integration tests/integration/ai-start-help-provider-contract.test.ts -t \"live LiteLLM contract\"",
     "governance:metadata:check": "node tools/governance/validate-task-metadata.mjs --metadata-dir docs/implementation/metadata --task-index docs/implementation/TASK_INDEX_V0.1.md",
     "evidence:verify": "node tools/evidence/capture-command.mjs --task unscoped --gate aggregate --output .tmp/evidence -- npm.cmd run verify",
+    "verify:release-tooling": "npm run format:check && npm run lint && npm run typecheck && vitest run --project unit tests/unit/ci-governance.test.ts tests/unit/release-provenance.test.ts tests/unit/release-tag-approval.test.ts && vitest run --project integration tests/integration/release-artifact-extraction.test.ts tests/integration/release-github-transport.test.ts tests/integration/release-pr-flow.test.ts tests/integration/release-publication.test.ts tests/integration/release-tag-flow.test.ts",
     "verify": "npm run format:check && npm run lint && npm run typecheck && npm run test:unit && npm run test:integration && npm run test:e2e"
   },
   "engines": {
