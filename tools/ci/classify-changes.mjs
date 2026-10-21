@@ -37,8 +37,37 @@ function normalizePath(filePath) {
   return filePath.replaceAll('\\', '/').replace(/^\.\//, '')
 }
 
+// Only pure release automation is eligible. Packaging, installed-update helpers,
+// workflow definitions and this classifier stay full-verification by default.
+const releaseToolingPaths = new Set([
+  'release-please-config.json',
+  '.release-please-manifest.json',
+  'tools/release/check-app-config.mjs',
+  'tools/release/extract-artifact.ps1',
+  'tools/release/github-api.mjs',
+  'tools/release/provenance.mjs',
+  'tools/release/publication.mjs',
+  'tools/release/publish.mjs',
+  'tools/release/release-pr.mjs',
+  'tools/release/select-run-assets.mjs',
+  'tools/release/tag-approval.mjs',
+  'tools/release/validate-candidate-source.mjs',
+  'tools/release/validate.mjs',
+  'tests/unit/release-provenance.test.ts',
+  'tests/unit/release-tag-approval.test.ts',
+  'tests/integration/release-artifact-extraction.test.ts',
+  'tests/integration/release-github-transport.test.ts',
+  'tests/integration/release-pr-flow.test.ts',
+  'tests/integration/release-publication.test.ts',
+  'tests/integration/release-tag-flow.test.ts',
+  'tests/support/release-fixture.mjs',
+  'tests/support/release-pr-scenarios.mjs'
+])
+
 export function classifyPath(filePath) {
-  const normalized = normalizePath(filePath).toLowerCase()
+  const exactPath = normalizePath(filePath)
+  if (releaseToolingPaths.has(exactPath)) return 'release-tooling'
+  const normalized = exactPath.toLowerCase()
   // Executable locations take precedence, even for Markdown or YAML files.
   if (/^(?:src|tests|tools)\//.test(normalized) || normalized.startsWith('.github/workflows/')) {
     return 'source'
@@ -53,9 +82,9 @@ export function classifyPath(filePath) {
 }
 
 export function classifyPaths(paths) {
-  return paths.length > 0 && paths.every((filePath) => classifyPath(filePath) === 'documentation')
-    ? 'documentation'
-    : 'source'
+  const categories = paths.map(classifyPath)
+  if (categories.length === 0 || categories.includes('source')) return 'source'
+  return categories.includes('release-tooling') ? 'release-tooling' : 'documentation'
 }
 
 function readEvent(options) {
@@ -70,7 +99,6 @@ function readChangedPaths(options, baseRevision, headRevision) {
   if (options['paths-file']) {
     return readFileSync(options['paths-file'], 'utf8')
       .split(/\0|\r?\n/)
-      .map((entry) => entry.trim())
       .filter(Boolean)
       .map(normalizePath)
   }
@@ -82,8 +110,17 @@ function readChangedPaths(options, baseRevision, headRevision) {
   const zeroRevision = /^0+$/.test(baseRevision ?? '')
   const args =
     baseRevision && !zeroRevision
-      ? ['diff', '--name-only', '-z', baseRevision, headRevision]
-      : ['diff-tree', '--root', '--no-commit-id', '--name-only', '-r', '-z', headRevision]
+      ? ['diff', '--no-renames', '--name-only', '-z', baseRevision, headRevision]
+      : [
+          'diff-tree',
+          '--no-renames',
+          '--root',
+          '--no-commit-id',
+          '--name-only',
+          '-r',
+          '-z',
+          headRevision
+        ]
   const result = spawnSync('git', args, { encoding: 'utf8', shell: false })
   if (result.status !== 0) {
     throw new Error(result.stderr.trim() || `git ${args.join(' ')} failed`)
@@ -91,13 +128,12 @@ function readChangedPaths(options, baseRevision, headRevision) {
 
   return result.stdout
     .split('\0')
-    .map((entry) => entry.trim())
     .filter(Boolean)
     .map(normalizePath)
 }
 
 export function buildClassification({ paths, eventName, baseRevision, headRevision }) {
-  const category = eventName === 'workflow_dispatch' ? 'source' : classifyPaths(paths)
+  const category = eventName === 'pull_request' ? classifyPaths(paths) : 'source'
   return {
     category,
     run_verification: category === 'source',

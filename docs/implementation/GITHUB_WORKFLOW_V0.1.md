@@ -25,25 +25,28 @@ Ready、合并到 main、tag、release、force push 和删除远端分支均按 
 
 | 触发 | 行为 |
 | --- | --- |
-| 目标为 main 的 PR opened、synchronize、reopened | 按变更文件选择轻检查或完整验证 |
+| 目标为 main 的 PR opened、synchronize、reopened | 按变更文件选择文档、发布工具或完整验证三档 |
 | 手动运行 Verification | 完整验证 |
 | 编辑 PR 正文/标题、切换 Draft/Ready、main push | 不自动重复日常 CI |
 
 | 变更范围 | 检查 |
 | --- | --- |
 | 纯 Markdown、AGENTS、Skill 说明及 agents/openai.yaml 元数据 | 本地链接、Markdown 结构与 diff integrity，不安装应用依赖 |
-| src/tests/tools、工作流、依赖、构建配置、混合或未知路径 | 轻检查，加锁定依赖安装、格式、lint、类型、单元、集成、构建和真实 Electron E2E |
+| 显式白名单中的纯发布配置、脚本和回归测试（可混合文档） | 轻检查，加 `npm ci --ignore-scripts`、格式、lint、CI governance 与发布回归；不安装 Electron、不构建应用、不跑 UI E2E |
+| 应用源码、非白名单 tests/tools、工作流、依赖、构建/测试配置、混合应用或未知路径 | 轻检查，加锁定依赖安装、格式、lint、类型、单元、集成、构建和真实 Electron E2E |
 
-分类器优先识别执行目录；其中的 Markdown/YAML 也走完整验证。PR 默认 checkout GitHub test-merge revision，分类和验证绑定实际检出的 revision；不使用旧 head 的成功结果替代。分类、文档或验证步骤失败都会使 job 失败。手动运行用于额外验证，不代替 PR required checks。
+发布工具白名单以 `tools/ci/classify-changes.mjs` 为准，只列出已覆盖的确切文件，不按整个 `tools/release/` 目录放行。新增工具、打包/安装更新脚本、CI workflow、分类器和 governance 测试自身变更仍走完整验证；空差异与手动运行也走完整验证。执行目录里的 Markdown/YAML 不算纯文档。重命名同时检查旧、新路径，删除应用文件不能降档。缺失或无效分类直接失败，不会跳过所有检查变绿。PR 默认 checkout GitHub test-merge revision，分类和验证绑定实际检出的 revision；不使用旧 head 的成功结果替代。分类、文档或验证步骤失败都会使 job 失败。手动运行用于额外验证，不代替 PR required checks。
 
 CI 不检查 PR 正文，不校验历史任务账本或 Profile，不创建正式阶段证据，也不打包。使用 npm 下载缓存，依赖仍以 `npm ci` 安装；失败时保留隔离测试诊断，不记录真实用户数据或凭据。
+
+发布工具验证命令为 `npm.cmd run verify:release-tooling`（Windows；保留 PowerShell 资产解包回归）。它运行全仓只读格式和 lint，以及明确列出的 governance/发布单元与集成测试；不执行真实 GitHub 写入、安装或发布。发布 PR 的聚合 Node 场景仍有 60s 子进程上限，只有该 Vitest 包装测试使用 70s 外层预算，超时和非零退出仍失败，不重试。
 
 完整验证命令为 `npm.cmd run verify`；该命令不安装依赖、不打包、不发布、不执行 live AI，也不修改 tracked 文件。测试范围、隔离与本地命令见[维护入口](../MAINTENANCE.md#开发与验证)。
 
 ## 4. 发布 PR 与自动发布
 
 - [Release workflow](../../.github/workflows/release.yml) 在 main push 时维护 Release Please 的发布 PR。普通代码合入只积累版本和更新记录，不自动打包发布。
-- owner 想发布时合并发布 PR；这一次决定授权 workflow 固定发布 SHA，自动验证、NSIS 打包、隔离安装 smoke、上传完整更新资产并将草稿转为正式 stable Release，不再另行下载候选或批准 tag。
+- 三档仅优化日常 PR 检查，不削减实际发布门禁。owner 想发布时合并发布 PR；这一次决定授权 workflow 固定发布 SHA，自动验证、NSIS 打包、隔离安装 smoke、上传完整更新资产并将草稿转为正式 stable Release，不再另行下载候选或批准 tag。
 - 版本由约定式提交计算；推荐普通功能 PR squash merge，最终标题使用 `fix:`、`feat:` 等前缀，中文说明可以保留。需要手动指定下一版时使用进入 main 的提交正文 `Release-As: X.Y.Z`。
 - `package.json`、lock、tag 与更新元数据必须一致；发布完整文件后才公开版本。同版本失败仅能恢复经身份校验的草稿，不覆盖正式版本，也不重新选择最新 main 构建旧版本。
 - 旧手动候选和 owner tag 发布 workflow 退出有效流程，避免两条入口并行。Agent 不因 CI 通过或发布 PR 已准备好而自行合并、创建 tag 或发布。

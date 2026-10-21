@@ -35,6 +35,14 @@ jobs:
       - name: Select checks for changed files
         id: changes
         run: node tools/ci/classify-changes.mjs classify
+      - name: Require a valid check selection
+        shell: pwsh
+        env:
+          CHECK_CATEGORY: ${{ steps.changes.outputs.category }}
+        run: |
+          if ($env:CHECK_CATEGORY -notin @('documentation', 'release-tooling', 'source')) {
+            throw 'Missing or invalid CI classification'
+          }
       - name: Check changed documentation
         env:
           BASE_REVISION: ${{ steps.changes.outputs.base_revision }}
@@ -53,19 +61,25 @@ jobs:
           }
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Enable npm download cache
-        if: steps.changes.outputs.run_verification == 'true'
+        if: steps.changes.outputs.category != 'documentation'
         uses: actions/setup-node@v6.4.0
         with:
           node-version: 24.18.0
           cache: npm
       - name: Install locked dependencies
-        if: steps.changes.outputs.run_verification == 'true'
+        if: steps.changes.outputs.category == 'source'
         run: npm.cmd ci
+      - name: Install locked tooling dependencies without lifecycle scripts
+        if: steps.changes.outputs.category == 'release-tooling'
+        run: npm.cmd ci --ignore-scripts
+      - name: Verify release tooling
+        if: steps.changes.outputs.category == 'release-tooling'
+        run: npm.cmd run verify:release-tooling
       - name: Install pinned Electron binary
-        if: steps.changes.outputs.run_verification == 'true'
+        if: steps.changes.outputs.category == 'source'
         run: npm.cmd exec -- install-electron --no
       - name: Verify application
-        if: steps.changes.outputs.run_verification == 'true'
+        if: steps.changes.outputs.category == 'source'
         run: npm.cmd run verify
       - name: Upload failure diagnostics
         if: failure()

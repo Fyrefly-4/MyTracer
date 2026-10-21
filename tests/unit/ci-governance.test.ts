@@ -62,8 +62,53 @@ describe('CI check selection', () => {
     expect(classify([file])).toMatchObject({ category: 'documentation', run_verification: false })
   })
 
+  test.each([
+    'release-please-config.json',
+    '.release-please-manifest.json',
+    'tools/release/check-app-config.mjs',
+    'tools/release/extract-artifact.ps1',
+    'tools/release/github-api.mjs',
+    'tools/release/provenance.mjs',
+    'tools/release/publication.mjs',
+    'tools/release/publish.mjs',
+    'tools/release/release-pr.mjs',
+    'tools/release/select-run-assets.mjs',
+    'tools/release/tag-approval.mjs',
+    'tools/release/validate-candidate-source.mjs',
+    'tools/release/validate.mjs',
+    'tests/unit/release-provenance.test.ts',
+    'tests/unit/release-tag-approval.test.ts',
+    'tests/integration/release-artifact-extraction.test.ts',
+    'tests/integration/release-github-transport.test.ts',
+    'tests/integration/release-pr-flow.test.ts',
+    'tests/integration/release-publication.test.ts',
+    'tests/integration/release-tag-flow.test.ts',
+    'tests/support/release-fixture.mjs',
+    'tests/support/release-pr-scenarios.mjs'
+  ])('selects release regressions for allowlisted paths, including mixed docs: %s', (file) => {
+    expect(classify([file])).toMatchObject({ category: 'release-tooling', run_verification: false })
+    expect(classify(['README.md', file])).toMatchObject({ category: 'release-tooling' })
+  })
+
   test.each(
     [
+      ['tools/release/create-candidate.mjs'],
+      ['tools/release/run-installed-test.mjs'],
+      ['tools/release/new-script.mjs'],
+      ['tools/ci/classify-changes.mjs'],
+      ['tests/unit/ci-governance.test.ts'],
+      ['tests/unit/update-release-metadata.test.ts'],
+      ['package.json'],
+      ['vitest.config.ts'],
+      ['playwright.config.ts'],
+      ['eslint.config.js'],
+      ['tsconfig.test.json'],
+      ['.github/workflows/release.yml'],
+      ['tools/release/README.md'],
+      ['tools/release/release-pr.mjs', 'src/main/index.ts'],
+      ['release-please-config.json', 'package-lock.json'],
+      [' tools/release/release-pr.mjs'],
+      ['TOOLS/release/release-pr.mjs'],
       ['src/main/index.ts'],
       ['tests/unit/example.test.ts'],
       ['tools/ci/check.mjs'],
@@ -96,11 +141,39 @@ describe('CI check selection', () => {
     })
   })
 
-  test('manual verification always runs the complete suite', () => {
-    expect(classify(['README.md'], ['--event-name', 'workflow_dispatch'])).toMatchObject({
-      category: 'source',
-      run_verification: true
-    })
+  test.each(['README.md', 'release-please-config.json'])(
+    'manual verification always runs the complete suite: %s',
+    (file) => {
+      expect(classify([file], ['--event-name', 'workflow_dispatch'])).toMatchObject({
+        category: 'source',
+        run_verification: true
+      })
+    }
+  )
+
+  test('does not downgrade executable Markdown renames', () => {
+    const root = temporaryDirectory()
+    const git = (...args: string[]) => {
+      const result = spawnSync('git', args, { cwd: root, encoding: 'utf8', windowsHide: true })
+      expect(result.status, result.stderr).toBe(0)
+      return result.stdout.trim()
+    }
+    git('init', '--quiet')
+    mkdirSync(join(root, 'src'))
+    writeFileSync(join(root, 'src', 'help.md'), '# Help\n')
+    git('add', '.')
+    const base = git('write-tree')
+    git('mv', 'src/help.md', 'README.md')
+    const head = git('write-tree')
+    const result = spawnSync(
+      process.execPath,
+      [classifier, 'classify', '--base', base, '--head', head, '--event-name', 'pull_request'],
+      { cwd: root, encoding: 'utf8', windowsHide: true }
+    )
+    expect(result.status, result.stderr).toBe(0)
+    const classification = JSON.parse(result.stdout)
+    expect(classification).toMatchObject({ category: 'source', run_verification: true })
+    expect(classification.changed_paths).toEqual(['README.md', 'src/help.md'])
   })
 
   test('uses the actual PR test merge revision and reports comparison failures', () => {
@@ -191,6 +264,12 @@ describe('workflow safety boundaries', () => {
         ?.map((line) => line.trim())
     ).toEqual(['ci:'])
     expect(source).toContain('name: CI Gate')
+    expect(source).toContain('runs-on: windows-2025')
+    expect(source).toContain("@('documentation', 'release-tooling', 'source')")
+    expect(source).toContain("throw 'Missing or invalid CI classification'")
+    expect(source).toContain("if: steps.changes.outputs.category == 'release-tooling'")
+    expect(source).toContain('run: npm.cmd ci --ignore-scripts')
+    expect(source).toContain('run: npm.cmd run verify:release-tooling')
     expect(source.match(/^\s+branches: \[([^\]]+)\]/m)?.[1]).toBe('main')
     expect(source).toContain('types: [opened, synchronize, reopened]')
     expect(source).toContain('workflow_dispatch:')
@@ -201,7 +280,21 @@ describe('workflow safety boundaries', () => {
     expect(source).not.toContain('Windows required gate')
     expect(source).not.toMatch(/contents: write|run: .*package/)
     expect(source).toContain('run: npm.cmd run verify')
-    expect(source).toContain("if: steps.changes.outputs.run_verification == 'true'")
+    expect(source).toContain("if: steps.changes.outputs.category == 'source'")
+  })
+
+  test('the tooling command retains governance and every allowlisted release regression', () => {
+    const { scripts } = JSON.parse(readFileSync(join(repositoryRoot, 'package.json'), 'utf8'))
+    const command = scripts['verify:release-tooling'] as string
+    expect(command).toContain('npm run format:check && npm run lint')
+    expect(command).toContain('tests/unit/ci-governance.test.ts')
+    expect(command).toContain('vitest run --project unit')
+    expect(command).toContain('vitest run --project integration')
+    const source = readFileSync(classifier, 'utf8')
+    const testPaths = [...source.matchAll(/'(tests\/(?:unit|integration)\/release-[^']+)'/g)]
+    expect(testPaths.length).toBeGreaterThan(0)
+    for (const [, path] of testPaths) expect(command).toContain(path)
+    expect(command).not.toMatch(/test:e2e|npm run build|package|publish|test:installed/)
   })
 
   test('isolates the release App token from selection, builds and publication', () => {
@@ -266,6 +359,9 @@ describe('workflow safety boundaries', () => {
     expect(release).toContain('release-pr.mjs publish')
     expect(release).toContain('sourceRevision')
     expect(release).toContain('--publish never')
+    expect(release).toContain('npm.cmd run verify')
+    expect(release).toContain('npm.cmd run test:package-smoke')
+    expect(release).not.toContain('verify:release-tooling')
     expect(release).toContain('cancel-in-progress: false')
     expect(release).not.toContain('create-candidate.mjs')
     expect(release).not.toContain('publish.mjs prepare')
