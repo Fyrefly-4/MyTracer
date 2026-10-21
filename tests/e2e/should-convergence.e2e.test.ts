@@ -100,6 +100,9 @@ test('shows factual dates, unlimited soft guidance and explicitly scoped weekly 
         .filter({ hasText: `SHOULD 行动 ${index}` })
         .getByRole('button', { name: '选为今日重点', exact: true })
         .click()
+      // Selection refresh moves the candidate disclosure after the first focus.
+      // Wait for that completed UI state before opening it for the next choice.
+      await expect(page.getByLabel('今日重点').locator('.focus-row')).toHaveCount(index)
     }
     await expect(page.getByLabel('今日重点').locator('.focus-row')).toHaveCount(6)
     await page.getByRole('navigation').getByRole('button', { name: '进展', exact: true }).click()
