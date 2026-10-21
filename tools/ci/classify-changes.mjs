@@ -126,10 +126,7 @@ function readChangedPaths(options, baseRevision, headRevision) {
     throw new Error(result.stderr.trim() || `git ${args.join(' ')} failed`)
   }
 
-  return result.stdout
-    .split('\0')
-    .filter(Boolean)
-    .map(normalizePath)
+  return result.stdout.split('\0').filter(Boolean).map(normalizePath)
 }
 
 export function buildClassification({ paths, eventName, baseRevision, headRevision }) {
