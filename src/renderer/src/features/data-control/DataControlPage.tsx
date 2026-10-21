@@ -1,4 +1,13 @@
-import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  createContext,
+  type ReactNode,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState
+} from 'react'
 import type {
   ActionRecordDataDto,
   ConfusionDataDto,
@@ -18,6 +27,7 @@ import {
 } from '../../app/ui-text'
 import { revealStart, usePagePosition, useUiSession, useUnsavedContent } from '../../app/ui-session'
 import type { CompleteExportErrorCode } from '../../../../contracts/exports'
+import './data-workspace.css'
 
 const dataControlErrorText: Record<DataControlErrorCode, string> = {
   validation: '请检查日期、时长和必填内容。',
@@ -30,19 +40,38 @@ const dataControlErrorText: Record<DataControlErrorCode, string> = {
   'persistence-failed': '本地数据操作失败；没有提交部分修改。'
 }
 
+const DataDraftContext = createContext<Map<string, boolean> | null>(null)
+
+function useDataDraft(source: string, dirty: boolean): void {
+  useUnsavedContent(source, dirty)
+  const drafts = useContext(DataDraftContext)
+  useLayoutEffect(() => {
+    drafts?.set(source, dirty)
+    return () => {
+      drafts?.delete(source)
+    }
+  }, [drafts, source, dirty])
+}
+
+function recordDuration(value: number | null): string {
+  return value === null ? '时长未记录' : value === 0 ? '少于 1 分钟' : `${value} 分钟`
+}
+
 function ActionRecordEditor(props: {
   readonly objectName: string
   readonly record: ActionRecordDataDto
   readonly onChanged: () => Promise<void>
   readonly onDelete: (target: DeleteTargetDto) => Promise<void>
 }): ReactNode {
+  const [editing, setEditing] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [occurredOn, setOccurredOn] = useState(props.record.occurredOn)
   const [duration, setDuration] = useState(String(props.record.durationMinutes))
   const [outcome, setOutcome] = useState(props.record.outcome)
   const [nextStep, setNextStep] = useState(props.record.nextStep ?? '')
   const [note, setNote] = useState(props.record.note ?? '')
   const [error, setError] = useState<string | null>(null)
-  useUnsavedContent(
+  useDataDraft(
     `action-record-edit-${props.record.id}`,
     occurredOn !== props.record.occurredOn ||
       duration !== String(props.record.durationMinutes) ||
@@ -50,91 +79,180 @@ function ActionRecordEditor(props: {
       nextStep !== (props.record.nextStep ?? '') ||
       note !== (props.record.note ?? '')
   )
-  const submit = async (): Promise<void> => {
-    const result = await window.myTracer.dataControl.updateActionRecord({
-      recordId: props.record.id,
-      occurredOn,
-      durationMinutes: Number(duration),
-      outcome,
-      nextStep: nextStep || null,
-      note: note || null
-    })
-    if (!result.ok) return setError(dataControlErrorText[result.error.code])
+  const reset = (): void => {
+    setOccurredOn(props.record.occurredOn)
+    setDuration(String(props.record.durationMinutes))
+    setOutcome(props.record.outcome)
+    setNextStep(props.record.nextStep ?? '')
+    setNote(props.record.note ?? '')
     setError(null)
-    await props.onChanged()
+  }
+  const submit = async (): Promise<void> => {
+    if (saving) return
+    setSaving(true)
+    try {
+      const result = await window.myTracer.dataControl.updateActionRecord({
+        recordId: props.record.id,
+        occurredOn,
+        durationMinutes: Number(duration),
+        outcome,
+        nextStep: nextStep || null,
+        note: note || null
+      })
+      if (!result.ok) return setError(dataControlErrorText[result.error.code])
+      setError(null)
+      setOccurredOn(result.value.occurredOn)
+      setDuration(String(result.value.durationMinutes))
+      setOutcome(result.value.outcome)
+      setNextStep(result.value.nextStep ?? '')
+      setNote(result.value.note ?? '')
+      await props.onChanged()
+      setEditing(false)
+    } catch {
+      setError(dataControlErrorText['persistence-failed'])
+    } finally {
+      setSaving(false)
+    }
   }
   return (
     <article className="data-record-card">
       <div className="data-record-heading">
-        <strong>行动 · {props.objectName}</strong>
-        <button
-          className="danger-button"
-          type="button"
-          onClick={() => void props.onDelete({ type: 'action-record', id: props.record.id })}
-        >
-          永久删除
-        </button>
-      </div>
-      <div className="data-edit-grid">
-        <Field label="发生日期（必填）" hint="选择实际发生的本地日期。">
-          <input
-            aria-label="行动发生日期"
-            type="date"
-            value={occurredOn}
-            onChange={(event) => setOccurredOn(event.target.value)}
-          />
-        </Field>
-        <Field label="投入时长（分钟，必填）" hint="0 表示不足 1 分钟但确有行动。">
-          <input
-            aria-label="行动分钟"
-            type="number"
-            min="0"
-            step="1"
-            value={duration}
-            onChange={(event) => setDuration(event.target.value)}
-          />
-        </Field>
-        <Field label="本次结果（必填）">
-          <select
-            aria-label="行动结果"
-            value={outcome}
-            onChange={(event) => setOutcome(event.target.value as ActionRecordDataDto['outcome'])}
+        <div>
+          <p className="eyebrow">行动记录</p>
+          <h2>行动 · {props.objectName}</h2>
+        </div>
+        {!editing ? (
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={() => {
+              reset()
+              setEditing(true)
+            }}
           >
-            <option value="completed">本次达到预期</option>
-            <option value="partial">本次完成一部分</option>
-            <option value="stopped">本次在这里停下</option>
-          </select>
-        </Field>
-        <Field label="备注（可选）">
-          <input
-            aria-label="行动备注"
-            value={note}
-            onChange={(event) => setNote(event.target.value)}
-            placeholder="备注（可选）"
-          />
-        </Field>
-        <Field label="记录中的下一步（可选）" hint="仅写入这条记录，不替换目标的当前下一步。">
-          <input
-            aria-label="行动下一步"
-            value={nextStep}
-            onChange={(event) => setNextStep(event.target.value)}
-            placeholder="下一步（可选）"
-          />
-        </Field>
-        <button
-          className="secondary-button"
-          type="button"
-          disabled={!occurredOn || duration === ''}
-          onClick={() => void submit()}
-        >
-          保存修改
-        </button>
+            编辑记录
+          </button>
+        ) : (
+          <span className="data-editing-label">编辑中</span>
+        )}
       </div>
+      {!editing ? (
+        <dl className="data-record-summary">
+          <div>
+            <dt>发生日期</dt>
+            <dd>{props.record.occurredOn}</dd>
+          </div>
+          <div>
+            <dt>投入时长</dt>
+            <dd>{recordDuration(props.record.durationMinutes)}</dd>
+          </div>
+          <div>
+            <dt>本次结果</dt>
+            <dd>{recordOutcomeText[props.record.outcome]}</dd>
+          </div>
+          <div className="data-summary-wide">
+            <dt>备注</dt>
+            <dd>{props.record.note || '未填写'}</dd>
+          </div>
+          <div className="data-summary-wide">
+            <dt>记录中的下一步</dt>
+            <dd>{props.record.nextStep || '未填写'}</dd>
+          </div>
+        </dl>
+      ) : (
+        <fieldset className="data-editor-fields" disabled={saving}>
+          <legend className="visually-hidden">修改行动记录</legend>
+          <div className="data-edit-grid">
+            <Field label="发生日期（必填）" hint="选择实际发生的本地日期。">
+              <input
+                aria-label="行动发生日期"
+                type="date"
+                value={occurredOn}
+                onChange={(event) => setOccurredOn(event.target.value)}
+              />
+            </Field>
+            <Field label="投入时长（分钟，必填）" hint="0 表示不足 1 分钟但确有行动。">
+              <input
+                aria-label="行动分钟"
+                type="number"
+                min="0"
+                step="1"
+                value={duration}
+                onChange={(event) => setDuration(event.target.value)}
+              />
+            </Field>
+            <Field label="本次结果（必填）">
+              <select
+                aria-label="行动结果"
+                value={outcome}
+                onChange={(event) =>
+                  setOutcome(event.target.value as ActionRecordDataDto['outcome'])
+                }
+              >
+                <option value="completed">本次达到预期</option>
+                <option value="partial">本次完成一部分</option>
+                <option value="stopped">本次在这里停下</option>
+              </select>
+            </Field>
+            <Field label="备注（可选）">
+              <textarea
+                aria-label="行动备注"
+                rows={3}
+                value={note}
+                onChange={(event) => setNote(event.target.value)}
+                placeholder="备注（可选）"
+              />
+            </Field>
+            <Field label="记录中的下一步（可选）" hint="仅写入这条记录，不替换目标的当前下一步。">
+              <textarea
+                aria-label="行动下一步"
+                rows={3}
+                value={nextStep}
+                onChange={(event) => setNextStep(event.target.value)}
+                placeholder="下一步（可选）"
+              />
+            </Field>
+          </div>
+          <div className="data-editor-actions">
+            <button
+              className="primary-button"
+              type="button"
+              disabled={!occurredOn || duration === ''}
+              onClick={() => void submit()}
+            >
+              {saving ? '正在保存…' : '保存修改'}
+            </button>
+            <button
+              className="quiet-button"
+              type="button"
+              onClick={() => {
+                reset()
+                setEditing(false)
+              }}
+            >
+              取消编辑
+            </button>
+            <small>仅保存本条记录；理解与困惑单独修改。</small>
+          </div>
+        </fieldset>
+      )}
       {error ? (
         <p className="form-error" role="alert">
           {error}
         </p>
       ) : null}
+      <details className="data-record-danger">
+        <summary>删除这条记录</summary>
+        <p>先查看影响范围，确认后才会永久删除。</p>
+        <button
+          className="danger-button"
+          type="button"
+          disabled={saving}
+          onClick={() => void props.onDelete({ type: 'action-record', id: props.record.id })}
+        >
+          永久删除
+        </button>
+      </details>
     </article>
   )
 }
@@ -145,6 +263,8 @@ function RoutineRecordEditor(props: {
   readonly onChanged: () => Promise<void>
   readonly onDelete: (target: DeleteTargetDto) => Promise<void>
 }): ReactNode {
+  const [editing, setEditing] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [occurredOn, setOccurredOn] = useState(props.record.occurredOn)
   const [duration, setDuration] = useState(
     props.record.durationMinutes === null ? '' : String(props.record.durationMinutes)
@@ -154,7 +274,7 @@ function RoutineRecordEditor(props: {
   const [note, setNote] = useState(props.record.note ?? '')
   const [error, setError] = useState<string | null>(null)
   const dateChanged = occurredOn !== props.record.occurredOn
-  useUnsavedContent(
+  useDataDraft(
     `routine-record-edit-${props.record.id}`,
     dateChanged ||
       duration !==
@@ -163,119 +283,204 @@ function RoutineRecordEditor(props: {
       planned !== props.record.plannedForDate ||
       note !== (props.record.note ?? '')
   )
-  const submit = async (): Promise<void> => {
-    const result = await window.myTracer.dataControl.updateRoutineRecord({
-      recordId: props.record.id,
-      occurredOn,
-      outcome,
-      plannedForDate: dateChanged ? planned : undefined,
-      durationMinutes: duration === '' ? null : Number(duration),
-      note: note || null
-    })
-    if (!result.ok) return setError(dataControlErrorText[result.error.code])
+  const reset = (): void => {
+    setOccurredOn(props.record.occurredOn)
+    setDuration(props.record.durationMinutes === null ? '' : String(props.record.durationMinutes))
+    setOutcome(props.record.outcome)
+    setPlanned(props.record.plannedForDate)
+    setNote(props.record.note ?? '')
     setError(null)
-    if (dateChanged) {
-      await Promise.all([
-        window.myTracer.routines.getDayState({
-          routineId: props.record.routineId,
-          localDate: props.record.occurredOn
-        }),
-        window.myTracer.routines.getDayState({
-          routineId: props.record.routineId,
-          localDate: occurredOn
-        })
-      ])
+  }
+  const submit = async (): Promise<void> => {
+    if (saving) return
+    setSaving(true)
+    try {
+      const result = await window.myTracer.dataControl.updateRoutineRecord({
+        recordId: props.record.id,
+        occurredOn,
+        outcome,
+        plannedForDate: dateChanged ? planned : undefined,
+        durationMinutes: duration === '' ? null : Number(duration),
+        note: note || null
+      })
+      if (!result.ok) return setError(dataControlErrorText[result.error.code])
+      setError(null)
+      if (dateChanged) {
+        await Promise.all([
+          window.myTracer.routines.getDayState({
+            routineId: props.record.routineId,
+            localDate: props.record.occurredOn
+          }),
+          window.myTracer.routines.getDayState({
+            routineId: props.record.routineId,
+            localDate: occurredOn
+          })
+        ])
+      }
+      setOccurredOn(result.value.occurredOn)
+      setDuration(result.value.durationMinutes === null ? '' : String(result.value.durationMinutes))
+      setOutcome(result.value.outcome)
+      setPlanned(result.value.plannedForDate)
+      setNote(result.value.note ?? '')
+      await props.onChanged()
+      setEditing(false)
+    } catch {
+      setError(dataControlErrorText['persistence-failed'])
+    } finally {
+      setSaving(false)
     }
-    await props.onChanged()
   }
   return (
     <article className="data-record-card">
       <div className="data-record-heading">
-        <strong>例行 · {props.objectName}</strong>
-        <span>
-          {props.record.plannedForDateBasis === 'user_confirmed_history'
-            ? '历史计划由用户确认'
-            : '记录时的计划安排'}
-        </span>
-        <button
-          className="danger-button"
-          type="button"
-          onClick={() => void props.onDelete({ type: 'routine-record', id: props.record.id })}
-        >
-          永久删除
-        </button>
-      </div>
-      <div className="data-edit-grid">
-        <Field label="发生日期（必填）" hint="选择实际发生的本地日期。">
-          <input
-            aria-label="例行发生日期"
-            type="date"
-            value={occurredOn}
-            onChange={(event) => setOccurredOn(event.target.value)}
-          />
-        </Field>
-        <Field label="本次结果（必填）">
-          <select
-            aria-label="例行结果"
-            value={outcome}
-            onChange={(event) => {
-              const value = event.target.value as RoutineRecordDataDto['outcome']
-              setOutcome(value)
-              if (value === 'intentional_rest' || value === 'not_done') setDuration('')
+        <div>
+          <p className="eyebrow">例行记录</p>
+          <h2>例行 · {props.objectName}</h2>
+        </div>
+        {!editing ? (
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={() => {
+              reset()
+              setEditing(true)
             }}
           >
-            <option value="target_met">达到目标</option>
-            <option value="acted">有所行动</option>
-            <option value="intentional_rest">主动休息</option>
-            <option value="not_done">未进行</option>
-          </select>
-        </Field>
-        <Field
-          label="投入时长（分钟，可选）"
-          hint="留空表示未记录时长；0 表示不足 1 分钟但确有行动。主动休息或未进行时不填写。"
-        >
-          <input
-            aria-label="例行分钟"
-            disabled={outcome === 'intentional_rest' || outcome === 'not_done'}
-            type="number"
-            min="0"
-            step="1"
-            value={duration}
-            onChange={(event) => setDuration(event.target.value)}
-          />
-        </Field>
-        <Field label="备注（可选）">
-          <input
-            aria-label="例行备注"
-            value={note}
-            onChange={(event) => setNote(event.target.value)}
-            placeholder="备注（可选）"
-          />
-        </Field>
-        {dateChanged ? (
-          <label className="inline-check">
-            <input
-              type="checkbox"
-              checked={planned}
-              onChange={(event) => setPlanned(event.target.checked)}
-            />
-            该历史日期当时属于计划日（明确确认）
-          </label>
-        ) : null}
-        <button
-          className="secondary-button"
-          type="button"
-          disabled={!occurredOn}
-          onClick={() => void submit()}
-        >
-          保存修改
-        </button>
+            编辑记录
+          </button>
+        ) : (
+          <span className="data-editing-label">编辑中</span>
+        )}
       </div>
+      <p className="data-plan-basis">
+        {props.record.plannedForDateBasis === 'user_confirmed_history'
+          ? '历史计划由用户确认'
+          : '记录时的计划安排'}
+      </p>
+      {!editing ? (
+        <dl className="data-record-summary">
+          <div>
+            <dt>发生日期</dt>
+            <dd>{props.record.occurredOn}</dd>
+          </div>
+          <div>
+            <dt>投入时长</dt>
+            <dd>{recordDuration(props.record.durationMinutes)}</dd>
+          </div>
+          <div>
+            <dt>本次结果</dt>
+            <dd>{routineRecordOutcomeText[props.record.outcome]}</dd>
+          </div>
+          <div>
+            <dt>当时的计划</dt>
+            <dd>{props.record.plannedForDate ? '计划日' : '非计划日'}</dd>
+          </div>
+          <div className="data-summary-wide">
+            <dt>备注</dt>
+            <dd>{props.record.note || '未填写'}</dd>
+          </div>
+        </dl>
+      ) : (
+        <fieldset className="data-editor-fields" disabled={saving}>
+          <legend className="visually-hidden">修改例行记录</legend>
+          <div className="data-edit-grid">
+            <Field label="发生日期（必填）" hint="选择实际发生的本地日期。">
+              <input
+                aria-label="例行发生日期"
+                type="date"
+                value={occurredOn}
+                onChange={(event) => setOccurredOn(event.target.value)}
+              />
+            </Field>
+            <Field label="本次结果（必填）">
+              <select
+                aria-label="例行结果"
+                value={outcome}
+                onChange={(event) => {
+                  const value = event.target.value as RoutineRecordDataDto['outcome']
+                  setOutcome(value)
+                  if (value === 'intentional_rest' || value === 'not_done') setDuration('')
+                }}
+              >
+                <option value="target_met">达到目标</option>
+                <option value="acted">有所行动</option>
+                <option value="intentional_rest">主动休息</option>
+                <option value="not_done">未进行</option>
+              </select>
+            </Field>
+            <Field
+              label="投入时长（分钟，可选）"
+              hint="留空表示未记录时长；0 表示不足 1 分钟但确有行动。主动休息或未进行时不填写。"
+            >
+              <input
+                aria-label="例行分钟"
+                disabled={outcome === 'intentional_rest' || outcome === 'not_done'}
+                type="number"
+                min="0"
+                step="1"
+                value={duration}
+                onChange={(event) => setDuration(event.target.value)}
+              />
+            </Field>
+            <Field label="备注（可选）">
+              <textarea
+                aria-label="例行备注"
+                rows={3}
+                value={note}
+                onChange={(event) => setNote(event.target.value)}
+                placeholder="备注（可选）"
+              />
+            </Field>
+            {dateChanged ? (
+              <label className="inline-check">
+                <input
+                  type="checkbox"
+                  checked={planned}
+                  onChange={(event) => setPlanned(event.target.checked)}
+                />
+                该历史日期当时属于计划日（明确确认）
+              </label>
+            ) : null}
+          </div>
+          <div className="data-editor-actions">
+            <button
+              className="primary-button"
+              type="button"
+              disabled={!occurredOn}
+              onClick={() => void submit()}
+            >
+              {saving ? '正在保存…' : '保存修改'}
+            </button>
+            <button
+              className="quiet-button"
+              type="button"
+              onClick={() => {
+                reset()
+                setEditing(false)
+              }}
+            >
+              取消编辑
+            </button>
+          </div>
+        </fieldset>
+      )}
       {error ? (
         <p className="form-error" role="alert">
           {error}
         </p>
       ) : null}
+      <details className="data-record-danger">
+        <summary>删除这条记录</summary>
+        <p>先查看影响范围，确认后才会永久删除。</p>
+        <button
+          className="danger-button"
+          type="button"
+          disabled={saving}
+          onClick={() => void props.onDelete({ type: 'routine-record', id: props.record.id })}
+        >
+          永久删除
+        </button>
+      </details>
     </article>
   )
 }
@@ -284,37 +489,94 @@ function UnderstandingEditor(props: {
   readonly fact: UnderstandingDataDto
   readonly onChanged: () => Promise<void>
 }): ReactNode {
+  const [editing, setEditing] = useState(false)
   const [text, setText] = useState(props.fact.text)
   const [error, setError] = useState<string | null>(null)
-  useUnsavedContent(`understanding-edit-${props.fact.id}`, text !== props.fact.text)
+  const [saving, setSaving] = useState(false)
+  useDataDraft(`understanding-edit-${props.fact.id}`, text !== props.fact.text)
   const run = async (kind: 'update' | 'revoke'): Promise<void> => {
-    const result =
-      kind === 'update'
-        ? await window.myTracer.dataControl.updateUnderstanding({ id: props.fact.id, text })
-        : await window.myTracer.dataControl.revokeUnderstanding({ id: props.fact.id })
-    if (!result.ok) return setError(dataControlErrorText[result.error.code])
-    setError(null)
-    await props.onChanged()
+    if (saving) return
+    setSaving(true)
+    try {
+      const result =
+        kind === 'update'
+          ? await window.myTracer.dataControl.updateUnderstanding({ id: props.fact.id, text })
+          : await window.myTracer.dataControl.revokeUnderstanding({ id: props.fact.id })
+      if (!result.ok) return setError(dataControlErrorText[result.error.code])
+      setError(null)
+      setText(result.value.text)
+      await props.onChanged()
+      setEditing(false)
+    } catch {
+      setError(dataControlErrorText['persistence-failed'])
+    } finally {
+      setSaving(false)
+    }
   }
   return (
-    <li className={props.fact.revokedAt ? 'fact-revoked' : ''}>
-      <Field label="已确认的理解">
-        <input
-          aria-label="理解成果内容"
-          value={text}
-          onChange={(event) => setText(event.target.value)}
-        />
-      </Field>
-      <button type="button" onClick={() => void run('update')}>
-        修改
-      </button>
-      <button
-        type="button"
-        disabled={props.fact.revokedAt !== null}
-        onClick={() => void run('revoke')}
-      >
-        撤销
-      </button>
+    <li className={`data-fact-card ${props.fact.revokedAt ? 'fact-revoked' : ''}`}>
+      <div className="data-fact-heading">
+        <h3>已确认的理解</h3>
+        {props.fact.revokedAt ? <span>已撤销</span> : null}
+      </div>
+      {editing ? (
+        <Field label="理解成果内容">
+          <textarea
+            aria-label="理解成果内容"
+            rows={4}
+            value={text}
+            disabled={saving}
+            onChange={(event) => setText(event.target.value)}
+          />
+        </Field>
+      ) : (
+        <p className="data-fact-text">{props.fact.text}</p>
+      )}
+      <div className="data-fact-actions">
+        {editing ? (
+          <>
+            <button
+              type="button"
+              disabled={saving || !text.trim()}
+              onClick={() => void run('update')}
+            >
+              保存理解
+            </button>
+            <button
+              className="quiet-button"
+              type="button"
+              disabled={saving}
+              onClick={() => {
+                setText(props.fact.text)
+                setError(null)
+                setEditing(false)
+              }}
+            >
+              取消编辑
+            </button>
+            <small>仅修改这条理解。</small>
+          </>
+        ) : (
+          <button
+            className="quiet-button"
+            type="button"
+            onClick={() => {
+              setText(props.fact.text)
+              setEditing(true)
+            }}
+          >
+            编辑理解
+          </button>
+        )}
+        <button
+          className="quiet-button"
+          type="button"
+          disabled={saving || editing || props.fact.revokedAt !== null}
+          onClick={() => void run('revoke')}
+        >
+          撤销理解
+        </button>
+      </div>
       {error ? <span role="alert">{error}</span> : null}
     </li>
   )
@@ -324,57 +586,122 @@ function ConfusionEditor(props: {
   readonly fact: ConfusionDataDto
   readonly onChanged: () => Promise<void>
 }): ReactNode {
+  const [editing, setEditing] = useState(false)
   const [text, setText] = useState(props.fact.text)
   const [resolution, setResolution] = useState(props.fact.resolution ?? '')
   const [error, setError] = useState<string | null>(null)
-  useUnsavedContent(
+  const [saving, setSaving] = useState(false)
+  useDataDraft(
     `confusion-edit-${props.fact.id}`,
     text !== props.fact.text || resolution !== (props.fact.resolution ?? '')
   )
   const run = async (kind: 'update' | 'resolve' | 'reopen'): Promise<void> => {
-    const result =
-      kind === 'update'
-        ? await window.myTracer.dataControl.updateConfusion({ id: props.fact.id, text })
-        : kind === 'resolve'
-          ? await window.myTracer.dataControl.resolveConfusion({
-              id: props.fact.id,
-              resolution: resolution || null
-            })
-          : await window.myTracer.dataControl.reopenConfusion({ id: props.fact.id })
-    if (!result.ok) return setError(dataControlErrorText[result.error.code])
-    setError(null)
-    await props.onChanged()
+    if (saving) return
+    setSaving(true)
+    try {
+      const result =
+        kind === 'update'
+          ? await window.myTracer.dataControl.updateConfusion({ id: props.fact.id, text })
+          : kind === 'resolve'
+            ? await window.myTracer.dataControl.resolveConfusion({
+                id: props.fact.id,
+                resolution: resolution || null
+              })
+            : await window.myTracer.dataControl.reopenConfusion({ id: props.fact.id })
+      if (!result.ok) return setError(dataControlErrorText[result.error.code])
+      setError(null)
+      if (kind === 'update') setText(result.value.text)
+      if (kind !== 'update') setResolution(result.value.resolution ?? '')
+      await props.onChanged()
+      if (kind === 'update') setEditing(false)
+      if (kind === 'reopen') setResolution('')
+    } catch {
+      setError(dataControlErrorText['persistence-failed'])
+    } finally {
+      setSaving(false)
+    }
   }
   return (
-    <li>
-      <Field label="困惑内容">
-        <input
-          aria-label="困惑内容"
-          value={text}
-          onChange={(event) => setText(event.target.value)}
-        />
-      </Field>
-      <button type="button" onClick={() => void run('update')}>
-        修改
-      </button>
+    <li className="data-fact-card">
+      <div className="data-fact-heading">
+        <h3>困惑</h3>
+        <span>{props.fact.status === 'open' ? '尚未解决' : '已解决'}</span>
+      </div>
+      {editing ? (
+        <Field label="困惑内容">
+          <textarea
+            aria-label="困惑内容"
+            rows={4}
+            disabled={saving}
+            value={text}
+            onChange={(event) => setText(event.target.value)}
+          />
+        </Field>
+      ) : (
+        <p className="data-fact-text">{props.fact.text}</p>
+      )}
+      <div className="data-fact-actions">
+        {editing ? (
+          <>
+            <button
+              type="button"
+              disabled={saving || !text.trim()}
+              onClick={() => void run('update')}
+            >
+              保存困惑
+            </button>
+            <button
+              className="quiet-button"
+              type="button"
+              disabled={saving}
+              onClick={() => {
+                setText(props.fact.text)
+                setError(null)
+                setEditing(false)
+              }}
+            >
+              取消编辑
+            </button>
+            <small>仅修改困惑内容，不改变解决状态。</small>
+          </>
+        ) : (
+          <button
+            className="quiet-button"
+            type="button"
+            onClick={() => {
+              setText(props.fact.text)
+              setEditing(true)
+            }}
+          >
+            编辑困惑
+          </button>
+        )}
+      </div>
       {props.fact.status === 'open' ? (
-        <>
+        <div className="data-confusion-resolution">
           <Field label="解决说明（可选）">
-            <input
+            <textarea
               aria-label="解决说明"
+              rows={2}
+              disabled={saving}
               value={resolution}
               onChange={(event) => setResolution(event.target.value)}
-              placeholder="解决说明（可选）"
+              placeholder="有了新的理解？可以在这里留下说明。"
             />
           </Field>
-          <button type="button" onClick={() => void run('resolve')}>
+          <button type="button" disabled={saving} onClick={() => void run('resolve')}>
             标记解决
           </button>
-        </>
+        </div>
       ) : (
-        <button type="button" onClick={() => void run('reopen')}>
-          重新打开
-        </button>
+        <div className="data-confusion-resolution">
+          {props.fact.resolution ? (
+            <p className="data-fact-text">解决说明：{props.fact.resolution}</p>
+          ) : null}
+          <button type="button" disabled={saving} onClick={() => void run('reopen')}>
+            重新打开
+          </button>
+        </div>
       )}
       {error ? <span role="alert">{error}</span> : null}
     </li>
@@ -409,6 +736,9 @@ function DataControlWorkspace(): ReactNode {
   const [recordKind, setRecordKind] = useState<'all' | 'action-record' | 'routine-record'>('all')
   const [recordGoalId, setRecordGoalId] = useState('all')
   const [recordDate, setRecordDate] = useState('')
+  const [historyPage, setHistoryPage] = useState(1)
+  const [recordDrafts] = useState(() => new Map<string, boolean>())
+  const [pendingSelection, setPendingSelection] = useState<typeof selectedRecord>(null)
   const [deleteType, setDeleteType] = useState<'goal' | 'action' | 'routine'>('goal')
   const [deleteId, setDeleteId] = useState('')
   const selectedRecordRef = useRef<HTMLElement | null>(null)
@@ -491,10 +821,25 @@ function DataControlWorkspace(): ReactNode {
       )
   }, [data, recordDate, recordGoalId, recordKind])
 
-  const chooseRecord = (selection: NonNullable<typeof selectedRecord>): void => {
+  const pageCount = Math.max(1, Math.ceil(history.length / 8))
+  const currentPage = Math.min(historyPage, pageCount)
+  const visibleHistory = history.slice((currentPage - 1) * 8, currentPage * 8)
+
+  const applySelection = (selection: NonNullable<typeof selectedRecord>): void => {
+    setPendingSelection(null)
     setSelectedRecord(selection)
     session.selectDataRecord(selection)
     requestAnimationFrame(() => revealStart(selectedRecordRef.current))
+  }
+
+  const chooseRecord = (selection: NonNullable<typeof selectedRecord>): void => {
+    if (selection.id === selectedRecord?.id && selection.type === selectedRecord.type) return
+    if ([...recordDrafts.values()].some(Boolean)) {
+      setPendingSelection(selection)
+      requestAnimationFrame(() => revealStart(selectedRecordRef.current))
+      return
+    }
+    applySelection(selection)
   }
 
   const load = async (): Promise<void> => {
@@ -543,11 +888,12 @@ function DataControlWorkspace(): ReactNode {
     }
   }, [])
 
+  const dataReady = data !== null
   useEffect(() => {
-    if (!data || !selectedRecord) return
+    if (!dataReady || !selectedRecord) return
     const frame = requestAnimationFrame(() => revealStart(selectedRecordRef.current))
     return () => cancelAnimationFrame(frame)
-  }, [data, selectedRecord])
+  }, [dataReady, selectedRecord])
 
   const previewId = preview?.previewId
   useEffect(() => {
@@ -757,152 +1103,222 @@ function DataControlWorkspace(): ReactNode {
           {error}
         </p>
       ) : null}
-      <section className="goal-card data-history" aria-label="历史记录">
-        <div className="card-heading">
-          <p className="eyebrow">历史记录</p>
-          <h2>先找到记录，再查看或修改</h2>
-        </div>
-        <div className="data-history-filters">
-          <label>
-            记录类型
-            <select
-              value={recordKind}
-              onChange={(event) =>
-                setRecordKind(event.target.value as 'all' | 'action-record' | 'routine-record')
-              }
-            >
-              <option value="all">全部记录</option>
-              <option value="action-record">行动记录</option>
-              <option value="routine-record">例行记录</option>
-            </select>
-          </label>
-          <label>
-            关联目标
-            <select value={recordGoalId} onChange={(event) => setRecordGoalId(event.target.value)}>
-              <option value="all">全部目标</option>
-              <option value="none">未关联目标</option>
-              {data?.goals.map((goal) => (
-                <option key={goal.id} value={goal.id}>
-                  {goal.title}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            发生日期
-            <input
-              type="date"
-              value={recordDate}
-              onChange={(event) => setRecordDate(event.target.value)}
-            />
-          </label>
-          <button
-            className="quiet-button"
-            type="button"
-            onClick={() => {
-              setRecordKind('all')
-              setRecordGoalId('all')
-              setRecordDate('')
-            }}
-          >
-            清除筛选
-          </button>
-        </div>
-        <div className="data-history-list">
-          {history.length ? (
-            history.map((row) => (
-              <button
-                className={
-                  selectedRecord?.id === row.id ? 'data-history-row selected' : 'data-history-row'
-                }
-                type="button"
-                key={`${row.type}-${row.id}`}
-                aria-pressed={selectedRecord?.type === row.type && selectedRecord.id === row.id}
-                onClick={() => chooseRecord({ type: row.type, id: row.id })}
+      <div className="data-browser">
+        <section className="goal-card data-history" aria-label="历史记录">
+          <div className="card-heading">
+            <p className="eyebrow">历史记录 · {history.length} 条</p>
+            <h2>留下的行动</h2>
+          </div>
+          <div className="data-history-filters">
+            <label>
+              记录类型
+              <select
+                value={recordKind}
+                onChange={(event) => {
+                  setRecordKind(event.target.value as 'all' | 'action-record' | 'routine-record')
+                  setHistoryPage(1)
+                }}
               >
-                <span>
-                  <strong>{row.objectName}</strong>
-                  <small>
-                    {row.type === 'action-record' ? '行动记录' : '例行记录'} ·{' '}
-                    {row.goalId
-                      ? (data?.goals.find((goal) => goal.id === row.goalId)?.title ?? '关联目标')
-                      : '未关联目标'}
-                  </small>
-                </span>
-                <span>
-                  <strong>{row.occurredOn}</strong>
-                  <small>
-                    {row.type === 'action-record'
-                      ? recordOutcomeText[row.outcome as ActionRecordDataDto['outcome']]
-                      : routineRecordOutcomeText[row.outcome as RoutineRecordDataDto['outcome']]}
-                    {' · '}
-                    {row.durationMinutes === null
-                      ? '时长未记录'
-                      : row.durationMinutes === 0
-                        ? '少于 1 分钟'
-                        : `${row.durationMinutes} 分钟`}
-                  </small>
-                </span>
+                <option value="all">全部记录</option>
+                <option value="action-record">行动记录</option>
+                <option value="routine-record">例行记录</option>
+              </select>
+            </label>
+            <label>
+              关联目标
+              <select
+                value={recordGoalId}
+                onChange={(event) => {
+                  setRecordGoalId(event.target.value)
+                  setHistoryPage(1)
+                }}
+              >
+                <option value="all">全部目标</option>
+                <option value="none">未关联目标</option>
+                {data?.goals.map((goal) => (
+                  <option key={goal.id} value={goal.id}>
+                    {goal.title}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              发生日期
+              <input
+                type="date"
+                value={recordDate}
+                onChange={(event) => {
+                  setRecordDate(event.target.value)
+                  setHistoryPage(1)
+                }}
+              />
+            </label>
+            <button
+              className="quiet-button"
+              type="button"
+              onClick={() => {
+                setRecordKind('all')
+                setRecordGoalId('all')
+                setRecordDate('')
+                setHistoryPage(1)
+              }}
+            >
+              清除筛选
+            </button>
+          </div>
+          <div className="data-history-list">
+            {history.length ? (
+              visibleHistory.map((row) => (
+                <button
+                  className={
+                    selectedRecord?.id === row.id && selectedRecord.type === row.type
+                      ? 'data-history-row selected'
+                      : 'data-history-row'
+                  }
+                  type="button"
+                  key={`${row.type}-${row.id}`}
+                  aria-pressed={selectedRecord?.type === row.type && selectedRecord.id === row.id}
+                  onClick={() => chooseRecord({ type: row.type, id: row.id })}
+                >
+                  <span>
+                    <strong>{row.objectName}</strong>
+                    <small>
+                      {row.type === 'action-record' ? '行动记录' : '例行记录'} ·{' '}
+                      {row.goalId
+                        ? (data?.goals.find((goal) => goal.id === row.goalId)?.title ?? '关联目标')
+                        : '未关联目标'}
+                    </small>
+                  </span>
+                  <span>
+                    <time dateTime={row.occurredOn}>{row.occurredOn}</time>
+                    <small>
+                      {row.type === 'action-record'
+                        ? recordOutcomeText[row.outcome as ActionRecordDataDto['outcome']]
+                        : routineRecordOutcomeText[row.outcome as RoutineRecordDataDto['outcome']]}
+                      {' · '}
+                      {row.durationMinutes === null
+                        ? '时长未记录'
+                        : row.durationMinutes === 0
+                          ? '少于 1 分钟'
+                          : `${row.durationMinutes} 分钟`}
+                    </small>
+                  </span>
+                </button>
+              ))
+            ) : (
+              <p className="empty-copy">当前筛选下没有记录。</p>
+            )}
+          </div>
+          {history.length > 8 ? (
+            <nav className="data-pagination" aria-label="历史记录分页">
+              <button
+                type="button"
+                className="quiet-button"
+                disabled={currentPage === 1}
+                onClick={() => setHistoryPage(currentPage - 1)}
+              >
+                上一页
               </button>
-            ))
-          ) : (
-            <p className="empty-copy">当前筛选下没有记录。</p>
-          )}
-        </div>
-      </section>
+              <span aria-live="polite">
+                第 {currentPage} / {pageCount} 页
+              </span>
+              <button
+                type="button"
+                className="quiet-button"
+                disabled={currentPage === pageCount}
+                onClick={() => setHistoryPage(currentPage + 1)}
+              >
+                下一页
+              </button>
+            </nav>
+          ) : null}
+        </section>
 
-      <section ref={selectedRecordRef} className="selected-data-record" aria-label="所选记录">
-        {selectedActionRecord ? (
-          <>
-            <ActionRecordEditor
-              record={selectedActionRecord}
-              objectName={
-                data?.actions.find((action) => action.id === selectedActionRecord.actionId)
-                  ?.title ?? '行动记录'
-              }
-              onChanged={refreshAfterMutation}
-              onDelete={requestDelete}
-            />
-            <section className="goal-card selected-record-facts">
-              <h2>这条记录中的理解与困惑</h2>
-              <ul className="data-facts">
-                {data?.understandings
-                  .filter((fact) => fact.actionRecordId === selectedActionRecord.id)
-                  .map((fact) => (
-                    <UnderstandingEditor
-                      key={fact.id}
-                      fact={fact}
-                      onChanged={refreshAfterMutation}
-                    />
-                  ))}
-                {data?.confusions
-                  .filter((fact) => fact.actionRecordId === selectedActionRecord.id)
-                  .map((fact) => (
-                    <ConfusionEditor key={fact.id} fact={fact} onChanged={refreshAfterMutation} />
-                  ))}
-              </ul>
-              {!data?.understandings.some(
-                (fact) => fact.actionRecordId === selectedActionRecord.id
-              ) &&
-              !data?.confusions.some((fact) => fact.actionRecordId === selectedActionRecord.id) ? (
-                <p className="empty-copy">这条记录没有补充理解或困惑。</p>
-              ) : null}
-            </section>
-          </>
-        ) : selectedRoutineRecord ? (
-          <RoutineRecordEditor
-            record={selectedRoutineRecord}
-            objectName={
-              data?.routines.find((routine) => routine.id === selectedRoutineRecord.routineId)
-                ?.name ?? '例行记录'
-            }
-            onChanged={refreshAfterMutation}
-            onDelete={requestDelete}
-          />
-        ) : (
-          <p className="empty-copy">从上方选择一条记录查看完整内容。</p>
-        )}
-      </section>
+        <DataDraftContext value={recordDrafts}>
+          <section ref={selectedRecordRef} className="selected-data-record" aria-label="所选记录">
+            {pendingSelection ? (
+              <div className="data-switch-warning" role="alert">
+                <p>当前记录有未保存的修改。先保存，或放弃修改后切换。</p>
+                <div className="data-fact-actions">
+                  <button type="button" onClick={() => setPendingSelection(null)}>
+                    继续编辑当前记录
+                  </button>
+                  <button
+                    type="button"
+                    className="quiet-button"
+                    onClick={() => applySelection(pendingSelection)}
+                  >
+                    放弃修改并切换
+                  </button>
+                </div>
+              </div>
+            ) : null}
+            {selectedActionRecord ? (
+              <>
+                <ActionRecordEditor
+                  key={selectedActionRecord.id}
+                  record={selectedActionRecord}
+                  objectName={
+                    data?.actions.find((action) => action.id === selectedActionRecord.actionId)
+                      ?.title ?? '行动记录'
+                  }
+                  onChanged={refreshAfterMutation}
+                  onDelete={requestDelete}
+                />
+                <section className="goal-card selected-record-facts">
+                  <h2>理解与困惑</h2>
+                  <p className="data-facts-note">每条内容单独保存，不会改动上方的行动记录。</p>
+                  <ul className="data-facts">
+                    {data?.understandings
+                      .filter((fact) => fact.actionRecordId === selectedActionRecord.id)
+                      .map((fact) => (
+                        <UnderstandingEditor
+                          key={fact.id}
+                          fact={fact}
+                          onChanged={refreshAfterMutation}
+                        />
+                      ))}
+                    {data?.confusions
+                      .filter((fact) => fact.actionRecordId === selectedActionRecord.id)
+                      .map((fact) => (
+                        <ConfusionEditor
+                          key={fact.id}
+                          fact={fact}
+                          onChanged={refreshAfterMutation}
+                        />
+                      ))}
+                  </ul>
+                  {!data?.understandings.some(
+                    (fact) => fact.actionRecordId === selectedActionRecord.id
+                  ) &&
+                  !data?.confusions.some(
+                    (fact) => fact.actionRecordId === selectedActionRecord.id
+                  ) ? (
+                    <p className="empty-copy">这条记录没有补充理解或困惑。</p>
+                  ) : null}
+                </section>
+              </>
+            ) : selectedRoutineRecord ? (
+              <RoutineRecordEditor
+                key={selectedRoutineRecord.id}
+                record={selectedRoutineRecord}
+                objectName={
+                  data?.routines.find((routine) => routine.id === selectedRoutineRecord.routineId)
+                    ?.name ?? '例行记录'
+                }
+                onChanged={refreshAfterMutation}
+                onDelete={requestDelete}
+              />
+            ) : (
+              <div className="data-detail-empty">
+                <span aria-hidden="true">◷</span>
+                <h2>从一条记录开始</h2>
+                <p>选择记录，回看当时的行动与理解。需要时再编辑。</p>
+              </div>
+            )}
+          </section>
+        </DataDraftContext>
+      </div>
 
       <details className="goal-card data-tool export-card">
         <summary>导出数据</summary>

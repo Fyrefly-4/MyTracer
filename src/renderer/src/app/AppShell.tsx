@@ -10,6 +10,7 @@ import { TodayPage } from '../features/today/TodayPage'
 import { UpdatePanel } from '../features/update/UpdatePanel'
 import { UiSessionContext, UiSession } from './ui-session'
 import { appSections, type AppSectionId } from './navigation'
+import { NavigationIcon } from './NavigationIcon'
 
 export function AppShell(): ReactNode {
   const [activeSection, setActiveSection] = useState<AppSectionId>('today')
@@ -115,13 +116,13 @@ export function AppShell(): ReactNode {
             <p className="nav-label">主要页面</p>
             {appSections.map((section) => (
               <button
-                className={section.id === activeSection ? 'nav-item active' : 'nav-item'}
+                className={`nav-item${section.id === activeSection ? ' active' : ''}${section.id === 'progress' ? ' nav-group-separator' : ''}`}
                 key={section.id}
                 type="button"
                 aria-pressed={section.id === activeSection}
                 onClick={() => navigate(section.id)}
               >
-                <span className="nav-dot" aria-hidden="true" />
+                <NavigationIcon section={section.id} />
                 {section.label}
               </button>
             ))}

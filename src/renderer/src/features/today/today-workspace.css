@@ -1,0 +1,174 @@
+/* A focused editor keeps the current action and commit controls together. */
+.today-experiment .today-date-row {
+  padding: 0 0 18px;
+  margin-bottom: 20px;
+  border: 0;
+  border-bottom: 1px solid var(--color-line);
+  border-radius: 0;
+  background: transparent;
+}
+
+.today-experiment .today-date-label {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.today-experiment .today-date-label > span {
+  color: var(--color-muted);
+  font-size: 13px;
+}
+
+.today-experiment .today-date-label > strong {
+  color: var(--color-text);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.today-experiment .today-help {
+  margin: 10px 0 14px;
+  color: var(--color-muted);
+  font-size: 13px;
+}
+
+.today-experiment .today-help > summary {
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.today-experiment .today-help p {
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+.today-experiment .today-notice {
+  position: fixed;
+  z-index: 15;
+  top: 80px;
+  right: 28px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: min(420px, calc(100vw - 48px));
+  padding: 14px 16px;
+  border: 1px solid #b8cebd;
+  border-radius: 12px;
+  color: var(--color-action);
+  background: #f1f6ee;
+  box-shadow: 0 8px 28px rgb(41 58 52 / 10%);
+}
+
+.today-experiment .today-notice p {
+  margin: 0;
+  flex: 1;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.today-experiment .today-notice > button {
+  flex: 0 0 28px;
+  min-height: 28px;
+  width: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+}
+
+.today-experiment .recording-panel.is-recording {
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--color-line);
+  border-radius: 14px;
+  background: var(--color-surface);
+  box-shadow: 0 4px 18px rgb(41 58 52 / 4%);
+  scroll-margin-top: 16px;
+}
+
+.today-experiment .recording-panel.is-recording .recording-heading h3 {
+  margin-top: 5px;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.today-experiment .recording-panel.is-recording .recording-form {
+  gap: 0;
+  min-width: 0;
+}
+
+.today-experiment .recording-panel.is-recording .today-recording-fields {
+  min-width: 0;
+  max-height: min(42dvh, 360px);
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scrollbar-gutter: stable;
+  padding: 0 8px 12px 0;
+  margin: 0;
+}
+
+.today-experiment .today-recording-fields .draft-notice {
+  margin: 0;
+  padding: 8px 10px;
+  font-size: 13px;
+  line-height: 1.6;
+  border-radius: 6px;
+  background: var(--color-support);
+}
+
+.today-experiment .today-recording-fields .captured-date {
+  margin: 0;
+  font-size: 13px;
+}
+
+.today-experiment .today-recording-footer {
+  display: grid;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-line);
+}
+
+.today-experiment .today-recording-footer .save-impact {
+  padding: 0;
+  color: var(--color-muted);
+  background: transparent;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.today-experiment .today-recording-footer .recording-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+.today-experiment .recording-panel .deep-record-fields {
+  padding: 12px;
+  border-radius: 8px;
+  background: var(--color-hover);
+}
+
+.today-experiment .recording-panel .record-list {
+  padding-top: 14px;
+}
+
+.today-experiment .recording-panel.is-recording .record-list {
+  border-top: 1px solid var(--color-line);
+}
+
+@media (max-width: 700px) {
+  .today-experiment .recording-panel.is-recording {
+    padding: 14px;
+  }
+
+  .today-experiment .today-notice {
+    top: 72px;
+    right: 16px;
+  }
+
+  .today-experiment .recording-panel.is-recording .today-recording-fields {
+    max-height: 38dvh;
+  }
+}

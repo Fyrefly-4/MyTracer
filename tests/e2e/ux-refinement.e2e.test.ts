@@ -43,7 +43,7 @@ async function expectStableWorkspace(page: Page, selector: string): Promise<void
       noHorizontalOverflow: Boolean(main && main.scrollWidth <= main.clientWidth)
     }
   })
-  expect(metrics.width).toBeLessThanOrEqual(1042)
+  expect(metrics.width).toBeLessThanOrEqual(1280)
   expect(metrics.noHorizontalOverflow).toBe(true)
 }
 
@@ -51,16 +51,19 @@ async function expectReadableVisualFoundation(page: Page): Promise<void> {
   const metrics = await page.evaluate(() => {
     const rootStyle = getComputedStyle(document.documentElement)
     const content = document.querySelector<HTMLElement>('.content')
+    const surface = content?.querySelector<HTMLElement>('.content-inner')
     const title = content?.querySelector<HTMLElement>('h1')
     const visibleButtons = [...document.querySelectorAll<HTMLElement>('button')].filter(
       (element) => element.getClientRects().length > 0
     )
-    const visibleText = [...document.body.querySelectorAll<HTMLElement>('*')].filter((element) => {
-      const hasOwnText = [...element.childNodes].some(
-        (node) => node.nodeType === Node.TEXT_NODE && Boolean(node.textContent?.trim())
-      )
-      return hasOwnText && element.getClientRects().length > 0
-    })
+    const visibleText = [...document.querySelectorAll<HTMLElement>('.content-inner *')].filter(
+      (element) => {
+        const hasOwnText = [...element.childNodes].some(
+          (node) => node.nodeType === Node.TEXT_NODE && Boolean(node.textContent?.trim())
+        )
+        return hasOwnText && element.getClientRects().length > 0
+      }
+    )
     return {
       tokens: {
         shell: rootStyle.getPropertyValue('--color-shell').trim().toLowerCase(),
@@ -72,6 +75,10 @@ async function expectReadableVisualFoundation(page: Page): Promise<void> {
       },
       rootFontSize: Number.parseFloat(rootStyle.fontSize),
       contentBackground: content ? getComputedStyle(content).backgroundColor : '',
+      surfaceBackground: surface ? getComputedStyle(surface).backgroundColor : '',
+      primaryButtonFontSizes: visibleButtons
+        .filter((element) => element.classList.contains('primary-button'))
+        .map((element) => Number.parseFloat(getComputedStyle(element).fontSize)),
       titleFontSize: title ? Number.parseFloat(getComputedStyle(title).fontSize) : 0,
       smallestButtonFontSize: Math.min(
         ...visibleButtons.map((element) => Number.parseFloat(getComputedStyle(element).fontSize))
@@ -82,18 +89,20 @@ async function expectReadableVisualFoundation(page: Page): Promise<void> {
     }
   })
   expect(metrics.tokens).toEqual({
-    shell: '#f4f2e9',
+    shell: '#f5f2ea',
     surface: '#fffefa',
-    text: '#293c38',
-    muted: '#65736d',
-    action: '#315e50',
-    line: '#dadfd7'
+    text: '#293a34',
+    muted: '#68736b',
+    action: '#315d50',
+    line: '#dedfd5'
   })
-  expect(metrics.rootFontSize).toBe(16)
-  expect(metrics.contentBackground).toBe('rgb(255, 254, 250)')
-  expect(metrics.titleFontSize).toBe(34)
-  expect(metrics.smallestButtonFontSize).toBeGreaterThanOrEqual(15)
-  expect(metrics.smallestVisibleText).toBeGreaterThanOrEqual(13)
+  expect(metrics.rootFontSize).toBe(15)
+  expect(metrics.contentBackground).toBe('rgb(245, 242, 234)')
+  expect(metrics.surfaceBackground).toBe('rgb(255, 254, 250)')
+  expect(metrics.titleFontSize).toBe(30)
+  expect(metrics.smallestButtonFontSize).toBeGreaterThanOrEqual(13)
+  for (const size of metrics.primaryButtonFontSizes) expect(size).toBe(14)
+  expect(metrics.smallestVisibleText).toBeGreaterThanOrEqual(12)
 }
 
 test('keeps existing work reachable, restores selection, and records without implicit changes', async () => {
@@ -250,7 +259,7 @@ test('keeps existing work reachable, restores selection, and records without imp
       }, size.layout)
       expect(layoutMetrics.matches).toBe(true)
       if (size.layout === 'columns') {
-        expect(layoutMetrics.gridWidth).toBeLessThanOrEqual(1042)
+        expect(layoutMetrics.gridWidth).toBeLessThanOrEqual(1280)
         expect(layoutMetrics.contextWidth / layoutMetrics.gridWidth).toBeGreaterThanOrEqual(0.3)
         expect(layoutMetrics.contextWidth / layoutMetrics.gridWidth).toBeLessThanOrEqual(0.38)
         expect(layoutMetrics.actionWidth).toBeGreaterThan(layoutMetrics.contextWidth)
@@ -333,6 +342,7 @@ test('keeps existing work reachable, restores selection, and records without imp
     await expect(page.getByLabel('进展汇总')).toContainText('累计行动分钟12')
     await page.getByRole('button', { name: '查看完整记录或修改' }).click()
     await expect(page.getByLabel('所选记录')).toContainText(`行动 · ${actionName}`)
+    await page.getByRole('button', { name: '编辑记录', exact: true }).click()
     await expect(page.getByLabel('行动分钟')).toHaveValue('12')
     await expectReadableVisualFoundation(page)
     await expectStableWorkspace(page, '.data-workspace')

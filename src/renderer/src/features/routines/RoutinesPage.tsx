@@ -1,3 +1,4 @@
+import '../forms-workspace.css'
 import {
   revealStart,
   usePagePosition,
@@ -458,7 +459,8 @@ function RoutineWorkspace(): ReactNode {
   const [editMinimumAction, setEditMinimumAction] = useState('')
   const [editWeekdays, setEditWeekdays] = useState<readonly number[]>([])
   const [confirmEnd, setConfirmEnd] = useState(false)
-  const [creating, setCreating] = useState(false)
+  const [creating, setCreating] = useState<boolean | null>(null)
+  const createOpen = creating ?? (loaded && routines.length === 0)
   useUnsavedContent(
     'routine-form',
     Boolean(
@@ -475,13 +477,19 @@ function RoutineWorkspace(): ReactNode {
           editWeekdays.join(',') !== detail.weekdays.join(',')))
   )
 
-  const showDetail = (routine: RoutineDetailDto): void => {
+  const showDetail = (
+    routine: RoutineDetailDto,
+    savedSection: 'all' | 'content' | 'schedule' = 'all'
+  ): void => {
     session.selectRoutine(routine.id)
     setDetail(routine)
-    setEditName(routine.name)
-    setEditDescription(routine.description ?? '')
-    setEditMinimumAction(routine.minimumAction)
-    setEditWeekdays(routine.weekdays)
+    // A section save must not discard the other section's unsaved input.
+    if (savedSection !== 'schedule') {
+      setEditName(routine.name)
+      setEditDescription(routine.description ?? '')
+      setEditMinimumAction(routine.minimumAction)
+    }
+    if (savedSection !== 'content') setEditWeekdays(routine.weekdays)
     setConfirmEnd(false)
   }
 
@@ -531,7 +539,10 @@ function RoutineWorkspace(): ReactNode {
     }
   }, [detail?.id, loaded, session])
 
-  const refresh = async (routineId?: string): Promise<void> => {
+  const refresh = async (
+    routineId?: string,
+    savedSection: 'all' | 'content' | 'schedule' = 'all'
+  ): Promise<void> => {
     const listResult = await window.myTracer.routines.list({})
     if (!listResult.ok) {
       setError(routineErrorText[listResult.error.code])
@@ -544,7 +555,7 @@ function RoutineWorkspace(): ReactNode {
         setError(routineErrorText[detailResult.error.code])
         return
       }
-      showDetail(detailResult.value)
+      showDetail(detailResult.value, savedSection)
     }
     setError(null)
   }
@@ -590,7 +601,7 @@ function RoutineWorkspace(): ReactNode {
       setError(routineErrorText[result.error.code])
       return
     }
-    await refresh(detail.id)
+    await refresh(detail.id, 'content')
   }
 
   const replaceSchedule = async (): Promise<void> => {
@@ -605,7 +616,7 @@ function RoutineWorkspace(): ReactNode {
       setError(routineErrorText[result.error.code])
       return
     }
-    await refresh(detail.id)
+    await refresh(detail.id, 'schedule')
   }
 
   const transition = async (kind: 'pause' | 'resume' | 'end'): Promise<void> => {
@@ -638,12 +649,97 @@ function RoutineWorkspace(): ReactNode {
           {error}
         </p>
       ) : null}
+      <div className="workspace-toolbar">
+        <p className="workspace-count">
+          {routines.length
+            ? `${routines.length} 个例行 · 按自己的节奏继续`
+            : '从一个轻量、可重复的行动开始'}
+        </p>
+        <button
+          className="secondary-button create-disclosure-button"
+          type="button"
+          aria-expanded={createOpen}
+          onClick={() => setCreating(!createOpen)}
+        >
+          {createOpen ? '收起新建表单' : '新建例行'}
+        </button>
+      </div>
+      {createOpen ? (
+        <form
+          className="goal-card goal-create workspace-form"
+          aria-label="新建例行表单"
+          onSubmit={(event) => void submitCreate(event)}
+        >
+          <div className="card-heading">
+            <p className="eyebrow">新例行</p>
+            <h2>定义一个最小行动和每周安排</h2>
+          </div>
+          <div className="workspace-form-fields">
+            <label>
+              名称
+              <input
+                required
+                value={createName}
+                onChange={(event) => setCreateName(event.target.value)}
+              />
+            </label>
+            <label>
+              最小行动
+              <input
+                required
+                value={createMinimumAction}
+                onChange={(event) => setCreateMinimumAction(event.target.value)}
+              />
+            </label>
+            <label className="form-field-wide">
+              <span id="routine-create-description-label">说明（可选）</span>
+              <textarea
+                aria-labelledby="routine-create-description-label"
+                rows={2}
+                value={createDescription}
+                onChange={(event) => setCreateDescription(event.target.value)}
+              />
+            </label>
+            <label>
+              关联目标（可选，创建后不可改）
+              <select
+                value={createGoalId}
+                onChange={(event) => setCreateGoalId(event.target.value)}
+              >
+                <option value="">不关联目标</option>
+                {goals.map((goal) => (
+                  <option key={goal.id} value={goal.id}>
+                    {goal.name} · {goalStatusText[goal.status]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="form-field-wide">
+              <RoutineWeekdayPicker
+                label="每周安排"
+                value={createWeekdays}
+                onChange={setCreateWeekdays}
+                disabled={busy}
+              />
+            </div>
+          </div>
+          <div className="workspace-form-actions">
+            <button className="primary-button" type="submit" disabled={busy}>
+              创建例行
+            </button>
+            <button type="button" disabled={busy} onClick={() => setCreating(false)}>
+              收起表单
+            </button>
+            <span>创建后可继续调整内容和星期安排。</span>
+          </div>
+        </form>
+      ) : null}
       <div className="goal-grid">
         <div className="goal-column">
           <div className="goal-card goal-list-card">
             <div className="card-heading">
               <p className="eyebrow">例行列表</p>
-              <h2>先查看和维护已有内容</h2>
+              <h2>我的例行</h2>
             </div>
             <div className="goal-list">
               {routines.length ? (
@@ -666,69 +762,6 @@ function RoutineWorkspace(): ReactNode {
               )}
             </div>
           </div>
-          <button
-            className="secondary-button create-disclosure-button"
-            type="button"
-            aria-expanded={creating || routines.length === 0}
-            onClick={() => setCreating((value) => !value)}
-          >
-            {creating || routines.length === 0 ? '收起新建表单' : '新建例行'}
-          </button>
-          {creating || routines.length === 0 ? (
-            <form className="goal-card goal-create" onSubmit={(event) => void submitCreate(event)}>
-              <div className="card-heading">
-                <p className="eyebrow">新例行</p>
-                <h2>定义一个最小行动和每周安排</h2>
-              </div>
-              <label>
-                名称
-                <input
-                  required
-                  value={createName}
-                  onChange={(event) => setCreateName(event.target.value)}
-                />
-              </label>
-              <label>
-                最小行动
-                <input
-                  required
-                  value={createMinimumAction}
-                  onChange={(event) => setCreateMinimumAction(event.target.value)}
-                />
-              </label>
-              <label>
-                说明（可选）
-                <textarea
-                  rows={2}
-                  value={createDescription}
-                  onChange={(event) => setCreateDescription(event.target.value)}
-                />
-              </label>
-              <label>
-                关联目标（可选，创建后不可改）
-                <select
-                  value={createGoalId}
-                  onChange={(event) => setCreateGoalId(event.target.value)}
-                >
-                  <option value="">不关联目标</option>
-                  {goals.map((goal) => (
-                    <option key={goal.id} value={goal.id}>
-                      {goal.name} · {goalStatusText[goal.status]}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <RoutineWeekdayPicker
-                label="每周安排"
-                value={createWeekdays}
-                onChange={setCreateWeekdays}
-                disabled={busy}
-              />
-              <button className="primary-button" type="submit" disabled={busy}>
-                创建例行
-              </button>
-            </form>
-          ) : null}
         </div>
 
         <div className="goal-column">
@@ -746,6 +779,24 @@ function RoutineWorkspace(): ReactNode {
                 <span className={`status-badge status-${detail.status}`}>
                   {routineStatusText[detail.status]}
                 </span>
+              </div>
+
+              <div className="routine-overview" aria-label="例行安排">
+                <div>
+                  <span>最小行动</span>
+                  <p>{detail.minimumAction}</p>
+                </div>
+                <div>
+                  <span>每周安排</span>
+                  <p>
+                    {detail.weekdays.length === 7
+                      ? '每天'
+                      : `周${detail.weekdays.map((day) => weekdayOptions.find((option) => option.value === day)?.label).join('、')}`}
+                  </p>
+                </div>
+                {detail.description ? (
+                  <p className="form-field-wide routine-description">{detail.description}</p>
+                ) : null}
               </div>
 
               <RoutineRecordingPanel
@@ -775,8 +826,9 @@ function RoutineWorkspace(): ReactNode {
                     />
                   </label>
                   <label>
-                    说明（可选）
+                    <span id="routine-edit-description-label">说明（可选）</span>
                     <textarea
+                      aria-labelledby="routine-edit-description-label"
                       rows={3}
                       value={editDescription}
                       onChange={(event) => setEditDescription(event.target.value)}
@@ -788,6 +840,9 @@ function RoutineWorkspace(): ReactNode {
                 </form>
 
                 <div className="schedule-editor">
+                  <p className="form-section-note">
+                    星期安排与内容分别保存，另一处未保存的修改会保留；已有记录不受影响。
+                  </p>
                   <RoutineWeekdayPicker
                     label="每周安排"
                     value={editWeekdays}

@@ -115,8 +115,10 @@ test('edits, backfills, previews, deletes, and reopens T031 facts through the tr
     await page.getByRole('button', { name: '数据', exact: true }).click()
     await page.locator('.data-history-row').filter({ hasText: 'T031 Action' }).click()
     await expect(page.getByLabel('所选记录')).toContainText('行动 · T031 Action')
+    await page.getByRole('button', { name: '编辑记录', exact: true }).click()
     await expect(page.getByLabel('行动发生日期')).toHaveValue('2026-08-11')
     await page.locator('.data-history-row').filter({ hasText: 'T031 Routine' }).click()
+    await page.getByRole('button', { name: '编辑记录', exact: true }).click()
     await expect(page.getByLabel('例行发生日期')).toHaveValue('2026-08-11')
     await expect(page.getByText('历史计划由用户确认')).toBeVisible()
 
