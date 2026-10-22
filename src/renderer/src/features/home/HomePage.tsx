@@ -99,7 +99,11 @@ export function HomePage(): ReactNode {
     session.openDataRecord(record, 'home')
 
   return (
-    <div className="home-page" aria-busy={snapshot === null || refreshing}>
+    <div
+      className="home-page"
+      data-scroll-key="overview"
+      aria-busy={snapshot === null || refreshing}
+    >
       <header className="home-welcome">
         <div>
           <p className="eyebrow">一点近况，一些可以继续的事</p>

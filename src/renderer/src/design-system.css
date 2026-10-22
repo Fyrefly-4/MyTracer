@@ -596,3 +596,49 @@ small {
     animation-duration: 0.01ms !important;
   }
 }
+
+/* Apply the milk tint once, behind shell regions; content remains opaque. */
+:root {
+  --color-shell: #f2f4ee;
+  --color-surface: #faf9f5;
+  --shell-alpha: 1;
+  background: transparent;
+}
+body {
+  background: transparent;
+}
+.app-shell {
+  background: rgb(242 244 238 / var(--shell-alpha));
+}
+.topbar,
+.sidebar {
+  background: transparent;
+}
+.content {
+  background: transparent;
+}
+.appearance-panel {
+  position: fixed;
+  z-index: 20;
+  top: 54px;
+  right: 24px;
+  width: min(560px, calc(100vw - 48px));
+  max-height: calc(100dvh - 80px);
+  overflow: auto;
+  box-shadow: 0 12px 36px rgb(41 58 52 / 15%);
+  background: #faf9f5;
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+.appearance-fields {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.appearance-fields label {
+  display: grid;
+  gap: 8px;
+  min-width: 180px;
+}
