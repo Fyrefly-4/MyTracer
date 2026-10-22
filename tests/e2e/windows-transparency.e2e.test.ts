@@ -53,7 +53,7 @@ test('Windows preference changes update the native material and renderer without
         .toBe(enabled ? '0.42' : '1')
       expect(
         await app.evaluate(({ BrowserWindow }) =>
-          BrowserWindow.getAllWindows()[0].getBackgroundColor()
+          BrowserWindow.getAllWindows()[0].getBackgroundColor().toLowerCase()
         )
       ).toBe(enabled ? '#00000000' : '#f2f4ee')
     }
