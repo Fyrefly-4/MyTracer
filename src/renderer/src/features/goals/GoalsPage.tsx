@@ -984,6 +984,7 @@ function GoalWorkspace(): ReactNode {
                     type="button"
                     onClick={() => {
                       setListQuery('')
+                      session.setGoalSearchQuery('')
                       setStatusFilter('')
                       session.setGoalFilter('')
                       setListPage(1)
