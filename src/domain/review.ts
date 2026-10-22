@@ -110,7 +110,7 @@ export interface ReviewSummary {
   readonly confirmedUnderstandingCount: number
   readonly openConfusionCount: number
   readonly hasRecordedFacts: boolean
-  readonly actionRecords: readonly Omit<ProgressRecordFact, 'note' | 'nextStep'>[]
+  readonly actionRecords: readonly Omit<ProgressRecordFact, 'hasRecordedText'>[]
   readonly routineRecords: readonly RoutineProgressRecordFact[]
   readonly understandings: readonly ReviewUnderstandingFact[]
   readonly openConfusions: readonly ReviewConfusionFact[]

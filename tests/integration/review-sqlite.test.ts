@@ -180,12 +180,12 @@ describe('Review SQLite summary snapshot', () => {
     })
     expect(first.actionRecords).toEqual(
       progress.records.map((record) => {
-        const { note, nextStep, ...facts } = record
-        expect(note).toBeNull()
-        expect(nextStep).toBeNull()
+        const { hasRecordedText, ...facts } = record
+        expect(hasRecordedText).toBe(false)
         return facts
       })
     )
+    expect(first.actionRecords[0]).not.toHaveProperty('hasRecordedText')
     expect(first.actionRecords[0]).not.toHaveProperty('note')
     expect(first.actionRecords[0]).not.toHaveProperty('nextStep')
     expect(first.routineRecords).toEqual(progress.routineRecords)

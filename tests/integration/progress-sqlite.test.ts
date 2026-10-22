@@ -198,7 +198,7 @@ function seed(connection: SqliteConnection): void {
 }
 
 describe('Progress SQLite projection', () => {
-  it('reads original multiline text without changing totals, and reflects edits with the same filters', async () => {
+  it('projects only a presence flag, preserving filters and totals after original text edits', async () => {
     const { connection } = await openDatabase()
     try {
       seed(connection)
@@ -220,8 +220,7 @@ describe('Progress SQLite projection', () => {
         through: '2026-08-12'
       })
       expect(after.records.find((record) => record.recordId === original.id)).toMatchObject({
-        note,
-        nextStep
+        hasRecordedText: true
       })
       expect(after.totalDurationMinutes).toBe(before.totalDurationMinutes)
       expect(after.realActionCount).toBe(before.realActionCount)
@@ -229,16 +228,29 @@ describe('Progress SQLite projection', () => {
         before.records.map((record) => record.recordId)
       )
       expect(after.records.find((record) => record.recordId === 'record-b')).toMatchObject({
-        note: null,
-        nextStep: null
+        hasRecordedText: false
       })
+      expect(after.records[0]).not.toHaveProperty('note')
+      expect(after.records[0]).not.toHaveProperty('nextStep')
+      expect(JSON.stringify(after)).not.toContain('换成纸笔后顺了')
+      expect(JSON.stringify(after)).not.toContain(nextStep)
       expect(
-        service.getProgress({ goalId: 'goal-2' }).records.some((record) => record.note === note)
-      ).toBe(false)
+        service.getProgress({ goalId: 'goal-2' }).records.every((record) => !record.hasRecordedText)
+      ).toBe(true)
       repository.saveActionRecord({ ...original, note: '修改后的备注', nextStep: null })
       expect(
         service.getProgress({}).records.find((record) => record.recordId === original.id)
-      ).toMatchObject({ note: '修改后的备注', nextStep: null })
+      ).toMatchObject({ hasRecordedText: true })
+      repository.saveActionRecord({ ...original, note: null, nextStep: '仅下一步' })
+      expect(
+        service.getProgress({}).records.find((record) => record.recordId === original.id)
+          ?.hasRecordedText
+      ).toBe(true)
+      repository.saveActionRecord({ ...original, note: null, nextStep: null })
+      expect(
+        service.getProgress({}).records.find((record) => record.recordId === original.id)
+          ?.hasRecordedText
+      ).toBe(false)
     } finally {
       connection.close()
     }
