@@ -503,6 +503,8 @@ test('continuous E2E-AC-02 proves isolation, every temporary branch, confirmatio
     const beforeRecording = await page.evaluate(() => window.myTracer.progress.get({}))
     const beforeRecordingToday = await todayCommitments(page)
     if (!beforeRecording.ok) throw new Error('Progress query failed before confirmed Action record')
+    // Restart now lands on Home; explicitly enter the recording workspace.
+    await page.getByRole('button', { name: '今天', exact: true }).click()
     const candidates = page.locator('details.action-candidates')
     if ((await candidates.getAttribute('open')) === null)
       await candidates.locator(':scope > summary').click()
