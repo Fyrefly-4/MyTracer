@@ -55,6 +55,14 @@ MyTracer 已用于 owner 的日常使用。发布流程服务于快速迭代：�
 
 操作依据：[提交正文 Release-As](https://github.com/googleapis/release-please#how-do-i-change-the-version-number)、[manifest 配置 release-as](https://github.com/googleapis/release-please/blob/main/docs/manifest-releaser.md#configfile)。
 
+### 本次 v1.0.0 版本提案
+
+本轮 notebook UI 调整的下一次发布目标由 owner 指定为 **v1.0.0**。在 `release-please-config.json` 的 `packages["."]` 中临时设置 `"release-as": "1.0.0"`，不手工修改 package 版本或 manifest 的已发布基线。配置随文件合并，因此普通 PR 使用 squash、merge 或 rebase 都不会像提交正文指令那样丢失改号意图。
+
+先将 `experiment/ui-ux-20261022` 的普通 PR 合入 main（标题按实际 UI 变更使用 `feat:`），等 bot 提出 v1.0.0 发布 PR、版本文件同步且最新 CI 通过，再由 owner 决定合并发布 PR。实验分支上的提交本身不发布。**v1.0.0 发布 PR 合并后，另开普通 PR 移除临时 `release-as`，恢复自动版本计算。**
+
+本轮已完成窗口样式、独立滚动与长记录分页；首屏空态/说明位置、例行记录面板位置，以及空间层次（包括是否采用毛玻璃）留待下一轮讨论，不作为本轮已完成功能。
+
 ## 首次接入与历史基线
 
 接入时真实存在的已发布稳定版本是 `v0.1.4`，对应源 SHA `a5759763adc18739f8f65bcfc48f01db8f1ecd7f`。它原先作为 owner 授权的私有更新演练存在，本次保留原 tag、Release 和资产，不改写当时验收结论。
