@@ -78,7 +78,8 @@ export class UiSession {
       this.unsavedListeners.delete(listener)
     }
   }
-  hasActiveUnsavedContent = (): boolean => this.unsavedContent.size > 0
+  hasActiveUnsavedContent = (): boolean =>
+    this.unsavedContent.size > 0 || this.goalCoverDrafts.size > 0
 
   private readonly preferences = browserSelectionPreferences()
   private navigationSelection = new Set<SelectionPage>()
@@ -193,10 +194,14 @@ export class UiSession {
     return this.goalCoverDrafts.get(goalId) ?? null
   }
   setGoalCoverDraft(goalId: string, draft: string): void {
+    const added = !this.goalCoverDrafts.has(goalId)
     this.goalCoverDrafts.set(goalId, draft)
+    if (added) for (const listener of this.unsavedListeners) listener()
   }
   clearGoalCoverDraft(goalId: string): void {
-    this.goalCoverDrafts.delete(goalId)
+    if (this.goalCoverDrafts.delete(goalId)) {
+      for (const listener of this.unsavedListeners) listener()
+    }
   }
   setUnsavedContent(source: string, unsaved: boolean): void {
     const changed = this.unsavedContent.has(source) !== unsaved

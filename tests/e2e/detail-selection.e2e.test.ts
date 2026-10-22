@@ -2,6 +2,7 @@ import { join } from 'node:path'
 import { expect, test, type ElectronApplication } from '@playwright/test'
 import { _electron as electron } from 'playwright'
 import { minimalElectronEnvironment } from '../support/electron-environment'
+import { openManagement } from '../support/ui-disclosure'
 import { createTemporaryTestRoot, removeTemporaryTestRoot } from '../support/temporary-test-root'
 
 test('visible selection restores per page, survives restart, and respects filters, pages and drafts', async () => {
@@ -265,6 +266,52 @@ test('a late automatic goal detail cannot overwrite a newer explicit selection',
         )
     )
     await expect(page.locator('.goal-detail h2').first()).toHaveText(second.value.name)
+  } finally {
+    await app?.close()
+    await removeTemporaryTestRoot(root)
+  }
+})
+
+test('cover drafts including empty marks block selection until save or cancel', async () => {
+  const root = await createTemporaryTestRoot()
+  let app: ElectronApplication | undefined
+  try {
+    app = await electron.launch({
+      cwd: root.root,
+      args: [join(process.cwd(), 'out/main/index.js'), `--user-data-dir=${root.electronUserData}`],
+      env: minimalElectronEnvironment(root)
+    })
+    const page = await app.firstWindow()
+    await page.evaluate(async () => {
+      for (const name of ['封面目标甲', '封面目标乙']) {
+        const result = await window.myTracer.goals.create({ name })
+        if (!result.ok) throw Error('seed cover goals')
+      }
+    })
+    await page.getByRole('navigation').getByRole('button', { name: '目标', exact: true }).click()
+    const title = page.locator('.goal-detail h2').first()
+    const search = page.getByLabel('搜索目标', { exact: true })
+    await search.fill('封面目标甲')
+    await expect(title).toHaveText('封面目标甲')
+    await openManagement(page.locator('.goal-detail'), '目标')
+    await page.locator('.goal-detail').getByText('外观', { exact: true }).click()
+    const mark = page.getByLabel('首页标记（可选）')
+    await mark.fill('甲')
+    await page.getByRole('button', { name: '保存外观', exact: true }).click()
+    for (const finish of ['取消外观修改', '保存外观']) {
+      await mark.fill('')
+      await search.fill('封面目标乙')
+      await expect(page.locator('.goal-workspace .goal-list-item')).toHaveCount(1)
+      await expect(title).toHaveText('封面目标甲')
+      await expect(mark).toHaveValue('')
+      await page.getByRole('button', { name: finish, exact: true }).click()
+      await expect(title).toHaveText('封面目标乙')
+      await search.fill('封面目标甲')
+      await expect(title).toHaveText('封面目标甲')
+      await openManagement(page.locator('.goal-detail'), '目标')
+      await page.locator('.goal-detail').getByText('外观', { exact: true }).click()
+      await expect(mark).toHaveValue(finish === '取消外观修改' ? '甲' : '')
+    }
   } finally {
     await app?.close()
     await removeTemporaryTestRoot(root)

@@ -401,8 +401,7 @@ function GoalWorkspace(): ReactNode {
     Boolean(
       detail && (editName !== detail.name || editDescription !== (detail.description ?? ''))
     ) ||
-    Boolean(detail && selectedActionId !== (detail.currentNextActionId ?? unsetNextActionOption)) ||
-    Boolean(detail && session.getGoalCoverDraft(detail.id))
+    Boolean(detail && selectedActionId !== (detail.currentNextActionId ?? unsetNextActionOption))
   const reconcileSelection = useEffectEvent(async (isActive: () => boolean): Promise<void> => {
     if (!loaded || loadedFilter !== statusFilter || selectionBlocked) return
     const current = detail?.id
