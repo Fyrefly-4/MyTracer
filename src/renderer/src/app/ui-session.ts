@@ -61,6 +61,7 @@ export class UiSession {
   private recoveryGoal: string | null = null
   private selectedDataRecord: DataRecordSelection | null = null
   private filter: GoalStatusDto | '' = ''
+  private goalQuery = ''
   private progressHistoryPage = 1
   private progressDraft: ProgressFilterState = { goalId: '', from: '', through: '' }
   private progressApplied: ProgressFilterState = { goalId: '', from: '', through: '' }
@@ -115,6 +116,12 @@ export class UiSession {
   }
   get goalFilter(): GoalStatusDto | '' {
     return this.filter
+  }
+  get goalSearchQuery(): string {
+    return this.goalQuery
+  }
+  setGoalSearchQuery(query: string): void {
+    this.goalQuery = query
   }
   get routineId(): string | null {
     return this.selectedRoutine
@@ -246,6 +253,7 @@ export class UiSession {
     this.selectGoal(goalId)
     this.navigationSelection.add('goals')
     this.filter = ''
+    this.goalQuery = ''
     this.setPanePosition('goals', 'detail', 0)
     this.openSection('goals')
   }
