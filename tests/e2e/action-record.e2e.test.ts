@@ -75,7 +75,13 @@ test('saves quick and deep records without a Today prerequisite and preserves th
     await panel.getByLabel('投入时长（分钟，必填）').fill('0')
     await panel.getByLabel('本次结果').selectOption('partial')
     await panel.getByRole('button', { name: '保存记录' }).click()
-    await expect(panel.getByRole('button', { name: /本次完成一部分少于 1 分钟/ })).toBeVisible()
+    await expect(
+      panel
+        .getByRole('table', { name: '已有行动记录' })
+        .getByRole('row')
+        .filter({ hasText: '本次完成一部分' })
+    ).toContainText('少于 1 分钟')
+    await expect(panel.getByRole('button', { name: /本次完成一部分.*查看记录/ })).toBeVisible()
     await expect(page.getByText('待行动', { exact: true }).first()).toBeVisible()
 
     await panel.getByRole('button', { name: '开始记录' }).click()

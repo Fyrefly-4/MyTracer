@@ -83,3 +83,97 @@ test('keeps Today feedback out of flow and record controls visible while preserv
     await removeTemporaryTestRoot(root)
   }
 })
+
+test('Today notebook scrolls independently, collapses without losing drafts, and paginates full records', async () => {
+  test.slow()
+  const root = await createTemporaryTestRoot()
+  let application: ElectronApplication | undefined
+  try {
+    application = await electron.launch({
+      cwd: root.root,
+      args: [join(process.cwd(), 'out/main/index.js'), `--user-data-dir=${root.electronUserData}`],
+      env: minimalElectronEnvironment(root)
+    })
+    const page = await application.firstWindow()
+    await application.evaluate(({ BrowserWindow }) => {
+      BrowserWindow.getAllWindows()[0].setContentSize(1280, 800)
+    })
+    await page.evaluate(async () => {
+      for (let i = 0; i < 24; i++) {
+        const action = await window.myTracer.actions.create({ title: `独立滚动行动 ${i + 1}` })
+        if (!action.ok) throw new Error('Cannot create notebook fixture')
+        if (i === 0) {
+          const selected = await window.myTracer.today.selectAction({ actionId: action.value.id })
+          if (!selected.ok) throw new Error('Cannot select notebook fixture')
+          for (let day = 11; day <= 16; day++) {
+            const record = await window.myTracer.dataControl.backfillActionRecord({
+              actionId: action.value.id,
+              occurredOn: `2026-08-${day}`,
+              durationMinutes: day,
+              outcome: 'partial',
+              note: `第 ${day} 天的完整记录\n保留多行原文。`
+            })
+            if (!record.ok) throw new Error('Cannot create notebook history')
+          }
+        }
+      }
+    })
+    await page.reload()
+    await page
+      .locator('.today-priority')
+      .getByRole('button', { name: /独立滚动行动 1.*待行动/ })
+      .click()
+    const master = page.locator('.today-master-list')
+    const detail = page.locator('.today-detail-pane')
+    await page.locator('.action-candidates > summary').click()
+    const before = await detail.evaluate((element) => element.scrollTop)
+    await master.hover()
+    await page.mouse.wheel(0, 650)
+    await expect.poll(() => master.evaluate((element) => element.scrollTop)).toBeGreaterThan(100)
+    expect(await detail.evaluate((element) => element.scrollTop)).toBe(before)
+    await expect(page.getByRole('button', { name: '新建行动', exact: true })).toBeInViewport()
+    const masterScroll = await master.evaluate((element) => element.scrollTop)
+    await detail.hover()
+    await page.mouse.wheel(0, 600)
+    await expect.poll(() => detail.evaluate((element) => element.scrollTop)).toBeGreaterThan(0)
+    expect(await master.evaluate((element) => element.scrollTop)).toBe(masterScroll)
+
+    const table = page.getByRole('table', { name: '已有行动记录' })
+    await expect(table.locator('tbody tr')).toHaveCount(5)
+    await page.getByLabel('行动记录分页').getByRole('button', { name: '下一页' }).click()
+    await expect(table.locator('tbody tr')).toHaveCount(1)
+    await table.getByRole('button', { name: /2026-08-11/ }).click()
+    await expect(page.getByLabel('记录详情', { exact: true })).toContainText('第 11 天的完整记录')
+    const panel = page.getByLabel('独立滚动行动 1 行动记录', { exact: true })
+    await panel.getByRole('button', { name: '开始记录', exact: true }).click()
+    await panel.getByLabel('投入时长（分钟，必填）').fill('17')
+    await page.getByRole('button', { name: '收起今天列表' }).click()
+    await expect(master).toBeHidden()
+    await expect(panel.getByLabel('投入时长（分钟，必填）')).toHaveValue('17')
+    await page.getByRole('button', { name: '展开今天列表' }).click()
+    await expect(master).toBeVisible()
+    await expect(panel.getByLabel('投入时长（分钟，必填）')).toHaveValue('17')
+
+    const create = page.getByRole('button', { name: '新建行动', exact: true })
+    await create.click()
+    const dialog = page.getByRole('dialog', { name: '留下一个可以直接开始的小步骤' })
+    await expect(dialog).toBeVisible()
+    await dialog.getByLabel('行动标题', { exact: true }).fill('尚未提交的新行动草稿')
+    await page.keyboard.press('Escape')
+    await expect(dialog).not.toBeVisible()
+    await expect(create).toBeFocused()
+    await create.click()
+    await expect(dialog.getByLabel('行动标题', { exact: true })).toHaveValue('尚未提交的新行动草稿')
+    await dialog.getByRole('button', { name: '取消新建' }).click()
+    await expect(create).toBeFocused()
+    const actions = await page.evaluate(() => window.myTracer.today.get({}))
+    expect(
+      actions.ok &&
+        actions.value.availableActions.some((action) => action.title === '尚未提交的新行动草稿')
+    ).toBe(false)
+    await expect(panel.getByLabel('投入时长（分钟，必填）')).toHaveValue('17')
+  } finally {
+    await application?.close().catch(() => undefined)
+    await removeTemporaryTestRoot(root)
+  }
+})

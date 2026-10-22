@@ -95,6 +95,9 @@ function ActionRecordingPanel(props: {
   const [context, setContext] = useState(restoredDraft?.context ?? null)
   const contextRef = useRef(restoredDraft?.context ?? null)
   const [records, setRecords] = useState<readonly ActionRecordSummaryDto[]>([])
+  const [recordPage, setRecordPage] = useState(1)
+  const recordPageCount = Math.max(1, Math.ceil(records.length / 5))
+  const visibleRecordPage = Math.min(recordPage, recordPageCount)
   const [recordDetail, setRecordDetail] = useState<ActionRecordDetailDto | null>(null)
   const [durationMinutes, setDurationMinutes] = useState(restoredDraft?.durationMinutes ?? '0')
   const [outcome, setOutcome] = useState<ActionRecordOutcomeDto>(
@@ -649,18 +652,69 @@ function ActionRecordingPanel(props: {
       ) : null}
 
       <div className="record-list" aria-label="行动记录列表">
-        <h3>已有记录</h3>
+        <div className="today-history-heading">
+          <h3>已有记录</h3>
+          <span>{records.length} 条 · 每页 5 条</span>
+        </div>
         {records.length ? (
-          records.map((record) => (
-            <button type="button" key={record.id} onClick={() => void showRecordDetail(record.id)}>
-              <span>
-                {record.occurredOn} · {recordOutcomeText[record.outcome]}
-              </span>
-              <small>
-                {record.durationMinutes === 0 ? '少于 1 分钟' : `${record.durationMinutes} 分钟`}
-              </small>
-            </button>
-          ))
+          <>
+            <table className="today-history-table" aria-label="已有行动记录">
+              <thead>
+                <tr>
+                  <th>日期</th>
+                  <th>行动内容</th>
+                  <th>时长</th>
+                  <th>详情</th>
+                </tr>
+              </thead>
+              <tbody>
+                {records.slice((visibleRecordPage - 1) * 5, visibleRecordPage * 5).map((record) => (
+                  <tr key={record.id}>
+                    <td>{record.occurredOn}</td>
+                    <td>
+                      {props.action.title}
+                      <small>{recordOutcomeText[record.outcome]}</small>
+                    </td>
+                    <td>
+                      {record.durationMinutes === 0
+                        ? '少于 1 分钟'
+                        : `${record.durationMinutes} 分钟`}
+                    </td>
+                    <td>
+                      <button
+                        type="button"
+                        aria-label={`${record.occurredOn} · ${recordOutcomeText[record.outcome]} · 查看记录`}
+                        onClick={() => void showRecordDetail(record.id)}
+                      >
+                        查看
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {recordPageCount > 1 ? (
+              <nav className="today-history-pagination" aria-label="行动记录分页">
+                <button
+                  type="button"
+                  disabled={visibleRecordPage === 1}
+                  onClick={() => setRecordPage(visibleRecordPage - 1)}
+                >
+                  上一页
+                </button>
+                <span>
+                  {visibleRecordPage} / {recordPageCount}
+                </span>
+                <button
+                  type="button"
+                  disabled={visibleRecordPage === recordPageCount}
+                  onClick={() => setRecordPage(visibleRecordPage + 1)}
+                >
+                  下一页
+                </button>
+              </nav>
+            ) : null}
+          </>
         ) : (
           <p className="empty-copy">还没有记录；没有记录不代表没有行动。</p>
         )}
@@ -695,6 +749,19 @@ function TodayWorkspace(): ReactNode {
   const [selectionLoaded, setSelectionLoaded] = useState(false)
   const [selectionError, setSelectionError] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
+  const [masterCollapsed, setMasterCollapsed] = useState(false)
+  const createDialogRef = useRef<HTMLDialogElement | null>(null)
+  const createTriggerRef = useRef<HTMLButtonElement | null>(null)
+  const collapseTriggerRef = useRef<HTMLButtonElement | null>(null)
+  useEffect(() => {
+    const dialog = createDialogRef.current
+    if (!dialog) return
+    if (creating && !dialog.open) dialog.showModal()
+    if (!creating && dialog.open) {
+      dialog.close()
+      createTriggerRef.current?.focus({ preventScroll: true })
+    }
+  }, [creating])
   const detailRef = useRef<HTMLElement | null>(null)
   const [today, setToday] = useState<TodayViewDto | null>(null)
   const [activity, setActivity] = useState<GoalActivityViewDto | null>(null)
@@ -1110,7 +1177,10 @@ function TodayWorkspace(): ReactNode {
     ) ?? []
 
   return (
-    <section className="today-workspace today-experiment" aria-label="今日行动">
+    <section
+      className={`today-workspace today-experiment ${masterCollapsed ? 'is-master-collapsed' : ''}`}
+      aria-label="今日行动"
+    >
       {selectionError ? (
         <p className="form-error" role="alert">
           {selectionError}
@@ -1129,158 +1199,120 @@ function TodayWorkspace(): ReactNode {
           </button>
         </div>
       ) : null}
-      <div className="today-date-row">
-        <div className="today-date-label">
-          <span>今天</span>
-          <strong>{today?.localDate ?? '读取中'}</strong>
-        </div>
-        <button
-          type="button"
-          className="secondary-button"
-          aria-expanded={creating}
-          onClick={() => setCreating(!creating)}
-        >
-          新建行动
-        </button>
-      </div>
-      {creating ? (
-        <form className="goal-card goal-create" onSubmit={(event) => void submitCreate(event)}>
-          <div className="card-heading">
-            <p className="eyebrow">新行动</p>
-            <h2>留下一个可以直接开始的小步骤</h2>
-          </div>
-          <label>
-            行动标题
-            <input
-              autoFocus
-              required
-              value={createTitle}
-              onChange={(event) => setCreateTitle(event.target.value)}
-            />
-          </label>
-          <label>
-            说明（可选）
-            <textarea
-              rows={2}
-              value={createDescription}
-              onChange={(event) => setCreateDescription(event.target.value)}
-            />
-          </label>
-          <label>
-            关联目标（可选）
-            <select value={createGoalId} onChange={(event) => setCreateGoalId(event.target.value)}>
-              <option value="">不关联目标</option>
-              {activeGoals.map((goal) => (
-                <option key={goal.id} value={goal.id}>
-                  {goal.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button className="primary-button" type="submit" disabled={busy}>
-            创建行动
-          </button>
-          <button type="button" onClick={() => setCreating(false)}>
-            取消新建
-          </button>
-        </form>
-      ) : null}
+      <dialog
+        ref={createDialogRef}
+        className="confirmation-dialog today-create-dialog"
+        aria-labelledby="today-create-title"
+        onCancel={(event) => {
+          event.preventDefault()
+          if (!busy) setCreating(false)
+        }}
+      >
+        {creating ? (
+          <form className="goal-card goal-create" onSubmit={(event) => void submitCreate(event)}>
+            <div className="card-heading">
+              <p className="eyebrow">新行动</p>
+              <h2 id="today-create-title">留下一个可以直接开始的小步骤</h2>
+              <p className="empty-copy">收起此表单会保留当前页面的输入，不会创建行动。</p>
+              {error ? (
+                <p className="form-error" role="alert">
+                  {error}
+                </p>
+              ) : null}
+            </div>
+            <label>
+              行动标题
+              <input
+                autoFocus
+                required
+                value={createTitle}
+                onChange={(event) => setCreateTitle(event.target.value)}
+              />
+            </label>
+            <label>
+              说明（可选）
+              <textarea
+                rows={2}
+                value={createDescription}
+                onChange={(event) => setCreateDescription(event.target.value)}
+              />
+            </label>
+            <label>
+              关联目标（可选）
+              <select
+                value={createGoalId}
+                onChange={(event) => setCreateGoalId(event.target.value)}
+              >
+                <option value="">不关联目标</option>
+                {activeGoals.map((goal) => (
+                  <option key={goal.id} value={goal.id}>
+                    {goal.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button className="primary-button" type="submit" disabled={busy}>
+              创建行动
+            </button>
+            <button type="button" disabled={busy} onClick={() => setCreating(false)}>
+              取消新建
+            </button>
+          </form>
+        ) : null}
+      </dialog>
       <div className="today-grid">
-        <div className="goal-column">
-          <section className="goal-card goal-list-card today-priority" aria-label="今日重点">
-            <div className="card-heading">
-              <p className="eyebrow">今日重点</p>
-              <p className="empty-copy">先选少量重点就好，也可以按需要继续添加。</p>
-              <h2>现在可以继续什么</h2>
+        <aside className="today-master" aria-label="今天的行动列表">
+          <header className="today-master-header">
+            <div className="today-master-title">
+              {!masterCollapsed ? <h1>今天</h1> : null}
+              <button
+                ref={collapseTriggerRef}
+                type="button"
+                className="quiet-button"
+                aria-label={masterCollapsed ? '展开今天列表' : '收起今天列表'}
+                aria-expanded={!masterCollapsed}
+                aria-controls="today-master-content"
+                onClick={() => setMasterCollapsed(!masterCollapsed)}
+              >
+                {masterCollapsed ? '›' : '‹'}
+              </button>
             </div>
-            <div className="action-list">
-              {today?.focuses.length ? (
-                today.focuses.map((action) => (
-                  <div
-                    className={`focus-row ${detail?.id === action.id ? 'selected' : ''}`}
-                    key={action.id}
-                  >
-                    <button
-                      type="button"
-                      aria-pressed={detail?.id === action.id}
-                      onClick={() => selectAction(action)}
-                    >
-                      <span>{action.title}</span>
-                      <small>
-                        {actionStatusText[action.status]}
-                        {action.goal ? ` · ${action.goal.name}` : ' · 独立行动'}
-                        {action.isCurrentNextAction ? ' · 目标当前下一步' : ''}
-                        {session.hasActionDraft(action.id) ? ' · 有未保存草稿' : ''}
-                      </small>
-                    </button>
-                    <button
-                      className="quiet-button"
-                      type="button"
-                      disabled={busy}
-                      onClick={() => void removeFromToday(action.id)}
-                    >
-                      移出今天
-                    </button>
-                  </div>
-                ))
-              ) : (
-                <p className="empty-copy">还没有今日重点。可以从下方其它行动中明确选择。</p>
-              )}
+            <div hidden={masterCollapsed}>
+              <p className="empty-copy">找到一件可以继续的事。</p>
+              <div className="today-date-row">
+                <div className="today-date-label">
+                  <strong>{today?.localDate ?? '读取中'}</strong>
+                </div>
+                <button
+                  ref={createTriggerRef}
+                  type="button"
+                  className="quiet-button"
+                  aria-haspopup="dialog"
+                  aria-expanded={creating}
+                  onClick={() => setCreating(true)}
+                >
+                  新建行动
+                </button>
+              </div>
             </div>
-          </section>
-
-          {!today?.focuses.length ? renderActionCandidates() : null}
-
-          <section className="goal-card planned-routines" aria-label="今日例行计划">
-            <div className="card-heading">
-              <p className="eyebrow">今日例行</p>
-              <h2>今天安排的例行事项</h2>
-            </div>
-            <div className="planned-routine-list">
-              {today?.plannedRoutines.length ? (
-                today.plannedRoutines.map((routine) => (
-                  <article key={routine.id}>
-                    <div>
-                      <strong>{routine.name}</strong>
-                      <span>最小行动：{routine.minimumAction}</span>
-                      <small>
-                        {routine.goal
-                          ? `目标：${routine.goal.name} · ${goalStatusText[routine.goal.status]}`
-                          : '未关联目标'}
-                        {session.hasRoutineDraft(routine.id) ? ' · 有未保存草稿' : ''}
-                      </small>
-                    </div>
-                    <RoutineRecordingPanel
-                      routineId={routine.id}
-                      routineName={routine.name}
-                      initialState={{
-                        routineId: routine.id,
-                        localDate: today.localDate,
-                        plannedByCurrentSchedule: true,
-                        recordState: routine.recordState,
-                        record: routine.record
-                      }}
-                      onSaved={async () => refresh()}
-                    />
-                  </article>
-                ))
-              ) : (
-                <p className="empty-copy">今天没有匹配的活跃例行。</p>
-              )}
-            </div>
-          </section>
-
-          {today?.intentions.length ? (
-            <div className="goal-card goal-list-card intention-card">
+          </header>
+          <div
+            id="today-master-content"
+            className="goal-column today-master-list"
+            data-scroll-key="master"
+            hidden={masterCollapsed}
+          >
+            <section className="goal-card goal-list-card today-priority" aria-label="今日重点">
               <div className="card-heading">
-                <p className="eyebrow">今日意向</p>
-                <h2>今天也想做，但不构成承诺</h2>
+                <p className="eyebrow">今日重点</p>
+                <p className="empty-copy">先选少量重点就好，也可以按需要继续添加。</p>
+                <h2>现在可以继续什么</h2>
               </div>
               <div className="action-list">
-                {today?.intentions.length ? (
-                  today.intentions.map((action) => (
+                {today?.focuses.length ? (
+                  today.focuses.map((action) => (
                     <div
-                      className={`focus-row intention-row ${detail?.id === action.id ? 'selected' : ''}`}
+                      className={`focus-row ${detail?.id === action.id ? 'selected' : ''}`}
                       key={action.id}
                     >
                       <button
@@ -1300,22 +1332,114 @@ function TodayWorkspace(): ReactNode {
                         className="quiet-button"
                         type="button"
                         disabled={busy}
-                        onClick={() => void removeIntention(action.id)}
+                        onClick={() => void removeFromToday(action.id)}
                       >
-                        移出今日意向
+                        移出今天
                       </button>
                     </div>
                   ))
                 ) : (
-                  <p className="empty-copy">尚未选择今日意向，不必每天安排。</p>
+                  <p className="empty-copy">还没有今日重点。可以从下方其它行动中明确选择。</p>
                 )}
               </div>
-            </div>
-          ) : null}
-          {today?.focuses.length ? renderActionCandidates() : null}
-        </div>
+            </section>
 
-        <div className="goal-column">
+            {!today?.focuses.length ? renderActionCandidates() : null}
+
+            {today?.intentions.length ? (
+              <div className="goal-card goal-list-card intention-card">
+                <div className="card-heading">
+                  <p className="eyebrow">今日意向</p>
+                  <h2>今天也想做，但不构成承诺</h2>
+                </div>
+                <div className="action-list">
+                  {today?.intentions.length ? (
+                    today.intentions.map((action) => (
+                      <div
+                        className={`focus-row intention-row ${detail?.id === action.id ? 'selected' : ''}`}
+                        key={action.id}
+                      >
+                        <button
+                          type="button"
+                          aria-pressed={detail?.id === action.id}
+                          onClick={() => selectAction(action)}
+                        >
+                          <span>{action.title}</span>
+                          <small>
+                            {actionStatusText[action.status]}
+                            {action.goal ? ` · ${action.goal.name}` : ' · 独立行动'}
+                            {action.isCurrentNextAction ? ' · 目标当前下一步' : ''}
+                            {session.hasActionDraft(action.id) ? ' · 有未保存草稿' : ''}
+                          </small>
+                        </button>
+                        <button
+                          className="quiet-button"
+                          type="button"
+                          disabled={busy}
+                          onClick={() => void removeIntention(action.id)}
+                        >
+                          移出今日意向
+                        </button>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="empty-copy">尚未选择今日意向，不必每天安排。</p>
+                  )}
+                </div>
+              </div>
+            ) : null}
+            {today?.focuses.length ? renderActionCandidates() : null}
+
+            <section className="goal-card planned-routines" aria-label="今日例行计划">
+              <div className="card-heading">
+                <p className="eyebrow">今日例行</p>
+                <h2>今天安排的例行事项</h2>
+              </div>
+              <div className="planned-routine-list">
+                {today?.plannedRoutines.length ? (
+                  today.plannedRoutines.map((routine) => (
+                    <article key={routine.id}>
+                      <div>
+                        <strong>{routine.name}</strong>
+                        <span>最小行动：{routine.minimumAction}</span>
+                        <small>
+                          {routine.goal
+                            ? `目标：${routine.goal.name} · ${goalStatusText[routine.goal.status]}`
+                            : '未关联目标'}
+                          {session.hasRoutineDraft(routine.id) ? ' · 有未保存草稿' : ''}
+                        </small>
+                      </div>
+                      <RoutineRecordingPanel
+                        routineId={routine.id}
+                        routineName={routine.name}
+                        initialState={{
+                          routineId: routine.id,
+                          localDate: today.localDate,
+                          plannedByCurrentSchedule: true,
+                          recordState: routine.recordState,
+                          record: routine.record
+                        }}
+                        onSaved={async () => refresh()}
+                      />
+                    </article>
+                  ))
+                ) : (
+                  <p className="empty-copy">今天没有匹配的活跃例行。</p>
+                )}
+              </div>
+            </section>
+          </div>
+          <footer className="today-master-footer" hidden={masterCollapsed}>
+            浏览候选不会自动改变今天的安排
+          </footer>
+        </aside>
+
+        <div
+          className="goal-column today-detail-pane"
+          data-scroll-key="detail"
+          aria-label="行动详情工作区"
+          tabIndex={0}
+        >
           {detail ? (
             <article
               ref={detailRef}

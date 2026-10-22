@@ -51,6 +51,7 @@ test('completes AC-01 through factual Progress and recalculates after a real reo
     await expect(page.getByRole('heading', { name: '进展', exact: true })).toBeVisible()
     await expect(page.getByLabel('进展汇总')).toContainText('累计行动分钟25')
     await expect(page.getByLabel('进展汇总')).toContainText('记录到的行动次数1')
+    await page.locator('.progress-record-notes > summary').first().click()
     await expect(page.getByText('状态更新会进入队列')).toBeVisible()
     await expect(page.getByText('批处理何时结束')).toBeVisible()
     await expect(page.getByText('运行一个 React 状态更新示例', { exact: true })).toBeVisible()
