@@ -1,4 +1,5 @@
 import { join } from 'node:path'
+import type { DataControlListDto } from '../../src/contracts/data-control'
 import { expect, test, type ElectronApplication, type Page } from '@playwright/test'
 import { _electron as electron } from 'playwright'
 import { minimalElectronEnvironment } from '../support/electron-environment'
@@ -24,6 +25,13 @@ async function openEditor(page: Page): Promise<void> {
 async function select(page: Page, name: string): Promise<void> {
   await page.locator('.goal-list-item').filter({ hasText: name }).click()
 }
+async function readData(page: Page): Promise<DataControlListDto> {
+  const result = await page.evaluate(() => window.myTracer.dataControl.list())
+  expect(result.ok).toBe(true)
+  if (!result.ok) throw new Error('Synthetic database snapshot could not be read')
+  return result.value
+}
+
 async function fixture(
   run: (page: Page, app: ElectronApplication, ids: string[]) => Promise<void>
 ): Promise<void> {
@@ -105,7 +113,7 @@ test('goal content survives filtering, same selection, sidebar and independent s
     const p = panel(page)
     await p.getByLabel('目标名称', { exact: true }).fill('未保存名称')
     await p.getByLabel('说明（可选）').fill('保留的说明\n第二行')
-    const before = await page.evaluate(() => window.myTracer.dataControl.list())
+    const before = await readData(page)
     await page.getByLabel('搜索目标', { exact: true }).fill('不存在')
     await expect(p.getByLabel('目标名称', { exact: true })).toHaveValue('未保存名称')
     await page.getByLabel('搜索目标', { exact: true }).fill('')
@@ -122,7 +130,7 @@ test('goal content survives filtering, same selection, sidebar and independent s
     await nav(page, '首页')
     await nav(page, '目标')
     await expect(p.getByLabel('说明（可选）')).toHaveValue('保留的说明\n第二行')
-    expect(await page.evaluate(() => window.myTracer.dataControl.list())).toEqual(before)
+    expect(await readData(page)).toEqual(before)
     await p.getByLabel('选择当前下一步').selectOption('')
     await p.getByRole('button', { name: '保存当前下一步', exact: true }).click()
     await expect(p.locator('.next-action-panel')).toContainText('暂未设置')
@@ -273,7 +281,7 @@ test('save exception retains content for retry; missing original remains readabl
         return input.goalId === id ? { ok: false, error: { code: 'not-found' } } : original(...args)
       })
     }, ids[0])
-    const before = await page.evaluate(() => window.myTracer.dataControl.list())
+    const before = await readData(page)
     await nav(page, '目标')
     const retained = page.getByRole('region', { name: '保留的目标内容草稿' })
     await expect(retained).toContainText('原目标已不存在')
@@ -285,6 +293,14 @@ test('save exception retains content for retry; missing original remains readabl
     await retained.getByLabel('草稿目标说明').focus()
     await expect(retained.getByLabel('草稿目标说明')).toBeFocused()
     await expect(page.getByRole('button', { name: '保存修改', exact: true })).toHaveCount(0)
-    expect(await page.evaluate(() => window.myTracer.dataControl.list())).toEqual(before)
+    await select(page, '内容目标2')
+    const warning = page.getByRole('alertdialog', { name: '切换目标前处理内容草稿' })
+    await expect(warning).toContainText('请先复制需要保留的文字')
+    await expect(warning.getByRole('button', { name: '继续编辑目标内容' })).toHaveCount(0)
+    await warning.getByRole('button', { name: '继续查看目标草稿' }).click()
+    await expect(retained.getByLabel('草稿目标说明')).toBeFocused()
+    await expect(retained.getByLabel('草稿目标说明')).toHaveAttribute('readonly', '')
+    await expect(retained.getByLabel('草稿目标说明')).toHaveValue('目标缺失后仍可复制')
+    expect(await readData(page)).toEqual(before)
   })
 })

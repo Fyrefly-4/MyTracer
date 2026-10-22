@@ -133,6 +133,7 @@ function GoalWorkspace(): ReactNode {
   )
   const [contentMissing, setContentMissing] = useState(false)
   const shownGoalId = useRef<string | null>(null)
+  const retainedContentRef = useRef<HTMLTextAreaElement | null>(null)
   const shownSelectionRequest = useRef(0)
   const [routeGoalId, setRouteGoalId] = useState(() => {
     const explicit = session.takeNavigationSelection('goals')
@@ -605,25 +606,29 @@ function GoalWorkspace(): ReactNode {
           aria-label="切换目标前处理内容草稿"
         >
           <p>
-            {contentDraft.saving
-              ? '目标内容正在保存。离开不会撤销已提交的保存；放弃只清除本地草稿。'
-              : contentDraft.dirty
-                ? '当前目标的名称或说明尚未保存。继续编辑，或放弃这两项修改后切换。'
-                : '目标内容已保存。可以继续查看或切换目标。'}
+            {contentMissing
+              ? '原目标已不存在，草稿不能保存。请先复制需要保留的文字；放弃后将清除本次会话中的这份草稿并切换目标。'
+              : contentDraft.saving
+                ? '目标内容正在保存。离开不会撤销已提交的保存；放弃只清除本地草稿。'
+                : contentDraft.dirty
+                  ? '当前目标的名称或说明尚未保存。继续编辑，或放弃这两项修改后切换。'
+                  : '目标内容已保存。可以继续查看或切换目标。'}
           </p>
           <button
             type="button"
             autoFocus
             onClick={() => {
               setPendingContentGoal(null)
-              requestAnimationFrame(() =>
-                detailRef.current
-                  ?.querySelector<HTMLInputElement>('form.detail-form input')
-                  ?.focus()
-              )
+              requestAnimationFrame(() => {
+                if (contentMissing) retainedContentRef.current?.focus()
+                else
+                  detailRef.current
+                    ?.querySelector<HTMLInputElement>('form.detail-form input')
+                    ?.focus()
+              })
             }}
           >
-            继续编辑目标内容
+            {contentMissing ? '继续查看目标草稿' : '继续编辑目标内容'}
           </button>
           <button
             type="button"
@@ -651,7 +656,7 @@ function GoalWorkspace(): ReactNode {
           </label>
           <label>
             草稿目标说明
-            <textarea readOnly value={editDescription} />
+            <textarea ref={retainedContentRef} readOnly value={editDescription} />
           </label>
           <button
             type="button"
