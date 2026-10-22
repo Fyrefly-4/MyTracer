@@ -1,4 +1,3 @@
-import { PreviousAdjustment } from './PreviousAdjustment'
 import { usePagePosition, useUiSession, useUnsavedContent } from '../../app/ui-session'
 import { type ReactNode, useEffect, useState } from 'react'
 import type {
@@ -8,6 +7,7 @@ import type {
   ReviewSummaryDto
 } from '../../../../contracts/review'
 import type { GoalActionSummaryDto, GoalSummaryDto } from '../../../../contracts/goals'
+import { PreviousAdjustment } from './PreviousAdjustment'
 
 const errorText: Record<ReviewErrorCode, string> = {
   validation: '复盘请求无效，请重新进入复盘。',
