@@ -51,11 +51,12 @@ test('Windows preference changes update the native material and renderer without
           page.evaluate(() => document.documentElement.style.getPropertyValue('--shell-alpha'))
         )
         .toBe(enabled ? '0.42' : '1')
+      // Electron documents this getter as RGB only; alpha is not returned.
       expect(
         await app.evaluate(({ BrowserWindow }) =>
           BrowserWindow.getAllWindows()[0].getBackgroundColor().toLowerCase()
         )
-      ).toBe(enabled ? '#00000000' : '#f2f4ee')
+      ).toBe(enabled ? '#000000' : '#f2f4ee')
     }
   } finally {
     await app?.close()
