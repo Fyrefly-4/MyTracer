@@ -66,6 +66,11 @@ function setup() {
     beginReview: vi.fn(() => period),
     getReviewSummary: vi.fn(() => summary),
     getReviewResult: vi.fn(() => null),
+    getPreviousAdjustment: vi.fn(() => ({
+      periodStartedOn: '2026-08-17',
+      periodEndedOn: '2026-08-23',
+      nextAdjustment: null
+    })),
     completeReview: vi.fn(() => ({
       ...savedReview,
       periodStartedOn: savedReview.periodStartedOn as never
@@ -96,6 +101,7 @@ describe('Review IPC boundary', () => {
       REVIEW_CHANNELS.begin,
       REVIEW_CHANNELS.getSummary,
       REVIEW_CHANNELS.getResult,
+      REVIEW_CHANNELS.getPreviousAdjustment,
       REVIEW_CHANNELS.complete,
       REVIEW_CHANNELS.cancel
     ])
@@ -277,5 +283,44 @@ describe('Review IPC boundary', () => {
       throw new Error('untrusted renderer')
     })
     expect(() => invoke(REVIEW_CHANNELS.begin, 7, {})).toThrow(/untrusted renderer/)
+  })
+  it('reads only the previous adjustment through an active sender-bound context without consuming it', () => {
+    const { invoke, service, contexts, assertSender } = setup()
+    invoke(REVIEW_CHANNELS.begin, 7, {})
+    const input = { reviewContextId: contextIds[0] }
+    expect(invoke(REVIEW_CHANNELS.getPreviousAdjustment, 7, input)).toEqual({
+      ok: true,
+      value: { periodStartedOn: '2026-08-17', periodEndedOn: '2026-08-23', nextAdjustment: null }
+    })
+    expect(service.getPreviousAdjustment).toHaveBeenCalledWith(
+      expect.objectContaining({ ...period, senderId: 7 })
+    )
+    expect(invoke(REVIEW_CHANNELS.getSummary, 7, input)).toEqual({ ok: true, value: summary })
+    expect(invoke(REVIEW_CHANNELS.getPreviousAdjustment, 8, input)).toMatchObject({
+      ok: false,
+      error: { code: 'context-invalid' }
+    })
+    expect(
+      invoke(REVIEW_CHANNELS.getPreviousAdjustment, 7, { ...input, periodStartedOn: '2020-01-01' })
+    ).toMatchObject({ ok: false, error: { code: 'validation' } })
+    service.getPreviousAdjustment.mockImplementationOnce(() => {
+      throw Error('private SQL path')
+    })
+    expect(invoke(REVIEW_CHANNELS.getPreviousAdjustment, 7, input)).toEqual({
+      ok: false,
+      error: { code: 'persistence-failed', message: 'MyTracer could not load Review facts.' }
+    })
+    contexts.clearSender(7)
+    expect(invoke(REVIEW_CHANNELS.getPreviousAdjustment, 7, input)).toMatchObject({
+      ok: false,
+      error: { code: 'context-stale' }
+    })
+    expect(service.getPreviousAdjustment).toHaveBeenCalledTimes(2)
+    assertSender.mockImplementationOnce(() => {
+      throw Error('untrusted renderer')
+    })
+    expect(() => invoke(REVIEW_CHANNELS.getPreviousAdjustment, 7, input)).toThrow(
+      'untrusted renderer'
+    )
   })
 })

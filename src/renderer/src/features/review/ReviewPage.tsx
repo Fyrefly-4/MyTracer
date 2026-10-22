@@ -19,6 +19,7 @@ import type {
   ReviewSummaryDto
 } from '../../../../contracts/review'
 import type { GoalActionSummaryDto, GoalSummaryDto } from '../../../../contracts/goals'
+import { PreviousAdjustment } from './PreviousAdjustment'
 
 const errorText: Record<ReviewErrorCode, string> = {
   validation: '复盘请求无效，请重新进入复盘。',
@@ -433,6 +434,8 @@ export function ReviewPage(): ReactNode {
           </button>
         ) : null}
       </div>
+
+      {contextId && summary ? <PreviousAdjustment key={contextId} contextId={contextId} /> : null}
 
       {error ? (
         <div className="review-error" role="alert">
