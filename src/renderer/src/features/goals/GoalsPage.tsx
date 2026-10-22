@@ -608,7 +608,18 @@ function GoalWorkspace(): ReactNode {
                 ? '当前目标的名称或说明尚未保存。继续编辑，或放弃这两项修改后切换。'
                 : '目标内容已保存。可以继续查看或切换目标。'}
           </p>
-          <button type="button" autoFocus onClick={() => setPendingContentGoal(null)}>
+          <button
+            type="button"
+            autoFocus
+            onClick={() => {
+              setPendingContentGoal(null)
+              requestAnimationFrame(() =>
+                detailRef.current
+                  ?.querySelector<HTMLInputElement>('form.detail-form input')
+                  ?.focus()
+              )
+            }}
+          >
             继续编辑目标内容
           </button>
           <button

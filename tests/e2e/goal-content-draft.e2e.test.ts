@@ -203,6 +203,25 @@ test('late same-goal read cannot erase typing or a later goal selection', async 
   })
 })
 
+test('late next-step creation refresh cannot steal an in-flight different-goal selection', async () => {
+  await fixture(async (page, app) => {
+    const p = panel(page)
+    await p.getByLabel('选择当前下一步').selectOption({ label: '新建下一步…' })
+    await p.getByLabel('下一步名称', { exact: true }).fill('延迟创建的下一步')
+    await holdResponse(app, 'goals:create-and-set-current-next-action')
+    await p.getByRole('button', { name: '创建并设为当前下一步' }).click()
+    await waitHeld(app, 'goals:create-and-set-current-next-action')
+    await holdResponse(app, 'goals:get-detail')
+    await select(page, '内容目标2')
+    await waitHeld(app, 'goals:get-detail')
+    await release(app, 'goals:create-and-set-current-next-action')
+    await release(app, 'goals:get-detail')
+    await expect(p.locator('h2').first()).toHaveText('内容目标2')
+    await openEditor(page)
+    await expect(p.getByLabel('目标名称', { exact: true })).toHaveValue('内容目标2')
+  })
+})
+
 test('save exception retains content for retry; missing original remains readable and never recreates data', async () => {
   await fixture(async (page, app, ids) => {
     await panel(page).getByLabel('说明（可选）').fill('必须保留的草稿')
