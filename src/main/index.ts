@@ -1,3 +1,4 @@
+import appIcon from '../../resources/brand/MyTracer-app-icon-256.png?asset'
 import { readWindowsTransparency, WindowsTransparencyPreference } from './windows-transparency'
 import { assertAppearanceSender, registerAppearanceIpc } from './appearance-ipc'
 import { release } from 'node:os'
@@ -369,6 +370,7 @@ async function createMainWindow(): Promise<void> {
     show: false,
     backgroundColor: SHELL_COLOR,
     title: 'MyTracer',
+    icon: appIcon,
     // Keep OS caption controls and native window behavior without a second title bar.
     titleBarStyle: 'hidden',
     titleBarOverlay: CAPTION_OVERLAY,

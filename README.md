@@ -1,3 +1,5 @@
+<img src="resources/brand/MyTracer-app-icon.svg" width="80" height="80" alt="MyTracer" />
+
 # MyTracer
 
 MyTracer 是一款本地优先的 Windows 个人行动与成长记录应用，帮助你把目标转化为可以开始的小行动，记录投入，并在中断后接着往前走。
@@ -99,3 +101,7 @@ npm.cmd run dev
 - [开发与维护](docs/MAINTENANCE.md)：构建、验证、打包与更新说明。
 - [架构阅读入口](docs/architecture/README.md)：按问题查阅技术结构、模块边界与专题设计。
 - [产品需求](docs/PRODUCT_REQUIREMENTS_V0.1.md)：详细功能与行为说明。
+
+## 品牌资源
+
+采用已确认的 6 Original 图标（嫩芽与开放手写环），保留现有应用字体。正式 SVG、运行时 PNG 与 Windows ICO 位于 [resources/brand](resources/brand/README.md)，其中说明用途、校验值和导出方式。

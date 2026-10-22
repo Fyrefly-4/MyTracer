@@ -16,13 +16,18 @@ publish:
 files:
   - out/**/*
   - package.json
+  - resources/brand/MyTracer-app-icon-256.png
 win:
+  icon: resources/brand/MyTracer.ico
   target:
     - target: nsis
       arch:
         - x64
 artifactName: MyTracer-${version}-${arch}-setup.${ext}
 nsis:
+  installerIcon: resources/brand/MyTracer.ico
+  uninstallerIcon: resources/brand/MyTracer.ico
+  installerHeaderIcon: resources/brand/MyTracer.ico
   oneClick: false
   perMachine: false
   allowToChangeInstallationDirectory: true

@@ -1,3 +1,4 @@
+import appIcon from '../../../../../resources/brand/MyTracer-app-icon.svg'
 import { type ReactNode, useEffect, useState } from 'react'
 import type { UpdateFailureCode, UpdateStatusDto } from '../../../../contracts/updates'
 
@@ -73,6 +74,11 @@ export function UpdatePanel(props: { readonly onClose: () => void }): ReactNode 
         >
           ×
         </button>
+      </div>
+
+      <div className="about-brand">
+        <img src={appIcon} width={64} height={64} alt="" draggable={false} />
+        <strong>MyTracer</strong>
       </div>
 
       {connectionError ? <p role="alert">暂时无法读取更新状态，核心功能仍可使用。</p> : null}
