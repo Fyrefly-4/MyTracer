@@ -67,6 +67,7 @@ export class UiSession {
   private listPages = new Map<string, number>()
   private actionDrafts = new Map<string, ActionRecordingDraft>()
   private routineDrafts = new Map<string, RoutineRecordingDraft>()
+  private goalCoverDrafts = new Map<string, string>()
   private unsavedContent = new Set<string>()
 
   constructor(private readonly onNavigate: (section: AppSectionId) => void) {}
@@ -156,12 +157,26 @@ export class UiSession {
   hasRoutineDraft(routineId: string): boolean {
     return this.routineDrafts.has(routineId)
   }
+  getGoalCoverDraft(goalId: string): string | null {
+    return this.goalCoverDrafts.get(goalId) ?? null
+  }
+  setGoalCoverDraft(goalId: string, draft: string): void {
+    this.goalCoverDrafts.set(goalId, draft)
+  }
+  clearGoalCoverDraft(goalId: string): void {
+    this.goalCoverDrafts.delete(goalId)
+  }
   setUnsavedContent(source: string, unsaved: boolean): void {
     if (unsaved) this.unsavedContent.add(source)
     else this.unsavedContent.delete(source)
   }
   hasUnsavedContent(): boolean {
-    return this.unsavedContent.size > 0 || this.actionDrafts.size > 0 || this.routineDrafts.size > 0
+    return (
+      this.unsavedContent.size > 0 ||
+      this.actionDrafts.size > 0 ||
+      this.routineDrafts.size > 0 ||
+      this.goalCoverDrafts.size > 0
+    )
   }
   getListPage(section: AppSectionId, list: string): number {
     return this.listPages.get(`${section}:${list}`) ?? 1

@@ -5,6 +5,7 @@ import type { TodayViewDto } from '../../../../contracts/today'
 import { usePagePosition, useUiSession } from '../../app/ui-session'
 import { routineRecordOutcomeText } from '../../app/ui-text'
 import { HomeRecordCalendar } from './HomeRecordCalendar'
+import { goalCoverMark, readGoalCoverMark } from '../goals/goal-cover'
 import { homeGoals, homeRecords } from './home-model'
 import './home.css'
 
@@ -136,7 +137,7 @@ export function HomePage(): ReactNode {
               goals.length ? (
                 <>
                   <div className="home-goals">
-                    {goals.map((goal) => {
+                    {goals.map((goal, position) => {
                       const record = latestByGoal.get(goal.id)
                       const candidate = goal.currentNextActionId
                         ? actions.get(goal.currentNextActionId)
@@ -152,7 +153,9 @@ export function HomePage(): ReactNode {
                           aria-label={`${goal.name} 概览`}
                         >
                           <div className="home-goal-cover">
-                            <span aria-hidden="true">{Array.from(goal.name.trim())[0] ?? '·'}</span>
+                            <span aria-hidden="true">
+                              {goalCoverMark(position, readGoalCoverMark(goal.id))}
+                            </span>
                             <small>活跃目标</small>
                           </div>
                           <div className="home-goal-body">
