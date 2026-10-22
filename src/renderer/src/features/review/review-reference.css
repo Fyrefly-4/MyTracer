@@ -1,0 +1,182 @@
+.review-workspace {
+  gap: 12px;
+}
+.review-workspace .review-summary {
+  padding: 0;
+  gap: 8px;
+}
+.review-workspace .review-summary article,
+.review-workspace .review-summary article:first-child {
+  padding: 8px 12px;
+}
+.review-workspace .review-summary strong {
+  font-size: 20px;
+}
+.review-workspace .review-form .review-section-heading {
+  margin: 0;
+}
+.review-workspace .review-form .review-section-heading h2 {
+  margin: 0 0 6px;
+  font-size: 17px;
+}
+.review-workspace .review-form .review-section-heading p {
+  margin: 0;
+}
+.review-workspace .review-toolbar {
+  padding-bottom: 12px;
+  gap: 12px;
+}
+.review-workspace .review-toolbar p {
+  margin: 4px 0;
+}
+.review-workspace .review-toolbar h2 {
+  margin: 4px 0;
+}
+.review-workspace .review-summary {
+  margin: 0;
+}
+.review-workspace .review-writing-nav {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 0;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-line);
+}
+.review-workspace .review-writing-nav span {
+  margin-right: auto;
+  color: var(--color-muted);
+  font-size: 12px;
+}
+.review-workspace .review-writing-nav button {
+  min-height: 32px;
+  padding: 5px 10px;
+  font-size: 13px;
+}
+.review-workspace .review-writing-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 20px;
+  min-width: 0;
+}
+.review-workspace .review-form,
+.review-workspace .review-reference-panel {
+  min-width: 0;
+  margin: 0;
+  padding: 16px;
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+  scroll-margin-top: 64px;
+}
+.review-workspace .review-form {
+  max-height: min(70dvh, 680px);
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+}
+.review-workspace .review-composer-fields {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.review-workspace .review-composer-fields > label {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+.review-workspace .review-composer-fields textarea {
+  min-height: 90px;
+}
+.review-workspace .review-reference-panel {
+  display: flex;
+  flex-direction: column;
+  height: min(70dvh, 680px);
+  min-height: 300px;
+}
+.review-workspace .review-reference-selection {
+  flex-shrink: 0;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-line);
+}
+.review-workspace .review-reference-selection h2 {
+  margin: 0 0 8px;
+  font-size: 17px;
+}
+.review-workspace .review-reference-selection p {
+  margin: 6px 0;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.review-workspace .review-reference-selection blockquote {
+  max-height: 96px;
+  overflow: auto;
+  margin: 8px 0;
+  padding: 8px 10px;
+  border-left: 3px solid var(--color-action);
+  background: var(--color-support);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+.review-workspace .review-reference-selection label {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.review-workspace .review-reference-selection select {
+  min-width: 0;
+  max-width: 100%;
+}
+.review-workspace .review-reference-selection button {
+  min-height: 32px;
+  padding: 5px 10px;
+  font-size: 13px;
+}
+.review-workspace .review-fact-browser {
+  flex: 1;
+  min-height: 100px;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  padding: 4px;
+  scroll-margin-top: 64px;
+}
+.review-workspace .review-fact-browser:focus-visible,
+.review-workspace .review-form:focus-visible {
+  outline: 2px solid var(--color-action);
+  outline-offset: -2px;
+}
+.review-workspace .review-fact-browser .review-routine-grid,
+.review-workspace .review-fact-browser .review-learning-grid {
+  display: block;
+}
+.review-workspace .review-fact-browser .review-routine-grid > article,
+.review-workspace .review-fact-browser .review-learning-grid > section {
+  padding: 12px 0;
+  border: 0;
+}
+.review-workspace .review-fact-browser .review-section-heading h2,
+.review-workspace .review-fact-browser .review-learning-grid h2 {
+  font-size: 16px;
+}
+.review-workspace .review-fact-browser li {
+  overflow-wrap: anywhere;
+}
+.review-workspace .review-fact-browser button[aria-pressed='true'] {
+  background: var(--color-support);
+  color: var(--color-action);
+}
+@media (max-width: 1000px) {
+  .review-workspace .review-writing-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
