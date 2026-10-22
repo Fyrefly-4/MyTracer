@@ -1,3 +1,5 @@
+import '../forms-workspace.css'
+import '../object-workspace.css'
 import {
   revealStart,
   usePagePosition,
@@ -440,8 +442,24 @@ export function RoutineRecordingPanel(props: {
 
 function RoutineWorkspace(): ReactNode {
   const session = useUiSession()
+  const [masterCollapsed, setMasterCollapsed] = useState(false)
+  const expandMasterRef = useRef<HTMLButtonElement | null>(null)
+  const collapseMasterRef = useRef<HTMLButtonElement | null>(null)
+  const didToggleMaster = useRef(false)
+  useEffect(() => {
+    if (!didToggleMaster.current) return
+    ;(masterCollapsed ? expandMasterRef : collapseMasterRef).current?.focus({ preventScroll: true })
+  }, [masterCollapsed])
+  const [listQuery, setListQuery] = useState('')
+  const [listPage, updateListPage] = useState(() => session.getListPage('routines', 'master'))
+  const setListPage = (page: number): void => {
+    session.setListPage('routines', 'master', page)
+    updateListPage(page)
+  }
+
   const [loaded, setLoaded] = useState(false)
-  usePagePosition('routines', loaded)
+  const [selectionLoaded, setSelectionLoaded] = useState(!session.routineId)
+  usePagePosition('routines', loaded && selectionLoaded)
   const [routines, setRoutines] = useState<readonly RoutineSummaryDto[]>([])
   const [goals, setGoals] = useState<readonly GoalSummaryDto[]>([])
   const [detail, setDetail] = useState<RoutineDetailDto | null>(null)
@@ -458,7 +476,8 @@ function RoutineWorkspace(): ReactNode {
   const [editMinimumAction, setEditMinimumAction] = useState('')
   const [editWeekdays, setEditWeekdays] = useState<readonly number[]>([])
   const [confirmEnd, setConfirmEnd] = useState(false)
-  const [creating, setCreating] = useState(false)
+  const [creating, setCreating] = useState<boolean | null>(null)
+  const createOpen = creating ?? (loaded && routines.length === 0)
   useUnsavedContent(
     'routine-form',
     Boolean(
@@ -475,13 +494,19 @@ function RoutineWorkspace(): ReactNode {
           editWeekdays.join(',') !== detail.weekdays.join(',')))
   )
 
-  const showDetail = (routine: RoutineDetailDto): void => {
+  const showDetail = (
+    routine: RoutineDetailDto,
+    savedSection: 'all' | 'content' | 'schedule' = 'all'
+  ): void => {
     session.selectRoutine(routine.id)
     setDetail(routine)
-    setEditName(routine.name)
-    setEditDescription(routine.description ?? '')
-    setEditMinimumAction(routine.minimumAction)
-    setEditWeekdays(routine.weekdays)
+    // A section save must not discard the other section's unsaved input.
+    if (savedSection !== 'schedule') {
+      setEditName(routine.name)
+      setEditDescription(routine.description ?? '')
+      setEditMinimumAction(routine.minimumAction)
+    }
+    if (savedSection !== 'content') setEditWeekdays(routine.weekdays)
     setConfirmEnd(false)
   }
 
@@ -511,27 +536,47 @@ function RoutineWorkspace(): ReactNode {
   }, [refreshVersion])
 
   useEffect(() => {
-    if (!loaded || !session.routineId || detail?.id === session.routineId) return
+    if (!loaded) return
     let active = true
-    void window.myTracer.routines.getDetail({ routineId: session.routineId }).then((result) => {
-      if (!active) return
-      if (result.ok) {
-        const routine = result.value
-        session.selectRoutine(routine.id)
-        setDetail(routine)
-        setEditName(routine.name)
-        setEditDescription(routine.description ?? '')
-        setEditMinimumAction(routine.minimumAction)
-        setEditWeekdays(routine.weekdays)
-        setConfirmEnd(false)
-      } else if (result.error.code === 'not-found') session.selectRoutine(null)
-    })
+    const routineId = session.routineId
+    if (!routineId || detail?.id === routineId) {
+      Promise.resolve().then(() => {
+        if (active) setSelectionLoaded(true)
+      })
+    } else {
+      void window.myTracer.routines
+        .getDetail({ routineId })
+        .then((result) => {
+          if (!active || session.routineId !== routineId) return
+          if (result.ok) {
+            const routine = result.value
+            setDetail(routine)
+            setEditName(routine.name)
+            setEditDescription(routine.description ?? '')
+            setEditMinimumAction(routine.minimumAction)
+            setEditWeekdays(routine.weekdays)
+            setConfirmEnd(false)
+          } else {
+            if (result.error.code === 'not-found') session.selectRoutine(null)
+            setError(routineErrorText[result.error.code])
+          }
+          setSelectionLoaded(true)
+        })
+        .catch(() => {
+          if (!active) return
+          setError('例行详情暂时无法读取，请稍后重试。')
+          setSelectionLoaded(true)
+        })
+    }
     return () => {
       active = false
     }
   }, [detail?.id, loaded, session])
 
-  const refresh = async (routineId?: string): Promise<void> => {
+  const refresh = async (
+    routineId?: string,
+    savedSection: 'all' | 'content' | 'schedule' = 'all'
+  ): Promise<void> => {
     const listResult = await window.myTracer.routines.list({})
     if (!listResult.ok) {
       setError(routineErrorText[listResult.error.code])
@@ -544,7 +589,7 @@ function RoutineWorkspace(): ReactNode {
         setError(routineErrorText[detailResult.error.code])
         return
       }
-      showDetail(detailResult.value)
+      showDetail(detailResult.value, savedSection)
     }
     setError(null)
   }
@@ -590,7 +635,7 @@ function RoutineWorkspace(): ReactNode {
       setError(routineErrorText[result.error.code])
       return
     }
-    await refresh(detail.id)
+    await refresh(detail.id, 'content')
   }
 
   const replaceSchedule = async (): Promise<void> => {
@@ -605,7 +650,7 @@ function RoutineWorkspace(): ReactNode {
       setError(routineErrorText[result.error.code])
       return
     }
-    await refresh(detail.id)
+    await refresh(detail.id, 'schedule')
   }
 
   const transition = async (kind: 'pause' | 'resume' | 'end'): Promise<void> => {
@@ -631,238 +676,361 @@ function RoutineWorkspace(): ReactNode {
     setError(null)
   }
 
+  const filteredItems = routines.filter((item) =>
+    item.name.toLocaleLowerCase().includes(listQuery.trim().toLocaleLowerCase())
+  )
+  const listPageCount = Math.max(1, Math.ceil(filteredItems.length / 6))
+  const currentListPage = Math.min(listPage, listPageCount)
+  const pageItems = filteredItems.slice((currentListPage - 1) * 6, currentListPage * 6)
+
   return (
-    <section className="routine-workspace" aria-label="例行管理">
+    <section className="routine-workspace notebook-object-workspace" aria-label="例行管理">
       {error ? (
         <p className="form-error" role="alert">
           {error}
         </p>
       ) : null}
-      <div className="goal-grid">
-        <div className="goal-column">
-          <div className="goal-card goal-list-card">
-            <div className="card-heading">
-              <p className="eyebrow">例行列表</p>
-              <h2>先查看和维护已有内容</h2>
+      <div className={`goal-grid object-grid${masterCollapsed ? ' master-collapsed' : ''}`}>
+        <aside className="goal-column object-master" aria-label="例行列表">
+          <button
+            className="object-expand"
+            ref={expandMasterRef}
+            type="button"
+            aria-label="展开例行列表"
+            onClick={() => {
+              didToggleMaster.current = true
+              setMasterCollapsed(false)
+            }}
+            hidden={!masterCollapsed}
+          >
+            ›
+          </button>
+          <div className="goal-card goal-list-card" hidden={masterCollapsed}>
+            <div className="object-master-heading">
+              <div className="object-heading-row">
+                <h1>例行</h1>
+                <button
+                  type="button"
+                  aria-label="收起例行列表"
+                  ref={collapseMasterRef}
+                  onClick={() => {
+                    didToggleMaster.current = true
+                    setMasterCollapsed(true)
+                  }}
+                >
+                  ‹
+                </button>
+              </div>
+              <div className="workspace-toolbar">
+                <p className="workspace-count">
+                  {routines.length
+                    ? `${routines.length} 个例行 · 按自己的节奏继续`
+                    : '从一个轻量、可重复的行动开始'}
+                </p>
+                <button
+                  className="secondary-button create-disclosure-button"
+                  type="button"
+                  aria-expanded={createOpen}
+                  onClick={() => setCreating(!createOpen)}
+                >
+                  {createOpen ? '收起新建表单' : '新建例行'}
+                </button>
+              </div>
+
+              <label className="object-search">
+                <span className="visually-hidden">搜索例行</span>
+                <input
+                  value={listQuery}
+                  placeholder="搜索例行…"
+                  onChange={(event) => {
+                    setListQuery(event.target.value)
+                    setListPage(1)
+                  }}
+                />
+              </label>
+
+              <div className="card-heading">
+                <p className="eyebrow">例行列表</p>
+                <h2>我的例行</h2>
+              </div>
             </div>
-            <div className="goal-list">
-              {routines.length ? (
-                routines.map((routine) => (
-                  <button
-                    className={`goal-list-item${detail?.id === routine.id ? ' selected' : ''}`}
-                    type="button"
-                    key={routine.id}
-                    onClick={() => void openRoutine(routine.id)}
-                  >
-                    <span>{routine.name}</span>
-                    <small>
-                      {routineStatusText[routine.status]} · 周{routine.weekdays.join('、')}
-                      {session.hasRoutineDraft(routine.id) ? ' · 有未保存草稿' : ''}
-                    </small>
-                  </button>
-                ))
-              ) : (
-                <p className="empty-copy">还没有例行。</p>
-              )}
+            <div className="object-master-scroll" data-scroll-key="master">
+              <div className="goal-list">
+                {filteredItems.length ? (
+                  pageItems.map((routine) => (
+                    <button
+                      className={`goal-list-item${detail?.id === routine.id ? ' selected' : ''}`}
+                      type="button"
+                      key={routine.id}
+                      onClick={() => {
+                        setCreating(false)
+                        void openRoutine(routine.id)
+                      }}
+                    >
+                      <span>{routine.name}</span>
+                      <small>
+                        {routineStatusText[routine.status]} · 周{routine.weekdays.join('、')}
+                        {session.hasRoutineDraft(routine.id) ? ' · 有未保存草稿' : ''}
+                      </small>
+                    </button>
+                  ))
+                ) : (
+                  <p className="empty-copy">还没有例行。</p>
+                )}
+              </div>
+            </div>
+            <div className="object-pager" aria-label="例行列表分页">
+              <button
+                type="button"
+                disabled={currentListPage === 1}
+                onClick={() => setListPage(currentListPage - 1)}
+              >
+                上一页
+              </button>
+              <span>
+                {currentListPage} / {listPageCount} · {filteredItems.length} 项
+              </span>
+              <button
+                type="button"
+                disabled={currentListPage === listPageCount}
+                onClick={() => setListPage(currentListPage + 1)}
+              >
+                下一页
+              </button>
             </div>
           </div>
-          <button
-            className="secondary-button create-disclosure-button"
-            type="button"
-            aria-expanded={creating || routines.length === 0}
-            onClick={() => setCreating((value) => !value)}
-          >
-            {creating || routines.length === 0 ? '收起新建表单' : '新建例行'}
-          </button>
-          {creating || routines.length === 0 ? (
-            <form className="goal-card goal-create" onSubmit={(event) => void submitCreate(event)}>
+        </aside>
+
+        <div
+          className="goal-column object-detail-scroll"
+          data-scroll-key="detail"
+          aria-label="例行工作区"
+        >
+          {createOpen ? (
+            <form
+              className="goal-card goal-create workspace-form"
+              aria-label="新建例行表单"
+              onSubmit={(event) => void submitCreate(event)}
+            >
               <div className="card-heading">
                 <p className="eyebrow">新例行</p>
                 <h2>定义一个最小行动和每周安排</h2>
               </div>
-              <label>
-                名称
-                <input
-                  required
-                  value={createName}
-                  onChange={(event) => setCreateName(event.target.value)}
-                />
-              </label>
-              <label>
-                最小行动
-                <input
-                  required
-                  value={createMinimumAction}
-                  onChange={(event) => setCreateMinimumAction(event.target.value)}
-                />
-              </label>
-              <label>
-                说明（可选）
-                <textarea
-                  rows={2}
-                  value={createDescription}
-                  onChange={(event) => setCreateDescription(event.target.value)}
-                />
-              </label>
-              <label>
-                关联目标（可选，创建后不可改）
-                <select
-                  value={createGoalId}
-                  onChange={(event) => setCreateGoalId(event.target.value)}
-                >
-                  <option value="">不关联目标</option>
-                  {goals.map((goal) => (
-                    <option key={goal.id} value={goal.id}>
-                      {goal.name} · {goalStatusText[goal.status]}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <RoutineWeekdayPicker
-                label="每周安排"
-                value={createWeekdays}
-                onChange={setCreateWeekdays}
-                disabled={busy}
-              />
-              <button className="primary-button" type="submit" disabled={busy}>
-                创建例行
-              </button>
-            </form>
-          ) : null}
-        </div>
-
-        <div className="goal-column">
-          {detail ? (
-            <article className="goal-card goal-detail" aria-label={`${detail.name} 例行详情`}>
-              <div className="detail-title-row">
-                <div>
-                  <p className="eyebrow">
-                    {detail.goal
-                      ? `${detail.goal.name} · ${goalStatusText[detail.goal.status]}`
-                      : '未关联目标'}
-                  </p>
-                  <h2>{detail.name}</h2>
-                </div>
-                <span className={`status-badge status-${detail.status}`}>
-                  {routineStatusText[detail.status]}
-                </span>
-              </div>
-
-              <RoutineRecordingPanel
-                key={detail.id}
-                routineId={detail.id}
-                routineName={detail.name}
-                disabled={detail.status !== 'active'}
-              />
-
-              <details className="disclosure">
-                <summary>编辑内容和每周安排</summary>
-                <form className="detail-form" onSubmit={(event) => void submitDetails(event)}>
-                  <label>
-                    名称
-                    <input
-                      required
-                      value={editName}
-                      onChange={(event) => setEditName(event.target.value)}
-                    />
-                  </label>
-                  <label>
-                    最小行动
-                    <input
-                      required
-                      value={editMinimumAction}
-                      onChange={(event) => setEditMinimumAction(event.target.value)}
-                    />
-                  </label>
-                  <label>
-                    说明（可选）
-                    <textarea
-                      rows={3}
-                      value={editDescription}
-                      onChange={(event) => setEditDescription(event.target.value)}
-                    />
-                  </label>
-                  <button className="secondary-button" type="submit" disabled={busy}>
-                    保存内容修改
-                  </button>
-                </form>
-
-                <div className="schedule-editor">
+              <div className="workspace-form-fields">
+                <label>
+                  名称
+                  <input
+                    required
+                    value={createName}
+                    onChange={(event) => setCreateName(event.target.value)}
+                  />
+                </label>
+                <label>
+                  最小行动
+                  <input
+                    required
+                    value={createMinimumAction}
+                    onChange={(event) => setCreateMinimumAction(event.target.value)}
+                  />
+                </label>
+                <label className="form-field-wide">
+                  <span id="routine-create-description-label">说明（可选）</span>
+                  <textarea
+                    aria-labelledby="routine-create-description-label"
+                    rows={2}
+                    value={createDescription}
+                    onChange={(event) => setCreateDescription(event.target.value)}
+                  />
+                </label>
+                <label>
+                  关联目标（可选，创建后不可改）
+                  <select
+                    value={createGoalId}
+                    onChange={(event) => setCreateGoalId(event.target.value)}
+                  >
+                    <option value="">不关联目标</option>
+                    {goals.map((goal) => (
+                      <option key={goal.id} value={goal.id}>
+                        {goal.name} · {goalStatusText[goal.status]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <div className="form-field-wide">
                   <RoutineWeekdayPicker
                     label="每周安排"
-                    value={editWeekdays}
-                    onChange={setEditWeekdays}
+                    value={createWeekdays}
+                    onChange={setCreateWeekdays}
                     disabled={busy}
                   />
-                  <button
-                    className="secondary-button"
-                    type="button"
-                    disabled={busy}
-                    onClick={() => void replaceSchedule()}
-                  >
-                    保存星期安排
-                  </button>
                 </div>
-              </details>
-
-              <div className="lifecycle-actions">
-                {detail.status === 'active' ? (
-                  <button
-                    className="warning-button"
-                    type="button"
-                    disabled={busy}
-                    onClick={() => void transition('pause')}
-                  >
-                    暂停
-                  </button>
-                ) : null}
-                {detail.status === 'paused' ? (
-                  <button type="button" disabled={busy} onClick={() => void transition('resume')}>
-                    恢复
-                  </button>
-                ) : null}
-                {detail.status !== 'ended' ? (
-                  <button
-                    className="danger-button"
-                    type="button"
-                    disabled={busy}
-                    onClick={() => setConfirmEnd(true)}
-                  >
-                    结束例行
-                  </button>
-                ) : null}
               </div>
-              {confirmEnd ? (
-                <div className="inline-confirm" role="alertdialog" aria-label="确认结束例行">
-                  <p>结束后不能恢复；已有历史会保留。</p>
-                  <div className="lifecycle-actions">
+              <div className="workspace-form-actions">
+                <button className="primary-button" type="submit" disabled={busy}>
+                  创建例行
+                </button>
+                <button type="button" disabled={busy} onClick={() => setCreating(false)}>
+                  收起表单
+                </button>
+                <span>创建后可继续调整内容和星期安排。</span>
+              </div>
+            </form>
+          ) : null}
+          <div className="object-selected-content" hidden={createOpen}>
+            {detail ? (
+              <article className="goal-card goal-detail" aria-label={`${detail.name} 例行详情`}>
+                <div className="detail-title-row">
+                  <div>
+                    <p className="eyebrow">
+                      {detail.goal
+                        ? `${detail.goal.name} · ${goalStatusText[detail.goal.status]}`
+                        : '未关联目标'}
+                    </p>
+                    <h2>{detail.name}</h2>
+                  </div>
+                  <span className={`status-badge status-${detail.status}`}>
+                    {routineStatusText[detail.status]}
+                  </span>
+                </div>
+
+                <div className="routine-overview" aria-label="例行安排">
+                  <div>
+                    <span>最小行动</span>
+                    <p>{detail.minimumAction}</p>
+                  </div>
+                  <div>
+                    <span>每周安排</span>
+                    <p>
+                      {detail.weekdays.length === 7
+                        ? '每天'
+                        : `周${detail.weekdays.map((day) => weekdayOptions.find((option) => option.value === day)?.label).join('、')}`}
+                    </p>
+                  </div>
+                  {detail.description ? (
+                    <p className="form-field-wide routine-description">{detail.description}</p>
+                  ) : null}
+                </div>
+
+                <RoutineRecordingPanel
+                  key={detail.id}
+                  routineId={detail.id}
+                  routineName={detail.name}
+                  disabled={detail.status !== 'active'}
+                />
+
+                <details className="disclosure">
+                  <summary>编辑内容和每周安排</summary>
+                  <form className="detail-form" onSubmit={(event) => void submitDetails(event)}>
+                    <label>
+                      名称
+                      <input
+                        required
+                        value={editName}
+                        onChange={(event) => setEditName(event.target.value)}
+                      />
+                    </label>
+                    <label>
+                      最小行动
+                      <input
+                        required
+                        value={editMinimumAction}
+                        onChange={(event) => setEditMinimumAction(event.target.value)}
+                      />
+                    </label>
+                    <label>
+                      <span id="routine-edit-description-label">说明（可选）</span>
+                      <textarea
+                        aria-labelledby="routine-edit-description-label"
+                        rows={3}
+                        value={editDescription}
+                        onChange={(event) => setEditDescription(event.target.value)}
+                      />
+                    </label>
+                    <button className="secondary-button" type="submit" disabled={busy}>
+                      保存内容修改
+                    </button>
+                  </form>
+
+                  <div className="schedule-editor">
+                    <p className="form-section-note">
+                      星期安排与内容分别保存，另一处未保存的修改会保留；已有记录不受影响。
+                    </p>
+                    <RoutineWeekdayPicker
+                      label="每周安排"
+                      value={editWeekdays}
+                      onChange={setEditWeekdays}
+                      disabled={busy}
+                    />
+                    <button
+                      className="secondary-button"
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void replaceSchedule()}
+                    >
+                      保存星期安排
+                    </button>
+                  </div>
+                </details>
+
+                <div className="lifecycle-actions">
+                  {detail.status === 'active' ? (
+                    <button
+                      className="warning-button"
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void transition('pause')}
+                    >
+                      暂停
+                    </button>
+                  ) : null}
+                  {detail.status === 'paused' ? (
+                    <button type="button" disabled={busy} onClick={() => void transition('resume')}>
+                      恢复
+                    </button>
+                  ) : null}
+                  {detail.status !== 'ended' ? (
                     <button
                       className="danger-button"
                       type="button"
                       disabled={busy}
-                      onClick={() => void transition('end')}
+                      onClick={() => setConfirmEnd(true)}
                     >
-                      确认结束
+                      结束例行
                     </button>
-                    <button type="button" disabled={busy} onClick={() => setConfirmEnd(false)}>
-                      取消
-                    </button>
-                  </div>
+                  ) : null}
                 </div>
-              ) : null}
-              {detail.status === 'ended' ? (
-                <p className="empty-copy">
-                  这个例行已结束且不能恢复；当前内容、节奏与历史仍会保留。
-                </p>
-              ) : null}
-            </article>
-          ) : (
-            <section className="goal-card empty-detail" aria-label="例行详情占位">
-              <p className="eyebrow">选择一个例行</p>
-              <h2>查看节奏、目标状态与生命周期</h2>
-              <p>星期安排只决定今天是否匹配，不会预生成任何记录。</p>
-            </section>
-          )}
+                {confirmEnd ? (
+                  <div className="inline-confirm" role="alertdialog" aria-label="确认结束例行">
+                    <p>结束后不能恢复；已有历史会保留。</p>
+                    <div className="lifecycle-actions">
+                      <button
+                        className="danger-button"
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void transition('end')}
+                      >
+                        确认结束
+                      </button>
+                      <button type="button" disabled={busy} onClick={() => setConfirmEnd(false)}>
+                        取消
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+                {detail.status === 'ended' ? (
+                  <p className="empty-copy">
+                    这个例行已结束且不能恢复；当前内容、节奏与历史仍会保留。
+                  </p>
+                ) : null}
+              </article>
+            ) : (
+              <section className="goal-card empty-detail" aria-label="例行详情占位">
+                <p className="eyebrow">选择一个例行</p>
+                <h2>查看节奏、目标状态与生命周期</h2>
+                <p>星期安排只决定今天是否匹配，不会预生成任何记录。</p>
+              </section>
+            )}
+          </div>
         </div>
       </div>
     </section>

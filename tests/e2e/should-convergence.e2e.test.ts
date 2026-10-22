@@ -94,15 +94,19 @@ test('shows factual dates, unlimited soft guidance and explicitly scoped weekly 
     for (let index = 1; index <= 6; index += 1) {
       const candidates = page.locator('details.action-candidates')
       if (!(await candidates.evaluate((element) => (element as HTMLDetailsElement).open)))
-        await candidates.locator('summary').click()
+        await candidates.locator(':scope > summary').click()
       await candidates
         .locator('.candidate-row')
         .filter({ hasText: `SHOULD 行动 ${index}` })
         .getByRole('button', { name: '选为今日重点', exact: true })
         .click()
+      // Selection refresh moves the candidate disclosure after the first focus.
+      // Wait for that completed UI state before opening it for the next choice.
+      await expect(page.getByLabel('今日重点').locator('.focus-row')).toHaveCount(index)
     }
     await expect(page.getByLabel('今日重点').locator('.focus-row')).toHaveCount(6)
     await page.getByRole('navigation').getByRole('button', { name: '进展', exact: true }).click()
+    await page.locator('.week-comparison > summary').click()
     const weekly = page.getByLabel('本周与上周事实比较')
     await expect(weekly).toContainText('本周尚未结束')
     await expect(weekly.getByRole('row').filter({ hasText: '记录到的投入分钟' })).toHaveText(
@@ -138,6 +142,7 @@ test('shows factual dates, unlimited soft guidance and explicitly scoped weekly 
       )
     ).toEqual(comparison)
     await page.getByRole('navigation').getByRole('button', { name: '进展', exact: true }).click()
+    await page.locator('.week-comparison > summary').click()
     await expect(page.getByLabel('本周与上周事实比较')).toContainText('-12')
     await page.setViewportSize({ width: 820, height: 700 })
     await expect(page.getByLabel('本周与上周事实比较').getByRole('table')).toBeVisible()
@@ -214,6 +219,7 @@ test('does not relabel late weekly results and displays future dates without a n
     await page.getByRole('navigation').getByRole('button', { name: '今天', exact: true }).click()
     await expect(page.locator('.candidate-row').first()).toContainText('2026-09-20（晚于今天）')
     await page.getByRole('navigation').getByRole('button', { name: '进展', exact: true }).click()
+    await page.locator('.week-comparison > summary').click()
     await page.getByLabel('目标（可选）').selectOption(goals[0])
     await page.getByRole('button', { name: '查看记录', exact: true }).click()
     await expect
@@ -278,6 +284,7 @@ test('keeps query failures recoverable without blocking core controls', async ()
     await page.getByRole('button', { name: '重试行动日期' }).click()
     await expect(page.getByRole('button', { name: '重试行动日期' })).toHaveCount(0)
     await page.getByRole('navigation').getByRole('button', { name: '进展', exact: true }).click()
+    await page.locator('.week-comparison > summary').click()
     await expect(page.getByRole('button', { name: '重试周比较' })).toBeVisible()
     await expect(page.getByRole('button', { name: '查看记录', exact: true })).toBeEnabled()
     await application.evaluate(({ ipcMain }) => {

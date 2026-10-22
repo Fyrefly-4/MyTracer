@@ -1,4 +1,5 @@
-import { type ReactNode, useEffect, useMemo, useState } from 'react'
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
+import './progress-workspace.css'
 import type { GoalSummaryDto } from '../../../../contracts/goals'
 import type {
   ProgressErrorCode,
@@ -31,6 +32,12 @@ function ProgressWorkspace(): ReactNode {
   const [appliedFilter, setAppliedFilter] = useState(initialApplied)
   const [progress, setProgress] = useState<ProgressViewDto | null>(null)
   usePagePosition('progress', progress !== null)
+  const [recordPage, updateRecordPage] = useState(session.progressRecordPage)
+  const setRecordPage = (page: number): void => {
+    updateRecordPage(page)
+    session.setProgressRecordPage(page)
+  }
+  const timelineRef = useRef<HTMLDivElement>(null)
   const [busy, setBusy] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [comparison, setComparison] = useState<{
@@ -84,6 +91,8 @@ function ProgressWorkspace(): ReactNode {
     if (result.ok) {
       session.applyProgressFilter(filter)
       setAppliedFilter(filter)
+      setRecordPage(1)
+      timelineRef.current?.scrollTo({ top: 0 })
       setProgress(result.value)
       setComparisonVersion((version) => version + 1)
       setError(null)
@@ -135,6 +144,10 @@ function ProgressWorkspace(): ReactNode {
         right.record.createdAt.localeCompare(left.record.createdAt)
     )
   }, [progress])
+
+  const pageCount = Math.max(1, Math.ceil(timeline.length / 8))
+  const currentPage = Math.min(recordPage, pageCount)
+  const visibleTimeline = timeline.slice((currentPage - 1) * 8, currentPage * 8)
 
   const filtersChanged =
     goalId !== appliedFilter.goalId ||
@@ -221,8 +234,8 @@ function ProgressWorkspace(): ReactNode {
           </article>
         </div>
       ) : null}
-      <section className="goal-card week-comparison" aria-label="本周与上周事实比较">
-        <h2>本周与上周</h2>
+      <details className="week-comparison" aria-label="本周与上周事实比较">
+        <summary>本周与上周</summary>
         <p className="empty-copy">
           {appliedFilter.goalId ? goalName(appliedFilter.goalId) : '全部目标与无目标行动'} ·
           周比较按本周/上周，不使用历史日期范围。
@@ -288,89 +301,136 @@ function ProgressWorkspace(): ReactNode {
             </p>
           </>
         ) : null}
-      </section>
+      </details>
       {progress ? (
         <>
           {timeline.length ? (
-            <section aria-label="按时间排列的记录">
+            <section className="progress-history" aria-label="按时间排列的记录">
               <div className="progress-timeline-heading">
-                <div>
-                  <p className="eyebrow">最近发生</p>
-                  <h2 className="progress-section-title">行动与例行记录</h2>
-                </div>
-                <span>{timeline.length} 条</span>
+                <h2 className="progress-section-title">行动与例行记录</h2>
+                <span>{timeline.length} 条 · 每页 8 条</span>
               </div>
-              <ol className="progress-records progress-timeline">
-                {timeline.map((item) => {
-                  const record = item.record
-                  return (
-                    <li key={`${item.kind}-${record.recordId}`}>
-                      <div className="progress-record-heading">
-                        <div>
-                          <span className="record-kind">
-                            {item.kind === 'action' ? '行动记录' : '例行记录'}
-                          </span>
-                          <h2>
-                            {item.kind === 'action'
-                              ? item.record.actionTitle
-                              : item.record.routineName}
-                          </h2>
-                          <p>
-                            {record.occurredOn} · {goalName(record.goalId)} ·{' '}
-                            {item.kind === 'action'
-                              ? recordOutcomeText[item.record.outcome]
-                              : routineRecordOutcomeText[item.record.outcome]}
-                            {item.kind === 'routine'
-                              ? ` · ${item.record.plannedForDate ? '计划日记录' : '非计划日记录'}`
-                              : ''}
-                          </p>
-                        </div>
-                        <strong>
-                          {record.durationMinutes === null
-                            ? '时长未记录'
-                            : record.durationMinutes === 0
-                              ? '少于 1 分钟'
-                              : `${record.durationMinutes} 分钟`}
-                        </strong>
-                      </div>
-                      {item.kind === 'action' && item.record.understandings.length ? (
-                        <div className="progress-fact-group">
-                          <h3>已确认的理解</h3>
-                          {item.record.understandings.map((fact) => (
-                            <p key={fact.id}>{fact.text}</p>
-                          ))}
-                        </div>
-                      ) : null}
-                      {item.kind === 'action' && item.record.openConfusions.length ? (
-                        <div className="progress-fact-group">
-                          <h3>尚未解决的困惑</h3>
-                          {item.record.openConfusions.map((fact) => (
-                            <p key={fact.id}>{fact.text}</p>
-                          ))}
-                        </div>
-                      ) : null}
-                      {item.kind === 'routine' && item.record.note ? (
-                        <p>{item.record.note}</p>
-                      ) : null}
-                      <button
-                        className="quiet-button record-open-button"
-                        type="button"
-                        onClick={() =>
-                          session.openDataRecord(
-                            {
-                              type: item.kind === 'action' ? 'action-record' : 'routine-record',
-                              id: record.recordId
-                            },
-                            'progress'
-                          )
-                        }
-                      >
-                        查看完整记录或修改
-                      </button>
-                    </li>
-                  )
-                })}
-              </ol>
+              <div className="progress-history-scroll" data-scroll-key="records" ref={timelineRef}>
+                <table className="progress-history-table">
+                  <caption className="visually-hidden">当前筛选范围内的行动与例行记录</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">日期 / 类型</th>
+                      <th scope="col">行动内容</th>
+                      <th scope="col">时长</th>
+                      <th scope="col">详情</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {visibleTimeline.map((item) => {
+                      const record = item.record
+                      const hasNotes =
+                        item.kind === 'action'
+                          ? item.record.understandings.length > 0 ||
+                            item.record.openConfusions.length > 0
+                          : Boolean(item.record.note)
+                      return (
+                        <tr key={`${item.kind}-${record.recordId}`}>
+                          <td>
+                            <time dateTime={record.occurredOn}>{record.occurredOn}</time>
+                            <small>{item.kind === 'action' ? '行动记录' : '例行记录'}</small>
+                          </td>
+                          <td>
+                            <strong>
+                              {item.kind === 'action'
+                                ? item.record.actionTitle
+                                : item.record.routineName}
+                            </strong>
+                            <p className="progress-record-meta">
+                              {goalName(record.goalId)} ·{' '}
+                              {item.kind === 'action'
+                                ? recordOutcomeText[item.record.outcome]
+                                : routineRecordOutcomeText[item.record.outcome]}
+                              {item.kind === 'routine'
+                                ? ` · ${item.record.plannedForDate ? '计划日记录' : '非计划日记录'}`
+                                : ''}
+                            </p>
+                            {hasNotes ? (
+                              <details className="progress-record-notes">
+                                <summary>展开理解与记录</summary>
+                                {item.kind === 'action' && item.record.understandings.length ? (
+                                  <div className="progress-fact-group">
+                                    <h3>已确认的理解</h3>
+                                    {item.record.understandings.map((fact) => (
+                                      <p key={fact.id}>{fact.text}</p>
+                                    ))}
+                                  </div>
+                                ) : null}
+                                {item.kind === 'action' && item.record.openConfusions.length ? (
+                                  <div className="progress-fact-group">
+                                    <h3>尚未解决的困惑</h3>
+                                    {item.record.openConfusions.map((fact) => (
+                                      <p key={fact.id}>{fact.text}</p>
+                                    ))}
+                                  </div>
+                                ) : null}
+                                {item.kind === 'routine' ? <p>{item.record.note}</p> : null}
+                              </details>
+                            ) : null}
+                          </td>
+                          <td>
+                            {record.durationMinutes === null
+                              ? '时长未记录'
+                              : record.durationMinutes === 0
+                                ? '少于 1 分钟'
+                                : `${record.durationMinutes} 分钟`}
+                          </td>
+                          <td>
+                            <button
+                              className="quiet-button record-open-button"
+                              type="button"
+                              onClick={() =>
+                                session.openDataRecord(
+                                  {
+                                    type:
+                                      item.kind === 'action' ? 'action-record' : 'routine-record',
+                                    id: record.recordId
+                                  },
+                                  'progress'
+                                )
+                              }
+                            >
+                              查看完整记录或修改
+                            </button>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <nav className="progress-pagination" aria-label="进展记录分页">
+                <button
+                  type="button"
+                  className="quiet-button"
+                  disabled={currentPage === 1}
+                  onClick={() => {
+                    setRecordPage(currentPage - 1)
+                    timelineRef.current?.scrollTo({ top: 0 })
+                  }}
+                >
+                  上一页
+                </button>
+                <span aria-live="polite">
+                  第 {currentPage} / {pageCount} 页
+                </span>
+                <button
+                  type="button"
+                  className="quiet-button"
+                  disabled={currentPage === pageCount}
+                  onClick={() => {
+                    setRecordPage(currentPage + 1)
+                    timelineRef.current?.scrollTo({ top: 0 })
+                  }}
+                >
+                  下一页
+                </button>
+              </nav>
             </section>
           ) : (
             <div className="progress-empty">

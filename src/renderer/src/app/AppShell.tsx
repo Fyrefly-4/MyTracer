@@ -10,6 +10,7 @@ import { TodayPage } from '../features/today/TodayPage'
 import { UpdatePanel } from '../features/update/UpdatePanel'
 import { UiSessionContext, UiSession } from './ui-session'
 import { appSections, type AppSectionId } from './navigation'
+import { NavigationIcon } from './NavigationIcon'
 
 export function AppShell(): ReactNode {
   const [activeSection, setActiveSection] = useState<AppSectionId>('today')
@@ -84,26 +85,11 @@ export function AppShell(): ReactNode {
 
   return (
     <UiSessionContext value={session}>
-      <div className="app-shell">
-        <header className="topbar">
-          <div className="brand-block">
-            <span className="brand-mark" aria-hidden="true">
-              M
-            </span>
-            <div>
-              <p className="brand">MyTracer</p>
-              <p className="brand-note">行动、记录与温和恢复</p>
-            </div>
-          </div>
-          <div className="topbar-actions">
-            <button type="button" className="update-entry" onClick={() => setUpdateOpen(true)}>
-              关于与更新
-            </button>
-            <div className={`connection ${statusError ? 'connection-error' : ''}`} role="status">
-              <span aria-hidden="true" />
-              {statusError ? '本地数据暂时无法连接' : status ? '本地数据可用' : '正在连接本地数据'}
-            </div>
-          </div>
+      <div className="app-shell" data-section={activeSection}>
+        <header className="topbar" aria-label="窗口标题栏">
+          <p className="brand">
+            MyTracer<span aria-hidden="true"> ·</span>
+          </p>
         </header>
 
         {updateOpen || restartRequired ? (
@@ -112,34 +98,51 @@ export function AppShell(): ReactNode {
 
         <div className="workspace" inert={installPreparing}>
           <nav className="sidebar" aria-label="主要视图">
-            <p className="nav-label">主要页面</p>
             {appSections.map((section) => (
               <button
-                className={section.id === activeSection ? 'nav-item active' : 'nav-item'}
+                className={`nav-item${section.id === activeSection ? ' active' : ''}${section.id === 'progress' ? ' nav-group-separator' : ''}`}
                 key={section.id}
                 type="button"
                 aria-pressed={section.id === activeSection}
                 onClick={() => navigate(section.id)}
               >
-                <span className="nav-dot" aria-hidden="true" />
+                <NavigationIcon section={section.id} />
                 {section.label}
               </button>
             ))}
             <div className="sidebar-note">
-              <span>
-                留下已经发生的事，
-                <br />
-                也留一点继续的空间。
-              </span>
+              <button type="button" className="update-entry" onClick={() => setUpdateOpen(true)}>
+                关于与更新
+              </button>
+              <div className={`connection ${statusError ? 'connection-error' : ''}`} role="status">
+                <span aria-hidden="true" />
+                {statusError
+                  ? '本地数据暂时无法连接'
+                  : status
+                    ? '本地数据可用'
+                    : '正在连接本地数据'}
+              </div>
             </div>
           </nav>
 
-          <main className="content" ref={mainRef} key={activeSection}>
+          <main
+            className={`content content-${activeSection}`}
+            ref={mainRef}
+            onScrollCapture={(event) => {
+              const target = event.target
+              if (target instanceof HTMLElement && target.dataset.scrollKey) {
+                session.setPanePosition(activeSection, target.dataset.scrollKey, target.scrollTop)
+              }
+            }}
+            key={activeSection}
+          >
             <div className="content-inner">
-              <section className="hero" aria-labelledby="section-title">
-                <h1 id="section-title">{selected.title}</h1>
-                <p className="lede">{selected.description}</p>
-              </section>
+              {!['today', 'goals', 'routines'].includes(activeSection) ? (
+                <section className="hero" aria-labelledby="section-title">
+                  <h1 id="section-title">{selected.title}</h1>
+                  <p className="lede">{selected.description}</p>
+                </section>
+              ) : null}
 
               {activeSection === 'goals' ? (
                 <GoalsPage />

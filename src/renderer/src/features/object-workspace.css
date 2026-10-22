@@ -1,0 +1,349 @@
+/* Bounded master/detail workspaces: page height belongs to the shell;
+   each pane owns its scroll rather than dragging its neighbour off screen. */
+.goal-workspace.notebook-object-workspace,
+.routine-workspace.notebook-object-workspace {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  width: 100%;
+  max-width: none;
+  min-height: 0;
+  min-width: 0;
+  height: 100%;
+  margin: 0;
+  gap: 0;
+  overflow: hidden;
+}
+.notebook-object-workspace > [role='alert'] {
+  flex-shrink: 0;
+  margin: 8px 20px;
+}
+.notebook-object-workspace .object-grid {
+  display: grid;
+  align-items: stretch;
+  grid-template-columns: 260px minmax(0, 1fr);
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  gap: 0;
+  overflow: hidden;
+}
+.notebook-object-workspace .object-grid.master-collapsed {
+  grid-template-columns: 54px minmax(0, 1fr);
+}
+.notebook-object-workspace .object-master {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  padding: 0;
+  border-right: 1px solid var(--color-line);
+  overflow: hidden;
+  gap: 0;
+}
+.notebook-object-workspace .object-master .goal-list-card {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  padding: 0;
+  gap: 0;
+}
+.notebook-object-workspace [hidden] {
+  display: none !important;
+}
+.notebook-object-workspace .object-master-heading {
+  flex-shrink: 0;
+  padding: 23px 20px 13px;
+}
+.object-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.notebook-object-workspace .object-heading-row h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 650;
+  line-height: 1.4;
+}
+.notebook-object-workspace .object-heading-row button,
+.notebook-object-workspace .object-expand {
+  padding: 1px 8px;
+  min-height: 28px;
+  border: 0;
+  background: transparent;
+  color: var(--color-muted);
+  font-size: 22px;
+}
+.notebook-object-workspace .object-expand {
+  align-self: center;
+  margin-top: 22px;
+}
+.notebook-object-workspace .workspace-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 14px 0;
+}
+.notebook-object-workspace .workspace-toolbar .workspace-count {
+  flex: 1 1 100%;
+  font-size: 12px;
+}
+.notebook-object-workspace .workspace-toolbar button {
+  min-height: 30px;
+  padding: 4px 10px;
+  font-size: 13px;
+}
+.notebook-object-workspace .object-search input {
+  min-height: 34px;
+  padding: 6px 10px;
+  font-size: 12px;
+  background: var(--color-surface);
+}
+.notebook-object-workspace .object-master .card-heading {
+  margin: 10px 0 0;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.notebook-object-workspace .object-master .card-heading h2,
+.notebook-object-workspace .object-master .card-heading .eyebrow {
+  display: none;
+}
+.notebook-object-workspace .object-master .compact-field {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  width: 100%;
+  gap: 10px;
+  font-size: 12px;
+}
+.notebook-object-workspace .object-master .compact-field select {
+  width: auto;
+  min-width: 80px;
+  min-height: 28px;
+  padding: 3px 8px;
+  font-size: 12px;
+}
+.notebook-object-workspace .object-master-heading .empty-copy,
+.notebook-object-workspace .object-list-help {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--color-muted);
+}
+.notebook-object-workspace .object-master-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0 10px 12px;
+  scrollbar-width: thin;
+  overscroll-behavior-y: contain;
+}
+.notebook-object-workspace .object-master .goal-list {
+  margin: 0;
+  gap: 6px;
+}
+.notebook-object-workspace .object-master .goal-list-item {
+  border: 0;
+  border-radius: 6px;
+  padding: 12px;
+  background: transparent;
+  gap: 5px;
+}
+.notebook-object-workspace .object-master .goal-list-item.selected {
+  background: var(--color-support);
+  box-shadow: none;
+}
+.notebook-object-workspace .object-master .goal-list-item span {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+.notebook-object-workspace .object-master .goal-list-item small {
+  font-size: 12px;
+  line-height: 1.5;
+}
+.notebook-object-workspace .object-grid > .object-detail-scroll {
+  display: block;
+  min-height: 0;
+  min-width: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 24px 30px;
+  border-left: 0;
+  scrollbar-width: thin;
+  overscroll-behavior-y: contain;
+}
+.notebook-object-workspace .object-detail-scroll > .goal-card {
+  padding: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.notebook-object-workspace .goal-detail > .detail-title-row h2,
+.notebook-object-workspace .recovery-panel > .detail-title-row h2 {
+  max-width: none;
+  margin: 7px 0 16px;
+  font-size: 22px;
+  font-weight: 650;
+  line-height: 1.55;
+  text-wrap: initial;
+  overflow-wrap: anywhere;
+}
+.notebook-object-workspace .next-action-panel {
+  padding: 16px 18px;
+  border: 0;
+  border-left: 3px solid var(--color-action);
+  border-radius: 0 6px 6px 0;
+  background: var(--color-support);
+}
+.notebook-object-workspace .next-action-panel strong {
+  font-size: 16px;
+  line-height: 1.6;
+}
+.notebook-object-workspace .object-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  gap: 8px;
+  padding: 12px 14px;
+  border-top: 1px solid var(--color-line);
+  color: var(--color-muted);
+  font-size: 12px;
+}
+.notebook-object-workspace .object-pager button {
+  border: 0;
+  background: transparent;
+  padding: 4px;
+  min-height: 28px;
+  font-size: 13px;
+  color: var(--color-action);
+}
+.notebook-object-workspace .object-history {
+  margin-top: 28px;
+  padding-top: 0;
+}
+.object-history-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.object-history-heading h3 {
+  margin: 0;
+  font-size: 15px;
+}
+.object-history-heading > span {
+  font-size: 12px;
+  color: var(--color-muted);
+}
+.object-history-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+.object-history-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+.object-history-table th {
+  background: var(--color-surface);
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 500;
+  text-align: left;
+  padding: 9px 10px;
+  border-block: 1px solid var(--color-line);
+}
+.object-history-table th:first-child {
+  width: 100px;
+}
+.object-history-table th:nth-child(3) {
+  width: 70px;
+}
+.object-history-table th:last-child {
+  width: 90px;
+}
+.object-history-table td {
+  padding: 14px 10px;
+  border-bottom: 1px solid var(--color-line);
+  vertical-align: top;
+  font-size: 12px;
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+}
+.object-history-table td:first-child {
+  font-size: 12px;
+  color: var(--color-muted);
+}
+.object-history-table td small {
+  display: block;
+  color: var(--color-muted);
+  font-size: 12px;
+}
+.object-history-table td button {
+  padding: 0;
+  min-height: 24px;
+  font-size: 13px;
+}
+.notebook-object-workspace .object-detail-scroll > .workspace-form {
+  width: 100%;
+  max-width: none;
+}
+.notebook-object-workspace .workspace-form-fields {
+  grid-template-columns: minmax(0, 1fr);
+}
+.notebook-object-workspace .workspace-form .card-heading h2 {
+  font-size: 22px;
+}
+.notebook-object-workspace .workspace-form-actions {
+  bottom: -24px;
+  background: var(--color-surface);
+}
+@media (max-width: 1100px) {
+  .notebook-object-workspace .object-grid {
+    grid-template-columns: 244px minmax(0, 1fr);
+  }
+  .notebook-object-workspace .object-grid > .object-detail-scroll {
+    padding: 22px 24px;
+  }
+}
+@media (max-width: 800px) {
+  .notebook-object-workspace .object-grid {
+    grid-template-columns: 205px minmax(0, 1fr);
+  }
+  .notebook-object-workspace .object-grid > .object-detail-scroll {
+    padding: 18px;
+  }
+  .notebook-object-workspace .object-master-heading {
+    padding: 18px 14px 12px;
+  }
+  .object-history-table th:first-child {
+    width: 80px;
+  }
+  .object-history-table th:nth-child(3) {
+    width: 55px;
+  }
+  .object-history-table th:last-child {
+    width: 70px;
+  }
+}
+
+.notebook-object-workspace .object-selected-content > .goal-card {
+  padding: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}

@@ -11,7 +11,15 @@ export function minimalElectronEnvironment(root: TemporaryTestRoot): Record<stri
     ELECTRON_RENDERER_URL: ''
   }
 
-  for (const name of ['PATH', 'SystemRoot', 'WINDIR', 'ComSpec', 'PATHEXT']) {
+  for (const name of [
+    'PATH',
+    'SystemRoot',
+    'WINDIR',
+    'ComSpec',
+    'PATHEXT',
+    'DISPLAY',
+    'XAUTHORITY'
+  ]) {
     const value = process.env[name]
     if (value) {
       environment[name] = value

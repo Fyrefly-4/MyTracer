@@ -319,7 +319,7 @@ describe('workflow safety boundaries', () => {
     expect(source).toContain("if: steps.changes.outputs.category == 'release-tooling'")
     expect(source).toContain('run: npm.cmd ci --ignore-scripts')
     expect(source).toContain('run: npm.cmd run verify:release-tooling')
-    expect(source.match(/^\s+branches: \[([^\]]+)\]/m)?.[1]).toBe('main')
+    expect(source.match(/^\s+branches: \[([^\]]+)\]/m)?.[1]).toBe('main, experiment/ui-ux-20261022')
     expect(source).toContain('types: [opened, synchronize, reopened]')
     expect(source).toContain('workflow_dispatch:')
     expect(source).not.toMatch(/^ {2}push:|^\s+paths(?:-ignore)?:/m)

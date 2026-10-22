@@ -152,6 +152,7 @@ test('shows the current-week ReviewSummary from Progress facts without turning u
     expect(after).toEqual(before)
     await actionFacts.getByRole('button', { name: '查看完整记录或修改' }).click()
     await expect(page.getByLabel('所选记录')).toContainText('行动 · 读取一个例子')
+    await page.getByRole('button', { name: '编辑记录', exact: true }).click()
     await expect(page.getByLabel('行动分钟')).toHaveValue('11')
 
     await application.close()
