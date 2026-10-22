@@ -342,7 +342,9 @@ function GoalWorkspace(): ReactNode {
   }, [contentDraft.savedVersion])
   useEffect(() => {
     if (contentDraft.retained) {
-      const management = detailRef.current?.querySelector<HTMLDetailsElement>('details.disclosure')
+      const management = detailRef.current
+        ?.querySelector('form.detail-form')
+        ?.closest<HTMLDetailsElement>('details')
       if (management) management.open = true
     }
   }, [contentDraft, detail?.id])

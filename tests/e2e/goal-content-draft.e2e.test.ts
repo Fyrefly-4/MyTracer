@@ -14,7 +14,9 @@ const nav = async (page: Page, name: string): Promise<void> => {
   await page.getByRole('navigation').getByRole('button', { name, exact: true }).click()
 }
 async function openEditor(page: Page): Promise<void> {
-  const disclosure = panel(page).locator('details.disclosure')
+  const disclosure = panel(page)
+    .locator('details.disclosure')
+    .filter({ has: page.getByText('编辑与管理目标', { exact: true }) })
   if (!(await disclosure.evaluate((node) => (node as HTMLDetailsElement).open)))
     await disclosure.locator('summary').click()
   await expect(panel(page).getByLabel('目标名称', { exact: true })).toBeVisible()
