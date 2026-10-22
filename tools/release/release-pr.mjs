@@ -102,7 +102,15 @@ async function assertRelease(api, selection) {
   return release
 }
 
-export async function selectRelease({ api, eventSha, created, releaseId, releaseSha, tag, recovery }) {
+export async function selectRelease({
+  api,
+  eventSha,
+  created,
+  releaseId,
+  releaseSha,
+  tag,
+  recovery
+}) {
   check(SHA.test(eventSha), 'event-sha')
   await assertRepository(api)
   let selection
