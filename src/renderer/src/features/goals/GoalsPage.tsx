@@ -137,7 +137,7 @@ function GoalWorkspace(): ReactNode {
     if (!didToggleMaster.current) return
     ;(masterCollapsed ? expandMasterRef : collapseMasterRef).current?.focus({ preventScroll: true })
   }, [masterCollapsed])
-  const [listQuery, setListQuery] = useState('')
+  const [listQuery, setListQuery] = useState(() => session.goalSearchQuery)
   const [listPage, updateListPage] = useState(() => session.getListPage('goals', 'master'))
   const setListPage = (page: number): void => {
     setRouteGoalId(null)
@@ -544,6 +544,7 @@ function GoalWorkspace(): ReactNode {
                   placeholder="搜索目标…"
                   onChange={(event) => {
                     setListQuery(event.target.value)
+                    session.setGoalSearchQuery(event.target.value)
                     setListPage(1)
                   }}
                 />
@@ -1003,6 +1004,7 @@ function GoalWorkspace(): ReactNode {
                     type="button"
                     onClick={() => {
                       setListQuery('')
+                      session.setGoalSearchQuery('')
                       setStatusFilter('')
                       session.setGoalFilter('')
                       setListPage(1)
