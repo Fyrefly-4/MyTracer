@@ -65,11 +65,23 @@ async function openEditor(page: Page): Promise<void> {
 }
 
 test('content and schedule drafts survive selection, sidebar return and lifecycle refresh independently of recording drafts', async () => {
-  await fixture(async (page) => {
+  await fixture(async (page, _app, ids) => {
     const panel = detail(page)
     await panel.getByRole('button', { name: '记录例行', exact: true }).click()
     await panel.getByLabel('投入时长（分钟，可选）').fill('11')
     const before = await page.evaluate(() => window.myTracer.dataControl.list())
+    expect(before.ok).toBe(true)
+    if (!before.ok) throw Error('Cannot establish the persisted-data baseline')
+    const readStored = async () => {
+      const result = await page.evaluate(
+        (routineId) => window.myTracer.routines.getDetail({ routineId }),
+        ids[0]
+      )
+      expect(result.ok).toBe(true)
+      if (!result.ok) throw Error('Cannot verify persisted routine fields')
+      return result.value
+    }
+    const original = await readStored()
     await panel.getByLabel('名称', { exact: true }).fill('未保存名称')
     await panel.getByLabel('最小行动', { exact: true }).fill('未保存最小行动')
     await panel.getByRole('checkbox', { name: '周日', exact: true }).check()
@@ -96,7 +108,11 @@ test('content and schedule drafts survive selection, sidebar return and lifecycl
     await expect(panel.getByLabel('最小行动', { exact: true })).toHaveValue('未保存最小行动')
     await expect(panel.getByRole('checkbox', { name: '周日', exact: true })).toBeChecked()
     await expect(panel.getByLabel('投入时长（分钟，可选）')).toHaveValue('11')
-    expect(await page.evaluate(() => window.myTracer.dataControl.list())).toEqual(before)
+    const after = await page.evaluate(() => window.myTracer.dataControl.list())
+    expect(after.ok).toBe(true)
+    if (!after.ok) throw Error('Cannot verify persisted data after navigation')
+    expect(after.value).toEqual(before.value)
+    expect(await readStored()).toEqual(original)
     await page
       .getByLabel('例行列表', { exact: true })
       .getByRole('button', { name: /草稿例行2 / })
@@ -113,10 +129,23 @@ test('content and schedule drafts survive selection, sidebar return and lifecycl
     await expect(panel.getByLabel('名称', { exact: true })).toHaveValue('未保存名称')
     await panel.getByRole('button', { name: '保存内容修改', exact: true }).click()
     await expect(panel.getByLabel('例行安排')).toContainText('未保存最小行动')
+    const afterContent = await readStored()
+    expect(afterContent).toMatchObject({
+      name: '未保存名称',
+      minimumAction: '未保存最小行动',
+      description: original.description,
+      weekdays: original.weekdays
+    })
     await expect(panel.getByRole('checkbox', { name: '周日', exact: true })).toBeChecked()
     await panel.getByLabel('说明（可选）', { exact: true }).fill('另一部分的草稿')
     await panel.getByRole('button', { name: '保存星期安排', exact: true }).click()
     await expect(panel.getByLabel('例行安排')).toContainText('周一、三、日')
+    expect(await readStored()).toMatchObject({
+      name: afterContent.name,
+      minimumAction: afterContent.minimumAction,
+      description: afterContent.description,
+      weekdays: [1, 3, 7]
+    })
     await expect(panel.getByLabel('说明（可选）', { exact: true })).toHaveValue('另一部分的草稿')
     await panel.getByRole('button', { name: '结束例行', exact: true }).click()
     await panel.getByRole('button', { name: '确认结束', exact: true }).click()
