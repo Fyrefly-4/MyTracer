@@ -1,7 +1,9 @@
 import type { Locator, Page } from '@playwright/test'
 
 export async function openManagement(detail: Locator, kind: '目标' | '行动'): Promise<void> {
-  const disclosure = detail.locator('details.disclosure')
+  const disclosure = detail.locator('details.disclosure').filter({
+    has: detail.page().getByText(`编辑与管理${kind}`, { exact: true })
+  })
   if ((await disclosure.getAttribute('open')) === null) {
     await disclosure
       .locator('summary')
