@@ -1,3 +1,4 @@
+import { GoalContentDraft } from '../features/goals/goal-content-draft'
 import { browserSelectionPreferences, type SelectionPage } from './selection-preferences'
 import {
   createContext,
@@ -54,6 +55,7 @@ export interface DataRecordSelection {
 }
 
 export class UiSession {
+  readonly goalContentDraft = new GoalContentDraft()
   private selectedGoal: string | null = null
   private selectedAction: string | null = null
   private selectedToday: { type: 'action' | 'routine'; id: string } | null = null
@@ -212,6 +214,8 @@ export class UiSession {
   hasUnsavedContent(): boolean {
     return (
       this.unsavedContent.size > 0 ||
+      this.goalContentDraft.dirty ||
+      this.goalContentDraft.saving ||
       this.actionDrafts.size > 0 ||
       this.routineDrafts.size > 0 ||
       this.goalCoverDrafts.size > 0
