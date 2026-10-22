@@ -49,7 +49,7 @@ export class GithubApi {
         ...options,
         signal: AbortSignal.timeout(120_000)
       })
-      if (!response.ok && response.status !== 404) {
+      if (!response.ok && response.status !== 404 && !(binary && response.status === 302)) {
         // Never log response bodies, credentials, query strings or signed URLs.
         const endpoint = path.split('?')[0].replace(/[^a-zA-Z0-9/_.%-]/g, '_')
         const requestId = (response.headers.get('x-github-request-id') ?? 'unknown')

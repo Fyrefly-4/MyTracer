@@ -23,6 +23,23 @@ test('never forwards private API authentication to the signed asset host', () =>
     `const api=new GithubApi('synthetic-token',false,async(url,options)=>{calls.push({url,options});return calls.length===1?new Response(null,{status:302,headers:{location:'https://release-assets.githubusercontent.com/fixed?synthetic=1'}}):new Response('synthetic bytes');});await api.request('/repos/Fyrefly-4/MyTracer/releases/assets/10',{binary:true});assert.equal(calls[0].options.headers.Authorization,'Bearer synthetic-token');assert.equal(calls[1].options.headers,undefined);assert.equal(calls[1].options.redirect,'error');`
   )
   expect(result.status, result.stderr).toBe(0)
+  expect(result.error).toBeUndefined()
+  expect(result.stderr).toBe('')
+})
+
+test('unexpected JSON redirects still fail with a diagnostic', () => {
+  const result = run(`
+    const api=new GithubApi('synthetic-token',false,async()=>{
+      calls.push('get');
+      return new Response(null,{status:302,headers:{location:'https://evil.invalid/?token=private'}});
+    });
+    await assert.rejects(()=>api.allReleases(),/github-http-302/);
+    assert.equal(calls.length,1);
+  `)
+  expect(result.error).toBeUndefined()
+  expect(result.status, result.stderr).toBe(0)
+  expect(result.stderr).toContain('HTTP 302')
+  expect(result.stderr).not.toMatch(/synthetic-token|evil.invalid|token=private/)
 })
 test.each([
   'http://release-assets.githubusercontent.com/file',
