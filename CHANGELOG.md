@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.0](https://github.com/Fyrefly-4/MyTracer/compare/v0.2.1...v1.0.0) (2026-10-22)
+
+
+### Features
+
+* adopt notebook UI and prepare v1.0.0 release proposal ([#85](https://github.com/Fyrefly-4/MyTracer/issues/85)) ([77bf446](https://github.com/Fyrefly-4/MyTracer/commit/77bf446b5de2af5bccc7e75d24f8228ab05a4c19))
+
 ## [0.2.1](https://github.com/Fyrefly-4/MyTracer/compare/v0.2.0...v0.2.1) (2026-10-21)
 
 
