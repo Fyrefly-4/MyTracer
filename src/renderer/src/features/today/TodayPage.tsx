@@ -182,6 +182,7 @@ function ActionRecordingPanel(props: {
 
   const loadRecords = async (): Promise<void> => {
     const result = await window.myTracer.records.listForAction({ actionId: props.action.id })
+    if (!activeRef.current) return
     if (result.ok) {
       setRecords(result.value)
       setError(null)
@@ -388,6 +389,7 @@ function ActionRecordingPanel(props: {
     requestAnimationFrame(() => revealStart(panelRef.current))
     setRecordDetail(saved.record)
     await loadRecords()
+    if (!activeRef.current) return
     await props.onSaved(saved.action)
   }
 

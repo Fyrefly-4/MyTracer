@@ -224,8 +224,10 @@ test('completes AC-03 with five distinct states, factual Progress, and stable re
     await page.getByRole('button', { name: '例行', exact: true }).click()
     await page.getByRole('button', { name: '今天', exact: true }).click()
     const planned = page.getByLabel('今日例行计划', { exact: true })
-    await expect(planned.getByRole('button', { name: /计划日主动休息/ })).toContainText('主动休息')
-    await expect(planned.getByRole('button', { name: /计划日明确未做/ })).toContainText('未进行')
+    await expect(planned.getByRole('button', { name: /^计划日主动休息 / })).toContainText(
+      '主动休息'
+    )
+    await expect(planned.getByRole('button', { name: /^计划日明确未做 / })).toContainText('未进行')
     await expect(planned.getByRole('button', { name: /保持未知/ })).toContainText('未记录')
     await planned.getByRole('button', { name: /UI 行动/ }).click()
     const uiPanel = page.getByLabel('UI 行动 例行记录')

@@ -138,7 +138,7 @@ test('home calendar keeps stable square cells and usable navigation across windo
         await app.evaluate(
           ({ BrowserWindow }, { width, zoom }) => {
             const w = BrowserWindow.getAllWindows()[0]
-            w.setContentSize(width, 900)
+            w.setContentSize(width, width === 820 ? 600 : 900)
             w.webContents.setZoomFactor(zoom)
           },
           { width, zoom }
