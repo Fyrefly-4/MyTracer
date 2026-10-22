@@ -19,6 +19,7 @@
     "src/infrastructure/**/*.ts",
     "src/renderer/src/env.d.ts",
     "src/renderer/src/app/ui-session.ts",
+    "src/renderer/src/app/routine-edit-session.ts",
     "src/renderer/src/app/selection-preferences.ts",
     "src/renderer/src/app/navigation.ts",
     "src/renderer/src/features/home/calendar.ts",

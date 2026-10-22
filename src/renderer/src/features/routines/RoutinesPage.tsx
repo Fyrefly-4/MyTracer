@@ -9,10 +9,9 @@ import {
   useUnsavedContent
 } from '../../app/ui-session'
 import { goalStatusText, routineRecordOutcomeText } from '../../app/ui-text'
-import { type ReactNode, useEffect, useRef, useState } from 'react'
+import { type ReactNode, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import type { GoalErrorCode, GoalSummaryDto } from '../../../../contracts/goals'
 import type {
-  RoutineDetailDto,
   RoutineErrorCode,
   RoutineStatusDto,
   RoutineSummaryDto
@@ -472,6 +471,20 @@ export function RoutineRecordingPanel(props: {
 
 function RoutineWorkspace(): ReactNode {
   const session = useUiSession()
+  const editor = session.routineEditor
+  const edit = useSyncExternalStore(editor.subscribe, editor.getSnapshot)
+  const activeRef = useUiLifetime()
+  const detail = edit?.detail ?? null
+  const editName = edit?.name ?? ''
+  const editDescription = edit?.description ?? ''
+  const editMinimumAction = edit?.minimumAction ?? ''
+  const editWeekdays = edit?.weekdays ?? []
+  const [pendingSwitch, setPendingSwitch] = useState<string | 'create' | null>(null)
+  const [discardRequested, setDiscardRequested] = useState(false)
+  const [verified, setVerified] = useState(false)
+  const editable = verified && edit?.availability === 'ready'
+  const blocked = !editable || Boolean(edit?.pending)
+  const editTriggerRef = useRef<HTMLElement | null>(null)
   const [masterCollapsed, setMasterCollapsed] = useState(false)
   const expandMasterRef = useRef<HTMLButtonElement | null>(null)
   const collapseMasterRef = useRef<HTMLButtonElement | null>(null)
@@ -493,22 +506,18 @@ function RoutineWorkspace(): ReactNode {
   usePagePosition('routines', loaded && selectionLoaded)
   const [routines, setRoutines] = useState<readonly RoutineSummaryDto[]>([])
   const [goals, setGoals] = useState<readonly GoalSummaryDto[]>([])
-  const [detail, setDetail] = useState<RoutineDetailDto | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [refreshVersion, setRefreshVersion] = useState(0)
+  const createRevision = useRef(0)
   const [createName, setCreateName] = useState('')
   const [createDescription, setCreateDescription] = useState('')
   const [createMinimumAction, setCreateMinimumAction] = useState('')
   const [createGoalId, setCreateGoalId] = useState('')
   const [createWeekdays, setCreateWeekdays] = useState<readonly number[]>([1, 2, 3, 4, 5])
-  const [editName, setEditName] = useState('')
-  const [editDescription, setEditDescription] = useState('')
-  const [editMinimumAction, setEditMinimumAction] = useState('')
-  const [editWeekdays, setEditWeekdays] = useState<readonly number[]>([])
   const [confirmEnd, setConfirmEnd] = useState(false)
   const [creating, setCreating] = useState<boolean | null>(null)
-  const createOpen = creating ?? (loaded && routines.length === 0)
+  const createOpen = creating ?? (loaded && routines.length === 0 && !detail)
   useUnsavedContent(
     'routine-form',
     Boolean(
@@ -525,20 +534,28 @@ function RoutineWorkspace(): ReactNode {
           editWeekdays.join(',') !== detail.weekdays.join(',')))
   )
 
-  const showDetail = (
-    routine: RoutineDetailDto,
-    savedSection: 'all' | 'content' | 'schedule' = 'all'
-  ): void => {
-    session.selectRoutine(routine.id)
-    setDetail(routine)
-    // A section save must not discard the other section's unsaved input.
-    if (savedSection !== 'schedule') {
-      setEditName(routine.name)
-      setEditDescription(routine.description ?? '')
-      setEditMinimumAction(routine.minimumAction)
+  const readRoutine = async (routineId: string): Promise<void> => {
+    const sequence = editor.beginRead()
+    setVerified(false)
+    try {
+      const result = await window.myTracer.routines.getDetail({ routineId })
+      if (!activeRef.current) return
+      if (result.ok) {
+        if (!editor.acceptRead(sequence, result.value, routineId)) return
+        session.selectRoutine(routineId)
+        setVerified(true)
+        setConfirmEnd(false)
+        setError(null)
+      } else {
+        if (!editor.failRead(sequence, result.error.code === 'not-found', routineId)) return
+        setError(routineErrorText[result.error.code])
+        if (result.error.code === 'not-found' && !editor.getSnapshot()) session.selectRoutine(null)
+      }
+    } catch {
+      if (!activeRef.current) return
+      if (!editor.failRead(sequence, false, routineId)) return
+      setError('例行详情暂时无法读取；未保存输入仍保留。')
     }
-    if (savedSection !== 'content') setEditWeekdays(routine.weekdays)
-    setConfirmEnd(false)
   }
 
   useEffect(() => {
@@ -569,64 +586,50 @@ function RoutineWorkspace(): ReactNode {
   useEffect(() => {
     if (!loaded) return
     let active = true
-    const routineId = session.routineId
-    if (!routineId || detail?.id === routineId) {
-      Promise.resolve().then(() => {
-        if (active) setSelectionLoaded(true)
-      })
-    } else {
-      void window.myTracer.routines
-        .getDetail({ routineId })
-        .then((result) => {
-          if (!active || session.routineId !== routineId) return
-          if (result.ok) {
-            const routine = result.value
-            setDetail(routine)
-            setEditName(routine.name)
-            setEditDescription(routine.description ?? '')
-            setEditMinimumAction(routine.minimumAction)
-            setEditWeekdays(routine.weekdays)
-            setConfirmEnd(false)
-          } else {
-            if (result.error.code === 'not-found') session.selectRoutine(null)
+    void Promise.resolve(editor.waitForSave()).then(async () => {
+      if (!active) return
+      const routineId = editor.getSnapshot()?.detail.id ?? session.routineId
+      if (routineId) {
+        const sequence = editor.beginRead()
+        try {
+          const result = await window.myTracer.routines.getDetail({ routineId })
+          if (!active) return
+          if (result.ok && editor.acceptRead(sequence, result.value, routineId)) {
+            session.selectRoutine(routineId)
+            setVerified(true)
+            setError(null)
+          } else if (!result.ok) {
+            if (!editor.failRead(sequence, result.error.code === 'not-found', routineId)) return
+            if (!editor.getSnapshot() && result.error.code === 'not-found')
+              session.selectRoutine(null)
             setError(routineErrorText[result.error.code])
           }
-          setSelectionLoaded(true)
-        })
-        .catch(() => {
-          if (!active) return
-          setError('例行详情暂时无法读取，请稍后重试。')
-          setSelectionLoaded(true)
-        })
-    }
+        } catch {
+          if (active) {
+            if (!editor.failRead(sequence, false, routineId)) return
+            setError('例行详情暂时无法读取；未保存输入仍保留。')
+          }
+        }
+      }
+      if (active) setSelectionLoaded(true)
+    })
     return () => {
       active = false
+      editor.invalidateRead()
     }
-  }, [detail?.id, loaded, session])
+  }, [loaded, editor, session])
 
-  const refresh = async (
-    routineId?: string,
-    savedSection: 'all' | 'content' | 'schedule' = 'all'
-  ): Promise<void> => {
-    const listResult = await window.myTracer.routines.list({})
-    if (!listResult.ok) {
-      setError(routineErrorText[listResult.error.code])
-      return
-    }
-    setRoutines(listResult.value)
-    if (routineId) {
-      const detailResult = await window.myTracer.routines.getDetail({ routineId })
-      if (!detailResult.ok) {
-        setError(routineErrorText[detailResult.error.code])
-        return
-      }
-      showDetail(detailResult.value, savedSection)
-    }
-    setError(null)
+  const refreshList = async (): Promise<void> => {
+    const result = await window.myTracer.routines.list({})
+    if (!activeRef.current) return
+    if (result.ok) setRoutines(result.value)
+    else setError(routineErrorText[result.error.code])
   }
 
   const submitCreate = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault()
+    const sequence = editor.beginRead(false)
+    const submittedRevision = createRevision.current
     setBusy(true)
     const result = await window.myTracer.routines.create({
       goalId: createGoalId || null,
@@ -635,76 +638,97 @@ function RoutineWorkspace(): ReactNode {
       minimumAction: createMinimumAction,
       weekdays: createWeekdays
     })
+    if (!activeRef.current) return
     setBusy(false)
     if (!result.ok) {
       setError(routineErrorText[result.error.code])
       return
     }
-    setCreateName('')
-    setCreateDescription('')
-    setCreateMinimumAction('')
-    setCreateGoalId('')
-    setCreateWeekdays([1, 2, 3, 4, 5])
-    setCreating(false)
-    showDetail(result.value)
-    await refresh(result.value.id)
+    // Acknowledge the write even if a later selection superseded this request.
+    // Only the submitted form revision can be cleared; newer input belongs to the user.
+    if (createRevision.current === submittedRevision) {
+      setCreateName('')
+      setCreateDescription('')
+      setCreateMinimumAction('')
+      setCreateGoalId('')
+      setCreateWeekdays([1, 2, 3, 4, 5])
+      setCreating(false)
+    }
+    if (editor.acceptRead(sequence, result.value)) {
+      session.selectRoutine(result.value.id)
+      setVerified(true)
+    }
+    await refreshList()
     setRefreshVersion((version) => version + 1)
   }
 
+  const saveEdit = async (
+    part: 'content' | 'schedule' | 'status',
+    status?: 'pause' | 'resume' | 'end'
+  ): Promise<void> => {
+    if (blocked) return
+    const token = editor.beginSave(part)
+    if (!token) return
+    const value = token.state
+    try {
+      const result =
+        part === 'content'
+          ? await window.myTracer.routines.updateDetails({
+              routineId: value.detail.id,
+              name: value.name,
+              description: value.description || null,
+              minimumAction: value.minimumAction
+            })
+          : part === 'schedule'
+            ? await window.myTracer.routines.replaceSchedule({
+                routineId: value.detail.id,
+                weekdays: value.weekdays
+              })
+            : await window.myTracer.routines[status!]({ routineId: value.detail.id })
+      editor.finishSave(
+        token,
+        result.ok ? result.value : undefined,
+        !result.ok && result.error.code === 'not-found'
+      )
+      if (!activeRef.current) return
+      setConfirmEnd(false)
+      if (!result.ok) {
+        setError(routineErrorText[result.error.code])
+        return
+      }
+      setError(null)
+      await refreshList()
+    } catch {
+      editor.finishSave(token)
+      if (activeRef.current) setError('暂时无法保存；未保存输入仍保留，请确认后重试。')
+    }
+  }
   const submitDetails = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault()
-    if (!detail) return
-    setBusy(true)
-    const result = await window.myTracer.routines.updateDetails({
-      routineId: detail.id,
-      name: editName,
-      description: editDescription || null,
-      minimumAction: editMinimumAction
-    })
-    setBusy(false)
-    if (!result.ok) {
-      setError(routineErrorText[result.error.code])
-      return
-    }
-    await refresh(detail.id, 'content')
+    await saveEdit('content')
   }
-
-  const replaceSchedule = async (): Promise<void> => {
-    if (!detail) return
-    setBusy(true)
-    const result = await window.myTracer.routines.replaceSchedule({
-      routineId: detail.id,
-      weekdays: editWeekdays
-    })
-    setBusy(false)
-    if (!result.ok) {
-      setError(routineErrorText[result.error.code])
-      return
-    }
-    await refresh(detail.id, 'schedule')
-  }
-
-  const transition = async (kind: 'pause' | 'resume' | 'end'): Promise<void> => {
-    if (!detail) return
-    setBusy(true)
-    const result = await window.myTracer.routines[kind]({ routineId: detail.id })
-    setBusy(false)
-    setConfirmEnd(false)
-    if (!result.ok) {
-      setError(routineErrorText[result.error.code])
-      return
-    }
-    await refresh(detail.id)
-  }
+  const replaceSchedule = (): Promise<void> => saveEdit('schedule')
+  const transition = (kind: 'pause' | 'resume' | 'end'): Promise<void> => saveEdit('status', kind)
 
   const openRoutine = async (routineId: string): Promise<void> => {
-    const result = await window.myTracer.routines.getDetail({ routineId })
-    if (!result.ok) {
-      setError(routineErrorText[result.error.code])
+    if (editor.getSnapshot()?.pending) return
+    if (detail?.id !== routineId && editor.hasDraft()) {
+      setPendingSwitch(routineId)
       return
     }
-    showDetail(result.value)
-    setError(null)
+    await readRoutine(routineId)
+  }
+  const confirmDiscard = (): void => {
+    editor.discard()
+    setDiscardRequested(false)
+    const destination = pendingSwitch
+    setPendingSwitch(null)
+    if (destination === 'create') setCreating(true)
+    else if (destination) void readRoutine(destination)
+    else if (!editor.getSnapshot()) {
+      session.selectRoutine(null)
+      setVerified(false)
+    } else editTriggerRef.current?.focus()
   }
 
   const filteredItems = routines.filter((item) =>
@@ -724,6 +748,28 @@ function RoutineWorkspace(): ReactNode {
         <p className="form-error" role="alert">
           {error}
         </p>
+      ) : null}
+      {pendingSwitch || discardRequested ? (
+        <div className="data-switch-warning" role="alert" aria-label="未保存的例行修改">
+          <p>
+            {edit?.availability === 'missing'
+              ? '例行已不存在，不能保存。请先复制需要保留的文字，再决定是否放弃。'
+              : '当前例行有未保存修改。先保存，或明确放弃后继续。'}
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setPendingSwitch(null)
+              setDiscardRequested(false)
+              editTriggerRef.current?.focus()
+            }}
+          >
+            {edit?.availability === 'missing' ? '返回查看或复制' : '继续编辑当前例行'}
+          </button>
+          <button type="button" disabled={Boolean(edit?.pending)} onClick={confirmDiscard}>
+            {pendingSwitch ? '放弃修改并切换' : '放弃修改'}
+          </button>
+        </div>
       ) : null}
       <div className={`goal-grid object-grid${masterCollapsed ? ' master-collapsed' : ''}`}>
         <aside className="goal-column object-master" aria-label="例行列表">
@@ -766,7 +812,11 @@ function RoutineWorkspace(): ReactNode {
                   className="secondary-button create-disclosure-button"
                   type="button"
                   aria-expanded={createOpen}
-                  onClick={() => setCreating(!createOpen)}
+                  onClick={() => {
+                    if (!createOpen && editor.hasDraft()) setPendingSwitch('create')
+                    else setCreating(!createOpen)
+                  }}
+                  disabled={Boolean(edit?.pending)}
                 >
                   {createOpen ? '收起新建表单' : '新建例行'}
                 </button>
@@ -878,7 +928,10 @@ function RoutineWorkspace(): ReactNode {
                   <input
                     required
                     value={createName}
-                    onChange={(event) => setCreateName(event.target.value)}
+                    onChange={(event) => {
+                      createRevision.current += 1
+                      setCreateName(event.target.value)
+                    }}
                   />
                 </label>
                 <label>
@@ -886,7 +939,10 @@ function RoutineWorkspace(): ReactNode {
                   <input
                     required
                     value={createMinimumAction}
-                    onChange={(event) => setCreateMinimumAction(event.target.value)}
+                    onChange={(event) => {
+                      createRevision.current += 1
+                      setCreateMinimumAction(event.target.value)
+                    }}
                   />
                 </label>
                 <label className="form-field-wide">
@@ -895,14 +951,20 @@ function RoutineWorkspace(): ReactNode {
                     aria-labelledby="routine-create-description-label"
                     rows={2}
                     value={createDescription}
-                    onChange={(event) => setCreateDescription(event.target.value)}
+                    onChange={(event) => {
+                      createRevision.current += 1
+                      setCreateDescription(event.target.value)
+                    }}
                   />
                 </label>
                 <label>
                   关联目标（可选，创建后不可改）
                   <select
                     value={createGoalId}
-                    onChange={(event) => setCreateGoalId(event.target.value)}
+                    onChange={(event) => {
+                      createRevision.current += 1
+                      setCreateGoalId(event.target.value)
+                    }}
                   >
                     <option value="">不关联目标</option>
                     {goals.map((goal) => (
@@ -916,7 +978,10 @@ function RoutineWorkspace(): ReactNode {
                   <RoutineWeekdayPicker
                     label="每周安排"
                     value={createWeekdays}
-                    onChange={setCreateWeekdays}
+                    onChange={(weekdays) => {
+                      createRevision.current += 1
+                      setCreateWeekdays(weekdays)
+                    }}
                     disabled={busy}
                   />
                 </div>
@@ -979,18 +1044,48 @@ function RoutineWorkspace(): ReactNode {
                   key={detail.id}
                   routineId={detail.id}
                   routineName={detail.name}
-                  disabled={detail.status !== 'active'}
+                  disabled={detail.status !== 'active' || !editable}
                 />
 
+                {edit && (editor.hasDraft() || !editable) ? (
+                  <div className="form-section-note" role="status">
+                    <p>
+                      {edit.availability === 'missing'
+                        ? '例行已不存在。未保存输入仅供查看或复制，不能保存；不会重新创建例行。'
+                        : !editable
+                          ? '正在确认例行或暂时无法读取；未保存输入仍保留，确认前不能保存。'
+                          : '未保存修改仅保留在当前应用会话；关闭应用后不保留。'}
+                    </p>
+                    {!editable && edit.availability !== 'missing' ? (
+                      <button
+                        type="button"
+                        disabled={Boolean(edit.pending)}
+                        onClick={() => void readRoutine(detail.id)}
+                      >
+                        重新读取例行
+                      </button>
+                    ) : null}
+                    {editor.hasDraft() || edit.availability === 'missing' ? (
+                      <button
+                        type="button"
+                        disabled={Boolean(edit.pending)}
+                        onClick={() => setDiscardRequested(true)}
+                      >
+                        放弃未保存修改
+                      </button>
+                    ) : null}
+                  </div>
+                ) : null}
                 <details className="disclosure">
-                  <summary>编辑内容和每周安排</summary>
+                  <summary ref={editTriggerRef}>编辑内容和每周安排</summary>
                   <form className="detail-form" onSubmit={(event) => void submitDetails(event)}>
                     <label>
                       名称
                       <input
                         required
                         value={editName}
-                        onChange={(event) => setEditName(event.target.value)}
+                        onChange={(event) => editor.editContent({ name: event.target.value })}
+                        readOnly={!editable}
                       />
                     </label>
                     <label>
@@ -998,7 +1093,10 @@ function RoutineWorkspace(): ReactNode {
                       <input
                         required
                         value={editMinimumAction}
-                        onChange={(event) => setEditMinimumAction(event.target.value)}
+                        onChange={(event) =>
+                          editor.editContent({ minimumAction: event.target.value })
+                        }
+                        readOnly={!editable}
                       />
                     </label>
                     <label>
@@ -1007,10 +1105,13 @@ function RoutineWorkspace(): ReactNode {
                         aria-labelledby="routine-edit-description-label"
                         rows={3}
                         value={editDescription}
-                        onChange={(event) => setEditDescription(event.target.value)}
+                        onChange={(event) =>
+                          editor.editContent({ description: event.target.value })
+                        }
+                        readOnly={!editable}
                       />
                     </label>
-                    <button className="secondary-button" type="submit" disabled={busy}>
+                    <button className="secondary-button" type="submit" disabled={busy || blocked}>
                       保存内容修改
                     </button>
                   </form>
@@ -1022,13 +1123,13 @@ function RoutineWorkspace(): ReactNode {
                     <RoutineWeekdayPicker
                       label="每周安排"
                       value={editWeekdays}
-                      onChange={setEditWeekdays}
-                      disabled={busy}
+                      onChange={(days) => editor.editSchedule(days)}
+                      disabled={!editable}
                     />
                     <button
                       className="secondary-button"
                       type="button"
-                      disabled={busy}
+                      disabled={busy || blocked}
                       onClick={() => void replaceSchedule()}
                     >
                       保存星期安排
@@ -1041,14 +1142,18 @@ function RoutineWorkspace(): ReactNode {
                     <button
                       className="warning-button"
                       type="button"
-                      disabled={busy}
+                      disabled={busy || blocked}
                       onClick={() => void transition('pause')}
                     >
                       暂停
                     </button>
                   ) : null}
                   {detail.status === 'paused' ? (
-                    <button type="button" disabled={busy} onClick={() => void transition('resume')}>
+                    <button
+                      type="button"
+                      disabled={busy || blocked}
+                      onClick={() => void transition('resume')}
+                    >
                       恢复
                     </button>
                   ) : null}
@@ -1056,7 +1161,7 @@ function RoutineWorkspace(): ReactNode {
                     <button
                       className="danger-button"
                       type="button"
-                      disabled={busy}
+                      disabled={busy || blocked}
                       onClick={() => setConfirmEnd(true)}
                     >
                       结束例行
@@ -1070,12 +1175,16 @@ function RoutineWorkspace(): ReactNode {
                       <button
                         className="danger-button"
                         type="button"
-                        disabled={busy}
+                        disabled={busy || blocked}
                         onClick={() => void transition('end')}
                       >
                         确认结束
                       </button>
-                      <button type="button" disabled={busy} onClick={() => setConfirmEnd(false)}>
+                      <button
+                        type="button"
+                        disabled={busy || blocked}
+                        onClick={() => setConfirmEnd(false)}
+                      >
                         取消
                       </button>
                     </div>
