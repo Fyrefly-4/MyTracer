@@ -665,7 +665,7 @@ export class SqliteRepository
       .prepare(
         `SELECT records.id AS record_id, records.action_id, actions.goal_id,
            actions.title AS action_title, records.occurred_on, records.duration_minutes,
-           records.outcome, records.created_at AS record_created_at,
+           records.outcome, records.note, records.next_step, records.created_at AS record_created_at,
            understandings.id AS understanding_id, understandings.text AS understanding_text,
            understandings.created_at AS understanding_created_at,
            confusions.id AS confusion_id, confusions.text AS confusion_text,
@@ -694,6 +694,8 @@ export class SqliteRepository
       actionId: asString(row, 'action_id'),
       goalId: asNullableString(row, 'goal_id'),
       actionTitle: asString(row, 'action_title'),
+      note: asNullableString(row, 'note'),
+      nextStep: asNullableString(row, 'next_step'),
       occurredOn: asString(row, 'occurred_on'),
       durationMinutes: Number(row.duration_minutes),
       outcome: asString(row, 'outcome') as ActionRecordPersistenceRecord['outcome'],

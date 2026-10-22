@@ -326,7 +326,8 @@ function ProgressWorkspace(): ReactNode {
                       const record = item.record
                       const hasNotes =
                         item.kind === 'action'
-                          ? item.record.understandings.length > 0 ||
+                          ? Boolean(item.record.note || item.record.nextStep) ||
+                            item.record.understandings.length > 0 ||
                             item.record.openConfusions.length > 0
                           : Boolean(item.record.note)
                       return (
@@ -367,6 +368,19 @@ function ProgressWorkspace(): ReactNode {
                                     {item.record.openConfusions.map((fact) => (
                                       <p key={fact.id}>{fact.text}</p>
                                     ))}
+                                  </div>
+                                ) : null}
+                                {item.kind === 'action' && item.record.note ? (
+                                  <div className="progress-fact-group">
+                                    <h3>备注</h3>
+                                    <p>{item.record.note}</p>
+                                  </div>
+                                ) : null}
+                                {item.kind === 'action' && item.record.nextStep ? (
+                                  <div className="progress-fact-group">
+                                    <h3>记录中的下一步</h3>
+                                    <p>{item.record.nextStep}</p>
+                                    <small>这是当时写下的内容，不代表当前计划。</small>
                                   </div>
                                 ) : null}
                                 {item.kind === 'routine' ? <p>{item.record.note}</p> : null}

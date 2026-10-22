@@ -110,7 +110,7 @@ export interface ReviewSummary {
   readonly confirmedUnderstandingCount: number
   readonly openConfusionCount: number
   readonly hasRecordedFacts: boolean
-  readonly actionRecords: readonly ProgressRecordFact[]
+  readonly actionRecords: readonly Omit<ProgressRecordFact, 'note' | 'nextStep'>[]
   readonly routineRecords: readonly RoutineProgressRecordFact[]
   readonly understandings: readonly ReviewUnderstandingFact[]
   readonly openConfusions: readonly ReviewConfusionFact[]
@@ -180,7 +180,22 @@ export function buildReviewSummary(period: LocalDateWeek, progress: ProgressView
     confirmedUnderstandingCount: understandings.length,
     openConfusionCount: openConfusions.length,
     hasRecordedFacts: progress.records.length > 0 || progress.routineRecords.length > 0,
-    actionRecords: Object.freeze([...progress.records]),
+    actionRecords: Object.freeze(
+      progress.records.map((record) =>
+        Object.freeze({
+          recordId: record.recordId,
+          actionId: record.actionId,
+          goalId: record.goalId,
+          actionTitle: record.actionTitle,
+          occurredOn: record.occurredOn,
+          durationMinutes: record.durationMinutes,
+          outcome: record.outcome,
+          createdAt: record.createdAt,
+          understandings: record.understandings,
+          openConfusions: record.openConfusions
+        })
+      )
+    ),
     routineRecords: Object.freeze([...progress.routineRecords]),
     understandings,
     openConfusions,

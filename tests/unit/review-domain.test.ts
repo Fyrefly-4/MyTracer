@@ -87,6 +87,8 @@ describe('Review period and pure summary builder', () => {
           actionId: 'action-1',
           goalId: null,
           actionTitle: 'Read one example',
+          note: 'private original note',
+          nextStep: 'historical next step',
           occurredOn: '2026-08-10',
           durationMinutes: 7,
           outcome: 'partial',
@@ -110,6 +112,8 @@ describe('Review period and pure summary builder', () => {
     )
 
     const summary = buildReviewSummary(period, progress)
+    expect(summary.actionRecords[0]).not.toHaveProperty('note')
+    expect(summary.actionRecords[0]).not.toHaveProperty('nextStep')
     expect(summary).toMatchObject({
       periodStartedOn: '2026-08-10',
       periodEndedOn: '2026-08-16',

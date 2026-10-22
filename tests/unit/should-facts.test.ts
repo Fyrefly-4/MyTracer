@@ -24,6 +24,8 @@ function action(
     actionId: 'action',
     goalId: 'goal',
     actionTitle: 'Example',
+    note: null,
+    nextStep: null,
     occurredOn,
     durationMinutes,
     outcome,

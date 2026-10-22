@@ -178,7 +178,16 @@ describe('Review SQLite summary snapshot', () => {
       routineOutcomeCounts: { targetMet: 1, acted: 1, intentionalRest: 1, notDone: 1 },
       unknownPolicy: 'absence-is-unknown-not-counted-as-not-done'
     })
-    expect(first.actionRecords).toEqual(progress.records)
+    expect(first.actionRecords).toEqual(
+      progress.records.map((record) => {
+        const { note, nextStep, ...facts } = record
+        expect(note).toBeNull()
+        expect(nextStep).toBeNull()
+        return facts
+      })
+    )
+    expect(first.actionRecords[0]).not.toHaveProperty('note')
+    expect(first.actionRecords[0]).not.toHaveProperty('nextStep')
     expect(first.routineRecords).toEqual(progress.routineRecords)
     expect(first.understandings.map((fact) => fact.text)).toEqual(['State updates are queued'])
     expect(first.openConfusions.map((fact) => fact.text)).toEqual(['When is the queue flushed?'])
