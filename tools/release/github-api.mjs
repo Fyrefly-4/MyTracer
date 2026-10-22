@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto'
+import { setTimeout as delay } from 'node:timers/promises'
 import { CANDIDATE_WORKFLOW, REPOSITORY, requireCondition } from './provenance.mjs'
 
 const PREFIX = `/repos/${REPOSITORY}`
@@ -16,11 +17,12 @@ async function bytes(response) {
 }
 
 export class GithubApi {
-  constructor(token, writable = false, fetcher = fetch) {
+  constructor(token, writable = false, fetcher = fetch, wait = delay) {
     requireCondition(typeof token === 'string' && token.length > 0, 'missing-ci-credential')
     this.token = token
     this.writable = writable
     this.fetcher = fetcher
+    this.wait = wait
   }
 
   async request(
@@ -30,10 +32,9 @@ export class GithubApi {
     requireCondition(path.startsWith(`${PREFIX}/`) || path === PREFIX, 'api-target')
     requireCondition(method === 'GET' || this.writable, 'read-only-transport')
     const host = upload ? 'uploads.github.com' : 'api.github.com'
-    const response = await this.fetcher(`https://${host}${path}`, {
+    const options = {
       method,
       redirect: 'manual',
-      signal: AbortSignal.timeout(120_000),
       headers: {
         Authorization: `Bearer ${this.token}`,
         Accept: binary ? 'application/octet-stream' : 'application/vnd.github+json',
@@ -41,7 +42,28 @@ export class GithubApi {
         'Content-Type': upload ? 'application/octet-stream' : 'application/json'
       },
       body: body === undefined ? undefined : upload ? body : JSON.stringify(body)
-    })
+    }
+    let response
+    for (let attempt = 0; attempt < 4; attempt++) {
+      response = await this.fetcher(`https://${host}${path}`, {
+        ...options,
+        signal: AbortSignal.timeout(120_000)
+      })
+      if (!response.ok && response.status !== 404) {
+        // Never log response bodies, credentials, query strings or signed URLs.
+        const endpoint = path.split('?')[0].replace(/[^a-zA-Z0-9/_.%-]/g, '_')
+        const requestId = (response.headers.get('x-github-request-id') ?? 'unknown')
+          .replace(/[^a-zA-Z0-9:-]/g, '_')
+          .slice(0, 100)
+        process.stderr.write(
+          `GitHub ${method} ${endpoint}: HTTP ${response.status}; request ${requestId}; attempt ${attempt + 1}.\n`
+        )
+      }
+      if (method !== 'GET' || ![500, 502, 503, 504].includes(response.status) || attempt === 3)
+        break
+      await response.body?.cancel()
+      await this.wait(1000 * 2 ** attempt)
+    }
     if (missing && response.status === 404) return null
     if (binary && response.status === 302) {
       const url = new URL(response.headers.get('location'))

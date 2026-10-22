@@ -47,6 +47,46 @@ test('permission failure does not masquerade as absent release', () => {
   expect(result.status, result.stderr).toBe(0)
 })
 
+test('retries transient GET failures with bounded exponential backoff', () => {
+  const result = run(`
+    const waits=[];
+    const api=new GithubApi('synthetic-token',false,async()=>{
+      calls.push('get');
+      return calls.length<4?new Response('private response',{status:[500,502,503][calls.length-1]}):new Response('[]');
+    },async ms=>waits.push(ms));
+    assert.deepEqual(await api.allReleases(),[]);
+    assert.deepEqual(waits,[1000,2000,4000]);
+    assert.equal(calls.length,4);
+  `)
+  expect(result.status, result.stderr).toBe(0)
+  expect(result.stderr).not.toMatch(/synthetic-token|private response/)
+})
+
+test('stops after four failed reads and emits safe request diagnostics', () => {
+  const result = run(`
+    const api=new GithubApi('synthetic-token',false,async()=>{
+      calls.push('get');return new Response('private response',{status:504,headers:{'x-github-request-id':'ABC:123'}});
+    },async()=>{});
+    await assert.rejects(()=>api.allReleases(),/github-http-504/);
+    assert.equal(calls.length,4);
+  `)
+  expect(result.status, result.stderr).toBe(0)
+  expect(result.stderr).toContain('GitHub GET /repos/Fyrefly-4/MyTracer/releases: HTTP 504')
+  expect(result.stderr).toContain('request ABC:123; attempt 4')
+  expect(result.stderr).not.toMatch(/synthetic-token|private response|per_page/)
+})
+
+test.each(['POST', 'PATCH', 'DELETE'])('never automatically retries %s writes', (method) => {
+  const result = run(`
+    const api=new GithubApi('synthetic-token',true,async()=>{
+      calls.push('write');return new Response('{}',{status:503});
+    },async()=>assert.fail('must not retry'));
+    await assert.rejects(()=>api.request('/repos/Fyrefly-4/MyTracer/releases/10',{method:'${method}'}),/github-http-503/);
+    assert.equal(calls.length,1);
+  `)
+  expect(result.status, result.stderr).toBe(0)
+})
+
 test('readback verifies every uploaded byte including the provenance manifest', () => {
   const result = run(
     `const {createHash}=await import('node:crypto');const payload=Buffer.from('synthetic manifest');const hash=createHash('sha256').update(payload).digest('hex');const api=new GithubApi('synthetic-token',true,async(url)=>url.includes('/assets?')?new Response(JSON.stringify([{id:10,name:'candidate-manifest.json',state:'uploaded',size:payload.length}])):new Response(payload));await api.verifyAssets(1,[{name:'candidate-manifest.json',size:payload.length,sha256:hash}]);await assert.rejects(()=>api.verifyAssets(1,[{name:'candidate-manifest.json',size:payload.length+1,sha256:hash}]),/remote-integrity/);await assert.rejects(()=>api.verifyAssets(1,[{name:'candidate-manifest.json',size:payload.length,sha256:'0'.repeat(64)}]),/remote-integrity/);`
