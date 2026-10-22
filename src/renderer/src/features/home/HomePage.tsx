@@ -229,6 +229,14 @@ export function HomePage(): ReactNode {
                   <button type="button" onClick={() => session.openSection('goals')}>
                     {snapshot.data?.totalGoalCount ? '查看已有目标' : '＋ 留下一个目标'}
                   </button>
+                  {snapshot.data?.totalGoalCount === 0 ? (
+                    <>
+                      <p>也可以不建目标。在“今天”新建一个行动，之后记录做过的一点。</p>
+                      <button type="button" onClick={() => session.openSection('today')}>
+                        去今天
+                      </button>
+                    </>
+                  ) : null}
                 </div>
               )
             ) : (
