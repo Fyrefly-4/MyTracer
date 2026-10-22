@@ -1,4 +1,12 @@
-const MILK = '#faf9f5'
+// Slightly cooler shell separates the opaque milk-white content without a dark frame.
+const SHELL = '#f2f4ee'
+const CAPTION = Object.freeze({ color: '#00000000', symbolColor: '#293a34', height: 42 })
+
+function syncCaption(window) {
+  // Transparent native button backgrounds reveal the same renderer tint as the titlebar.
+  // Keep native hover/pressed/accessibility behavior; never replace caption controls.
+  if (typeof window.setTitleBarOverlay === 'function') window.setTitleBarOverlay(CAPTION)
+}
 const OVERLAYS = Object.freeze({ subtle: 0.88, standard: 0.68, strong: 0.42 })
 
 function supportsMaterial(platform, release) {
@@ -30,8 +38,17 @@ function applyMaterial(window, settings, supported) {
     reason = 'Native material call failed: solid fallback'
     // An opaque background also hides any previously applied system material.
   }
-  window.setBackgroundColor(active ? '#00000000' : MILK)
+  window.setBackgroundColor(active ? '#00000000' : SHELL)
+  syncCaption(window)
   return { ...requested, active, reason, overlay: active ? OVERLAYS[requested.intensity] : 1 }
 }
 
-module.exports = { MILK, OVERLAYS, supportsMaterial, validateSettings, applyMaterial }
+module.exports = {
+  SHELL,
+  CAPTION,
+  syncCaption,
+  OVERLAYS,
+  supportsMaterial,
+  validateSettings,
+  applyMaterial
+}

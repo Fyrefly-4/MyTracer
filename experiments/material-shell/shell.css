@@ -15,7 +15,7 @@ body {
   background: transparent;
 }
 body {
-  background: rgb(250 249 245 / var(--shell-alpha));
+  background: rgb(242 244 238 / var(--shell-alpha));
   font-size: 14px;
 }
 .titlebar {

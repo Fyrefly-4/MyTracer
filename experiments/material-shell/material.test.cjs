@@ -1,11 +1,15 @@
 const { test } = require('node:test')
 const assert = require('node:assert/strict')
-const { MILK, supportsMaterial, applyMaterial } = require('./material.cjs')
+const { SHELL, CAPTION, syncCaption, supportsMaterial, applyMaterial } = require('./material.cjs')
 const settings = { mode: 'environment', material: 'mica', intensity: 'subtle' }
 function fakeWindow(fail = false) {
   const calls = []
   return {
     calls,
+    captions: [],
+    setTitleBarOverlay(value) {
+      this.captions.push(value)
+    },
     setBackgroundMaterial(value) {
       calls.push(['material', value])
       if (fail) throw new Error('DWM unavailable')
@@ -32,14 +36,14 @@ test('unsupported OS never calls native material and keeps opaque surface', () =
   const state = applyMaterial(win, settings, false)
   assert.equal(state.active, false)
   assert.equal(state.overlay, 1)
-  assert.deepEqual(win.calls, [['color', MILK]])
+  assert.deepEqual(win.calls, [['color', SHELL]])
 })
 test('native failure after a previous success restores opaque fallback', () => {
   const win = fakeWindow(true)
   const state = applyMaterial(win, settings, true)
   assert.equal(state.active, false)
   assert.equal(state.overlay, 1)
-  assert.deepEqual(win.calls.at(-1), ['color', MILK])
+  assert.deepEqual(win.calls.at(-1), ['color', SHELL])
 })
 test('both materials and all intensities preserve native window opacity', () => {
   for (const material of ['mica', 'acrylic']) {
@@ -63,7 +67,7 @@ test('solid comparison removes native material', () => {
   assert.equal(state.overlay, 1)
   assert.deepEqual(win.calls, [
     ['material', 'none'],
-    ['color', MILK]
+    ['color', SHELL]
   ])
 })
 test('malformed IPC settings are rejected before touching the window', () => {
@@ -78,4 +82,27 @@ test('malformed IPC settings are rejected before touching the window', () => {
     assert.throws(() => applyMaterial(win, value, true), TypeError)
   }
   assert.deepEqual(win.calls, [])
+})
+
+test('native caption stays transparent across mode, intensity, focus and fallback changes', () => {
+  const win = fakeWindow()
+  for (const mode of ['environment', 'solid', 'environment']) {
+    for (const material of ['mica', 'acrylic']) {
+      for (const intensity of ['subtle', 'standard', 'strong']) {
+        applyMaterial(win, { mode, material, intensity }, true)
+        syncCaption(win) // focus
+        syncCaption(win) // blur: no stale solid caption color
+      }
+    }
+  }
+  assert.equal(win.captions.length, 54)
+  for (const caption of win.captions) assert.deepEqual(caption, CAPTION)
+  assert.equal(CAPTION.color, '#00000000')
+  assert.equal(CAPTION.symbolColor, '#293a34')
+  const failing = fakeWindow(true)
+  applyMaterial(failing, settings, true)
+  assert.deepEqual(failing.captions, [CAPTION])
+  const unsupported = fakeWindow()
+  applyMaterial(unsupported, settings, false)
+  assert.deepEqual(unsupported.captions, [CAPTION])
 })

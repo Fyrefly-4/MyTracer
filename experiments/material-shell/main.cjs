@@ -3,7 +3,7 @@ const { mkdtempSync, rmSync } = require('node:fs')
 const { tmpdir, release } = require('node:os')
 const { join } = require('node:path')
 const { pathToFileURL } = require('node:url')
-const { MILK, supportsMaterial, applyMaterial } = require('./material.cjs')
+const { SHELL, CAPTION, syncCaption, supportsMaterial, applyMaterial } = require('./material.cjs')
 
 // Chromium needs a profile, but this experiment never opens MyTracer's profile/data.
 const profile = mkdtempSync(join(tmpdir(), 'mytracer-material-shell-'))
@@ -31,10 +31,10 @@ app
       minWidth: 820,
       minHeight: 600,
       show: false,
-      backgroundColor: MILK,
+      backgroundColor: SHELL,
       title: 'MyTracer · Material shell experiment',
       titleBarStyle: 'hidden',
-      titleBarOverlay: { color: MILK, symbolColor: '#293a34', height: 42 },
+      titleBarOverlay: CAPTION,
       autoHideMenuBar: true,
       webPreferences: {
         preload: join(__dirname, 'preload.cjs'),
@@ -46,6 +46,9 @@ app
         partition: 'material-shell'
       }
     })
+    // Reassert the transparent overlay on activation changes without changing DWM material.
+    window.on('focus', () => syncCaption(window))
+    window.on('blur', () => syncCaption(window))
     const contents = window.webContents
     contents.setWindowOpenHandler(() => ({ action: 'deny' }))
     for (const name of [

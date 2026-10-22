@@ -88,6 +88,14 @@ try {
   await page.selectOption('#mode', 'solid')
   await page.locator('#status').filter({ hasText: '100%' }).waitFor()
   assert.equal(await page.locator('#intensity').isDisabled(), true)
+  assert.equal(
+    await page.locator('body').evaluate((node) => getComputedStyle(node).backgroundColor),
+    'rgb(242, 244, 238)'
+  )
+  assert.notEqual(
+    await page.locator('body').evaluate((node) => getComputedStyle(node).backgroundColor),
+    reference.background
+  )
   await page.selectOption('#mode', 'environment')
   await page.locator('#status').filter({ hasText: '42%' }).waitFor()
   assert.equal(await page.locator('#intensity').isEnabled(), true)
