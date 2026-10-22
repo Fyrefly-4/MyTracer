@@ -543,7 +543,10 @@ export function ReviewPage(): ReactNode {
                 void save()
               }}
             >
-              <fieldset className="review-composer-fields" disabled={busy || !contextId}>
+              <fieldset
+                className="review-composer-fields"
+                disabled={busy || (!contextId && !periodConflict)}
+              >
                 <div className="review-section-heading">
                   <h2>确认本周期复盘</h2>
                   <p>记录摘要会随已有内容更新；下面三段由你确认的文字会保持原样保存。</p>
@@ -553,6 +556,7 @@ export function ReviewPage(): ReactNode {
                   <textarea
                     ref={progressRef}
                     aria-label="一个真实进展"
+                    readOnly={periodConflict}
                     value={confirmedProgress}
                     onChange={(event) => setConfirmedProgress(event.target.value)}
                     required
@@ -563,6 +567,7 @@ export function ReviewPage(): ReactNode {
                   <textarea
                     ref={obstacleRef}
                     aria-label="一个主要阻力"
+                    readOnly={periodConflict}
                     value={mainObstacle}
                     onChange={(event) => setMainObstacle(event.target.value)}
                     required
@@ -573,6 +578,7 @@ export function ReviewPage(): ReactNode {
                   <textarea
                     ref={adjustmentRef}
                     aria-label="下一周期的一个调整"
+                    readOnly={periodConflict}
                     value={nextAdjustment}
                     onChange={(event) => setNextAdjustment(event.target.value)}
                     required
@@ -581,6 +587,7 @@ export function ReviewPage(): ReactNode {
                 <label>
                   关联活跃目标（可选）
                   <select
+                    disabled={!contextId}
                     value={relatedGoalId}
                     onChange={(event) => selectRelatedGoal(event.target.value)}
                   >
@@ -593,7 +600,7 @@ export function ReviewPage(): ReactNode {
                   </select>
                 </label>
                 {relatedGoalId ? (
-                  <fieldset>
+                  <fieldset disabled={!contextId}>
                     <legend>当前下一步（可选、明确更新）</legend>
                     <label>
                       <input
@@ -649,7 +656,7 @@ export function ReviewPage(): ReactNode {
                   <button
                     className="secondary-button"
                     type="button"
-                    disabled={busy}
+                    disabled={busy || !contextId}
                     onClick={() => void cancelDraft()}
                   >
                     取消

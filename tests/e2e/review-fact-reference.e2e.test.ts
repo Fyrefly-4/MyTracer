@@ -234,6 +234,26 @@ test('a retained draft cannot be saved into another week, even when loading the 
     await expect(page.getByLabel('一个真实进展', { exact: true })).toHaveValue(
       '上一周期未保存的文字'
     )
+    const retained = page.getByLabel('一个真实进展', { exact: true })
+    await expect(retained).toBeEnabled()
+    await expect(retained).toHaveAttribute('readonly', '')
+    await page.getByRole('button', { name: '前往填写', exact: true }).click()
+    await expect(retained).toBeFocused()
+    await retained.press('ControlOrMeta+A')
+    expect(
+      await retained.evaluate((element: HTMLTextAreaElement) => ({
+        start: element.selectionStart,
+        end: element.selectionEnd,
+        length: element.value.length
+      }))
+    ).toEqual({
+      start: 0,
+      end: '上一周期未保存的文字'.length,
+      length: '上一周期未保存的文字'.length
+    })
+    await retained.press('Backspace')
+    await expect(retained).toHaveValue('上一周期未保存的文字')
+    await expect(page.getByLabel('关联活跃目标（可选）')).toBeDisabled()
     await expect(page.getByRole('button', { name: '保存复盘', exact: true })).toBeDisabled()
     await page.getByRole('button', { name: '放弃草稿并进入新周期' }).click()
     await expect(page.getByRole('alert')).toContainText('本地周期记录暂时无法读取')
