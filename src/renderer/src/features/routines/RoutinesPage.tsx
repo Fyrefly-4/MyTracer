@@ -745,7 +745,11 @@ function RoutineWorkspace(): ReactNode {
       ) : null}
       {pendingSwitch || discardRequested ? (
         <div className="data-switch-warning" role="alert" aria-label="未保存的例行修改">
-          <p>当前例行有未保存修改。先保存，或明确放弃后继续。</p>
+          <p>
+            {edit?.availability === 'missing'
+              ? '例行已不存在，不能保存。请先复制需要保留的文字，再决定是否放弃。'
+              : '当前例行有未保存修改。先保存，或明确放弃后继续。'}
+          </p>
           <button
             type="button"
             onClick={() => {
@@ -754,7 +758,7 @@ function RoutineWorkspace(): ReactNode {
               editTriggerRef.current?.focus()
             }}
           >
-            继续编辑当前例行
+            {edit?.availability === 'missing' ? '返回查看或复制' : '继续编辑当前例行'}
           </button>
           <button type="button" disabled={Boolean(edit?.pending)} onClick={confirmDiscard}>
             {pendingSwitch ? '放弃修改并切换' : '放弃修改'}

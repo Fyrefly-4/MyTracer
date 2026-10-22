@@ -209,6 +209,17 @@ test('deleted routines retain copyable input without an invalid save or recreati
     await expect(panel.getByRole('button', { name: '保存内容修改', exact: true })).toBeDisabled()
     await expect(panel.getByRole('button', { name: '保存星期安排', exact: true })).toBeDisabled()
     await panel.getByRole('button', { name: '放弃未保存修改', exact: true }).click()
+    const warning = page.getByRole('alert', { name: '未保存的例行修改' })
+    await expect(warning).toContainText(
+      '例行已不存在，不能保存。请先复制需要保留的文字，再决定是否放弃。'
+    )
+    await expect(
+      warning.getByRole('button', { name: '继续编辑当前例行', exact: true })
+    ).toHaveCount(0)
+    await warning.getByRole('button', { name: '返回查看或复制', exact: true }).click()
+    await expect(name).toHaveValue('删除后仍可复制')
+    await expect(name).toHaveAttribute('readonly', '')
+    await panel.getByRole('button', { name: '放弃未保存修改', exact: true }).click()
     await page.getByRole('button', { name: '放弃修改', exact: true }).click()
     await expect(panel).toHaveCount(0)
     const stored = await page.evaluate(
