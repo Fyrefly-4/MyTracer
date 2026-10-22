@@ -1,3 +1,4 @@
+import type { AppearanceSettings, AppearanceState } from './appearance'
 import type { HomeApi } from './home'
 import type { GoalApi } from './goals'
 import type { ActionApi } from './actions'
@@ -28,6 +29,9 @@ export interface ShellStatus {
 export interface MyTracerApi {
   readonly shell: {
     readonly getStatus: () => Promise<ShellStatus>
+    readonly getAppearance: () => Promise<AppearanceState>
+    readonly setAppearance: (settings: AppearanceSettings) => Promise<AppearanceState>
+    readonly subscribeAppearance: (listener: (state: AppearanceState) => void) => () => void
   }
   readonly home: HomeApi
   readonly goals: GoalApi
