@@ -187,7 +187,7 @@ test('delayed save preserves newer typing and never steals another goal selectio
 })
 
 test('late same-goal read cannot erase typing or a later goal selection', async () => {
-  await fixture(async (page, app) => {
+  await fixture(async (page, app, ids) => {
     await holdResponse(app, 'goals:get-detail')
     await select(page, '内容目标1')
     await waitHeld(app, 'goals:get-detail')
@@ -202,6 +202,13 @@ test('late same-goal read cannot erase typing or a later goal selection', async 
     await select(page, '内容目标2')
     await expect(panel(page).locator('h2').first()).toHaveText('内容目标2')
     await release(app, 'goals:get-detail')
+    // Follow the released reply with another read-only IPC round trip, then let React paint.
+    await page.evaluate(async (goalId) => {
+      await window.myTracer.goals.getDetail({ goalId })
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+      )
+    }, ids[1])
     await expect(panel(page).locator('h2').first()).toHaveText('内容目标2')
   })
 })
