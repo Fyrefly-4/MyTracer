@@ -111,7 +111,8 @@ test('filtering and paging explain retained detail without switching or discardi
     await navigate(page, '例行')
     const list = page.getByLabel('例行列表', { exact: true })
     await list.getByRole('button', { name: /例行1.*活跃/ }).click()
-    const detail = page.getByLabel('例行1 例行详情', { exact: true })
+    const detail = page.locator('.routine-workspace .goal-detail')
+    await expect(detail).toHaveAttribute('aria-label', '例行1 例行详情')
     await detail.getByRole('button', { name: '记录例行', exact: true }).click()
     const duration = detail.getByLabel('投入时长（分钟，可选）')
     await duration.fill('11')
@@ -133,6 +134,11 @@ test('filtering and paging explain retained detail without switching or discardi
     await expect(page.locator('.routine-detail-context')).toContainText('当前详情不在这一列表页中')
     await expect(duration).toHaveValue('11')
     await expect(detail.getByLabel('名称', { exact: true })).toHaveValue('尚未保存的名称')
+    // Finish the content-edit scenario before testing the independent recording-draft lifecycle.
+    // Saving uses baseline controls and leaves no dirty content for an object-switch guard.
+    await detail.getByRole('button', { name: '保存内容修改', exact: true }).click()
+    await expect(detail).toHaveAttribute('aria-label', '尚未保存的名称 例行详情')
+    await expect(duration).toHaveValue('11')
     // Explicit selection may switch the detail; recording drafts keep their existing session scope.
     await list.getByRole('button', { name: /例行7.*活跃/ }).click()
     await expect(page.locator('.routine-detail-context')).toHaveCount(0)
@@ -140,7 +146,7 @@ test('filtering and paging explain retained detail without switching or discardi
       .getByLabel('例行列表分页')
       .getByRole('button', { name: '上一页', exact: true })
       .click()
-    await list.getByRole('button', { name: /例行1.*活跃/ }).click()
+    await list.getByRole('button', { name: /尚未保存的名称.*活跃/ }).click()
     await expect(duration).toHaveValue('11')
     await navigate(page, '今天')
     await navigate(page, '例行')
