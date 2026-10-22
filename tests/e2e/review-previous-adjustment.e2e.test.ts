@@ -92,9 +92,9 @@ test('previous adjustment is optional, read-only and does not replace the curren
         Reflect.get(globalThis, '__previousRead').mode = value
       }, value)
     await page.getByRole('navigation').getByRole('button', { name: '复盘', exact: true }).click()
-    await page.getByLabel('一个真实进展', { exact: true }).fill('当前未保存进展')
-    await page.getByLabel('一个主要阻力', { exact: true }).fill('当前未保存阻力')
-    await page.getByLabel('下一周期的一个调整', { exact: true }).fill('当前未保存调整')
+    await page.getByLabel('一个真实进展').fill('当前未保存进展')
+    await page.getByLabel('一个主要阻力').fill('当前未保存阻力')
+    await page.getByLabel('下一周期的一个调整').fill('当前未保存调整')
     expect(await app.evaluate(() => Reflect.get(globalThis, '__previousRead').calls)).toBe(0)
     const disclosure = page.locator('.previous-adjustment')
     const summary = disclosure.locator('summary')
@@ -128,26 +128,27 @@ test('previous adjustment is optional, read-only and does not replace the curren
     await mode('stale')
     await summary.click()
     await expect(disclosure.getByRole('status')).toContainText('上下文已失效')
-    await expect(page.getByLabel('一个真实进展', { exact: true })).toHaveValue('当前未保存进展')
-    await expect(page.getByLabel('一个主要阻力', { exact: true })).toHaveValue('当前未保存阻力')
-    await expect(page.getByLabel('下一周期的一个调整', { exact: true })).toHaveValue(
-      '当前未保存调整'
+    // Controlled textarea text can contribute to its wrapping label text; assert the field value itself.
+    console.info(
+      'synthetic review label text',
+      await page.locator('.review-form > label').allTextContents()
     )
+    await expect(page.getByLabel('一个真实进展')).toHaveValue('当前未保存进展')
+    await expect(page.getByLabel('一个主要阻力')).toHaveValue('当前未保存阻力')
+    await expect(page.getByLabel('下一周期的一个调整')).toHaveValue('当前未保存调整')
     await mode('real')
     await page.getByRole('button', { name: '保存复盘', exact: true }).click()
     await expect(page.getByText('本周期复盘已保存。', { exact: true })).toBeVisible()
-    await expect(page.getByLabel('下一周期的一个调整', { exact: true })).toHaveValue(
-      '当前未保存调整'
-    )
+    await expect(page.getByLabel('下一周期的一个调整')).toHaveValue('当前未保存调整')
     // No saved result in the immediately previous week: older results are not substituted.
     await page.getByRole('navigation').getByRole('button', { name: '首页', exact: true }).click()
     await setDate(app, 2026, 1, 21)
     await page.getByRole('navigation').getByRole('button', { name: '复盘', exact: true }).click()
-    await page.getByLabel('一个真实进展', { exact: true }).fill('没有参考也可以填写')
+    await page.getByLabel('一个真实进展').fill('没有参考也可以填写')
     await page.locator('.previous-adjustment summary').click()
     await expect(page.locator('.previous-adjustment')).toContainText('2026-01-12 至 2026-01-18')
     await expect(page.locator('.previous-adjustment')).toContainText('上一自然周没有已保存的复盘')
-    await expect(page.getByLabel('一个真实进展', { exact: true })).toHaveValue('没有参考也可以填写')
+    await expect(page.getByLabel('一个真实进展')).toHaveValue('没有参考也可以填写')
   } finally {
     await app?.close()
     await removeTemporaryTestRoot(root)
