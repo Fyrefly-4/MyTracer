@@ -197,7 +197,9 @@ test('Progress fetches text only on demand and isolates retry, collapse and refr
     await row.locator('summary').click()
     await mode('ready')
     await row.locator('summary').click()
-    await expect(row).toContainText('新读取原文')
+    await expect(row.getByLabel('行动补充原文').locator('.progress-fact-group p')).toHaveText(
+      '新读取原文'
+    )
     await release()
     await expect(row).not.toContainText('迟到旧原文')
     await row.locator('summary').click()
@@ -232,12 +234,14 @@ test('Progress fetches text only on demand and isolates retry, collapse and refr
       await mode(value)
       await row.locator('summary').click()
       await expect(row).toContainText(message)
-      await expect(row).not.toContainText('新读取原文')
+      await expect(row.getByLabel('行动补充原文').locator('.progress-fact-group')).toHaveCount(0)
       await row.locator('summary').click()
     }
     await mode('ready')
     await row.locator('summary').click()
-    await expect(row).toContainText('新读取原文')
+    await expect(row.getByLabel('行动补充原文').locator('.progress-fact-group p')).toHaveText(
+      '新读取原文'
+    )
   } finally {
     await app?.close()
     await removeTemporaryTestRoot(root)
