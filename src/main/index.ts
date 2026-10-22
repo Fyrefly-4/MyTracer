@@ -1,3 +1,4 @@
+import { readWindowsTransparency, WindowsTransparencyPreference } from './windows-transparency'
 import { assertAppearanceSender, registerAppearanceIpc } from './appearance-ipc'
 import { release } from 'node:os'
 import { APPEARANCE_CHANNELS } from '../contracts/appearance'
@@ -385,12 +386,16 @@ async function createMainWindow(): Promise<void> {
   const appearanceWindow = mainWindow
   const store = new AppearanceStore(join(app.getPath('userData'), 'appearance.json'))
   let appearance = store.read()
+  const micaSupported = supportsMica(process.platform, release())
+  let windowsTransparency: WindowsTransparencyPreference | undefined
   const refreshAppearance = () => {
     const state = applyAppearance(
       appearanceWindow,
       appearance,
-      supportsMica(process.platform, release()),
-      nativeTheme.prefersReducedTransparency ||
+      micaSupported,
+      (process.platform === 'win32'
+        ? windowsTransparency?.enabled !== true
+        : nativeTheme.prefersReducedTransparency) ||
         nativeTheme.shouldUseHighContrastColors ||
         nativeTheme.inForcedColorsMode
     )
@@ -407,13 +412,29 @@ async function createMainWindow(): Promise<void> {
       return refreshAppearance()
     }
   })
-  nativeTheme.on('updated', refreshAppearance)
+  const refreshSystemAppearance = () => {
+    refreshAppearance()
+    void windowsTransparency?.refresh()
+  }
+  if (micaSupported) {
+    windowsTransparency = new WindowsTransparencyPreference(
+      readWindowsTransparency,
+      refreshAppearance
+    )
+    // Windows broadcasts WM_SETTINGCHANGE when personalization/accessibility settings change.
+    appearanceWindow.hookWindowMessage(0x001a, refreshSystemAppearance)
+    appearanceWindow.on('focus', refreshSystemAppearance)
+  }
+  nativeTheme.on('updated', refreshSystemAppearance)
   const syncCaption = () => appearanceWindow.setTitleBarOverlay(CAPTION_OVERLAY)
   appearanceWindow.on('focus', syncCaption)
   appearanceWindow.on('blur', syncCaption)
   appearanceWindow.on('maximize', syncCaption)
   appearanceWindow.on('unmaximize', syncCaption)
-  appearanceWindow.once('closed', () => nativeTheme.removeListener('updated', refreshAppearance))
+  appearanceWindow.once('closed', () => {
+    windowsTransparency?.dispose()
+    nativeTheme.removeListener('updated', refreshSystemAppearance)
+  })
   refreshAppearance()
   applyWebContentsRestrictions(mainWindow)
   mainWindow.on('close', (event) => {
@@ -445,7 +466,8 @@ async function createMainWindow(): Promise<void> {
     mainWindow = null
   })
 
-  await loadTrustedRenderer(mainWindow)
+  await windowsTransparency?.refresh()
+  if (!appearanceWindow.isDestroyed()) await loadTrustedRenderer(appearanceWindow)
 }
 
 const hasSingleInstanceLock = app.requestSingleInstanceLock()

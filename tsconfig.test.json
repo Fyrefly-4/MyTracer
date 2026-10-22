@@ -10,6 +10,7 @@
     "playwright.config.ts",
     "tests/**/*.ts",
     "src/main/appearance.ts",
+    "src/main/windows-transparency.ts",
     "src/main/appearance-ipc.ts",
     "src/main/ipc-security.ts",
     "src/application/**/*.ts",
