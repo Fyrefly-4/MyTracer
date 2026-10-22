@@ -80,7 +80,12 @@ test('runs the Electron shell with an isolated userData root', async () => {
     ])
     expect(await page.evaluate(() => Object.keys(window.myTracer.home))).toEqual(['get', 'day'])
     expect(await page.evaluate(() => Object.isFrozen(window.myTracer.home))).toBe(true)
-    expect(await page.evaluate(() => Object.keys(window.myTracer.shell))).toEqual(['getStatus'])
+    expect(await page.evaluate(() => Object.keys(window.myTracer.shell))).toEqual([
+      'getAppearance',
+      'setAppearance',
+      'subscribeAppearance',
+      'getStatus'
+    ])
     expect(await page.evaluate(() => Object.keys(window.myTracer.goals))).toEqual([
       'create',
       'updateDetails',

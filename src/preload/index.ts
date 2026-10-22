@@ -1,4 +1,9 @@
 import {
+  APPEARANCE_CHANNELS,
+  type AppearanceSettings,
+  type AppearanceState
+} from '../contracts/appearance'
+import {
   HOME_CHANNELS,
   type HomeDayInputDto,
   type HomeResult,
@@ -141,6 +146,16 @@ const api: MyTracerApi = Object.freeze({
       ipcRenderer.invoke(HOME_CHANNELS.day, input)
   }),
   shell: Object.freeze({
+    getAppearance: (): Promise<AppearanceState> => ipcRenderer.invoke(APPEARANCE_CHANNELS.get),
+    setAppearance: (settings: AppearanceSettings): Promise<AppearanceState> =>
+      ipcRenderer.invoke(APPEARANCE_CHANNELS.set, settings),
+    subscribeAppearance: (listener: (state: AppearanceState) => void): (() => void) => {
+      const handler = (_event: unknown, state: AppearanceState): void => listener(state)
+      ipcRenderer.on(APPEARANCE_CHANNELS.changed, handler)
+      return () => {
+        ipcRenderer.removeListener(APPEARANCE_CHANNELS.changed, handler)
+      }
+    },
     getStatus: (): Promise<ShellStatus> => ipcRenderer.invoke(SHELL_STATUS_CHANNEL)
   }),
   updates: Object.freeze({

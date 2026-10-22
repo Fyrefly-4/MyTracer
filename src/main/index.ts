@@ -1,9 +1,13 @@
+import { assertAppearanceSender, registerAppearanceIpc } from './appearance-ipc'
+import { release } from 'node:os'
+import { APPEARANCE_CHANNELS } from '../contracts/appearance'
+import { AppearanceStore, applyAppearance, supportsMica, SHELL_COLOR, CAPTION_OVERLAY } from './appearance'
 import { HomeService } from '../application/home'
 import { registerHomeIpc } from './home-ipc'
 import { randomUUID } from 'node:crypto'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { app, BrowserWindow, dialog, ipcMain, safeStorage, type IpcMainInvokeEvent } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, nativeTheme, safeStorage, type IpcMainInvokeEvent } from 'electron'
 import { GoalService } from '../application/goals'
 import { ActionService } from '../application/actions'
 import { TodayService } from '../application/today'
@@ -355,17 +359,18 @@ function applyWebContentsRestrictions(window: BrowserWindow): void {
 }
 
 async function createMainWindow(): Promise<void> {
+  nativeTheme.themeSource = 'light'
   mainWindow = new BrowserWindow({
     width: 1120,
     height: 760,
     minWidth: 820,
     minHeight: 600,
     show: false,
-    backgroundColor: '#f5f2ea',
+    backgroundColor: SHELL_COLOR,
     title: 'MyTracer',
     // Keep OS caption controls and native window behavior without a second title bar.
     titleBarStyle: 'hidden',
-    titleBarOverlay: { color: '#f5f2ea', symbolColor: '#293a34', height: 42 },
+    titleBarOverlay: CAPTION_OVERLAY,
     autoHideMenuBar: true,
     webPreferences: {
       preload: join(__dirname, '../preload/index.cjs'),
@@ -377,6 +382,39 @@ async function createMainWindow(): Promise<void> {
     }
   })
 
+  const appearanceWindow = mainWindow
+  const store = new AppearanceStore(join(app.getPath('userData'), 'appearance.json'))
+  let appearance = store.read()
+  const refreshAppearance = () => {
+    const state = applyAppearance(
+      appearanceWindow,
+      appearance,
+      supportsMica(process.platform, release()),
+      nativeTheme.prefersReducedTransparency ||
+        nativeTheme.shouldUseHighContrastColors ||
+        nativeTheme.inForcedColorsMode
+    )
+    if (!appearanceWindow.webContents.isDestroyed())
+      appearanceWindow.webContents.send(APPEARANCE_CHANNELS.changed, state)
+    return state
+  }
+  registerAppearanceIpc({
+    ipc: guardedIpc,
+    assertSender: (event) => assertAppearanceSender(event, appearanceWindow, getRendererLocation()),
+    get: refreshAppearance,
+    set: (settings) => {
+      appearance = store.write(settings)
+      return refreshAppearance()
+    }
+  })
+  nativeTheme.on('updated', refreshAppearance)
+  const syncCaption = () => appearanceWindow.setTitleBarOverlay(CAPTION_OVERLAY)
+  appearanceWindow.on('focus', syncCaption)
+  appearanceWindow.on('blur', syncCaption)
+  appearanceWindow.on('maximize', syncCaption)
+  appearanceWindow.on('unmaximize', syncCaption)
+  appearanceWindow.once('closed', () => nativeTheme.removeListener('updated', refreshAppearance))
+  refreshAppearance()
   applyWebContentsRestrictions(mainWindow)
   mainWindow.on('close', (event) => {
     if (installGate.state === 'preparing') event.preventDefault()
