@@ -89,16 +89,17 @@ async function expectReadableVisualFoundation(page: Page): Promise<void> {
     }
   })
   expect(metrics.tokens).toEqual({
-    shell: '#f5f2ea',
-    surface: '#fffefa',
+    shell: '#f2f4ee',
+    surface: '#faf9f5',
     text: '#293a34',
     muted: '#526357',
     action: '#315d50',
     line: '#dedfd5'
   })
   expect(metrics.rootFontSize).toBe(15)
-  expect(metrics.contentBackground).toBe('rgb(245, 242, 234)')
-  expect(metrics.surfaceBackground).toBe('rgb(255, 254, 250)')
+  // The outer gutter reveals the shell; the reading surface stays opaque milk.
+  expect(metrics.contentBackground).toBe('rgba(0, 0, 0, 0)')
+  expect(metrics.surfaceBackground).toBe('rgb(250, 249, 245)')
   expect(metrics.titleFontSize).toBe(22)
   expect(metrics.smallestButtonFontSize).toBeGreaterThanOrEqual(13)
   for (const size of metrics.primaryButtonFontSizes) expect(size).toBe(14)
