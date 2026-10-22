@@ -32,7 +32,13 @@ test('history is readable, paginated, and separates reading from protected local
             durationMinutes: day,
             outcome: 'partial',
             understanding: day === 20 ? understanding : null,
-            note: `第 ${day} 天的记录`
+            note:
+              day === 20
+                ? Array.from(
+                    { length: 35 },
+                    (_, index) => `第 ${index + 1} 行长笔记，验证独立详情滚动恢复。`
+                  ).join('\n')
+                : `第 ${day} 天的记录`
           })
           if (!result.ok) throw new Error(result.error.message)
         }
@@ -57,6 +63,15 @@ test('history is readable, paginated, and separates reading from protected local
     const record = selected.locator('.data-record-card')
     await expect(record).toContainText('2026-08-20')
     await expect(page.getByLabel('行动分钟')).toHaveCount(0)
+    await selected.evaluate((element) => {
+      element.scrollTop = 180
+    })
+    await expect.poll(() => selected.evaluate((element) => element.scrollTop)).toBe(180)
+    await page.getByRole('navigation').getByRole('button', { name: '进展', exact: true }).click()
+    await page.getByRole('navigation').getByRole('button', { name: '数据', exact: true }).click()
+    await expect.poll(() => selected.evaluate((element) => element.scrollTop)).toBe(180)
+    await expect(record).toContainText('2026-08-20')
+    await selected.locator('.selected-record-facts > summary').click()
     await expect(selected.locator('.data-fact-text')).toContainText(understanding)
     await record.getByRole('button', { name: '编辑记录', exact: true }).click()
     await expect(page.getByLabel('行动发生日期')).toBeFocused()
@@ -95,6 +110,7 @@ test('history is readable, paginated, and separates reading from protected local
     await expect(selected.locator('.data-fact-text')).not.toContainText('这条未保存的改动')
     await page.getByRole('button', { name: '下一页', exact: true }).click()
     await expect(rows).toHaveCount(2)
+    await page.locator('.data-filter-panel > summary').click()
     await page.getByLabel('发生日期', { exact: true }).fill('2026-08-20')
     await expect(rows).toHaveCount(1)
     await expect(page.getByLabel('历史记录分页')).toHaveCount(0)
@@ -159,6 +175,7 @@ test('routine and confusion editors preserve keyboard focus through edit, cancel
     await page.getByRole('button', { name: '保存修改', exact: true }).click()
     await expect(editRecord).toBeFocused()
     await page.locator('.data-history-row').filter({ hasText: '键盘检查行动' }).click()
+    await page.locator('.selected-record-facts > summary').click()
     const editConfusion = page.getByRole('button', { name: '编辑困惑', exact: true })
     await editConfusion.focus()
     await page.keyboard.press('Enter')

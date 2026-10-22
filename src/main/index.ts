@@ -361,6 +361,10 @@ async function createMainWindow(): Promise<void> {
     show: false,
     backgroundColor: '#f5f2ea',
     title: 'MyTracer',
+    // Keep OS caption controls and native window behavior without a second title bar.
+    titleBarStyle: 'hidden',
+    titleBarOverlay: { color: '#f5f2ea', symbolColor: '#293a34', height: 42 },
+    autoHideMenuBar: true,
     webPreferences: {
       preload: join(__dirname, '../preload/index.cjs'),
       nodeIntegration: false,

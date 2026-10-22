@@ -29,6 +29,8 @@ async function expectKeyboardInputAfterTransition(
   await input.pressSequentially(value)
   await expect(input).toHaveValue(value)
   await input.fill('')
+  await page.getByRole('button', { name: '取消新建', exact: true }).click()
+  await expect(page.getByRole('button', { name: '新建行动', exact: true })).toBeFocused()
 }
 
 test('runs Action and Today focus lifecycle and preserves facts through a real reopen', async () => {
@@ -74,6 +76,7 @@ test('runs Action and Today focus lifecycle and preserves facts through a real r
     ).toHaveCount(0)
     await expectKeyboardInputAfterTransition(page, '完成后仍可输入')
 
+    await openActionCreate(page)
     const createForm = page.locator('form.goal-create')
     await createForm.getByLabel('行动标题').fill('稍后继续阅读')
     await createForm.getByRole('button', { name: '创建行动' }).click()
@@ -90,6 +93,7 @@ test('runs Action and Today focus lifecycle and preserves facts through a real r
     await expect(detail.getByText('待行动', { exact: true })).toBeVisible()
     await expect(page.locator('.focus-row').filter({ hasText: '稍后继续阅读' })).toBeVisible()
 
+    await openActionCreate(page)
     await createForm.getByLabel('行动标题').fill('取消但保留今天')
     await createForm.getByRole('button', { name: '创建行动' }).click()
     detail = page.getByLabel('取消但保留今天 行动详情')

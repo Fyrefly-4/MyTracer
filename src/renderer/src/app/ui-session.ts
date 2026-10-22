@@ -58,9 +58,12 @@ export class UiSession {
   private recoveryGoal: string | null = null
   private selectedDataRecord: DataRecordSelection | null = null
   private filter: GoalStatusDto | '' = ''
+  private progressHistoryPage = 1
   private progressDraft: ProgressFilterState = { goalId: '', from: '', through: '' }
   private progressApplied: ProgressFilterState = { goalId: '', from: '', through: '' }
   private positions: Partial<Record<AppSectionId, number>> = {}
+  private panePositions = new Map<string, number>()
+  private listPages = new Map<string, number>()
   private actionDrafts = new Map<string, ActionRecordingDraft>()
   private routineDrafts = new Map<string, RoutineRecordingDraft>()
   private unsavedContent = new Set<string>()
@@ -83,6 +86,12 @@ export class UiSession {
   }
   get dataRecord(): DataRecordSelection | null {
     return this.selectedDataRecord
+  }
+  get progressRecordPage(): number {
+    return this.progressHistoryPage
+  }
+  setProgressRecordPage(page: number): void {
+    this.progressHistoryPage = Math.max(1, Math.floor(page))
   }
   get progressDraftFilter(): ProgressFilterState {
     return this.progressDraft
@@ -146,6 +155,21 @@ export class UiSession {
   hasUnsavedContent(): boolean {
     return this.unsavedContent.size > 0 || this.actionDrafts.size > 0 || this.routineDrafts.size > 0
   }
+  getListPage(section: AppSectionId, list: string): number {
+    return this.listPages.get(`${section}:${list}`) ?? 1
+  }
+  setListPage(section: AppSectionId, list: string, page: number): void {
+    this.listPages.set(
+      `${section}:${list}`,
+      Number.isFinite(page) ? Math.max(1, Math.floor(page)) : 1
+    )
+  }
+  setPanePosition(section: AppSectionId, pane: string, position: number): void {
+    this.panePositions.set(`${section}:${pane}`, position)
+  }
+  getPanePosition(section: AppSectionId, pane: string): number {
+    return this.panePositions.get(`${section}:${pane}`) ?? 0
+  }
   setPosition(section: AppSectionId, position: number): void {
     this.positions[section] = position
   }
@@ -156,18 +180,22 @@ export class UiSession {
     this.selectedAction = actionId
     this.positions[source] = document.querySelector('main')?.scrollTop ?? 0
     this.positions.today = 0
+    this.setPanePosition('today', 'detail', 0)
     this.onNavigate('today')
   }
   openProgressPeriod(from: string, through: string): void {
     this.applyProgressFilter({ goalId: '', from, through })
     this.positions.review = document.querySelector('main')?.scrollTop ?? 0
     this.positions.progress = 0
+    this.progressHistoryPage = 1
+    this.setPanePosition('progress', 'records', 0)
     this.onNavigate('progress')
   }
   openDataRecord(selection: DataRecordSelection, source: 'goals' | 'progress' | 'review'): void {
     this.selectedDataRecord = selection
     this.positions[source] = document.querySelector('main')?.scrollTop ?? 0
     this.positions.data = 0
+    this.setPanePosition('data', 'detail', 0)
     this.onNavigate('data')
   }
 }
@@ -208,8 +236,9 @@ export function usePagePosition(section: AppSectionId, ready: boolean): void {
       const main = document.querySelector('main')
       if (main) {
         main.scrollTop = session.getPosition(section)
-        const selected = main.querySelector<HTMLElement>('.goal-detail, .action-detail')
-        if (selected) revealStart(selected)
+        for (const pane of main.querySelectorAll<HTMLElement>('[data-scroll-key]')) {
+          pane.scrollTop = session.getPanePosition(section, pane.dataset.scrollKey ?? '')
+        }
       }
       restored.current = true
     })
@@ -219,7 +248,7 @@ export function usePagePosition(section: AppSectionId, ready: boolean): void {
 
 export function revealStart(element: HTMLElement | null): void {
   if (!element) return
-  const main = element.closest('main')
+  const main = element.closest<HTMLElement>('[data-scroll-key]') ?? element.closest('main')
   if (!main) return
   const bounds = element.getBoundingClientRect()
   const viewport = main.getBoundingClientRect()

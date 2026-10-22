@@ -172,3 +172,296 @@
     max-height: 38dvh;
   }
 }
+
+/* The notebook has two independent reading surfaces, not a scrolling dashboard. */
+.today-experiment {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.today-experiment .today-grid {
+  display: grid;
+  flex: 1;
+  grid-template-columns: 264px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  align-items: stretch;
+  gap: 0;
+  width: 100%;
+  max-width: none;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.today-experiment.is-master-collapsed .today-grid {
+  grid-template-columns: 48px minmax(0, 1fr);
+}
+
+.today-experiment .today-master {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border-right: 1px solid var(--color-line);
+}
+
+.today-experiment .today-master-header {
+  flex: none;
+  padding: 20px 18px 12px;
+}
+
+.today-experiment .today-master-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.today-experiment .today-master-title h1 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.5;
+  font-weight: 600;
+}
+
+.today-experiment .today-master-title button {
+  width: 28px;
+  min-height: 28px;
+  padding: 0;
+  font-size: 20px;
+}
+
+.today-experiment.is-master-collapsed .today-master-header {
+  padding: 18px 10px;
+}
+
+.today-experiment .today-master-header .empty-copy {
+  margin: 8px 0 10px;
+  font-size: 13px;
+}
+
+.today-experiment .today-date-row {
+  padding: 0;
+  margin: 0;
+  border: 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.today-experiment .today-date-label > strong {
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.today-experiment .today-master-list {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0;
+  overflow: auto;
+  min-height: 0;
+  min-width: 0;
+  padding: 4px 14px 18px;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.today-experiment .today-master [hidden] {
+  display: none;
+}
+
+.today-experiment .today-master-list > .goal-card {
+  margin: 0;
+  padding: 14px 0;
+  border: 0;
+}
+
+.today-experiment .today-master-list .card-heading {
+  margin-bottom: 8px;
+}
+
+.today-experiment .today-master-list .card-heading h2 {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--color-muted);
+  margin-top: 4px;
+}
+
+.today-experiment .today-master-list .card-heading .empty-copy {
+  font-size: 12px;
+  line-height: 1.5;
+  margin-top: 4px;
+}
+
+.today-experiment .today-master-list .action-list {
+  margin-top: 0;
+  gap: 6px;
+}
+
+.today-experiment .today-master-list .focus-row {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+}
+
+.today-experiment .today-master-list .focus-row > button:first-child,
+.today-experiment .today-master-list .goal-list-item {
+  border: 0;
+  border-radius: 6px;
+  padding: 10px;
+  width: 100%;
+  min-width: 0;
+  text-align: left;
+}
+
+.today-experiment .today-master-list .focus-row > .quiet-button {
+  justify-self: end;
+  min-height: 24px;
+  font-size: 13px;
+  padding: 2px 6px;
+}
+
+.today-experiment .today-master-list .candidate-row {
+  padding: 8px 0;
+  border: 0;
+}
+
+.today-experiment .today-master-list .candidate-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 0 8px;
+}
+
+.today-experiment .today-master-list .candidate-actions button {
+  min-height: 26px;
+  padding: 3px 5px;
+  font-size: 13px;
+  background: transparent;
+  color: var(--color-muted);
+}
+
+.today-experiment .today-master-footer {
+  flex: none;
+  padding: 12px 18px;
+  border-top: 1px solid var(--color-line);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--color-muted);
+}
+
+.today-experiment .today-grid > .today-detail-pane {
+  display: block;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  padding: 26px 28px 40px;
+  border: 0;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.today-experiment .today-detail-pane .action-detail > .detail-title-row h2 {
+  font-size: 23px;
+  max-width: none;
+  text-wrap: initial;
+}
+
+.today-experiment .today-history-heading,
+.today-experiment .today-history-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.today-experiment .today-history-heading > span,
+.today-experiment .today-history-pagination > span {
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+.today-experiment .today-history-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 13px;
+}
+
+.today-experiment .today-history-table th,
+.today-experiment .today-history-table td {
+  padding: 12px 8px;
+  border-bottom: 1px solid var(--color-line);
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+.today-experiment .today-history-table th {
+  color: var(--color-muted);
+  background: var(--color-hover);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.today-experiment .today-history-table th:first-child {
+  width: 100px;
+}
+.today-experiment .today-history-table th:nth-child(3) {
+  width: 82px;
+}
+.today-experiment .today-history-table th:last-child {
+  width: 56px;
+}
+.today-experiment .today-history-table small {
+  display: block;
+  color: var(--color-muted);
+}
+.today-experiment .today-history-table button {
+  padding: 0;
+  min-height: 24px;
+  background: transparent;
+  color: var(--color-action);
+}
+.today-experiment .today-history-pagination button {
+  padding: 4px 8px;
+  min-height: 28px;
+  font-size: 13px;
+  background: transparent;
+}
+.today-experiment .record-detail {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.today-create-dialog {
+  width: min(560px, calc(100vw - 48px));
+  max-height: calc(100dvh - 64px);
+  overflow: auto;
+}
+
+.today-create-dialog .goal-create {
+  display: grid;
+  gap: 16px;
+  width: 100%;
+  max-width: none;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+@media (max-width: 1000px) {
+  .today-experiment .today-grid {
+    grid-template-columns: 236px minmax(0, 1fr);
+  }
+  .today-experiment .today-grid > .today-detail-pane {
+    padding: 20px;
+  }
+}
+
+.today-experiment .today-date-row button {
+  font-size: 13px;
+}

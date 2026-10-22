@@ -31,6 +31,7 @@ test('keeps deletion keyboard-contained, cancellation read-only, and deletion ex
       return window.myTracer.dataControl.list()
     })
     await page.getByRole('navigation').getByRole('button', { name: '数据', exact: true }).click()
+    await page.locator('.data-tools-panel > summary').click()
     await page.getByText('删除目标、行动或例行', { exact: true }).click()
     const trigger = page.getByRole('button', { name: '预览永久删除影响' })
     await trigger.focus()

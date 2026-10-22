@@ -13,6 +13,8 @@
     "src/contracts/**/*.ts",
     "src/domain/**/*.ts",
     "src/infrastructure/**/*.ts",
-    "src/renderer/src/env.d.ts"
+    "src/renderer/src/env.d.ts",
+    "src/renderer/src/app/ui-session.ts",
+    "src/renderer/src/app/navigation.ts"
   ]
 }
