@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.2.0](https://github.com/Fyrefly-4/MyTracer/compare/v1.1.0...v1.2.0) (2026-10-22)
+
+
+### Features
+
+* add native Mica shell appearance preferences ([#90](https://github.com/Fyrefly-4/MyTracer/issues/90)) ([164bdf9](https://github.com/Fyrefly-4/MyTracer/commit/164bdf9a790be811b75e870faea866435bf3d6f7))
+* integrate approved MyTracer brand assets ([#93](https://github.com/Fyrefly-4/MyTracer/issues/93)) ([fc2faca](https://github.com/Fyrefly-4/MyTracer/commit/fc2facace1429f430306bf469d2d155c7c43ef2c))
+
+
+### Bug Fixes
+
+* restore viewed details within current page results ([#91](https://github.com/Fyrefly-4/MyTracer/issues/91)) ([240efbe](https://github.com/Fyrefly-4/MyTracer/commit/240efbe07e9bb1219098da9d1ca6b39ff1aae3f6))
+
 ## [1.1.0](https://github.com/Fyrefly-4/MyTracer/compare/v1.0.0...v1.1.0) (2026-10-22)
 
 
