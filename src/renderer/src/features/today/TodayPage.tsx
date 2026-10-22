@@ -33,6 +33,7 @@ import {
 } from '../../app/ui-session'
 import { RoutineRecordingPanel } from '../routines/RoutinesPage'
 import { AiStartHelpPanel } from './AiStartHelpPanel'
+import { TodayGoalContext } from './TodayGoalContext'
 import './today-workspace.css'
 
 const goalErrorText: Record<GoalErrorCode, string> = {
@@ -1647,6 +1648,15 @@ function TodayWorkspace(): ReactNode {
                   </>
                 ) : null}
               </div>
+
+              {detail.goal ? (
+                <TodayGoalContext
+                  key={`goal-context-${detail.id}-${detail.goal.id}`}
+                  goalId={detail.goal.id}
+                  goalName={detail.goal.name}
+                  refreshVersion={activityVersion}
+                />
+              ) : null}
 
               <ActionRecordingPanel
                 key={detail.id}
