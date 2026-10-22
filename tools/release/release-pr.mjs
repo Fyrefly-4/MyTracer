@@ -68,7 +68,7 @@ async function assertRepository(api) {
 }
 
 // Release Please's merged PR is the approval. A normal application push is not.
-export async function assertReleasePullRequest(api, sha) {
+async function releasePullRequests(api, sha) {
   const prs = await api.get(`/commits/${sha}/pulls?per_page=100`)
   check(Array.isArray(prs), 'release-pr-response')
   const matches = prs.filter(
@@ -83,7 +83,11 @@ export async function assertReleasePullRequest(api, sha) {
         ['autorelease: pending', 'autorelease: tagged'].includes(label.name)
       )
   )
-  check(matches.length === 1, 'merged-release-pr-required')
+  return matches
+}
+
+export async function assertReleasePullRequest(api, sha) {
+  check((await releasePullRequests(api, sha)).length === 1, 'merged-release-pr-required')
 }
 
 async function assertRelease(api, selection) {
@@ -98,11 +102,21 @@ async function assertRelease(api, selection) {
   return release
 }
 
-export async function selectRelease({ api, eventSha, created, releaseId, releaseSha, tag }) {
+export async function selectRelease({
+  api,
+  eventSha,
+  created,
+  releaseId,
+  releaseSha,
+  tag,
+  recovery
+}) {
   check(SHA.test(eventSha), 'event-sha')
   await assertRepository(api)
   let selection
-  if (created === 'true') {
+  if (recovery) {
+    selection = validateSelection(recovery)
+  } else if (created === 'true') {
     selection = validateSelection({
       releaseId: Number(releaseId),
       sourceRevision: releaseSha,
@@ -116,7 +130,10 @@ export async function selectRelease({ api, eventSha, created, releaseId, release
       (release) =>
         release.target_commitish === eventSha && /^v\d+\.\d+\.\d+$/.test(release.tag_name)
     )
-    if (releases.length === 0) return null
+    if (releases.length === 0) {
+      check((await releasePullRequests(api, eventSha)).length === 0, 'approved-release-not-found')
+      return null
+    }
     check(releases.length === 1, 'ambiguous-release')
     const release = releases[0]
     selection = validateSelection({
@@ -129,7 +146,21 @@ export async function selectRelease({ api, eventSha, created, releaseId, release
   const release = await assertRelease(api, selection)
   // A retry after successful publication is a read-only no-op, never an overwrite.
   if (!release.draft) return null
+  assertNewest(await api.allReleases(), selection)
   return selection
+}
+
+export function recoverySelection(env) {
+  check(env.GITHUB_REF === 'refs/heads/main', 'main-source-required')
+  check(['push', 'workflow_dispatch'].includes(env.GITHUB_EVENT_NAME), 'main-push-required')
+  if (env.GITHUB_EVENT_NAME === 'push') return undefined
+  check(/^[1-9]\d*$/.test(env.RECOVERY_RELEASE_ID ?? ''), 'release-id')
+  return validateSelection({
+    releaseId: Number(env.RECOVERY_RELEASE_ID),
+    sourceRevision: env.RECOVERY_SOURCE_SHA,
+    tag: env.RECOVERY_TAG,
+    version: env.RECOVERY_TAG?.slice(1)
+  })
 }
 
 export async function validateAssets(directory, selection) {
@@ -244,10 +275,7 @@ export async function publishRelease({ api, selection, directory }) {
 
 export async function run(mode, env = process.env) {
   check(env.GITHUB_REPOSITORY === REPOSITORY, 'workflow-repository')
-  check(
-    env.GITHUB_EVENT_NAME === 'push' && env.GITHUB_REF === 'refs/heads/main',
-    'main-push-required'
-  )
+  const recovery = recoverySelection(env)
   let selection
   if (mode === 'select') {
     selection = await selectRelease({
@@ -256,17 +284,26 @@ export async function run(mode, env = process.env) {
       created: env.RELEASE_CREATED,
       releaseId: env.RELEASE_ID,
       releaseSha: env.RELEASE_SHA,
-      tag: env.RELEASE_TAG
+      tag: env.RELEASE_TAG,
+      recovery
     })
     await appendFile(env.GITHUB_OUTPUT, `selection=${selection ? JSON.stringify(selection) : ''}\n`)
-    if (selection)
-      await appendFile(
-        env.GITHUB_STEP_SUMMARY,
-        `Release ${selection.tag}; source ${selection.sourceRevision}; draft ${selection.releaseId}.\n`
-      )
+    await appendFile(
+      env.GITHUB_STEP_SUMMARY,
+      selection
+        ? `Release ${selection.tag}; source ${selection.sourceRevision}; draft ${selection.releaseId}.\n`
+        : 'No build selected: ordinary push without a release, or exact release already published.\n'
+    )
     return
   }
   selection = validateSelection(JSON.parse(env.MYTRACER_RELEASE_SELECTION))
+  if (recovery)
+    check(
+      ['releaseId', 'sourceRevision', 'tag', 'version'].every(
+        (key) => selection[key] === recovery[key]
+      ),
+      'recovery-selection-mismatch'
+    )
   const sourceRevision = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim()
   check(sourceRevision === selection.sourceRevision, 'checkout-source')
   if (mode === 'bundle') return bundleAssets({ selection, sourceRevision })

@@ -11,6 +11,7 @@ import {
   publishRelease,
   ReleaseError,
   safeErrorCode,
+  recoverySelection,
   selectRelease,
   validateAssets,
   validateSelection
@@ -89,6 +90,7 @@ async function fixture(t) {
       if (path === '/releases/10') return state.release
       if (path === '/releases/10/assets?per_page=100') return [...state.remote]
       if (path === `/commits/${sha}/pulls?per_page=100`) return state.prs
+      if (path === `/commits/${otherSha}/pulls?per_page=100`) return []
       throw Error(`Unexpected fixture read: ${path}`)
     },
     async allReleases() {
@@ -197,6 +199,48 @@ test('ordinary push cannot publish an older draft', async (t) => {
   const f = await fixture(t)
   assert.equal(await f.select({ created: '', eventSha: otherSha }), null)
   noWrites(f)
+})
+
+test('an approved release missing from the API cannot silently skip the build', async (t) => {
+  const f = await fixture(t)
+  f.state.releases = []
+  await assert.rejects(() => f.select({ created: '' }), /approved-release-not-found/)
+  noWrites(f)
+})
+
+test('manual recovery selects the exact old release independently of the workflow SHA', async (t) => {
+  const f = await fixture(t)
+  f.state.releases = [] // Direct ID lookup also works when the list omits the draft.
+  assert.deepEqual(await f.select({ eventSha: otherSha, recovery: selection }), selection)
+  noWrites(f)
+})
+
+test('recovery validates identity and refuses newer stable releases before building', async (t) => {
+  const f = await fixture(t)
+  await assert.rejects(
+    () => f.select({ recovery: { ...selection, tag: 'v0.1.6', version: '0.1.6' } }),
+    /release-target/
+  )
+  f.state.releases.push({ id: 11, tag_name: 'v0.2.0', draft: false, prerelease: false })
+  await assert.rejects(() => f.select({ recovery: selection }), /newer-version-exists/)
+  noWrites(f)
+})
+
+test('dispatch requires main and all exact inputs; push ignores recovery inputs', () => {
+  const env = {
+    GITHUB_REF: 'refs/heads/main',
+    GITHUB_EVENT_NAME: 'workflow_dispatch',
+    RECOVERY_RELEASE_ID: '10',
+    RECOVERY_TAG: selection.tag,
+    RECOVERY_SOURCE_SHA: sha
+  }
+  assert.deepEqual(recoverySelection(env), selection)
+  for (const key of ['RECOVERY_RELEASE_ID', 'RECOVERY_TAG', 'RECOVERY_SOURCE_SHA']) {
+    assert.throws(() => recoverySelection({ ...env, [key]: '' }))
+  }
+  assert.throws(() => recoverySelection({ ...env, GITHUB_REF: 'refs/heads/feature' }))
+  assert.throws(() => recoverySelection({ ...env, GITHUB_EVENT_NAME: 'pull_request' }))
+  assert.equal(recoverySelection({ ...env, GITHUB_EVENT_NAME: 'push' }), undefined)
 })
 
 test('retry of a published version is a read-only no-op', async (t) => {
