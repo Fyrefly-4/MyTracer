@@ -281,45 +281,71 @@ test('failed revalidation keeps a retry after discard, and late reads cannot cha
   })
 })
 
-test('a late creation response does not replace a later explicit selection or its draft', async () => {
-  await fixture(async (page, app) => {
-    await app.evaluate(({ ipcMain }) => {
-      const handlers = Reflect.get(ipcMain, '_invokeHandlers') as Map<
-        string,
-        (...args: unknown[]) => unknown
-      >
-      const original = handlers.get('routines:create')!
-      ipcMain.removeHandler('routines:create')
-      ipcMain.handle('routines:create', async (...args) => {
-        const result = await original(...args)
-        return new Promise((resolve) =>
-          Reflect.set(globalThis, '__releaseRoutineCreate', () => resolve(result))
-        )
+for (const newerCreationInput of [false, true]) {
+  test(`late creation acknowledges success without losing selection or newer form input (${newerCreationInput})`, async () => {
+    await fixture(async (page, app) => {
+      await app.evaluate(({ ipcMain }) => {
+        const handlers = Reflect.get(ipcMain, '_invokeHandlers') as Map<
+          string,
+          (...args: unknown[]) => unknown
+        >
+        const original = handlers.get('routines:create')!
+        ipcMain.removeHandler('routines:create')
+        ipcMain.handle('routines:create', async (...args) => {
+          const result = await original(...args)
+          return new Promise((resolve) =>
+            Reflect.set(globalThis, '__releaseRoutineCreate', () => resolve(result))
+          )
+        })
       })
+      await page.getByRole('button', { name: '新建例行', exact: true }).click()
+      const create = page.getByRole('form', { name: '新建例行表单' })
+      await create.getByLabel('名称', { exact: true }).fill('已提交的新例行')
+      await create.getByLabel('最小行动', { exact: true }).fill('新的一步')
+      await create.getByRole('button', { name: '创建例行', exact: true }).click()
+      await expect
+        .poll(() => app.evaluate(() => typeof Reflect.get(globalThis, '__releaseRoutineCreate')))
+        .toBe('function')
+      if (newerCreationInput) {
+        await create.getByLabel('名称', { exact: true }).fill('下一份新建输入')
+        await create.getByLabel('最小行动', { exact: true }).fill('尚未提交的一步')
+      }
+      await page
+        .getByLabel('例行列表', { exact: true })
+        .getByRole('button', { name: /草稿例行2 / })
+        .click()
+      await openEditor(page)
+      await detail(page).getByLabel('名称', { exact: true }).fill('新建期间切换后的输入')
+      await app.evaluate(() => Reflect.get(globalThis, '__releaseRoutineCreate')())
+      await expect(detail(page).getByLabel('名称', { exact: true })).toHaveValue(
+        '新建期间切换后的输入'
+      )
+      const list = page.getByLabel('例行列表', { exact: true })
+      await expect(list.locator('.workspace-count')).toContainText('9 个例行')
+      const search = page.getByPlaceholder('搜索例行…')
+      await search.fill('已提交的新例行')
+      await expect(list.getByRole('button', { name: /已提交的新例行 / })).toBeVisible()
+      await expect(detail(page)).toHaveAttribute('aria-label', '草稿例行2 例行详情')
+      await expect(detail(page).getByLabel('名称', { exact: true })).toHaveValue(
+        '新建期间切换后的输入'
+      )
+      // Finish this content edit explicitly so reopening creation does not discard it.
+      await detail(page).getByRole('button', { name: '保存内容修改', exact: true }).click()
+      await expect(detail(page)).toHaveAttribute('aria-label', '新建期间切换后的输入 例行详情')
+      await page.getByRole('button', { name: '新建例行', exact: true }).click()
+      await expect(create.getByLabel('名称', { exact: true })).toHaveValue(
+        newerCreationInput ? '下一份新建输入' : ''
+      )
+      await expect(create.getByLabel('最小行动', { exact: true })).toHaveValue(
+        newerCreationInput ? '尚未提交的一步' : ''
+      )
+      const persisted = await page.evaluate(() => window.myTracer.routines.list({}))
+      expect(
+        persisted.ok && persisted.value.filter((item) => item.name === '已提交的新例行')
+      ).toHaveLength(1)
+      expect(persisted.ok && persisted.value.some((item) => item.name === '下一份新建输入')).toBe(
+        false
+      )
     })
-    await page.getByRole('button', { name: '新建例行', exact: true }).click()
-    const create = page.getByRole('form', { name: '新建例行表单' })
-    await create.getByLabel('名称', { exact: true }).fill('已提交的新例行')
-    await create.getByLabel('最小行动', { exact: true }).fill('新的一步')
-    await create.getByRole('button', { name: '创建例行', exact: true }).click()
-    await expect
-      .poll(() => app.evaluate(() => typeof Reflect.get(globalThis, '__releaseRoutineCreate')))
-      .toBe('function')
-    await page
-      .getByLabel('例行列表', { exact: true })
-      .getByRole('button', { name: /草稿例行2 / })
-      .click()
-    await openEditor(page)
-    await detail(page).getByLabel('名称', { exact: true }).fill('新建期间切换后的输入')
-    await app.evaluate(() => Reflect.get(globalThis, '__releaseRoutineCreate')())
-    await expect(detail(page).getByLabel('名称', { exact: true })).toHaveValue(
-      '新建期间切换后的输入'
-    )
-    await navigate(page, '首页')
-    await navigate(page, '例行')
-    await openEditor(page)
-    await expect(detail(page).getByLabel('名称', { exact: true })).toHaveValue(
-      '新建期间切换后的输入'
-    )
   })
-})
+}

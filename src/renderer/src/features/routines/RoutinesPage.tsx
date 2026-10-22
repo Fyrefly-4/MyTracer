@@ -507,6 +507,7 @@ function RoutineWorkspace(): ReactNode {
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [refreshVersion, setRefreshVersion] = useState(0)
+  const createRevision = useRef(0)
   const [createName, setCreateName] = useState('')
   const [createDescription, setCreateDescription] = useState('')
   const [createMinimumAction, setCreateMinimumAction] = useState('')
@@ -626,6 +627,7 @@ function RoutineWorkspace(): ReactNode {
   const submitCreate = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault()
     const sequence = editor.beginRead(false)
+    const submittedRevision = createRevision.current
     setBusy(true)
     const result = await window.myTracer.routines.create({
       goalId: createGoalId || null,
@@ -640,15 +642,20 @@ function RoutineWorkspace(): ReactNode {
       setError(routineErrorText[result.error.code])
       return
     }
-    if (!editor.acceptRead(sequence, result.value)) return
-    setCreateName('')
-    setCreateDescription('')
-    setCreateMinimumAction('')
-    setCreateGoalId('')
-    setCreateWeekdays([1, 2, 3, 4, 5])
-    setCreating(false)
-    session.selectRoutine(result.value.id)
-    setVerified(true)
+    // Acknowledge the write even if a later selection superseded this request.
+    // Only the submitted form revision can be cleared; newer input belongs to the user.
+    if (createRevision.current === submittedRevision) {
+      setCreateName('')
+      setCreateDescription('')
+      setCreateMinimumAction('')
+      setCreateGoalId('')
+      setCreateWeekdays([1, 2, 3, 4, 5])
+      setCreating(false)
+    }
+    if (editor.acceptRead(sequence, result.value)) {
+      session.selectRoutine(result.value.id)
+      setVerified(true)
+    }
     await refreshList()
     setRefreshVersion((version) => version + 1)
   }
@@ -890,7 +897,10 @@ function RoutineWorkspace(): ReactNode {
                   <input
                     required
                     value={createName}
-                    onChange={(event) => setCreateName(event.target.value)}
+                    onChange={(event) => {
+                      createRevision.current += 1
+                      setCreateName(event.target.value)
+                    }}
                   />
                 </label>
                 <label>
@@ -898,7 +908,10 @@ function RoutineWorkspace(): ReactNode {
                   <input
                     required
                     value={createMinimumAction}
-                    onChange={(event) => setCreateMinimumAction(event.target.value)}
+                    onChange={(event) => {
+                      createRevision.current += 1
+                      setCreateMinimumAction(event.target.value)
+                    }}
                   />
                 </label>
                 <label className="form-field-wide">
@@ -907,14 +920,20 @@ function RoutineWorkspace(): ReactNode {
                     aria-labelledby="routine-create-description-label"
                     rows={2}
                     value={createDescription}
-                    onChange={(event) => setCreateDescription(event.target.value)}
+                    onChange={(event) => {
+                      createRevision.current += 1
+                      setCreateDescription(event.target.value)
+                    }}
                   />
                 </label>
                 <label>
                   关联目标（可选，创建后不可改）
                   <select
                     value={createGoalId}
-                    onChange={(event) => setCreateGoalId(event.target.value)}
+                    onChange={(event) => {
+                      createRevision.current += 1
+                      setCreateGoalId(event.target.value)
+                    }}
                   >
                     <option value="">不关联目标</option>
                     {goals.map((goal) => (
@@ -928,7 +947,10 @@ function RoutineWorkspace(): ReactNode {
                   <RoutineWeekdayPicker
                     label="每周安排"
                     value={createWeekdays}
-                    onChange={setCreateWeekdays}
+                    onChange={(weekdays) => {
+                      createRevision.current += 1
+                      setCreateWeekdays(weekdays)
+                    }}
                     disabled={busy}
                   />
                 </div>
