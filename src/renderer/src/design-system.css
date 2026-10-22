@@ -124,6 +124,9 @@ small {
   -webkit-app-region: no-drag;
 }
 .brand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-family: var(--font-editorial);
   font-size: 18px;
   font-weight: 600;
@@ -641,4 +644,16 @@ body {
   display: grid;
   gap: 8px;
   min-width: 180px;
+}
+
+.titlebar-brand-mark {
+  width: 32px;
+  height: 32px;
+  flex: none;
+}
+.about-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-block: 16px;
 }

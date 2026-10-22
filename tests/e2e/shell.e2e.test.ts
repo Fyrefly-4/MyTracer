@@ -59,6 +59,19 @@ test('runs the Electron shell with an isolated userData root', async () => {
       page.getByRole('heading', { name: '看看最近走到了哪里。', exact: true })
     ).toBeVisible()
 
+    const mark = page.locator('.titlebar-brand-mark')
+    await expect(mark).toBeVisible()
+    expect(
+      await mark.evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth > 0)
+    ).toBe(true)
+    const iconSize = await application.evaluate(({ app, nativeImage }) => {
+      const icon = nativeImage.createFromPath(
+        `${app.getAppPath()}/../../resources/brand/MyTracer-app-icon-256.png`
+      )
+      return icon.getSize()
+    })
+    expect(iconSize).toEqual({ width: 256, height: 256 })
+
     const status = await page.evaluate(() => window.myTracer.shell.getStatus())
     expect(status.ai).toEqual({ configured: false, availability: 'not-configured' })
     expect(await page.evaluate(() => Object.keys(window.myTracer))).toEqual([
