@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/Fyrefly-4/MyTracer/compare/v1.0.0...v1.1.0) (2026-10-22)
+
+
+### Features
+
+* add home overview, record calendar, and right-pane routine recording ([#87](https://github.com/Fyrefly-4/MyTracer/issues/87)) ([0e0048d](https://github.com/Fyrefly-4/MyTracer/commit/0e0048d098e0e4c104f8020cfa0f5379b2b84e12))
+
 ## [1.0.0](https://github.com/Fyrefly-4/MyTracer/compare/v0.2.1...v1.0.0) (2026-10-22)
 
 
