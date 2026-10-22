@@ -1,3 +1,4 @@
+import type { HomeApi } from './home'
 import type { GoalApi } from './goals'
 import type { ActionApi } from './actions'
 import type { TodayApi } from './today'
@@ -28,6 +29,7 @@ export interface MyTracerApi {
   readonly shell: {
     readonly getStatus: () => Promise<ShellStatus>
   }
+  readonly home: HomeApi
   readonly goals: GoalApi
   readonly actions: ActionApi
   readonly today: TodayApi

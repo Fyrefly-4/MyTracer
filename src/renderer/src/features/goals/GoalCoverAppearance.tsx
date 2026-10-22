@@ -51,7 +51,7 @@ export function GoalCoverAppearance({ goalId }: { goalId: string }) {
         </label>
         <p id="goal-cover-help" className="empty-copy">
           1–2 个字符，例如
-          文、R、UI。留空时按首页卡片当前顺序显示一、二、三；自定义标记跟随目标。仅保存在本机，不更改目标名称或排列。
+          文、R、UI。留空时按首页卡片当前顺序显示“I、II、III”；自定义标记跟随目标。仅保存在本机，不更改目标名称或排列。
         </p>
         {error ? <p role="alert">{error}</p> : null}
         {message ? <p role="status">{message}</p> : null}

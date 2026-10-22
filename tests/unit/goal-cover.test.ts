@@ -11,21 +11,21 @@ import {
 describe('Goal cover presentation', () => {
   it('uses current visible position, with custom cards still occupying their position', () => {
     expect(['', '', ''].map((mark, position) => goalCoverMark(position, mark))).toEqual([
-      '一',
-      '二',
-      '三'
+      'I',
+      'II',
+      'III'
     ])
     expect(['R', '', ''].map((mark, position) => goalCoverMark(position, mark))).toEqual([
       'R',
-      '二',
-      '三'
+      'II',
+      'III'
     ])
     expect(['', 'R', ''].map((mark, position) => goalCoverMark(position, mark))).toEqual([
-      '一',
+      'I',
       'R',
-      '三'
+      'III'
     ])
-    expect(goalCoverMark(2, '')).toBe('三')
+    expect(goalCoverMark(2, '')).toBe('III')
   })
   it('validates graphemes without truncating Unicode or title-derived heuristics', () => {
     for (const mark of ['', '文', ' R ', 'UI', '👩🏽‍💻书', '🇨🇳', 'e\u0301']) {
@@ -33,7 +33,7 @@ describe('Goal cover presentation', () => {
     }
     for (const mark of ['ABC', '三字符', 'a b', 'a\nb', '\u202eR', '\ud800', '\u200d', '\u0301']) {
       expect(validateGoalCoverMark(mark).valid).toBe(false)
-      expect(goalCoverMark(1, mark)).toBe('二')
+      expect(goalCoverMark(1, mark)).toBe('II')
     }
   })
   it('persists per goal and clearing restores ordinal without rewriting another goal', () => {
@@ -59,7 +59,7 @@ describe('Goal cover presentation', () => {
         1,
         readGoalCoverMark('a', () => storage)
       )
-    ).toBe('二')
+    ).toBe('II')
     expect(readGoalCoverMark('b', () => storage)).toBe('文')
     values.set(`${GOAL_COVER_KEY_PREFIX}a`, 'invalid')
     expect(readGoalCoverMark('a', () => storage)).toBe('')

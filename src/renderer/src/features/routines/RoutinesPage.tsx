@@ -144,8 +144,25 @@ export function RoutineRecordingPanel(props: {
     session.setRoutineDraft(props.routineId, { context, outcome, durationMinutes, note })
   }, [context, durationMinutes, note, outcome, props.routineId, session])
 
+  // A previous instance can finish saving after this panel restores its draft.
+  // Refresh exposes the committed fact; only discard the consumed context,
+  // never a genuinely newer recording context still owned by the session.
+  if (
+    context &&
+    props.initialState?.record?.occurredOn === context.capturedOn &&
+    session.getRoutineDraft(props.routineId)?.context.recordingContextId !==
+      context.recordingContextId
+  ) {
+    setContext(null)
+    setRestoredNotice(false)
+    setDateConfirmation(null)
+    setInvalidContext(false)
+    setError(null)
+  }
+
   useEffect(() => {
     if (!context) {
+      contextRef.current = null
       if (restoreBeginFocus.current) {
         restoreBeginFocus.current = false
         revealStart(panelRef.current)
@@ -268,6 +285,7 @@ export function RoutineRecordingPanel(props: {
       setError('时长必须留空或填写非负整数分钟；0 表示不足一分钟但确有行动。')
       return
     }
+    const submittedContextId = context.recordingContextId
     setBusy(true)
     const result = await window.myTracer.routines.record({
       routineId: props.routineId,
@@ -277,6 +295,18 @@ export function RoutineRecordingPanel(props: {
       durationMinutes: actionOutcome ? parsedDuration : null,
       note: note.trim() || null
     })
+    // Persistence belongs to the submitted operation, not the panel lifetime.
+    // Selection can unmount this panel while Main is committing the record.
+    if (result.ok && result.value.kind !== 'date-confirmation-required') {
+      if (
+        session.getRoutineDraft(props.routineId)?.context.recordingContextId === submittedContextId
+      )
+        session.clearRoutineDraft(props.routineId)
+      if (!activeRef.current) {
+        await props.onSaved?.()
+        return
+      }
+    }
     if (!activeRef.current) return
     setBusy(false)
     if (!result.ok) {
@@ -292,7 +322,6 @@ export function RoutineRecordingPanel(props: {
     contextRef.current = null
     setRestoredNotice(false)
     setContext(null)
-    session.clearRoutineDraft(props.routineId)
     setDateConfirmation(null)
     setSavedMessage(
       `已保存：${routineRecordOutcomeText[result.value.record.outcome]} · ${result.value.record.occurredOn}`

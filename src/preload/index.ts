@@ -1,3 +1,10 @@
+import {
+  HOME_CHANNELS,
+  type HomeDayInputDto,
+  type HomeResult,
+  type HomeOverviewDto,
+  type HomeDayDto
+} from '../contracts/home'
 import { contextBridge, ipcRenderer } from 'electron'
 import {
   GOAL_CHANNELS,
@@ -127,6 +134,12 @@ import {
 } from '../contracts/updates'
 
 const api: MyTracerApi = Object.freeze({
+  home: Object.freeze({
+    get: (input: Readonly<Record<string, never>>): Promise<HomeResult<HomeOverviewDto>> =>
+      ipcRenderer.invoke(HOME_CHANNELS.get, input),
+    day: (input: HomeDayInputDto): Promise<HomeResult<HomeDayDto>> =>
+      ipcRenderer.invoke(HOME_CHANNELS.day, input)
+  }),
   shell: Object.freeze({
     getStatus: (): Promise<ShellStatus> => ipcRenderer.invoke(SHELL_STATUS_CHANNEL)
   }),

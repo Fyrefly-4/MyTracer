@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import {
   buildCalendarDays,
   calendarLevel,
@@ -13,22 +13,22 @@ import './calendar.css'
 
 export type { HomeCalendarRecord } from './calendar'
 export interface HomeRecordCalendarProps {
-  records: readonly HomeCalendarRecord[]
+  counts: readonly { date: string; count: number }[]
   today: string
   onOpenRecord: (record: Pick<HomeCalendarRecord, 'id' | 'type'>) => void
 }
 
-export function HomeRecordCalendar({ records, today, onOpenRecord }: HomeRecordCalendarProps) {
+export function HomeRecordCalendar({ counts, today, onOpenRecord }: HomeRecordCalendarProps) {
   const [preferences, setPreferences] = useState(() => readCalendarPreferences())
-  const [recordPage, setRecordPage] = useState(1)
   const [selected, setSelected] = useState<string | null>(null)
-  const days = buildCalendarDays(today, preferences.weeks, records)
+  const byDate = new Map(counts.map((item) => [item.date, item.count]))
+  const days = buildCalendarDays(today, preferences.weeks, []).map((day) => ({
+    ...day,
+    count: byDate.get(day.date) ?? 0
+  }))
   const visibleSelected = visibleCalendarSelection(selected, days)
   // Clear stale selection on range/date changes rather than resurrecting it later.
   if (visibleSelected !== selected) setSelected(visibleSelected)
-  const selectedRecords = records.filter((record) => record.occurredOn === visibleSelected)
-  const pageCount = Math.max(1, Math.ceil(selectedRecords.length / 10))
-  const visiblePage = Math.min(recordPage, pageCount)
   function updatePreferences(next: CalendarPreferences) {
     setPreferences(next)
     saveCalendarPreferences(next)
@@ -104,7 +104,6 @@ export function HomeRecordCalendar({ records, today, onOpenRecord }: HomeRecordC
                   title={`${day.date} · ${day.future ? '未来日期' : `${day.count} 条记录`}`}
                   onClick={() => {
                     setSelected(day.date)
-                    setRecordPage(1)
                   }}
                 />
               ))}
@@ -133,47 +132,105 @@ export function HomeRecordCalendar({ records, today, onOpenRecord }: HomeRecordC
               收起
             </button>
           </header>
-          {selectedRecords.length ? (
-            <>
-              <p>这一天留下了 {selectedRecords.length} 条记录。</p>
-              <ul>
-                {selectedRecords.slice((visiblePage - 1) * 10, visiblePage * 10).map((record) => (
-                  <li key={`${record.type}-${record.id}`}>
-                    <button type="button" onClick={() => onOpenRecord(record)}>
-                      <span>{record.type === 'action-record' ? '行动记录' : '例行记录'} · </span>
-                      {record.title}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-              {pageCount > 1 ? (
-                <nav className="hrc-pagination" aria-label="当日记录分页">
-                  <button
-                    type="button"
-                    disabled={visiblePage === 1}
-                    onClick={() => setRecordPage(visiblePage - 1)}
-                  >
-                    上一页
-                  </button>
-                  <span>
-                    第 {visiblePage} / {pageCount} 页
-                  </span>
-                  <button
-                    type="button"
-                    disabled={visiblePage === pageCount}
-                    onClick={() => setRecordPage(visiblePage + 1)}
-                  >
-                    下一页
-                  </button>
-                </nav>
-              ) : null}
-              <p>条数不是成绩，也不代表完成目标。</p>
-            </>
-          ) : (
-            <p>这一天暂时没有留下记录。没有记录，不代表没有行动。</p>
-          )}
+          <CalendarDayRecords
+            key={visibleSelected}
+            date={visibleSelected}
+            refreshToken={counts}
+            onOpenRecord={onOpenRecord}
+          />
         </section>
       )}
     </section>
+  )
+}
+
+function CalendarDayRecords({
+  date,
+  refreshToken,
+  onOpenRecord
+}: {
+  date: string
+  refreshToken: HomeRecordCalendarProps['counts']
+  onOpenRecord: HomeRecordCalendarProps['onOpenRecord']
+}) {
+  const [page, setPage] = useState(1)
+  const [retry, setRetry] = useState(0)
+  const [result, setResult] = useState<{
+    page: number
+    records: readonly HomeCalendarRecord[]
+    total: number
+  } | null>(null)
+  const [error, setError] = useState(false)
+  useEffect(() => {
+    let active = true
+    void window.myTracer.home
+      .day({ date, page })
+      .then((response) => {
+        if (!active) return
+        if (!response.ok) {
+          setError(true)
+          return
+        }
+        const lastPage = Math.max(1, Math.ceil(response.value.total / 10))
+        if (page > lastPage) {
+          setPage(lastPage)
+          return
+        }
+        setError(false)
+        setResult({ page, ...response.value })
+      })
+      .catch(() => {
+        if (active) setError(true)
+      })
+    return () => {
+      active = false
+    }
+  }, [date, page, retry, refreshToken])
+  if (error)
+    return (
+      <div role="alert">
+        当日记录暂时无法读取。
+        <button
+          type="button"
+          onClick={() => {
+            setError(false)
+            setRetry((n) => n + 1)
+          }}
+        >
+          重新读取当日记录
+        </button>
+      </div>
+    )
+  if (!result || result.page !== page) return <p role="status">正在读取当日记录…</p>
+  if (!result.total) return <p>这一天暂时没有留下记录。没有记录，不代表没有行动。</p>
+  const pageCount = Math.max(1, Math.ceil(result.total / 10))
+  return (
+    <>
+      <p>这一天留下了 {result.total} 条记录。</p>
+      <ul>
+        {result.records.map((record) => (
+          <li key={`${record.type}-${record.id}`}>
+            <button type="button" onClick={() => onOpenRecord(record)}>
+              <span>{record.type === 'action-record' ? '行动记录' : '例行记录'} · </span>
+              {record.title}
+            </button>
+          </li>
+        ))}
+      </ul>
+      {pageCount > 1 ? (
+        <nav className="hrc-pagination" aria-label="当日记录分页">
+          <button type="button" disabled={page === 1} onClick={() => setPage(page - 1)}>
+            上一页
+          </button>
+          <span>
+            第 {page} / {pageCount} 页
+          </span>
+          <button type="button" disabled={page === pageCount} onClick={() => setPage(page + 1)}>
+            下一页
+          </button>
+        </nav>
+      ) : null}
+      <p>条数不是成绩，也不代表完成目标。</p>
+    </>
   )
 }

@@ -146,3 +146,87 @@ for (const delayedChannel of ['actions:get-detail', 'records:list-for-action'] a
     }
   })
 }
+
+for (const remountSubmittedRoutine of [false, true]) {
+  test(`late successful routine save clears its draft and preserves selection (remount=${remountSubmittedRoutine})`, async () => {
+    const root = await createTemporaryTestRoot()
+    let application: ElectronApplication | undefined
+    try {
+      application = await electron.launch({
+        cwd: root.root,
+        args: [
+          join(process.cwd(), 'out/main/index.js'),
+          `--user-data-dir=${root.electronUserData}`
+        ],
+        env: minimalElectronEnvironment(root)
+      })
+      const page = await application.firstWindow()
+      await page.evaluate(async () => {
+        for (const name of ['延迟保存例行', '继续编辑例行']) {
+          const result = await window.myTracer.routines.create({
+            name,
+            minimumAction: '活动一下',
+            weekdays: [1, 2, 3, 4, 5, 6, 7]
+          })
+          if (!result.ok) throw new Error('Cannot create isolated routine')
+        }
+      })
+      await page.getByRole('navigation').getByRole('button', { name: '今天', exact: true }).click()
+      const master = page.locator('.today-master')
+      const first = master.getByRole('button', { name: /延迟保存例行/ })
+      const second = master.getByRole('button', { name: /继续编辑例行/ })
+      const savedPanel = page.getByLabel('延迟保存例行 例行记录', { exact: true })
+      const currentPanel = page.getByLabel('继续编辑例行 例行记录', { exact: true })
+      await first.click()
+      await savedPanel.getByRole('button', { name: '记录例行', exact: true }).click()
+      await savedPanel.getByLabel('备注（可选）').fill('提交的旧草稿')
+      await application.evaluate(({ ipcMain }) => {
+        const channel = 'routine-records:record'
+        const handlers = (
+          ipcMain as unknown as {
+            _invokeHandlers: Map<string, (...args: unknown[]) => unknown>
+          }
+        )._invokeHandlers
+        const original = handlers.get(channel)
+        if (!original) throw new Error('Missing routine record handler')
+        ipcMain.removeHandler(channel)
+        ipcMain.handle(channel, async (...args) => {
+          const result = await original(...args)
+          Reflect.set(globalThis, '__routineSaveCommitted', true)
+          await new Promise<void>((resolve) =>
+            Reflect.set(globalThis, '__releaseRoutineSave', resolve)
+          )
+          return result
+        })
+      })
+      await savedPanel.getByRole('button', { name: '保存例行记录', exact: true }).click()
+      await expect
+        .poll(() => application!.evaluate(() => Reflect.get(globalThis, '__routineSaveCommitted')))
+        .toBe(true)
+      await second.click()
+      await currentPanel.getByRole('button', { name: '记录例行', exact: true }).click()
+      await currentPanel.getByLabel('备注（可选）').fill('保留新选择的草稿')
+      // Remount A before its old request settles: its restored draft is a new
+      // object but still owns the consumed recording context.
+      if (remountSubmittedRoutine) {
+        await first.click()
+        await expect(savedPanel.getByLabel('备注（可选）')).toHaveValue('提交的旧草稿')
+      }
+      await application.evaluate(() => Reflect.get(globalThis, '__releaseRoutineSave')())
+      await expect(first).toContainText('有所行动')
+      await expect(first).not.toContainText('有未保存草稿')
+      await expect(remountSubmittedRoutine ? first : second).toHaveAttribute('aria-pressed', 'true')
+      if (!remountSubmittedRoutine) await first.click()
+      await expect(
+        savedPanel.getByRole('button', { name: '保存例行记录', exact: true })
+      ).toHaveCount(0)
+      await expect(savedPanel).not.toContainText('已恢复')
+      await second.click()
+      await expect(currentPanel.getByLabel('备注（可选）')).toHaveValue('保留新选择的草稿')
+      await currentPanel.getByRole('button', { name: '放弃草稿', exact: true }).click()
+    } finally {
+      await application?.close().catch(() => undefined)
+      await removeTemporaryTestRoot(root)
+    }
+  })
+}

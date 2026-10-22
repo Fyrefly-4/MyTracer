@@ -1,17 +1,21 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import type { DataControlListDto } from '../../../../contracts/data-control'
+import type { HomeOverviewDto, HomeRecordDto } from '../../../../contracts/home'
 import type { GoalSummaryDto } from '../../../../contracts/goals'
 import type { TodayViewDto } from '../../../../contracts/today'
 import { usePagePosition, useUiSession } from '../../app/ui-session'
-import { routineRecordOutcomeText } from '../../app/ui-text'
+import { factOutcomeText, routineRecordOutcomeText } from '../../app/ui-text'
 import { HomeRecordCalendar } from './HomeRecordCalendar'
 import { goalCoverMark, readGoalCoverMark } from '../goals/goal-cover'
-import { homeGoals, homeRecords } from './home-model'
+import type { HomeRecord } from './home-model'
 import './home.css'
+
+function presentRecord(record: HomeRecordDto): HomeRecord {
+  return { ...record, outcomeText: factOutcomeText[record.outcome] }
+}
 
 interface HomeSnapshot {
   readonly goals: readonly GoalSummaryDto[] | null
-  readonly data: DataControlListDto | null
+  readonly data: HomeOverviewDto | null
   readonly today: TodayViewDto | null
   readonly errors: readonly string[]
 }
@@ -24,22 +28,20 @@ export function HomePage(): ReactNode {
   usePagePosition('home', snapshot !== null)
   useEffect(() => {
     let active = true
-    void Promise.allSettled([
-      window.myTracer.goals.list({}),
-      window.myTracer.dataControl.list(),
-      window.myTracer.today.get({})
-    ]).then(([goals, data, today]) => {
-      if (!active) return
-      const errors: string[] = []
-      const goalsValue = goals.status === 'fulfilled' && goals.value.ok ? goals.value.value : null
-      const dataValue = data.status === 'fulfilled' && data.value.ok ? data.value.value : null
-      const todayValue = today.status === 'fulfilled' && today.value.ok ? today.value.value : null
-      if (!goalsValue) errors.push('目标暂时无法读取')
-      if (!dataValue) errors.push('历史记录暂时无法读取')
-      if (!todayValue) errors.push('今天的日期与例行暂时无法读取')
-      setSnapshot({ goals: goalsValue, data: dataValue, today: todayValue, errors })
-      setRefreshing(false)
-    })
+    void Promise.allSettled([window.myTracer.home.get({}), window.myTracer.today.get({})]).then(
+      ([data, today]) => {
+        if (!active) return
+        const errors: string[] = []
+        const dataValue = data.status === 'fulfilled' && data.value.ok ? data.value.value : null
+        const todayValue = today.status === 'fulfilled' && today.value.ok ? today.value.value : null
+        const goalsValue = dataValue?.goals ?? null
+        if (!goalsValue) errors.push('目标暂时无法读取')
+        if (!dataValue) errors.push('历史记录暂时无法读取')
+        if (!todayValue) errors.push('今天的日期与例行暂时无法读取')
+        setSnapshot({ goals: goalsValue, data: dataValue, today: todayValue, errors })
+        setRefreshing(false)
+      }
+    )
     return () => {
       active = false
     }
@@ -47,9 +49,13 @@ export function HomePage(): ReactNode {
   // Reload when returning to the app, and across a local midnight while left open.
   useEffect(() => {
     let day = new Date().toDateString()
+    let foregroundTimer: number | undefined
     const refresh = (): void => {
-      setRefreshing(true)
-      setReload((value) => value + 1)
+      window.clearTimeout(foregroundTimer)
+      foregroundTimer = window.setTimeout(() => {
+        setRefreshing(true)
+        setReload((value) => value + 1)
+      }, 100)
     }
     const visibility = (): void => {
       if (document.visibilityState === 'visible') refresh()
@@ -65,27 +71,28 @@ export function HomePage(): ReactNode {
     document.addEventListener('visibilitychange', visibility)
     return () => {
       window.clearInterval(timer)
+      window.clearTimeout(foregroundTimer)
       window.removeEventListener('focus', refresh)
       document.removeEventListener('visibilitychange', visibility)
     }
   }, [])
-  const today = snapshot?.today?.localDate
+  const today = snapshot?.data?.localDate ?? snapshot?.today?.localDate
   const records = useMemo(
-    () => (snapshot?.data && today ? homeRecords(snapshot.data, today) : []),
-    [snapshot, today]
-  )
-  const goals = useMemo(() => homeGoals(snapshot?.goals ?? [], records), [snapshot?.goals, records])
-  const latestByGoal = useMemo(() => {
-    const latest = new Map<string, (typeof records)[number]>()
-    for (const record of records)
-      if (record.goalId && !latest.has(record.goalId)) latest.set(record.goalId, record)
-    return latest
-  }, [records])
-  const actions = useMemo(
-    () => new Map(snapshot?.data?.actions.map((action) => [action.id, action])),
+    () => snapshot?.data?.recentRecords.map(presentRecord) ?? [],
     [snapshot?.data]
   )
-  const activeGoals = snapshot?.goals?.filter((goal) => goal.status === 'active').length ?? 0
+  const goals = snapshot?.data?.goals ?? []
+  const latestByGoal = useMemo(() => {
+    const latest = new Map<string, HomeRecord>()
+    for (const record of snapshot?.data?.latestByGoal ?? [])
+      if (record.goalId) latest.set(record.goalId, presentRecord(record))
+    return latest
+  }, [snapshot?.data])
+  const actions = useMemo(
+    () => new Map(snapshot?.data?.currentActions.map((action) => [action.id, action])),
+    [snapshot?.data]
+  )
+  const activeGoals = snapshot?.data?.activeGoalCount ?? 0
   const routines = snapshot?.today?.plannedRoutines ?? []
   const recordDataAvailable = Boolean(snapshot?.data && today)
   const openRecord = (record: { id: string; type: 'action-record' | 'routine-record' }): void =>
@@ -210,13 +217,13 @@ export function HomePage(): ReactNode {
               ) : (
                 <div className="home-empty">
                   <h3>
-                    {snapshot.goals.length
+                    {snapshot.data?.totalGoalCount
                       ? '这里暂时没有活跃的目标。'
                       : '先给一件想做的事留个位置。'}
                   </h3>
                   <p>不必先写完整计划。一个方向、一个小步骤，就可以作为开始。</p>
                   <button type="button" onClick={() => session.openSection('goals')}>
-                    {snapshot.goals.length ? '查看已有目标' : '＋ 留下一个目标'}
+                    {snapshot.data?.totalGoalCount ? '查看已有目标' : '＋ 留下一个目标'}
                   </button>
                 </div>
               )
@@ -226,7 +233,11 @@ export function HomePage(): ReactNode {
           </section>
           <div className="home-below">
             {recordDataAvailable && today ? (
-              <HomeRecordCalendar records={records} today={today} onOpenRecord={openRecord} />
+              <HomeRecordCalendar
+                counts={snapshot.data!.calendarCounts}
+                today={today}
+                onOpenRecord={openRecord}
+              />
             ) : (
               <section>
                 <h2>留下的痕迹</h2>

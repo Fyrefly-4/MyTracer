@@ -208,8 +208,8 @@ test('home distinguishes failed reads from empty records and safely recovers inv
       'true'
     )
     await app.evaluate(({ ipcMain }) => {
-      ipcMain.removeHandler('data-control:list')
-      ipcMain.handle('data-control:list', () => ({
+      ipcMain.removeHandler('home:get')
+      ipcMain.handle('home:get', () => ({
         ok: false,
         error: { code: 'persistence-failed', message: 'isolated fixture error' }
       }))
@@ -219,7 +219,7 @@ test('home distinguishes failed reads from empty records and safely recovers inv
     await expect(page.getByRole('alert')).toContainText('历史记录暂时无法读取')
     await expect(page.locator('.hrc-cell')).toHaveCount(0)
     await expect(page.getByText('现在还没有记录。做过一点以后，随时回来记下。')).toHaveCount(0)
-    await expect(page.getByRole('heading', { name: '先给一件想做的事留个位置。' })).toBeVisible()
+    await expect(page.getByText('目标概览暂时不可用。', { exact: true })).toBeVisible()
     await page.getByRole('button', { name: '重新读取', exact: true }).click()
     await expect(page.getByRole('alert')).toContainText('历史记录暂时无法读取')
     await page.getByRole('navigation').getByRole('button', { name: '今天', exact: true }).click()
@@ -230,5 +230,57 @@ test('home distinguishes failed reads from empty records and safely recovers inv
     } finally {
       await removeTemporaryTestRoot(root)
     }
+  }
+})
+
+test('Home calendar requests bounded day pages and reports day-query failure without an empty-state lie', async () => {
+  const root = await createTemporaryTestRoot()
+  let app: Awaited<ReturnType<typeof electron.launch>> | undefined
+  try {
+    app = await electron.launch({
+      cwd: root.root,
+      args: [join(process.cwd(), 'out/main/index.js'), `--user-data-dir=${root.electronUserData}`],
+      env: minimalElectronEnvironment(root)
+    })
+    const page = await app.firstWindow()
+    const today = await page.evaluate(async () => {
+      const date = await window.myTracer.today.get({})
+      const goal = await window.myTracer.goals.create({
+        name: '分页验证',
+        initialNextAction: { title: '实际记录' }
+      })
+      if (!date.ok || !goal.ok || !goal.value.currentNextActionId) throw new Error('seed failed')
+      for (let index = 0; index < 11; index++) {
+        const result = await window.myTracer.dataControl.backfillActionRecord({
+          actionId: goal.value.currentNextActionId,
+          occurredOn: date.value.localDate,
+          outcome: 'partial',
+          durationMinutes: 0,
+          note: `记录 ${index}`
+        })
+        if (!result.ok) throw new Error('record failed')
+      }
+      return date.value.localDate
+    })
+    await page.reload()
+    await page.getByRole('button', { name: `${today} · 11 条记录`, exact: true }).click()
+    const day = page.getByRole('region', { name: `${today} 的记录`, exact: true })
+    await expect(day.locator('li')).toHaveCount(10)
+    await day.getByRole('button', { name: '下一页', exact: true }).click()
+    await expect(day.locator('li')).toHaveCount(1)
+    await expect(day).toContainText('第 2 / 2 页')
+    await app.evaluate(({ ipcMain }) => {
+      ipcMain.removeHandler('home:day')
+      ipcMain.handle('home:day', () => ({
+        ok: false,
+        error: { code: 'persistence-failed', message: 'isolated test' }
+      }))
+    })
+    await day.getByRole('button', { name: '上一页', exact: true }).click()
+    await expect(day.getByRole('alert')).toContainText('当日记录暂时无法读取')
+    await expect(day).not.toContainText('这一天暂时没有留下记录')
+  } finally {
+    await app?.close()
+    await removeTemporaryTestRoot(root)
   }
 })

@@ -1,6 +1,6 @@
 /** Cosmetic, device-local preferences: never goal facts or ordering inputs. */
 export const GOAL_COVER_KEY_PREFIX = 'mytracer.goal-cover.v1:'
-const ordinals = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十']
+const ordinals = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X']
 
 export function validateGoalCoverMark(input: string): { value: string; valid: boolean } {
   const value = input.trim()

@@ -62,9 +62,9 @@ test('goal cover defaults follow visible order while custom marks stay with thei
       return { goals: result, today: today.value.localDate }
     })
     await navigate(page, '首页')
-    await expect(cover(page, '写作目标')).toHaveText('一')
-    await expect(cover(page, '运动目标')).toHaveText('二')
-    await expect(cover(page, '晨读目标')).toHaveText('三')
+    await expect(cover(page, '写作目标')).toHaveText('I')
+    await expect(cover(page, '运动目标')).toHaveText('II')
+    await expect(cover(page, '晨读目标')).toHaveText('III')
     await navigate(page, '目标')
     await page.evaluate(
       async ({ actionId, today }) => {
@@ -79,9 +79,9 @@ test('goal cover defaults follow visible order while custom marks stay with thei
       { actionId: seeded.goals[0].actionId, today: seeded.today }
     )
     await navigate(page, '首页')
-    await expect(cover(page, '晨读目标')).toHaveText('一')
-    await expect(cover(page, '写作目标')).toHaveText('二')
-    await expect(cover(page, '运动目标')).toHaveText('三')
+    await expect(cover(page, '晨读目标')).toHaveText('I')
+    await expect(cover(page, '写作目标')).toHaveText('II')
+    await expect(cover(page, '运动目标')).toHaveText('III')
 
     const beforeAppearance = await page.evaluate(() => window.myTracer.dataControl.list())
     let detail = await openAppearance(page, '运动目标')
@@ -100,7 +100,7 @@ test('goal cover defaults follow visible order while custom marks stay with thei
     await expect(detail.getByRole('alert')).toContainText('无法保存')
     await expect(detail.getByLabel('首页标记（可选）', { exact: true })).toHaveValue('👩🏽‍💻书')
     await navigate(page, '首页')
-    await expect(cover(page, '运动目标')).toHaveText('三')
+    await expect(cover(page, '运动目标')).toHaveText('III')
     expect(await page.evaluate(() => window.myTracer.dataControl.list())).toEqual(beforeAppearance)
     await page.evaluate(() => {
       const fixture = window as Window & { restoreCoverStorage?: () => void }
@@ -161,15 +161,15 @@ test('goal cover defaults follow visible order while custom marks stay with thei
       '运动目标改名 概览'
     )
     await expect(cover(page, '运动目标改名')).toHaveText('👩🏽‍💻书')
-    await expect(cover(page, '晨读目标')).toHaveText('二')
-    await expect(cover(page, '写作目标')).toHaveText('三')
+    await expect(cover(page, '晨读目标')).toHaveText('II')
+    await expect(cover(page, '写作目标')).toHaveText('III')
 
     const beforeClear = await page.evaluate(() => window.myTracer.dataControl.list())
     detail = await openAppearance(page, '运动目标改名')
     await detail.getByLabel('首页标记（可选）', { exact: true }).fill('')
     await detail.getByRole('button', { name: '保存外观', exact: true }).click()
     await navigate(page, '首页')
-    await expect(cover(page, '运动目标改名')).toHaveText('一')
+    await expect(cover(page, '运动目标改名')).toHaveText('I')
     expect(
       await page.evaluate(
         (id) => localStorage.getItem(`mytracer.goal-cover.v1:${encodeURIComponent(id)}`),
@@ -178,7 +178,7 @@ test('goal cover defaults follow visible order while custom marks stay with thei
     ).toBeNull()
     expect(await page.evaluate(() => window.myTracer.dataControl.list())).toEqual(beforeClear)
     await page.reload()
-    await expect(cover(page, '运动目标改名')).toHaveText('一')
+    await expect(cover(page, '运动目标改名')).toHaveText('I')
   } finally {
     await app?.close().catch(() => undefined)
     await removeTemporaryTestRoot(root)

@@ -1,3 +1,5 @@
+import { SqliteHomeQuery } from './home-query'
+import type { HomeQueryPort } from '../../application/home'
 import { mkdirSync } from 'node:fs'
 import { dirname } from 'node:path'
 import Database from 'better-sqlite3'
@@ -11,9 +13,11 @@ export interface SqlitePragmas {
 }
 
 export class SqliteConnection implements UnitOfWorkPort {
+  readonly homeQuery: HomeQueryPort
   readonly repository: RepositoryPort
   private constructor(private readonly database: Database.Database) {
     this.repository = new SqliteRepository(database)
+    this.homeQuery = new SqliteHomeQuery(database)
   }
 
   static open(databasePath: string): SqliteConnection {

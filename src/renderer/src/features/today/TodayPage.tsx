@@ -930,8 +930,10 @@ function TodayWorkspace(): ReactNode {
     actionId?: string,
     selectionAtRequest = session.todaySelection
   ): Promise<void> => {
+    if (!activeRef.current) return
     setActivityVersion((version) => version + 1)
     const todayResult = await window.myTracer.today.get({})
+    if (!activeRef.current) return
     if (!todayResult.ok) {
       setError(actionErrorText[todayResult.error.code])
       return
