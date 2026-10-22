@@ -63,6 +63,7 @@ test('saves quick and deep records without a Today prerequisite and preserves th
       return created.value.currentNextAction.id
     })
     await page.reload()
+    await page.getByRole('navigation').getByRole('button', { name: '今天', exact: true }).click()
 
     expect(await page.evaluate(() => window.myTracer.today.get({}))).toMatchObject({
       ok: true,

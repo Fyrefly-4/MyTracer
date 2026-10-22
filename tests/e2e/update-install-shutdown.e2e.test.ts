@@ -68,7 +68,9 @@ test('rejects a second Electron process sharing the same temporary userData', as
       env: minimalElectronEnvironment(root)
     })
     const page = await application.firstWindow()
-    await expect(page.getByRole('heading', { name: '今天', exact: true })).toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: '看看最近走到了哪里。', exact: true })
+    ).toBeVisible()
     const second = spawnSync(
       join(process.cwd(), 'node_modules/electron/dist/electron.exe'),
       [join(process.cwd(), 'out/main/index.js'), `--user-data-dir=${root.electronUserData}`],
@@ -77,7 +79,9 @@ test('rejects a second Electron process sharing the same temporary userData', as
     expect(second.error).toBeUndefined()
     expect(second.status).toBe(0)
     expect(application.process().exitCode).toBeNull()
-    await expect(page.getByRole('heading', { name: '今天', exact: true })).toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: '看看最近走到了哪里。', exact: true })
+    ).toBeVisible()
   } finally {
     await application?.close().catch(() => undefined)
     await removeTemporaryTestRoot(root)
@@ -200,6 +204,7 @@ test('blocks an unsubmitted AI input and an unconfirmed AI suggestion', async ()
       if (!selected.ok) throw new Error('Today setup failed')
     })
     await page.reload()
+    await page.getByRole('navigation').getByRole('button', { name: '今天', exact: true }).click()
     await page
       .getByRole('button', { name: /T083 AI Action/ })
       .first()

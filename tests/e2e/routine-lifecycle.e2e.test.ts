@@ -51,7 +51,11 @@ test('manages a Routine lifecycle, shows its Today plan, and preserves history o
     await expect(detail.getByText('活跃', { exact: true })).toBeVisible()
 
     await page.getByRole('button', { name: '今天', exact: true }).click()
-    const planned = page.getByRole('article').filter({ hasText: '晨间伸展' })
+    await page
+      .getByLabel('今日例行计划', { exact: true })
+      .getByRole('button', { name: /^晨间伸展 / })
+      .click()
+    const planned = page.getByLabel('晨间伸展 例行详情', { exact: true })
     await expect(planned.getByText('最小行动：伸展 2 分钟')).toBeVisible()
     await expect(planned.getByText('目标：维持身体状态 · 活跃')).toBeVisible()
     await expect(planned.getByText('未记录', { exact: true }).first()).toBeVisible()

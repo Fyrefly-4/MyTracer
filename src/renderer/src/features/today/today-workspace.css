@@ -364,7 +364,8 @@
   scrollbar-gutter: stable;
 }
 
-.today-experiment .today-detail-pane .action-detail > .detail-title-row h2 {
+.today-experiment .today-detail-pane .action-detail > .detail-title-row h2,
+.today-experiment .today-detail-pane .today-routine-detail > .detail-title-row h2 {
   font-size: 23px;
   max-width: none;
   text-wrap: initial;
@@ -464,4 +465,42 @@
 
 .today-experiment .today-date-row button {
   font-size: 13px;
+}
+
+/* Routines share the detail workspace; the master remains a compact selector. */
+.today-experiment .today-routine-row {
+  display: grid;
+  gap: 5px;
+  width: 100%;
+  min-width: 0;
+  padding: 10px;
+  border: 0;
+  border-radius: 6px;
+  text-align: left;
+  color: var(--color-text);
+  background: transparent;
+  overflow-wrap: anywhere;
+}
+
+.today-experiment .today-routine-row[aria-pressed='true'] {
+  background: var(--color-support);
+}
+
+.today-experiment .today-routine-row span,
+.today-experiment .today-routine-row small {
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.today-experiment .today-routine-detail {
+  min-width: 0;
+}
+
+.today-experiment .today-routine-detail .routine-recording-panel {
+  margin-top: 20px;
+}
+
+.today-experiment .today-routine-detail .recording-fields {
+  min-width: 0;
 }

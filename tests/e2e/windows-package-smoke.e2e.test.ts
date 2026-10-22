@@ -38,13 +38,16 @@ async function verifyPackagedApplication(
     expect(await application.evaluate(({ app }) => app.getVersion())).toBe(expectedVersion)
 
     const page = await application.firstWindow()
-    await expect(page.getByRole('heading', { name: '今天', exact: true })).toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: '看看最近走到了哪里。', exact: true })
+    ).toBeVisible()
     expect(await page.evaluate(() => window.myTracer.shell.getStatus())).toMatchObject({
       appName: 'MyTracer',
       platform: 'windows',
       ai: { configured: false, availability: 'not-configured' }
     })
     expect(await page.evaluate(() => Object.keys(window.myTracer))).toEqual([
+      'home',
       'shell',
       'updates',
       'goals',
@@ -60,6 +63,8 @@ async function verifyPackagedApplication(
       'aiStartHelp',
       'aiConfiguration'
     ])
+    expect(await page.evaluate(() => Object.keys(window.myTracer.home))).toEqual(['get', 'day'])
+    expect(await page.evaluate(() => Object.isFrozen(window.myTracer.home))).toBe(true)
     expect(await page.evaluate(() => Object.keys(window.myTracer.shell))).toEqual(['getStatus'])
     expect(await page.evaluate(() => Object.keys(window.myTracer.updates))).toEqual([
       'getStatus',
@@ -80,7 +85,9 @@ async function verifyPackagedApplication(
       state: 'error',
       error: { code: 'not-configured' }
     })
-    await expect(page.getByRole('heading', { name: '今天', exact: true })).toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: '看看最近走到了哪里。', exact: true })
+    ).toBeVisible()
     expect(await page.evaluate(() => Object.keys(window.myTracer.goals))).toEqual([
       'create',
       'updateDetails',

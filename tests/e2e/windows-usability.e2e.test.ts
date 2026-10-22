@@ -82,6 +82,10 @@ test('does not claim rollback after a rendered failure following a successful sa
       window.myTracer.goals.create({ name: '界面异常前已保存的目标' })
     )
     expect(saved.ok).toBe(true)
+    // Leave Home and finish Today's initial queries before injecting the Goals failure.
+    // Otherwise Home's pending/focus refresh can consume the malformed response first.
+    await page.getByRole('navigation').getByRole('button', { name: '今天', exact: true }).click()
+    await expect(page.locator('.today-date-label strong')).toHaveText(/^\d{4}-\d{2}-\d{2}$/)
     await application.evaluate(({ ipcMain }) => {
       ipcMain.removeHandler('goals:list')
       ipcMain.handle('goals:list', () => ({ ok: true, value: [null] }))

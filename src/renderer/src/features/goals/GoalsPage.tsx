@@ -15,6 +15,7 @@ import {
   useUnsavedContent
 } from '../../app/ui-session'
 import { goalStatusText, actionStatusText, recordOutcomeText } from '../../app/ui-text'
+import { GoalCoverAppearance } from './GoalCoverAppearance'
 import { RecoveryPanel } from './RecoveryPanel'
 import type { GoalActivityViewDto } from '../../../../contracts/progress'
 
@@ -236,7 +237,10 @@ function GoalWorkspace(): ReactNode {
             setEditDescription(result.value.description ?? '')
             setSelectedActionId(result.value.currentNextActionId ?? unsetNextActionOption)
           } else {
-            if (result.error.code === 'not-found') session.selectGoal(null)
+            if (result.error.code === 'not-found') {
+              session.clearGoalCoverDraft(goalId)
+              session.selectGoal(null)
+            }
             setSelectionError(goalErrorText[result.error.code])
           }
           setSelectionLoaded(true)
@@ -807,6 +811,8 @@ function GoalWorkspace(): ReactNode {
                       保存修改
                     </button>
                   </form>
+
+                  <GoalCoverAppearance key={detail.id} goalId={detail.id} />
 
                   {detail.status === 'active' ? (
                     <div className="current-action-control">

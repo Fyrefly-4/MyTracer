@@ -56,7 +56,9 @@ test('explicit check and confirmation download only, with plain text notes and n
       page.getByText(`版本 ${nextVersion} 已下载并校验。稍后可继续使用当前版本。`)
     ).toBeVisible()
     await page.getByRole('button', { name: '稍后' }).click()
-    await expect(page.getByRole('heading', { name: '今天', exact: true })).toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: '看看最近走到了哪里。', exact: true })
+    ).toBeVisible()
     expect(await page.evaluate(() => window.myTracer.updates.getStatus())).toMatchObject({
       state: 'downloaded'
     })
@@ -100,7 +102,9 @@ test('missing token, rejected token and offline source leave the core UI usable'
         )
         .toBe(expected)
       await page.getByRole('button', { name: '稍后' }).click()
-      await expect(page.getByRole('heading', { name: '今天', exact: true })).toBeVisible()
+      await expect(
+        page.getByRole('heading', { name: '看看最近走到了哪里。', exact: true })
+      ).toBeVisible()
       await page.getByRole('button', { name: '进展', exact: true }).click()
       await expect(page.getByRole('heading', { name: '进展', exact: true })).toBeVisible()
     } finally {

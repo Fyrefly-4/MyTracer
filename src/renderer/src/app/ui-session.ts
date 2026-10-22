@@ -54,6 +54,7 @@ export interface DataRecordSelection {
 export class UiSession {
   private selectedGoal: string | null = null
   private selectedAction: string | null = null
+  private selectedToday: { type: 'action' | 'routine'; id: string } | null = null
   private selectedRoutine: string | null = null
   private recoveryGoal: string | null = null
   private selectedDataRecord: DataRecordSelection | null = null
@@ -66,11 +67,18 @@ export class UiSession {
   private listPages = new Map<string, number>()
   private actionDrafts = new Map<string, ActionRecordingDraft>()
   private routineDrafts = new Map<string, RoutineRecordingDraft>()
+  private goalCoverDrafts = new Map<string, string>()
   private unsavedContent = new Set<string>()
 
   constructor(private readonly onNavigate: (section: AppSectionId) => void) {}
   get goalId(): string | null {
     return this.selectedGoal
+  }
+  get todaySelection(): { type: 'action' | 'routine'; id: string } | null {
+    return this.selectedToday
+  }
+  selectTodayRoutine(id: string | null): void {
+    this.selectedToday = id ? { type: 'routine', id } : null
   }
   get actionId(): string | null {
     return this.selectedAction
@@ -104,6 +112,7 @@ export class UiSession {
   }
   selectAction(id: string | null): void {
     this.selectedAction = id
+    this.selectedToday = id ? { type: 'action', id } : null
   }
   setGoalFilter(filter: GoalStatusDto | ''): void {
     this.filter = filter
@@ -148,12 +157,26 @@ export class UiSession {
   hasRoutineDraft(routineId: string): boolean {
     return this.routineDrafts.has(routineId)
   }
+  getGoalCoverDraft(goalId: string): string | null {
+    return this.goalCoverDrafts.get(goalId) ?? null
+  }
+  setGoalCoverDraft(goalId: string, draft: string): void {
+    this.goalCoverDrafts.set(goalId, draft)
+  }
+  clearGoalCoverDraft(goalId: string): void {
+    this.goalCoverDrafts.delete(goalId)
+  }
   setUnsavedContent(source: string, unsaved: boolean): void {
     if (unsaved) this.unsavedContent.add(source)
     else this.unsavedContent.delete(source)
   }
   hasUnsavedContent(): boolean {
-    return this.unsavedContent.size > 0 || this.actionDrafts.size > 0 || this.routineDrafts.size > 0
+    return (
+      this.unsavedContent.size > 0 ||
+      this.actionDrafts.size > 0 ||
+      this.routineDrafts.size > 0 ||
+      this.goalCoverDrafts.size > 0
+    )
   }
   getListPage(section: AppSectionId, list: string): number {
     return this.listPages.get(`${section}:${list}`) ?? 1
@@ -176,8 +199,23 @@ export class UiSession {
   getPosition(section: AppSectionId): number {
     return this.positions[section] ?? 0
   }
-  openAction(actionId: string, source: 'goals' | 'review' = 'goals'): void {
-    this.selectedAction = actionId
+  openSection(section: AppSectionId, source: AppSectionId = 'home'): void {
+    this.positions[source] = document.querySelector('main')?.scrollTop ?? 0
+    this.onNavigate(section)
+  }
+  openGoal(goalId: string): void {
+    this.selectedGoal = goalId
+    this.filter = ''
+    this.setPanePosition('goals', 'detail', 0)
+    this.openSection('goals')
+  }
+  openTodayRoutine(routineId: string): void {
+    this.selectTodayRoutine(routineId)
+    this.setPanePosition('today', 'detail', 0)
+    this.openSection('today')
+  }
+  openAction(actionId: string, source: 'goals' | 'review' | 'home' = 'goals'): void {
+    this.selectAction(actionId)
     this.positions[source] = document.querySelector('main')?.scrollTop ?? 0
     this.positions.today = 0
     this.setPanePosition('today', 'detail', 0)
@@ -191,7 +229,10 @@ export class UiSession {
     this.setPanePosition('progress', 'records', 0)
     this.onNavigate('progress')
   }
-  openDataRecord(selection: DataRecordSelection, source: 'goals' | 'progress' | 'review'): void {
+  openDataRecord(
+    selection: DataRecordSelection,
+    source: 'goals' | 'progress' | 'review' | 'home'
+  ): void {
     this.selectedDataRecord = selection
     this.positions[source] = document.querySelector('main')?.scrollTop ?? 0
     this.positions.data = 0

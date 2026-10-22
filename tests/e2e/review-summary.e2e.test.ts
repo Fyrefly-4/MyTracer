@@ -213,7 +213,9 @@ test('keeps a Sunday period fixed across Monday and captures a new week only aft
       return result.value.reviewContextId
     })
     await page.reload()
-    await expect(page.getByRole('heading', { name: '今天', exact: true })).toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: '看看最近走到了哪里。', exact: true })
+    ).toBeVisible()
     expect(
       await page.evaluate(
         (reviewContextId) => window.myTracer.review.getSummary({ reviewContextId }),

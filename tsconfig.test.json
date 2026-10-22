@@ -15,6 +15,10 @@
     "src/infrastructure/**/*.ts",
     "src/renderer/src/env.d.ts",
     "src/renderer/src/app/ui-session.ts",
-    "src/renderer/src/app/navigation.ts"
+    "src/renderer/src/app/navigation.ts",
+    "src/renderer/src/features/home/calendar.ts",
+    "src/renderer/src/features/goals/goal-cover.ts",
+    "src/renderer/src/features/home/home-model.ts",
+    "src/renderer/src/app/ui-text.ts"
   ]
 }

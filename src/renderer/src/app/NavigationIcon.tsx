@@ -2,6 +2,14 @@ import type { ReactNode } from 'react'
 import type { AppSectionId } from './navigation'
 
 const paths: Record<AppSectionId, ReactNode> = {
+  home: (
+    <>
+      <rect x="3" y="3" width="7" height="7" rx="1" />
+      <rect x="14" y="3" width="7" height="7" rx="1" />
+      <rect x="3" y="14" width="7" height="7" rx="1" />
+      <rect x="14" y="14" width="7" height="7" rx="1" />
+    </>
+  ),
   today: (
     <>
       <path d="m3 10 9-7 9 7" />

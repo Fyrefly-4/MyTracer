@@ -14,7 +14,9 @@ test('keeps the notebook shell reachable with native controls and enlarged inter
       env: minimalElectronEnvironment(root)
     })
     const page = await application.firstWindow()
-    await expect(page.getByRole('heading', { name: '今天', exact: true })).toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: '看看最近走到了哪里。', exact: true })
+    ).toBeVisible()
     await application.evaluate(({ BrowserWindow }) => {
       BrowserWindow.getAllWindows()[0].setContentSize(1280, 800)
     })
@@ -70,14 +72,19 @@ test('keeps the notebook shell reachable with native controls and enlarged inter
         .locator('.topbar')
         .evaluate((element) => getComputedStyle(element).getPropertyValue('-webkit-app-region'))
     ).toBe('drag')
-    await expect(page.locator('.nav-icon')).toHaveCount(6)
+    await expect(page.locator('.nav-icon')).toHaveCount(7)
     for (const zoom of [1, 1.25, 1.5]) {
       await application.evaluate(({ BrowserWindow }, factor) => {
         BrowserWindow.getAllWindows()[0].webContents.setZoomFactor(factor)
       }, zoom)
-      for (const name of ['今天', '目标', '例行', '进展', '数据', '复盘']) {
+      for (const name of ['首页', '今天', '目标', '例行', '进展', '数据', '复盘']) {
         await page.getByRole('navigation').getByRole('button', { name, exact: true }).click()
-        await expect(page.getByRole('heading', { name, exact: true })).toBeVisible()
+        await expect(
+          page.getByRole('heading', {
+            name: name === '首页' ? '看看最近走到了哪里。' : name,
+            exact: true
+          })
+        ).toBeVisible()
         const metrics = await page.locator('.app-shell').evaluate((shell) => ({
           viewport: window.innerWidth,
           width: shell.getBoundingClientRect().width,

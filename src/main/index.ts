@@ -1,3 +1,5 @@
+import { HomeService } from '../application/home'
+import { registerHomeIpc } from './home-ipc'
 import { randomUUID } from 'node:crypto'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -630,6 +632,11 @@ app.whenReady().then(async () => {
     ipc: guardedIpc,
     service: actionRecordService,
     contexts: actionRecordingContexts,
+    assertSender: (event) => assertTrustedSender(event, mainWindow, getRendererLocation())
+  })
+  registerHomeIpc({
+    ipc: guardedIpc,
+    service: new HomeService(sqliteConnection.homeQuery, clock),
     assertSender: (event) => assertTrustedSender(event, mainWindow, getRendererLocation())
   })
   registerProgressIpc({

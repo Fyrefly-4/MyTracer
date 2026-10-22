@@ -24,6 +24,7 @@ test('keeps Today feedback out of flow and record controls visible while preserv
       return result.value.id
     })
     await page.reload()
+    await page.getByRole('navigation').getByRole('button', { name: '今天', exact: true }).click()
     await page.getByRole('button', { name: /阅读一段，留下一个自己的理解.*待行动/ }).click()
     const detail = page.getByLabel('阅读一段，留下一个自己的理解 行动详情', { exact: true })
     const before = await page
@@ -119,6 +120,7 @@ test('Today notebook scrolls independently, collapses without losing drafts, and
       }
     })
     await page.reload()
+    await page.getByRole('navigation').getByRole('button', { name: '今天', exact: true }).click()
     await page
       .locator('.today-priority')
       .getByRole('button', { name: /独立滚动行动 1.*待行动/ })
