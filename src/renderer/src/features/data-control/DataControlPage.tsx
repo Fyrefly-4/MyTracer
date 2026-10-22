@@ -1,9 +1,11 @@
+import { chooseVisibleSelection } from '../../app/selection-preferences'
 import {
   createContext,
   type ReactNode,
   type RefObject,
   useContext,
   useEffect,
+  useEffectEvent,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -26,7 +28,13 @@ import {
   recordOutcomeText,
   routineRecordOutcomeText
 } from '../../app/ui-text'
-import { revealStart, usePagePosition, useUiSession, useUnsavedContent } from '../../app/ui-session'
+import {
+  revealStart,
+  usePagePosition,
+  useUiSession,
+  useUnsavedContent,
+  useActiveUnsavedContent
+} from '../../app/ui-session'
 import type { CompleteExportErrorCode } from '../../../../contracts/exports'
 import './data-workspace.css'
 
@@ -768,7 +776,11 @@ function DataControlWorkspace(): ReactNode {
   const deleteTriggerRef = useRef<HTMLElement | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
-  const [selectedRecord, setSelectedRecord] = useState(session.dataRecord)
+  const activeUnsaved = useActiveUnsavedContent()
+  const [routeRecord, setRouteRecord] = useState(() =>
+    session.takeNavigationSelection('data') ? session.dataRecord : null
+  )
+  const [selectedRecord, setSelectedRecord] = useState<typeof session.dataRecord>(null)
   const [recordKind, setRecordKind] = useState<'all' | 'action-record' | 'routine-record'>('all')
   const [recordGoalId, setRecordGoalId] = useState('all')
   const [recordDate, setRecordDate] = useState('')
@@ -861,7 +873,70 @@ function DataControlWorkspace(): ReactNode {
   const currentPage = Math.min(historyPage, pageCount)
   const visibleHistory = history.slice((currentPage - 1) * 8, currentPage * 8)
 
+  const visibleIds = visibleHistory.map((row) => `${row.type}:${row.id}`).join('|')
+  const reconcileSelection = useEffectEvent((): void => {
+    if (
+      !data ||
+      activeUnsaved ||
+      pendingSelection ||
+      preview ||
+      deleting ||
+      [...recordDrafts.values()].some(Boolean)
+    )
+      return
+    const key = (row: { type: string; id: string }): string => `${row.type}:${row.id}`
+    const routeExists =
+      routeRecord &&
+      (routeRecord.type === 'action-record'
+        ? data.actionRecords.some((row) => row.id === routeRecord.id)
+        : data.routineRecords.some((row) => row.id === routeRecord.id))
+    const routeActive =
+      routeExists &&
+      recordKind === 'all' &&
+      recordGoalId === 'all' &&
+      !recordDate &&
+      historyPage === 1
+    if (
+      selectedRecord &&
+      (visibleHistory.some((row) => key(row) === key(selectedRecord)) ||
+        (routeActive && key(selectedRecord) === key(routeRecord)))
+    )
+      return
+    const next =
+      routeActive && !selectedRecord
+        ? routeRecord
+        : chooseVisibleSelection(
+            visibleHistory,
+            session.dataRecord ? key(session.dataRecord) : null,
+            key
+          )
+    setSelectedRecord(next ? { type: next.type, id: next.id } : null)
+    if (next) session.selectDataRecord({ type: next.type, id: next.id })
+  })
+  useEffect(() => {
+    let active = true
+    void Promise.resolve().then(() => {
+      if (active) reconcileSelection()
+    })
+    return () => {
+      active = false
+    }
+  }, [
+    activeUnsaved,
+    visibleIds,
+    data,
+    selectedRecord,
+    pendingSelection,
+    preview,
+    deleting,
+    recordKind,
+    recordGoalId,
+    recordDate,
+    historyPage
+  ])
+
   const applySelection = (selection: NonNullable<typeof selectedRecord>): void => {
+    setRouteRecord(null)
     setPendingSelection(null)
     setSelectedRecord(selection)
     session.selectDataRecord(selection)
@@ -905,7 +980,6 @@ function DataControlWorkspace(): ReactNode {
         current.type === 'action-record'
           ? result.value.actionRecords.some((record) => record.id === current.id)
           : result.value.routineRecords.some((record) => record.id === current.id)
-      if (!exists) session.selectDataRecord(null)
       return exists ? current : null
     })
   }
@@ -1451,6 +1525,7 @@ function DataControlWorkspace(): ReactNode {
                   value={recordKind}
                   onChange={(event) => {
                     setRecordKind(event.target.value as 'all' | 'action-record' | 'routine-record')
+                    setRouteRecord(null)
                     setHistoryPage(1)
                   }}
                 >
@@ -1465,6 +1540,7 @@ function DataControlWorkspace(): ReactNode {
                   value={recordGoalId}
                   onChange={(event) => {
                     setRecordGoalId(event.target.value)
+                    setRouteRecord(null)
                     setHistoryPage(1)
                   }}
                 >
@@ -1484,6 +1560,7 @@ function DataControlWorkspace(): ReactNode {
                   value={recordDate}
                   onChange={(event) => {
                     setRecordDate(event.target.value)
+                    setRouteRecord(null)
                     setHistoryPage(1)
                   }}
                 />
@@ -1495,6 +1572,7 @@ function DataControlWorkspace(): ReactNode {
                   setRecordKind('all')
                   setRecordGoalId('all')
                   setRecordDate('')
+                  setRouteRecord(null)
                   setHistoryPage(1)
                 }}
               >
@@ -1576,7 +1654,10 @@ function DataControlWorkspace(): ReactNode {
                 type="button"
                 className="quiet-button"
                 disabled={currentPage === 1}
-                onClick={() => setHistoryPage(currentPage - 1)}
+                onClick={() => {
+                  setRouteRecord(null)
+                  setHistoryPage(currentPage - 1)
+                }}
               >
                 上一页
               </button>
@@ -1587,7 +1668,10 @@ function DataControlWorkspace(): ReactNode {
                 type="button"
                 className="quiet-button"
                 disabled={currentPage === pageCount}
-                onClick={() => setHistoryPage(currentPage + 1)}
+                onClick={() => {
+                  setRouteRecord(null)
+                  setHistoryPage(currentPage + 1)
+                }}
               >
                 下一页
               </button>
@@ -1678,8 +1762,22 @@ function DataControlWorkspace(): ReactNode {
             ) : (
               <div className="data-detail-empty">
                 <span aria-hidden="true">◷</span>
-                <h2>从一条记录开始</h2>
-                <p>选择记录，回看当时的行动与理解。需要时再编辑。</p>
+                <h2>{data ? '当前没有匹配的记录' : '正在读取记录…'}</h2>
+                <p>可以调整筛选条件，或在“数据工具”中补记历史记录。</p>
+                {recordKind !== 'all' || recordGoalId !== 'all' || recordDate ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRecordKind('all')
+                      setRecordGoalId('all')
+                      setRecordDate('')
+                      setRouteRecord(null)
+                      setHistoryPage(1)
+                    }}
+                  >
+                    清除筛选
+                  </button>
+                ) : null}
               </div>
             )}
           </section>

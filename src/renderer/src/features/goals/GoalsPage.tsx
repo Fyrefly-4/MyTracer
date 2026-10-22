@@ -1,6 +1,7 @@
+import { chooseVisibleSelection } from '../../app/selection-preferences'
 import '../forms-workspace.css'
 import '../object-workspace.css'
-import { type ReactNode, useEffect, useRef, useState } from 'react'
+import { type ReactNode, useEffect, useEffectEvent, useRef, useState } from 'react'
 import type {
   GoalDetailDto,
   GoalErrorCode,
@@ -9,6 +10,7 @@ import type {
 } from '../../../../contracts/goals'
 import {
   useUiSession,
+  useActiveUnsavedContent,
   usePagePosition,
   revealStart,
   useUiLifetime,
@@ -115,6 +117,11 @@ function NewNextActionForm(props: {
 
 function GoalWorkspace(): ReactNode {
   const session = useUiSession()
+  const [routeGoalId, setRouteGoalId] = useState(() =>
+    session.takeNavigationSelection('goals') ? session.goalId : null
+  )
+  const selectionRequest = useRef(0)
+  const [loadedFilter, setLoadedFilter] = useState<string | null>(null)
   const [masterCollapsed, setMasterCollapsed] = useState(false)
   const expandMasterRef = useRef<HTMLButtonElement | null>(null)
   const collapseMasterRef = useRef<HTMLButtonElement | null>(null)
@@ -126,6 +133,7 @@ function GoalWorkspace(): ReactNode {
   const [listQuery, setListQuery] = useState('')
   const [listPage, updateListPage] = useState(() => session.getListPage('goals', 'master'))
   const setListPage = (page: number): void => {
+    setRouteGoalId(null)
     session.setListPage('goals', 'master', page)
     updateListPage(page)
   }
@@ -204,6 +212,7 @@ function GoalWorkspace(): ReactNode {
       if (!active) return
       setLoaded(true)
       if (result.ok) {
+        setLoadedFilter(statusFilter)
         setGoals(result.value)
         setError(null)
       } else {
@@ -214,48 +223,6 @@ function GoalWorkspace(): ReactNode {
       active = false
     }
   }, [statusFilter, refreshVersion])
-
-  useEffect(() => {
-    let active = true
-    const goalId = session.goalId
-    if (!goalId) {
-      Promise.resolve().then(() => {
-        if (active) setSelectionLoaded(true)
-      })
-    } else {
-      void window.myTracer.goals
-        .getDetail({ goalId })
-        .then((result) => {
-          if (!active) return
-          if (session.goalId !== goalId) {
-            setSelectionLoaded(true)
-            return
-          }
-          if (result.ok) {
-            setDetail(result.value)
-            setEditName(result.value.name)
-            setEditDescription(result.value.description ?? '')
-            setSelectedActionId(result.value.currentNextActionId ?? unsetNextActionOption)
-          } else {
-            if (result.error.code === 'not-found') {
-              session.clearGoalCoverDraft(goalId)
-              session.selectGoal(null)
-            }
-            setSelectionError(goalErrorText[result.error.code])
-          }
-          setSelectionLoaded(true)
-        })
-        .catch(() => {
-          if (active) {
-            setSelectionError(goalErrorText['persistence-failed'])
-            setSelectionLoaded(true)
-          }
-        })
-    }
-    return () => {
-      active = false
-    }
-  }, [session])
 
   const showDetail = (nextDetail: GoalDetailDto): void => {
     if (!activeRef.current) return
@@ -274,11 +241,13 @@ function GoalWorkspace(): ReactNode {
 
   const selectGoal = async (goalId: string, reveal = true): Promise<void> => {
     if (!activeRef.current) return
+    setRouteGoalId(null)
+    const request = ++selectionRequest.current
     session.selectGoal(goalId)
     setBusy(true)
     const result = await window.myTracer.goals.getDetail({ goalId })
+    if (!activeRef.current || request !== selectionRequest.current) return
     setBusy(false)
-    if (!activeRef.current || session.goalId !== goalId) return
     if (result.ok) {
       showDetail(result.value)
       if (reveal) requestAnimationFrame(() => revealStart(detailRef.current))
@@ -318,6 +287,7 @@ function GoalWorkspace(): ReactNode {
     })
     setBusy(false)
     if (result.ok) {
+      setRouteGoalId(result.value.id)
       showDetail(result.value)
       setCreating(false)
       requestAnimationFrame(() => revealStart(detailRef.current))
@@ -420,6 +390,81 @@ function GoalWorkspace(): ReactNode {
   const listPageCount = Math.max(1, Math.ceil(filteredItems.length / 6))
   const currentListPage = Math.min(listPage, listPageCount)
   const pageItems = filteredItems.slice((currentListPage - 1) * 6, currentListPage * 6)
+  const visibleIds = pageItems.map((item) => item.id).join('|')
+  const activeUnsaved = useActiveUnsavedContent()
+  const selectionBlocked =
+    activeUnsaved ||
+    creating ||
+    busy ||
+    Boolean(pendingGoalEnd) ||
+    Boolean(createName || createDescription || createNextAction) ||
+    Boolean(
+      detail && (editName !== detail.name || editDescription !== (detail.description ?? ''))
+    ) ||
+    Boolean(detail && selectedActionId !== (detail.currentNextActionId ?? unsetNextActionOption))
+  const reconcileSelection = useEffectEvent(async (isActive: () => boolean): Promise<void> => {
+    if (!loaded || loadedFilter !== statusFilter || selectionBlocked) return
+    const current = detail?.id
+    if (current && pageItems.some((item) => item.id === current)) {
+      setSelectionLoaded(true)
+      return
+    }
+    const preferred = chooseVisibleSelection(pageItems, session.goalId, (item) => item.id)
+    const candidates = routeGoalId
+      ? [routeGoalId, ...pageItems.map((item) => item.id)]
+      : preferred
+        ? [
+            preferred.id,
+            ...pageItems.filter((item) => item.id !== preferred.id).map((item) => item.id)
+          ]
+        : []
+    const request = ++selectionRequest.current
+    for (const goalId of candidates) {
+      try {
+        const result = await window.myTracer.goals.getDetail({ goalId })
+        if (!isActive() || request !== selectionRequest.current) return
+        if (result.ok) {
+          showDetail(result.value)
+          setSelectionLoaded(true)
+          return
+        }
+        if (result.error.code !== 'not-found') {
+          setSelectionError(goalErrorText[result.error.code])
+          setSelectionLoaded(true)
+          return
+        }
+      } catch {
+        if (isActive() && request === selectionRequest.current) {
+          setSelectionError(goalErrorText['persistence-failed'])
+          setSelectionLoaded(true)
+        }
+        return
+      }
+    }
+    if (isActive() && request === selectionRequest.current) {
+      setDetail(null)
+      setSelectionLoaded(true)
+    }
+  })
+  useEffect(() => {
+    let active = true
+    void Promise.resolve().then(() => {
+      if (active) void reconcileSelection(() => active)
+    })
+    return () => {
+      active = false
+    }
+  }, [
+    goals,
+    visibleIds,
+    loaded,
+    loadedFilter,
+    statusFilter,
+    selectionBlocked,
+    routeGoalId,
+    detail?.id
+  ])
+
   const historyPageCount = Math.max(1, Math.ceil((detail?.records.length ?? 0) / 5))
   const historyPage = Math.min(
     historyPosition.goalId === detail?.id
@@ -931,8 +976,25 @@ function GoalWorkspace(): ReactNode {
                 <div className="placeholder-icon" aria-hidden="true">
                   ◎
                 </div>
-                <h2>选择一个目标查看详情</h2>
-                <p>暂停或结束只改变目标状态，不会清除已有下一步和历史。</p>
+                <h2>{loaded ? '当前没有可查看的目标' : '正在读取目标…'}</h2>
+                <p>可以创建第一个目标，或调整筛选条件。</p>
+                {listQuery || statusFilter ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setListQuery('')
+                      setStatusFilter('')
+                      session.setGoalFilter('')
+                      setListPage(1)
+                    }}
+                  >
+                    清除筛选
+                  </button>
+                ) : (
+                  <button type="button" onClick={() => setCreating(true)}>
+                    创建第一个目标
+                  </button>
+                )}
               </div>
             )}
           </div>

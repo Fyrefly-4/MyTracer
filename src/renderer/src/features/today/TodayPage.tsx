@@ -1,10 +1,11 @@
+import { chooseVisibleSelection } from '../../app/selection-preferences'
 import {
   goalStatusText,
   actionStatusText,
   recordOutcomeText,
   routineRecordOutcomeText
 } from '../../app/ui-text'
-import { type ReactNode, useEffect, useRef, useState } from 'react'
+import { type ReactNode, useEffect, useEffectEvent, useRef, useState } from 'react'
 import type {
   ActionDetailDto,
   ActionErrorCode,
@@ -22,6 +23,7 @@ import type { TodayViewDto } from '../../../../contracts/today'
 import type { GoalActivityViewDto } from '../../../../contracts/progress'
 import {
   useUiSession,
+  useActiveUnsavedContent,
   useUnsavedContent,
   usePagePosition,
   revealStart,
@@ -753,6 +755,9 @@ function ActionRecordingPanel(props: {
 function TodayWorkspace(): ReactNode {
   const activeRef = useUiLifetime()
   const session = useUiSession()
+  const [routeSelection, setRouteSelection] = useState(() =>
+    session.takeNavigationSelection('today') ? session.todaySelection : null
+  )
   const [selectionLoaded, setSelectionLoaded] = useState(false)
   const [selectionError, setSelectionError] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
@@ -776,9 +781,7 @@ function TodayWorkspace(): ReactNode {
   const [activityVersion, setActivityVersion] = useState(0)
   const [activeGoals, setActiveGoals] = useState<readonly GoalSummaryDto[]>([])
   const [detail, setDetail] = useState<ActionDetailDto | null>(null)
-  const [selectedRoutineId, setSelectedRoutineId] = useState<string | null>(() =>
-    session.todaySelection?.type === 'routine' ? session.todaySelection.id : null
-  )
+  const [selectedRoutineId, setSelectedRoutineId] = useState<string | null>(null)
   const selectedRoutine = today?.plannedRoutines.find((routine) => routine.id === selectedRoutineId)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
@@ -860,44 +863,6 @@ function TodayWorkspace(): ReactNode {
     }
   }, [refreshVersion])
 
-  useEffect(() => {
-    let active = true
-    const actionId = session.todaySelection?.type === 'action' ? session.todaySelection.id : null
-    if (!actionId) {
-      Promise.resolve().then(() => {
-        if (active) setSelectionLoaded(true)
-      })
-    } else {
-      void window.myTracer.actions
-        .getDetail({ actionId })
-        .then((result) => {
-          if (!active) return
-          if (session.todaySelection?.type !== 'action' || session.todaySelection.id !== actionId) {
-            setSelectionLoaded(true)
-            return
-          }
-          if (result.ok) {
-            setDetail(result.value)
-            setEditTitle(result.value.title)
-            setEditDescription(result.value.description ?? '')
-          } else {
-            if (result.error.code === 'not-found') session.selectAction(null)
-            setSelectionError(actionErrorText[result.error.code])
-          }
-          setSelectionLoaded(true)
-        })
-        .catch(() => {
-          if (active) {
-            setSelectionError(actionErrorText['persistence-failed'])
-            setSelectionLoaded(true)
-          }
-        })
-    }
-    return () => {
-      active = false
-    }
-  }, [session])
-
   const showDetail = (action: ActionDetailDto): void => {
     if (!activeRef.current) return
     setSelectionError(null)
@@ -913,11 +878,13 @@ function TodayWorkspace(): ReactNode {
   }
 
   const selectAction = (action: ActionDetailDto): void => {
+    setRouteSelection(null)
     showDetail(action)
     requestAnimationFrame(() => revealStart(detailRef.current))
   }
 
   const selectRoutine = (routineId: string): void => {
+    setRouteSelection(null)
     session.selectTodayRoutine(routineId)
     setSelectedRoutineId(routineId)
     setDetail(null)
@@ -926,11 +893,103 @@ function TodayWorkspace(): ReactNode {
     requestAnimationFrame(() => revealStart(detailRef.current))
   }
 
+  const activeUnsaved = useActiveUnsavedContent()
+  const selectionBlocked =
+    activeUnsaved ||
+    creating ||
+    busy ||
+    Boolean(pendingTransition) ||
+    Boolean(createTitle || createDescription || createGoalId) ||
+    Boolean(
+      detail &&
+      (editTitle !== detail.title ||
+        editDescription !== (detail.description ?? '') ||
+        session.hasActionDraft(detail.id))
+    ) ||
+    Boolean(selectedRoutineId && session.hasRoutineDraft(selectedRoutineId))
+  const reconcileSelection = useEffectEvent(async (isActive: () => boolean): Promise<void> => {
+    if (!today || selectionBlocked) return
+    const actions = today.focuses.length
+      ? [...today.focuses, ...today.intentions, ...availableCandidates]
+      : [...availableCandidates, ...today.intentions]
+    const entries = [
+      ...actions.map((action) => ({ type: 'action' as const, id: action.id })),
+      ...today.plannedRoutines.map((routine) => ({ type: 'routine' as const, id: routine.id }))
+    ]
+    const key = (entry: { type: string; id: string }): string => `${entry.type}:${entry.id}`
+    const current = detail
+      ? { type: 'action', id: detail.id }
+      : selectedRoutineId
+        ? { type: 'routine', id: selectedRoutineId }
+        : null
+    if (current && entries.some((entry) => key(entry) === key(current))) {
+      setSelectionLoaded(true)
+      return
+    }
+    const remembered = session.todaySelection
+    let next =
+      routeSelection ?? chooseVisibleSelection(entries, remembered ? key(remembered) : null, key)
+    if (next?.type === 'action') {
+      let action = actions.find((item) => item.id === next?.id)
+      if (!action && routeSelection) {
+        try {
+          const result = await window.myTracer.actions.getDetail({ actionId: next.id })
+          if (!isActive() || session.todaySelection !== remembered) return
+          if (result.ok) action = result.value
+          else if (result.error.code !== 'not-found') {
+            setSelectionError(actionErrorText[result.error.code])
+            setSelectionLoaded(true)
+            return
+          }
+        } catch {
+          if (isActive()) {
+            setSelectionError(actionErrorText['persistence-failed'])
+            setSelectionLoaded(true)
+          }
+          return
+        }
+      }
+      if (action) {
+        showDetail(action)
+        setSelectionLoaded(true)
+        return
+      }
+      next = entries[0] ?? null
+    }
+    const requestedRoutineId = next?.type === 'routine' ? next.id : null
+    if (requestedRoutineId && !today.plannedRoutines.some((item) => item.id === requestedRoutineId))
+      next = entries[0] ?? null
+    if (next?.type === 'routine' && today.plannedRoutines.some((item) => item.id === next.id)) {
+      session.selectTodayRoutine(next.id)
+      setSelectedRoutineId(next.id)
+      setDetail(null)
+    } else if (actions[0]) {
+      showDetail(actions[0])
+    } else {
+      setDetail(null)
+      setSelectedRoutineId(null)
+    }
+    setSelectionLoaded(true)
+  })
+  useEffect(() => {
+    let active = true
+    void Promise.resolve().then(() => {
+      if (active) void reconcileSelection(() => active)
+    })
+    return () => {
+      active = false
+    }
+  }, [today, selectionBlocked, detail?.id, selectedRoutineId, routeSelection])
+
   const refresh = async (
     actionId?: string,
     selectionAtRequest = session.todaySelection
   ): Promise<void> => {
     if (!activeRef.current) return
+    // Keep the result of the user's save/transition visible even if it leaves the candidate list.
+    if (actionId && session.todaySelection === selectionAtRequest) {
+      setRouteSelection({ type: 'action', id: actionId })
+    }
     setActivityVersion((version) => version + 1)
     const todayResult = await window.myTracer.today.get({})
     if (!activeRef.current) return
@@ -971,6 +1030,7 @@ function TodayWorkspace(): ReactNode {
     setCreateDescription('')
     setCreateGoalId('')
     if (session.todaySelection === selectionAtRequest) {
+      setRouteSelection({ type: 'action', id: result.value.id })
       showDetail(result.value)
       await refresh(result.value.id)
       if (
@@ -1750,7 +1810,12 @@ function TodayWorkspace(): ReactNode {
               <div className="placeholder-icon" aria-hidden="true">
                 ◎
               </div>
-              <h2>选择一个行动或例行查看详情</h2>
+              <h2>{today ? '当前没有可查看的行动或例行' : '正在读取今天…'}</h2>
+              {today ? (
+                <button type="button" onClick={() => setCreating(true)}>
+                  新建一个行动
+                </button>
+              ) : null}
               <p>从左侧挑选一个行动或例行，在这里开始记录。没有记录，也不代表没有行动。</p>
             </div>
           )}
