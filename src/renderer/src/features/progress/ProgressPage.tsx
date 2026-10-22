@@ -97,6 +97,8 @@ function ProgressWorkspace(): ReactNode {
       setRecordPage(1)
       timelineRef.current?.scrollTo({ top: 0 })
       setProgress(result.value)
+      // Rows can be reopened while the previous snapshot is still visible during a refresh.
+      setDetailRevision((revision) => revision + 1)
       setComparisonVersion((version) => version + 1)
       setError(null)
     } else {
@@ -120,6 +122,7 @@ function ProgressWorkspace(): ReactNode {
         if (goalResult.ok) setGoals(goalResult.value)
         if (progressResult.ok) {
           setProgress(progressResult.value)
+          setDetailRevision((revision) => revision + 1)
           setError(null)
         } else {
           setError(progressErrorText[progressResult.error.code])

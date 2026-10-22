@@ -242,6 +242,62 @@ test('Progress fetches text only on demand and isolates retry, collapse and refr
     await expect(row.getByLabel('行动补充原文').locator('.progress-fact-group p')).toHaveText(
       '新读取原文'
     )
+    // Hold the list request itself: detail reads can finish against the still-visible old rows.
+    const snapshot = await page.evaluate(() => window.myTracer.progress.get({}))
+    if (!snapshot.ok) throw Error('progress snapshot')
+    await app.evaluate(({ ipcMain }, snapshot) => {
+      const state = { pending: [] as Array<() => void>, generation: 0 }
+      Reflect.set(globalThis, '__progressListRead', state)
+      ipcMain.removeHandler('progress:get')
+      ipcMain.handle('progress:get', () => {
+        const generation = ++state.generation
+        return new Promise((resolve) =>
+          state.pending.push(() =>
+            resolve({
+              ok: true,
+              value: {
+                ...snapshot,
+                records: snapshot.records.map((record) => ({
+                  ...record,
+                  understandings: record.understandings.map((fact) => ({
+                    ...fact,
+                    text: `刷新后的理解 ${generation}`
+                  }))
+                }))
+              }
+            })
+          )
+        )
+      })
+    }, snapshot.value)
+    for (const [index, readMode] of ['ready', 'fail'].entries()) {
+      await mode(readMode)
+      await page.getByRole('button', { name: '查看记录', exact: true }).click()
+      await expect(row.locator('details')).not.toHaveAttribute('open')
+      await row.locator('summary').click()
+      if (readMode === 'ready') {
+        await expect(row.getByLabel('行动补充原文').locator('.progress-fact-group p')).toHaveText(
+          '新读取原文'
+        )
+      } else {
+        await expect(row.getByRole('status')).toContainText('不表示没有补充文字')
+      }
+      const beforeReplacement = await calls()
+      await app.evaluate(() => {
+        for (const resolve of Reflect.get(globalThis, '__progressListRead').pending.splice(0))
+          resolve()
+      })
+      await expect(row).toContainText(`刷新后的理解 ${index + 1}`)
+      await expect(row.locator('details')).not.toHaveAttribute('open')
+      await expect(row.getByLabel('行动补充原文')).toHaveCount(0)
+      expect(await calls()).toBe(beforeReplacement)
+      await mode('hold')
+      await row.locator('summary').click()
+      await expect(row.getByRole('status')).toContainText('正在读取原文')
+      await expect(row.getByLabel('行动补充原文').locator('.progress-fact-group')).toHaveCount(0)
+      await row.locator('summary').click()
+      await release()
+    }
   } finally {
     await app?.close()
     await removeTemporaryTestRoot(root)
