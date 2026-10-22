@@ -47,6 +47,7 @@ async function verifyPackagedApplication(
       ai: { configured: false, availability: 'not-configured' }
     })
     expect(await page.evaluate(() => Object.keys(window.myTracer))).toEqual([
+      'home',
       'shell',
       'updates',
       'goals',
@@ -62,6 +63,8 @@ async function verifyPackagedApplication(
       'aiStartHelp',
       'aiConfiguration'
     ])
+    expect(await page.evaluate(() => Object.keys(window.myTracer.home))).toEqual(['get', 'day'])
+    expect(await page.evaluate(() => Object.isFrozen(window.myTracer.home))).toBe(true)
     expect(await page.evaluate(() => Object.keys(window.myTracer.shell))).toEqual(['getStatus'])
     expect(await page.evaluate(() => Object.keys(window.myTracer.updates))).toEqual([
       'getStatus',

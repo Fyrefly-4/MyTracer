@@ -62,6 +62,7 @@ test('runs the Electron shell with an isolated userData root', async () => {
     const status = await page.evaluate(() => window.myTracer.shell.getStatus())
     expect(status.ai).toEqual({ configured: false, availability: 'not-configured' })
     expect(await page.evaluate(() => Object.keys(window.myTracer))).toEqual([
+      'home',
       'shell',
       'updates',
       'goals',
@@ -77,6 +78,8 @@ test('runs the Electron shell with an isolated userData root', async () => {
       'aiStartHelp',
       'aiConfiguration'
     ])
+    expect(await page.evaluate(() => Object.keys(window.myTracer.home))).toEqual(['get', 'day'])
+    expect(await page.evaluate(() => Object.isFrozen(window.myTracer.home))).toBe(true)
     expect(await page.evaluate(() => Object.keys(window.myTracer.shell))).toEqual(['getStatus'])
     expect(await page.evaluate(() => Object.keys(window.myTracer.goals))).toEqual([
       'create',
