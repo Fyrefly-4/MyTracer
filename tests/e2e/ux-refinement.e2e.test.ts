@@ -389,7 +389,7 @@ test('keeps existing work reachable, restores selection, and records without imp
   }
 })
 
-test('labels historical facts, explains missing objects, and clears a deleted selection', async () => {
+test('labels historical facts and falls back to a visible routine after deleting the viewed action', async () => {
   test.slow()
   const root = await createTemporaryTestRoot()
   let application: ElectronApplication | undefined
@@ -482,8 +482,12 @@ test('labels historical facts, explains missing objects, and clears a deleted se
     await dialog.getByRole('button', { name: '永久删除', exact: true }).click()
     await expect(dialog).toHaveCount(0)
     await navigate(page, '今天')
-    await expect(page.getByRole('alert')).toContainText('已不存在')
     await expect(page.getByLabel('历史行动 行动详情')).toHaveCount(0)
+    await expect(page.getByLabel('历史散步 例行详情', { exact: true })).toBeVisible()
+    await expect(page.getByRole('button', { name: /历史散步 最小行动/ })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    )
   } finally {
     await application?.close().catch(() => undefined)
     await removeTemporaryTestRoot(root)

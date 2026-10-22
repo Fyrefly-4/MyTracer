@@ -78,7 +78,8 @@ test('visible selection restores per page, survives restart, and respects filter
     await page.locator('.data-history-row').nth(2).click()
     await nav('目标')
     const currentGoals = page.locator('.goal-workspace .goal-list-item')
-    const firstPageName = await currentGoals.first().locator('span').innerText()
+    // Home shows the three most recently active goals; goal 6 is on the first list page.
+    const firstPageName = await currentGoals.last().locator('span').innerText()
     await page
       .getByLabel('目标列表分页', { exact: true })
       .getByRole('button', { name: '下一页' })
@@ -90,7 +91,7 @@ test('visible selection restores per page, survives restart, and respects filter
       .getByRole('button', { name: '查看目标 ↗' })
       .evaluate((button: HTMLButtonElement) => button.click())
     await expect(page.locator('.goal-detail h2').first()).toHaveText(firstPageName)
-    await expect(page.getByLabel('目标列表分页', { exact: true })).toContainText('第 2 / 2 页')
+    await expect(page.getByLabel('目标列表分页', { exact: true })).toContainText('2 / 2 · 8 项')
     await page.getByLabel('搜索目标', { exact: true }).fill('选择目标1')
     await expect(page.locator('.goal-detail h2').first()).toHaveText('选择目标1')
     await page.getByLabel('搜索目标', { exact: true }).fill('不存在')
@@ -104,6 +105,8 @@ test('visible selection restores per page, survives restart, and respects filter
     await expect(page.getByLabel('下一步名称', { exact: true })).toHaveValue('不能丢失的下一步草稿')
     await expect(page.locator('.goal-detail h2').first()).toHaveText('选择目标1')
     await page.getByLabel('下一步名称', { exact: true }).fill('')
+    await expect(page.locator('.goal-detail h2').first()).toHaveText('选择目标1')
+    await page.locator('.current-action-control select').selectOption({ label: '选择行动1' })
     await expect(page.locator('.goal-detail h2').first()).toHaveText('选择目标2')
     await nav('数据')
     const record = page.getByLabel('所选记录', { exact: true }).locator('.data-record-card')
