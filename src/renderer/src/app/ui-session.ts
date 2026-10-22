@@ -1,8 +1,10 @@
+import { browserSelectionPreferences, type SelectionPage } from './selection-preferences'
 import {
   createContext,
   useContext,
   useEffect,
   useLayoutEffect,
+  useSyncExternalStore,
   useRef,
   type RefObject
 } from 'react'
@@ -69,8 +71,34 @@ export class UiSession {
   private routineDrafts = new Map<string, RoutineRecordingDraft>()
   private goalCoverDrafts = new Map<string, string>()
   private unsavedContent = new Set<string>()
+  private unsavedListeners = new Set<() => void>()
+  subscribeUnsaved = (listener: () => void): (() => void) => {
+    this.unsavedListeners.add(listener)
+    return () => {
+      this.unsavedListeners.delete(listener)
+    }
+  }
+  hasActiveUnsavedContent = (): boolean => this.unsavedContent.size > 0
 
-  constructor(private readonly onNavigate: (section: AppSectionId) => void) {}
+  private readonly preferences = browserSelectionPreferences()
+  private navigationSelection = new Set<SelectionPage>()
+  constructor(private readonly onNavigate: (section: AppSectionId) => void) {
+    this.selectedGoal = this.preferences.get('goals')?.id ?? null
+    const today = this.preferences.get('today')
+    if (today && (today.type === 'action' || today.type === 'routine')) {
+      this.selectedToday = { type: today.type, id: today.id }
+      this.selectedAction = today.type === 'action' ? today.id : null
+    }
+    const data = this.preferences.get('data')
+    if (data && (data.type === 'action-record' || data.type === 'routine-record')) {
+      this.selectedDataRecord = { type: data.type, id: data.id }
+    }
+  }
+  takeNavigationSelection(page: SelectionPage): boolean {
+    const explicit = this.navigationSelection.has(page)
+    this.navigationSelection.delete(page)
+    return explicit
+  }
   get goalId(): string | null {
     return this.selectedGoal
   }
@@ -79,6 +107,7 @@ export class UiSession {
   }
   selectTodayRoutine(id: string | null): void {
     this.selectedToday = id ? { type: 'routine', id } : null
+    if (id) this.preferences.remember('today', { type: 'routine', id })
   }
   get actionId(): string | null {
     return this.selectedAction
@@ -109,10 +138,12 @@ export class UiSession {
   }
   selectGoal(id: string | null): void {
     this.selectedGoal = id
+    if (id) this.preferences.remember('goals', { type: 'goal', id })
   }
   selectAction(id: string | null): void {
     this.selectedAction = id
     this.selectedToday = id ? { type: 'action', id } : null
+    if (id) this.preferences.remember('today', { type: 'action', id })
   }
   setGoalFilter(filter: GoalStatusDto | ''): void {
     this.filter = filter
@@ -125,6 +156,7 @@ export class UiSession {
   }
   selectDataRecord(selection: DataRecordSelection | null): void {
     this.selectedDataRecord = selection
+    if (selection) this.preferences.remember('data', selection)
   }
   setProgressDraftFilter(filter: ProgressFilterState): void {
     this.progressDraft = filter
@@ -167,8 +199,10 @@ export class UiSession {
     this.goalCoverDrafts.delete(goalId)
   }
   setUnsavedContent(source: string, unsaved: boolean): void {
+    const changed = this.unsavedContent.has(source) !== unsaved
     if (unsaved) this.unsavedContent.add(source)
     else this.unsavedContent.delete(source)
+    if (changed) for (const listener of this.unsavedListeners) listener()
   }
   hasUnsavedContent(): boolean {
     return (
@@ -204,17 +238,20 @@ export class UiSession {
     this.onNavigate(section)
   }
   openGoal(goalId: string): void {
-    this.selectedGoal = goalId
+    this.selectGoal(goalId)
+    this.navigationSelection.add('goals')
     this.filter = ''
     this.setPanePosition('goals', 'detail', 0)
     this.openSection('goals')
   }
   openTodayRoutine(routineId: string): void {
+    this.navigationSelection.add('today')
     this.selectTodayRoutine(routineId)
     this.setPanePosition('today', 'detail', 0)
     this.openSection('today')
   }
   openAction(actionId: string, source: 'goals' | 'review' | 'home' = 'goals'): void {
+    this.navigationSelection.add('today')
     this.selectAction(actionId)
     this.positions[source] = document.querySelector('main')?.scrollTop ?? 0
     this.positions.today = 0
@@ -234,6 +271,8 @@ export class UiSession {
     source: 'goals' | 'progress' | 'review' | 'home'
   ): void {
     this.selectedDataRecord = selection
+    if (selection) this.preferences.remember('data', selection)
+    this.navigationSelection.add('data')
     this.positions[source] = document.querySelector('main')?.scrollTop ?? 0
     this.positions.data = 0
     this.setPanePosition('data', 'detail', 0)
@@ -299,4 +338,9 @@ export function revealStart(element: HTMLElement | null): void {
   ) {
     main.scrollTop += bounds.top - viewport.top - 16
   }
+}
+
+export function useActiveUnsavedContent(): boolean {
+  const session = useUiSession()
+  return useSyncExternalStore(session.subscribeUnsaved, session.hasActiveUnsavedContent)
 }
