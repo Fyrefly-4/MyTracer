@@ -11,6 +11,7 @@ const selected: ReviewReference = {
   key: 'understanding:1',
   periodStartedOn: '2026-10-19',
   label: '一条理解',
+  text: '用户原文',
   citation: '【一条理解】\n用户原文'
 }
 describe('explicit review references', () => {

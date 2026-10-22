@@ -5,6 +5,7 @@ export interface ReviewReference {
   readonly key: string
   readonly periodStartedOn: string
   readonly label: string
+  readonly text: string
   readonly citation: string
 }
 
@@ -13,6 +14,7 @@ export function reviewReferences(summary: ReviewSummaryDto): ReviewReference[] {
     key,
     periodStartedOn: summary.periodStartedOn,
     label,
+    text,
     citation: `【${label}】\n${text}`
   })
   return [

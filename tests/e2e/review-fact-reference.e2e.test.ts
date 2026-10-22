@@ -29,32 +29,35 @@ const navigate = (page: Page, name: string) =>
     .getByRole('button', { name, exact: true })
     .click()
 
-async function seed(page: Page, count = 25) {
-  await page.evaluate(async (count) => {
-    const today = await window.myTracer.today.get({})
-    const goal = await window.myTracer.goals.create({
-      name: '复盘参考样例',
-      initialNextAction: {
-        title:
-          '阅读一小段并留下值得继续追问的问题：保留具体情境、尚未解释的差异与下一次可以验证的例子。'.repeat(
-            3
-          )
-      }
-    })
-    if (!today.ok || !goal.ok || !goal.value.currentNextActionId)
-      throw new Error('Cannot seed isolated goal')
-    for (let i = 0; i < count; i++) {
-      const result = await window.myTracer.dataControl.backfillActionRecord({
-        actionId: goal.value.currentNextActionId,
-        occurredOn: today.value.localDate,
-        durationMinutes: 5,
-        outcome: 'partial',
-        understanding: `理解样例 ${i + 1}：一个具体例子让抽象概念变得清楚。`,
-        confusion: i === 0 ? '还有一个问题值得继续观察。' : null
+async function seed(page: Page, count = 25, multiline = false) {
+  await page.evaluate(
+    async ({ count, multiline }) => {
+      const today = await window.myTracer.today.get({})
+      const goal = await window.myTracer.goals.create({
+        name: '复盘参考样例',
+        initialNextAction: {
+          title:
+            '阅读一小段并留下值得继续追问的问题：保留具体情境、尚未解释的差异与下一次可以验证的例子。'.repeat(
+              3
+            )
+        }
       })
-      if (!result.ok) throw new Error('Cannot seed isolated record')
-    }
-  }, count)
+      if (!today.ok || !goal.ok || !goal.value.currentNextActionId)
+        throw new Error('Cannot seed isolated goal')
+      for (let i = 0; i < count; i++) {
+        const result = await window.myTracer.dataControl.backfillActionRecord({
+          actionId: goal.value.currentNextActionId,
+          occurredOn: today.value.localDate,
+          durationMinutes: 5,
+          outcome: 'partial',
+          understanding: `理解样例 ${i + 1}：一个具体例子让抽象概念变得清楚。${multiline ? '\n保留原始段落和具体例子。'.repeat(20) : ''}`,
+          confusion: i === 0 ? '还有一个问题值得继续观察。' : null
+        })
+        if (!result.ok) throw new Error('Cannot seed isolated record')
+      }
+    },
+    { count, multiline }
+  )
 }
 
 test('facts are explicitly cited without duplicating or replacing drafts; refresh detects changed and missing sources', async () => {
@@ -391,5 +394,95 @@ test('successful late creation plus failed re-entry cannot restore a replayable 
       return result.value.actions.filter((action) => action.title === '只创建一次的新行动').length
     }, goalId)
     expect(count).toBe(1)
+  })
+})
+
+test('long selected facts retain visible citation controls and keyboard-accessible full text', async () => {
+  test.slow()
+  await fixture(async (app, page) => {
+    await seed(page, 25, true)
+    await navigate(page, '复盘')
+    for (const [width, height, zoom] of [
+      [1440, 900, 1],
+      [1120, 760, 1],
+      [820, 650, 1.25],
+      [820, 650, 1.5]
+    ]) {
+      await app.evaluate(
+        ({ BrowserWindow }, size) => {
+          const win = BrowserWindow.getAllWindows()[0]
+          win.setContentSize(size.width, size.height)
+          win.webContents.setZoomFactor(size.zoom)
+        },
+        { width, height, zoom }
+      )
+      await page
+        .getByLabel('周期已确认理解')
+        .locator('li')
+        .first()
+        .getByRole('button', { name: '选择作参考' })
+        .click()
+      const controls = page.locator('.review-reference-controls')
+      const bounds = await controls.boundingBox()
+      expect(bounds).not.toBeNull()
+      expect(bounds!.y).toBeGreaterThanOrEqual(0)
+      expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(await page.evaluate(() => innerHeight))
+      const preview = page.getByLabel('参考正文与完整引文')
+      expect(await preview.evaluate((e) => e.clientHeight)).toBeGreaterThan(60)
+      expect(
+        await page
+          .locator('.review-reference-panel')
+          .evaluate((e) => e.scrollHeight - e.clientHeight)
+      ).toBeLessThanOrEqual(2)
+      const disclosure = preview.locator('summary')
+      await disclosure.focus()
+      await disclosure.press('Enter')
+      await expect(preview.locator('details')).toHaveAttribute('open', '')
+      const fullQuote = await preview.locator('.review-reference-fulltext').innerText()
+      expect(fullQuote).toContain('保留原始段落和具体例子。\n保留原始段落和具体例子。')
+      await disclosure.press('Space')
+      await expect(preview.locator('details')).not.toHaveAttribute('open', '')
+      await page.getByLabel('一个真实进展', { exact: true }).fill('自己的文字')
+      await controls.getByRole('button', { name: '追加引用到草稿' }).click()
+      await expect(page.getByLabel('一个真实进展', { exact: true })).toHaveValue(
+        `自己的文字\n\n${fullQuote}`
+      )
+      await expect(page.getByLabel('一个真实进展', { exact: true })).toBeFocused()
+      await page.getByRole('button', { name: '清除参考' }).click()
+    }
+    await page
+      .getByLabel('周期已确认理解')
+      .locator('li')
+      .first()
+      .getByRole('button', { name: '选择作参考' })
+      .click()
+    await app.evaluate(({ ipcMain }) => {
+      const handlers = Reflect.get(ipcMain, '_invokeHandlers') as Map<
+        string,
+        (...args: unknown[]) => Promise<{ ok: boolean; value: Record<string, unknown> }>
+      >
+      const original = handlers.get('review:get-summary')!
+      ipcMain.removeHandler('review:get-summary')
+      ipcMain.handle('review:get-summary', async (...args) => {
+        const result = await original(...args)
+        return { ...result, value: { ...result.value, understandings: [] } }
+      })
+    })
+    await page.getByRole('button', { name: '重新读取记录', exact: true }).click()
+    await expect(page.locator('.review-reference-selection')).toContainText(
+      '此事实已不在当前摘要中'
+    )
+    await page
+      .locator('.review-reference-panel')
+      .evaluate((e) => e.scrollIntoView({ block: 'start' }))
+    expect(
+      await page.getByLabel('参考正文与完整引文').evaluate((e) => e.clientHeight)
+    ).toBeGreaterThan(60)
+    expect(
+      await page.locator('.review-reference-panel').evaluate((e) => e.scrollHeight - e.clientHeight)
+    ).toBeLessThanOrEqual(2)
+    await expect(
+      page.locator('.review-reference-controls').getByRole('button', { name: '此处已引用' })
+    ).toBeDisabled()
   })
 })

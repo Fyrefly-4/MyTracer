@@ -665,49 +665,60 @@ export function ReviewPage(): ReactNode {
                 <h2>事实参考</h2>
                 {selectedReference ? (
                   <>
-                    <p>{selectedReference.label}</p>
-                    <blockquote>{selectedReference.citation}</blockquote>
-                    {selectedState !== 'current' ? (
-                      <p role="status">
-                        {selectedState === 'missing'
-                          ? '此事实已不在当前摘要中，不能继续引用。'
-                          : '此事实已变化，请重新选择后再引用。'}{' '}
-                        已写入的草稿不会改变。
-                      </p>
-                    ) : null}
-                    <label>
-                      引用到
-                      <select
-                        value={citationTarget}
-                        onChange={(event) =>
-                          setCitationTarget(event.target.value as typeof citationTarget)
+                    <div className="review-reference-controls">
+                      <label>
+                        引用到
+                        <select
+                          value={citationTarget}
+                          onChange={(event) =>
+                            setCitationTarget(event.target.value as typeof citationTarget)
+                          }
+                        >
+                          <option value="progress">一个真实进展</option>
+                          <option value="obstacle">一个主要阻力</option>
+                          <option value="adjustment">下一周期的一个调整</option>
+                        </select>
+                      </label>
+                      <button
+                        type="button"
+                        disabled={
+                          busy ||
+                          !contextId ||
+                          periodConflict ||
+                          selectedState !== 'current' ||
+                          alreadyCited
                         }
+                        onClick={cite}
                       >
-                        <option value="progress">一个真实进展</option>
-                        <option value="obstacle">一个主要阻力</option>
-                        <option value="adjustment">下一周期的一个调整</option>
-                      </select>
-                    </label>
-                    <button
-                      type="button"
-                      disabled={
-                        busy ||
-                        !contextId ||
-                        periodConflict ||
-                        selectedState !== 'current' ||
-                        alreadyCited
-                      }
-                      onClick={cite}
+                        {alreadyCited ? '此处已引用' : '追加引用到草稿'}
+                      </button>
+                      <button
+                        type="button"
+                        className="quiet-button"
+                        onClick={() => setSelectedReference(null)}
+                      >
+                        清除参考
+                      </button>
+                    </div>
+                    <div
+                      className="review-reference-preview"
+                      tabIndex={0}
+                      aria-label="参考正文与完整引文"
                     >
-                      {alreadyCited ? '此处已引用' : '追加引用到草稿'}
-                    </button>
-                    <button
-                      type="button"
-                      className="quiet-button"
-                      onClick={() => setSelectedReference(null)}
-                    >
-                      清除参考
-                    </button>
+                      {selectedState !== 'current' ? (
+                        <p role="status">
+                          {selectedState === 'missing'
+                            ? '此事实已不在当前摘要中，不能继续引用。'
+                            : '此事实已变化，请重新选择后再引用。'}{' '}
+                          已写入的草稿不会改变。
+                        </p>
+                      ) : null}
+                      <details key={selectedReference.citation}>
+                        <summary>查看来源与完整引文</summary>
+                        <p className="review-reference-fulltext">{selectedReference.citation}</p>
+                      </details>
+                      <blockquote>{selectedReference.text}</blockquote>
+                    </div>
                   </>
                 ) : (
                   <p>先选一条事实，再决定是否引用到自己的复盘。选择不会自动填写。</p>

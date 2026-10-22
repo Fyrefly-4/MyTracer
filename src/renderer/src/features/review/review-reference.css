@@ -102,7 +102,11 @@
   min-height: 300px;
 }
 .review-workspace .review-reference-selection {
-  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: calc(100% - 100px);
+  flex-shrink: 1;
   padding-bottom: 12px;
   border-bottom: 1px solid var(--color-line);
 }
@@ -116,8 +120,6 @@
   overflow-wrap: anywhere;
 }
 .review-workspace .review-reference-selection blockquote {
-  max-height: 96px;
-  overflow: auto;
   margin: 8px 0;
   padding: 8px 10px;
   border-left: 3px solid var(--color-action);
@@ -178,5 +180,45 @@
 @media (max-width: 1000px) {
   .review-workspace .review-writing-grid {
     grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.review-workspace .review-reference-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.review-workspace .review-reference-controls label {
+  flex-basis: 100%;
+  margin: 0;
+}
+.review-workspace .review-reference-preview {
+  min-height: 0;
+  max-height: 180px;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  margin-top: 8px;
+}
+.review-workspace .review-reference-preview blockquote {
+  margin: 0 0 8px;
+}
+.review-workspace .review-reference-preview summary {
+  cursor: pointer;
+  font-size: 13px;
+}
+.review-workspace .review-reference-fulltext {
+  white-space: pre-wrap;
+}
+.review-workspace .review-reference-preview:focus-visible,
+.review-workspace .review-reference-preview summary:focus-visible {
+  outline: 2px solid var(--color-action);
+  outline-offset: -2px;
+}
+
+@media (max-height: 600px) {
+  .review-workspace .review-reference-panel:has(.review-reference-preview) {
+    height: 90dvh;
   }
 }
