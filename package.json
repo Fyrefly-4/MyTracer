@@ -1,6 +1,6 @@
 {
   "name": "mytracer",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "private": true,
   "description": "A local-first Windows desktop shell for MyTracer.",
   "license": "UNLICENSED",
