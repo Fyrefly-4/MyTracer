@@ -6,6 +6,7 @@ import { GoalsPage } from '../features/goals/GoalsPage'
 import { ProgressPage } from '../features/progress/ProgressPage'
 import { ReviewPage } from '../features/review/ReviewPage'
 import { RoutinesPage } from '../features/routines/RoutinesPage'
+import { HomePage } from '../features/home/HomePage'
 import { TodayPage } from '../features/today/TodayPage'
 import { UpdatePanel } from '../features/update/UpdatePanel'
 import { UiSessionContext, UiSession } from './ui-session'
@@ -13,7 +14,7 @@ import { appSections, type AppSectionId } from './navigation'
 import { NavigationIcon } from './NavigationIcon'
 
 export function AppShell(): ReactNode {
-  const [activeSection, setActiveSection] = useState<AppSectionId>('today')
+  const [activeSection, setActiveSection] = useState<AppSectionId>('home')
   const mainRef = useRef<HTMLElement | null>(null)
   const [session] = useState(() => new UiSession((section) => setActiveSection(section)))
   const navigate = (section: AppSectionId): void => {
@@ -137,14 +138,16 @@ export function AppShell(): ReactNode {
             key={activeSection}
           >
             <div className="content-inner">
-              {!['today', 'goals', 'routines'].includes(activeSection) ? (
+              {!['home', 'today', 'goals', 'routines'].includes(activeSection) ? (
                 <section className="hero" aria-labelledby="section-title">
                   <h1 id="section-title">{selected.title}</h1>
                   <p className="lede">{selected.description}</p>
                 </section>
               ) : null}
 
-              {activeSection === 'goals' ? (
+              {activeSection === 'home' ? (
+                <HomePage />
+              ) : activeSection === 'goals' ? (
                 <GoalsPage />
               ) : activeSection === 'routines' ? (
                 <RoutinesPage />

@@ -1,4 +1,4 @@
-export type AppSectionId = 'goals' | 'routines' | 'today' | 'progress' | 'data' | 'review'
+export type AppSectionId = 'home' | 'goals' | 'routines' | 'today' | 'progress' | 'data' | 'review'
 
 export interface AppSection {
   readonly id: AppSectionId
@@ -9,6 +9,13 @@ export interface AppSection {
 }
 
 export const appSections: readonly AppSection[] = [
+  {
+    id: 'home',
+    label: '首页',
+    eyebrow: '一点近况',
+    title: '首页',
+    description: '看看最近走到了哪里。'
+  },
   {
     id: 'today',
     label: '今天',

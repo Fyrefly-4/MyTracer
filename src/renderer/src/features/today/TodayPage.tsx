@@ -1,4 +1,9 @@
-import { goalStatusText, actionStatusText, recordOutcomeText } from '../../app/ui-text'
+import {
+  goalStatusText,
+  actionStatusText,
+  recordOutcomeText,
+  routineRecordOutcomeText
+} from '../../app/ui-text'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import type {
   ActionDetailDto,
@@ -769,6 +774,10 @@ function TodayWorkspace(): ReactNode {
   const [activityVersion, setActivityVersion] = useState(0)
   const [activeGoals, setActiveGoals] = useState<readonly GoalSummaryDto[]>([])
   const [detail, setDetail] = useState<ActionDetailDto | null>(null)
+  const [selectedRoutineId, setSelectedRoutineId] = useState<string | null>(() =>
+    session.todaySelection?.type === 'routine' ? session.todaySelection.id : null
+  )
+  const selectedRoutine = today?.plannedRoutines.find((routine) => routine.id === selectedRoutineId)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -851,7 +860,7 @@ function TodayWorkspace(): ReactNode {
 
   useEffect(() => {
     let active = true
-    const actionId = session.actionId
+    const actionId = session.todaySelection?.type === 'action' ? session.todaySelection.id : null
     if (!actionId) {
       Promise.resolve().then(() => {
         if (active) setSelectionLoaded(true)
@@ -861,7 +870,7 @@ function TodayWorkspace(): ReactNode {
         .getDetail({ actionId })
         .then((result) => {
           if (!active) return
-          if (session.actionId !== actionId) {
+          if (session.todaySelection?.type !== 'action' || session.todaySelection.id !== actionId) {
             setSelectionLoaded(true)
             return
           }
@@ -891,6 +900,7 @@ function TodayWorkspace(): ReactNode {
     if (!activeRef.current) return
     setSelectionError(null)
     session.selectAction(action.id)
+    setSelectedRoutineId(null)
     setDetail(action)
     setEditTitle(action.title)
     setEditDescription(action.description ?? '')
@@ -905,7 +915,19 @@ function TodayWorkspace(): ReactNode {
     requestAnimationFrame(() => revealStart(detailRef.current))
   }
 
-  const refresh = async (actionId?: string): Promise<void> => {
+  const selectRoutine = (routineId: string): void => {
+    session.selectTodayRoutine(routineId)
+    setSelectedRoutineId(routineId)
+    setDetail(null)
+    setSelectionError(null)
+    setPendingTransition(null)
+    requestAnimationFrame(() => revealStart(detailRef.current))
+  }
+
+  const refresh = async (
+    actionId?: string,
+    selectionAtRequest = session.todaySelection
+  ): Promise<void> => {
     setActivityVersion((version) => version + 1)
     const todayResult = await window.myTracer.today.get({})
     if (!todayResult.ok) {
@@ -919,13 +941,16 @@ function TodayWorkspace(): ReactNode {
         setError(actionErrorText[detailResult.error.code])
         return
       }
-      showDetail(detailResult.value)
+      // A refresh may finish after the user has selected a different action/routine.
+      // Keep the latest explicit selection, while still refreshing the master facts.
+      if (session.todaySelection === selectionAtRequest) showDetail(detailResult.value)
     }
     setError(null)
   }
 
   const submitCreate = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault()
+    const selectionAtRequest = session.todaySelection
     setBusy(true)
     const result = await window.myTracer.actions.create({
       goalId: createGoalId || null,
@@ -941,15 +966,25 @@ function TodayWorkspace(): ReactNode {
     setCreateTitle('')
     setCreateDescription('')
     setCreateGoalId('')
-    showDetail(result.value)
-    await refresh(result.value.id)
-    requestAnimationFrame(() => revealStart(detailRef.current))
+    if (session.todaySelection === selectionAtRequest) {
+      showDetail(result.value)
+      await refresh(result.value.id)
+      if (
+        session.todaySelection?.type === 'action' &&
+        session.todaySelection.id === result.value.id
+      ) {
+        requestAnimationFrame(() => revealStart(detailRef.current))
+      }
+    } else {
+      await refresh()
+    }
     setRefreshVersion((version) => version + 1)
   }
 
   const submitUpdate = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault()
     if (!detail) return
+    const selectionAtRequest = session.todaySelection
     setBusy(true)
     const result = await window.myTracer.actions.updateDetails({
       actionId: detail.id,
@@ -958,63 +993,67 @@ function TodayWorkspace(): ReactNode {
     })
     setBusy(false)
     if (result.ok) {
-      await refresh(detail.id)
+      await refresh(detail.id, selectionAtRequest)
     } else {
       setError(actionErrorText[result.error.code])
     }
   }
 
   const selectForToday = async (actionId: string): Promise<void> => {
+    const selectionAtRequest = session.todaySelection
     setBusy(true)
     const result = await window.myTracer.today.selectAction({ actionId })
     setBusy(false)
     if (result.ok) {
       setNotice('已设为今日重点；目标的当前下一步没有自动改变。')
-      await refresh(actionId)
+      await refresh(actionId, selectionAtRequest)
     } else {
       setError(actionErrorText[result.error.code])
     }
   }
 
   const selectAsIntention = async (actionId: string): Promise<void> => {
+    const selectionAtRequest = session.todaySelection
     setBusy(true)
     const result = await window.myTracer.today.selectActionAsIntention({ actionId })
     setBusy(false)
     if (result.ok) {
       setNotice('已加入今日意向；它不构成承诺，未发生时不会产生失败记录。')
-      await refresh(actionId)
+      await refresh(actionId, selectionAtRequest)
     } else {
       setError(actionErrorText[result.error.code])
     }
   }
 
   const removeFromToday = async (actionId: string): Promise<void> => {
+    const selectionAtRequest = session.todaySelection
     setBusy(true)
     const result = await window.myTracer.today.removeAction({ actionId })
     setBusy(false)
     if (result.ok) {
       setNotice('已移出今日重点；行动和历史记录仍然保留。')
       setToday(result.value)
-      if (detail?.id === actionId) await refresh(actionId)
+      if (detail?.id === actionId) await refresh(actionId, selectionAtRequest)
     } else {
       setError(actionErrorText[result.error.code])
     }
   }
 
   const removeIntention = async (actionId: string): Promise<void> => {
+    const selectionAtRequest = session.todaySelection
     setBusy(true)
     const result = await window.myTracer.today.removeActionIntention({ actionId })
     setBusy(false)
     if (result.ok) {
       setNotice('已移出今日意向；行动和历史记录仍然保留。')
       setToday(result.value)
-      if (detail?.id === actionId) await refresh(actionId)
+      if (detail?.id === actionId) await refresh(actionId, selectionAtRequest)
     } else {
       setError(actionErrorText[result.error.code])
     }
   }
 
-  const renderActionCandidates = (): ReactNode => (
+  const actionCandidates = (
     <details className="goal-card action-candidates" open={!today?.focuses.length}>
       <summary>其它行动（{availableCandidates.length}）</summary>
       <details className="today-help">
@@ -1038,21 +1077,7 @@ function TodayWorkspace(): ReactNode {
                 className={`goal-list-item ${detail?.id === action.id ? 'selected' : ''}`}
                 aria-pressed={detail?.id === action.id}
                 type="button"
-                onClick={() => {
-                  if (!activeRef.current) return
-                  setSelectionError(null)
-                  session.selectAction(action.id)
-                  setDetail(action)
-                  setEditTitle(action.title)
-                  setEditDescription(action.description ?? '')
-                  setResolutionMode('clear')
-                  setReplacementActionId('')
-                  setReplacementTitle('')
-                  setPendingTransition(null)
-                  requestAnimationFrame(() =>
-                    revealStart(document.querySelector<HTMLElement>('.action-detail'))
-                  )
-                }}
+                onClick={() => selectAction(action)}
               >
                 <span>{action.title}</span>
                 <small>
@@ -1094,6 +1119,7 @@ function TodayWorkspace(): ReactNode {
     actionId: string,
     commitment: 'focus' | 'intention'
   ): Promise<void> => {
+    const selectionAtRequest = session.todaySelection
     setBusy(true)
     const result = await window.myTracer.today.changeActionCommitment({
       actionId,
@@ -1106,7 +1132,7 @@ function TodayWorkspace(): ReactNode {
           ? '已改为今日重点；目标的当前下一步没有自动改变。'
           : '已改为今日意向；它不构成承诺。'
       )
-      await refresh(actionId)
+      await refresh(actionId, selectionAtRequest)
     } else {
       setError(actionErrorText[result.error.code])
     }
@@ -1150,6 +1176,7 @@ function TodayWorkspace(): ReactNode {
   const confirmTransition = async (): Promise<void> => {
     if (!pendingTransition) return
     const request = pendingTransition
+    const selectionAtRequest = session.todaySelection
     setBusy(true)
     try {
       const result = await window.myTracer.actions[request.kind]({
@@ -1158,7 +1185,7 @@ function TodayWorkspace(): ReactNode {
       })
       setPendingTransition(null)
       if (result.ok) {
-        await refresh(request.actionId)
+        await refresh(request.actionId, selectionAtRequest)
       } else {
         setError(actionErrorText[result.error.code])
       }
@@ -1344,7 +1371,7 @@ function TodayWorkspace(): ReactNode {
               </div>
             </section>
 
-            {!today?.focuses.length ? renderActionCandidates() : null}
+            {!today?.focuses.length ? actionCandidates : null}
 
             {today?.intentions.length ? (
               <div className="goal-card goal-list-card intention-card">
@@ -1388,7 +1415,7 @@ function TodayWorkspace(): ReactNode {
                 </div>
               </div>
             ) : null}
-            {today?.focuses.length ? renderActionCandidates() : null}
+            {today?.focuses.length ? actionCandidates : null}
 
             <section className="goal-card planned-routines" aria-label="今日例行计划">
               <div className="card-heading">
@@ -1398,30 +1425,20 @@ function TodayWorkspace(): ReactNode {
               <div className="planned-routine-list">
                 {today?.plannedRoutines.length ? (
                   today.plannedRoutines.map((routine) => (
-                    <article key={routine.id}>
-                      <div>
-                        <strong>{routine.name}</strong>
-                        <span>最小行动：{routine.minimumAction}</span>
-                        <small>
-                          {routine.goal
-                            ? `目标：${routine.goal.name} · ${goalStatusText[routine.goal.status]}`
-                            : '未关联目标'}
-                          {session.hasRoutineDraft(routine.id) ? ' · 有未保存草稿' : ''}
-                        </small>
-                      </div>
-                      <RoutineRecordingPanel
-                        routineId={routine.id}
-                        routineName={routine.name}
-                        initialState={{
-                          routineId: routine.id,
-                          localDate: today.localDate,
-                          plannedByCurrentSchedule: true,
-                          recordState: routine.recordState,
-                          record: routine.record
-                        }}
-                        onSaved={async () => refresh()}
-                      />
-                    </article>
+                    <button
+                      key={routine.id}
+                      type="button"
+                      className="today-routine-row"
+                      aria-pressed={selectedRoutineId === routine.id}
+                      onClick={() => selectRoutine(routine.id)}
+                    >
+                      <strong>{routine.name}</strong>
+                      <span>最小行动：{routine.minimumAction}</span>
+                      <small>
+                        {routineRecordOutcomeText[routine.recordState]}
+                        {session.hasRoutineDraft(routine.id) ? ' · 有未保存草稿' : ''}
+                      </small>
+                    </button>
                   ))
                 ) : (
                   <p className="empty-copy">今天没有匹配的活跃例行。</p>
@@ -1437,10 +1454,45 @@ function TodayWorkspace(): ReactNode {
         <div
           className="goal-column today-detail-pane"
           data-scroll-key="detail"
-          aria-label="行动详情工作区"
+          aria-label="行动与例行详情工作区"
           tabIndex={0}
         >
-          {detail ? (
+          {selectedRoutine && today ? (
+            <article
+              ref={detailRef}
+              className="goal-card today-routine-detail"
+              aria-label={`${selectedRoutine.name} 例行详情`}
+            >
+              <div className="detail-title-row">
+                <div>
+                  <p className="eyebrow">今日例行</p>
+                  <h2>{selectedRoutine.name}</h2>
+                </div>
+                <span className="status-badge">
+                  {routineRecordOutcomeText[selectedRoutine.recordState]}
+                </span>
+              </div>
+              <p>最小行动：{selectedRoutine.minimumAction}</p>
+              <p className="empty-copy">
+                {selectedRoutine.goal
+                  ? `目标：${selectedRoutine.goal.name} · ${goalStatusText[selectedRoutine.goal.status]}`
+                  : '未关联目标'}
+              </p>
+              <RoutineRecordingPanel
+                key={selectedRoutine.id}
+                routineId={selectedRoutine.id}
+                routineName={selectedRoutine.name}
+                initialState={{
+                  routineId: selectedRoutine.id,
+                  localDate: today.localDate,
+                  plannedByCurrentSchedule: true,
+                  recordState: selectedRoutine.recordState,
+                  record: selectedRoutine.record
+                }}
+                onSaved={async () => refresh()}
+              />
+            </article>
+          ) : detail ? (
             <article
               ref={detailRef}
               className="goal-card action-detail"
@@ -1694,8 +1746,8 @@ function TodayWorkspace(): ReactNode {
               <div className="placeholder-icon" aria-hidden="true">
                 ◎
               </div>
-              <h2>选择一个行动查看详情</h2>
-              <p>从左侧挑选一个行动，在这里开始记录。没有记录，也不代表没有行动。</p>
+              <h2>选择一个行动或例行查看详情</h2>
+              <p>从左侧挑选一个行动或例行，在这里开始记录。没有记录，也不代表没有行动。</p>
             </div>
           )}
         </div>

@@ -40,6 +40,7 @@ async function createFocusedAction(page: Page): Promise<string> {
     return goal.value.currentNextActionId
   })
   await page.reload()
+  await page.getByRole('navigation').getByRole('button', { name: '今天', exact: true }).click()
   await page
     .getByRole('button', { name: /E2E Start Help Action/ })
     .first()

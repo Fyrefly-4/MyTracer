@@ -223,19 +223,11 @@ test('completes AC-03 with five distinct states, factual Progress, and stable re
 
     await page.getByRole('button', { name: '例行', exact: true }).click()
     await page.getByRole('button', { name: '今天', exact: true }).click()
-    await expect(
-      page
-        .getByLabel('计划日主动休息 例行记录', { exact: true })
-        .getByText('主动休息', { exact: true })
-    ).toBeVisible()
-    await expect(
-      page
-        .getByLabel('计划日明确未做 例行记录', { exact: true })
-        .getByText('未进行', { exact: true })
-    ).toBeVisible()
-    await expect(
-      page.getByLabel('保持未知 例行记录').getByText('未记录', { exact: true })
-    ).toBeVisible()
+    const planned = page.getByLabel('今日例行计划', { exact: true })
+    await expect(planned.getByRole('button', { name: /计划日主动休息/ })).toContainText('主动休息')
+    await expect(planned.getByRole('button', { name: /计划日明确未做/ })).toContainText('未进行')
+    await expect(planned.getByRole('button', { name: /保持未知/ })).toContainText('未记录')
+    await planned.getByRole('button', { name: /UI 行动/ }).click()
     const uiPanel = page.getByLabel('UI 行动 例行记录')
     await uiPanel.getByRole('button', { name: '记录例行' }).click()
     await uiPanel.getByLabel('本次结果').selectOption('acted')

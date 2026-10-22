@@ -1,0 +1,318 @@
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import type { DataControlListDto } from '../../../../contracts/data-control'
+import type { GoalSummaryDto } from '../../../../contracts/goals'
+import type { TodayViewDto } from '../../../../contracts/today'
+import { usePagePosition, useUiSession } from '../../app/ui-session'
+import { routineRecordOutcomeText } from '../../app/ui-text'
+import { HomeRecordCalendar } from './HomeRecordCalendar'
+import { homeGoals, homeRecords } from './home-model'
+import './home.css'
+
+interface HomeSnapshot {
+  readonly goals: readonly GoalSummaryDto[] | null
+  readonly data: DataControlListDto | null
+  readonly today: TodayViewDto | null
+  readonly errors: readonly string[]
+}
+
+export function HomePage(): ReactNode {
+  const session = useUiSession()
+  const [snapshot, setSnapshot] = useState<HomeSnapshot | null>(null)
+  const [reload, setReload] = useState(0)
+  const [refreshing, setRefreshing] = useState(false)
+  usePagePosition('home', snapshot !== null)
+  useEffect(() => {
+    let active = true
+    void Promise.allSettled([
+      window.myTracer.goals.list({}),
+      window.myTracer.dataControl.list(),
+      window.myTracer.today.get({})
+    ]).then(([goals, data, today]) => {
+      if (!active) return
+      const errors: string[] = []
+      const goalsValue = goals.status === 'fulfilled' && goals.value.ok ? goals.value.value : null
+      const dataValue = data.status === 'fulfilled' && data.value.ok ? data.value.value : null
+      const todayValue = today.status === 'fulfilled' && today.value.ok ? today.value.value : null
+      if (!goalsValue) errors.push('目标暂时无法读取')
+      if (!dataValue) errors.push('历史记录暂时无法读取')
+      if (!todayValue) errors.push('今天的日期与例行暂时无法读取')
+      setSnapshot({ goals: goalsValue, data: dataValue, today: todayValue, errors })
+      setRefreshing(false)
+    })
+    return () => {
+      active = false
+    }
+  }, [reload])
+  // Reload when returning to the app, and across a local midnight while left open.
+  useEffect(() => {
+    let day = new Date().toDateString()
+    const refresh = (): void => {
+      setRefreshing(true)
+      setReload((value) => value + 1)
+    }
+    const visibility = (): void => {
+      if (document.visibilityState === 'visible') refresh()
+    }
+    const timer = window.setInterval(() => {
+      const next = new Date().toDateString()
+      if (day !== next) {
+        day = next
+        refresh()
+      }
+    }, 60000)
+    window.addEventListener('focus', refresh)
+    document.addEventListener('visibilitychange', visibility)
+    return () => {
+      window.clearInterval(timer)
+      window.removeEventListener('focus', refresh)
+      document.removeEventListener('visibilitychange', visibility)
+    }
+  }, [])
+  const today = snapshot?.today?.localDate
+  const records = useMemo(
+    () => (snapshot?.data && today ? homeRecords(snapshot.data, today) : []),
+    [snapshot, today]
+  )
+  const goals = useMemo(() => homeGoals(snapshot?.goals ?? [], records), [snapshot?.goals, records])
+  const latestByGoal = useMemo(() => {
+    const latest = new Map<string, (typeof records)[number]>()
+    for (const record of records)
+      if (record.goalId && !latest.has(record.goalId)) latest.set(record.goalId, record)
+    return latest
+  }, [records])
+  const actions = useMemo(
+    () => new Map(snapshot?.data?.actions.map((action) => [action.id, action])),
+    [snapshot?.data]
+  )
+  const activeGoals = snapshot?.goals?.filter((goal) => goal.status === 'active').length ?? 0
+  const routines = snapshot?.today?.plannedRoutines ?? []
+  const recordDataAvailable = Boolean(snapshot?.data && today)
+  const openRecord = (record: { id: string; type: 'action-record' | 'routine-record' }): void =>
+    session.openDataRecord(record, 'home')
+
+  return (
+    <div className="home-page" aria-busy={snapshot === null || refreshing}>
+      <header className="home-welcome">
+        <div>
+          <p className="eyebrow">一点近况，一些可以继续的事</p>
+          <h1>看看最近走到了哪里。</h1>
+          <p className="home-intro">不必从头开始，下一步还在这里。</p>
+        </div>
+        {today ? (
+          <time className="home-date" dateTime={today}>
+            <strong>{Number(today.slice(8))}</strong>
+            {today.slice(0, 4)} 年 {Number(today.slice(5, 7))} 月
+          </time>
+        ) : null}
+      </header>
+      {!snapshot ? (
+        <p role="status">正在读取本地近况…</p>
+      ) : (
+        <>
+          {snapshot.errors.length ? (
+            <div className="home-error" role="alert">
+              <p>{snapshot.errors.join('；')}。其他入口仍可使用。</p>
+              <button
+                type="button"
+                disabled={refreshing}
+                onClick={() => {
+                  setRefreshing(true)
+                  setReload((value) => value + 1)
+                }}
+              >
+                重新读取
+              </button>
+            </div>
+          ) : null}
+          <section aria-labelledby="home-goals-title">
+            <div className="home-section-heading">
+              <h2 id="home-goals-title">最近在推进</h2>
+              {snapshot.goals ? <span>{activeGoals} 个活跃目标</span> : null}
+              <button type="button" onClick={() => session.openSection('goals')}>
+                查看所有目标 →
+              </button>
+            </div>
+            {snapshot.goals ? (
+              goals.length ? (
+                <>
+                  <div className="home-goals">
+                    {goals.map((goal) => {
+                      const record = latestByGoal.get(goal.id)
+                      const candidate = goal.currentNextActionId
+                        ? actions.get(goal.currentNextActionId)
+                        : null
+                      const next =
+                        candidate?.goalId === goal.id && candidate.status === 'pending'
+                          ? candidate
+                          : null
+                      return (
+                        <article
+                          className="home-goal"
+                          key={goal.id}
+                          aria-label={`${goal.name} 概览`}
+                        >
+                          <div className="home-goal-cover">
+                            <span aria-hidden="true">{Array.from(goal.name.trim())[0] ?? '·'}</span>
+                            <small>活跃目标</small>
+                          </div>
+                          <div className="home-goal-body">
+                            <h3>{goal.name}</h3>
+                            <p className="home-goal-note">
+                              {record ? (
+                                <>
+                                  <time dateTime={record.occurredOn}>{record.occurredOn}</time> ·{' '}
+                                  {record.note || `${record.title} · ${record.outcomeText}`}
+                                </>
+                              ) : recordDataAvailable ? (
+                                '还没有留下记录，可以从一个小步骤开始。'
+                              ) : (
+                                '最近记录暂时无法读取。'
+                              )}
+                            </p>
+                            <div className="home-next">
+                              <span>当前下一步</span>
+                              <p>
+                                {next?.title ??
+                                  (snapshot.data
+                                    ? '还没有设置，随时可以补上一小步。'
+                                    : '暂时无法读取。')}
+                              </p>
+                              <div className="home-goal-actions">
+                                <button
+                                  type="button"
+                                  className="home-text-button"
+                                  onClick={() => session.openGoal(goal.id)}
+                                >
+                                  查看目标 ↗
+                                </button>
+                                {next ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => session.openAction(next.id, 'home')}
+                                  >
+                                    去今天继续 →
+                                  </button>
+                                ) : null}
+                              </div>
+                            </div>
+                          </div>
+                        </article>
+                      )
+                    })}
+                  </div>
+                  <p className="home-order-note">
+                    按最近记录日期排列，同日按目标更新时间；最多展示 3 个活跃目标。
+                  </p>
+                </>
+              ) : (
+                <div className="home-empty">
+                  <h3>
+                    {snapshot.goals.length
+                      ? '这里暂时没有活跃的目标。'
+                      : '先给一件想做的事留个位置。'}
+                  </h3>
+                  <p>不必先写完整计划。一个方向、一个小步骤，就可以作为开始。</p>
+                  <button type="button" onClick={() => session.openSection('goals')}>
+                    {snapshot.goals.length ? '查看已有目标' : '＋ 留下一个目标'}
+                  </button>
+                </div>
+              )
+            ) : (
+              <p className="home-muted">目标概览暂时不可用。</p>
+            )}
+          </section>
+          <div className="home-below">
+            {recordDataAvailable && today ? (
+              <HomeRecordCalendar records={records} today={today} onOpenRecord={openRecord} />
+            ) : (
+              <section>
+                <h2>留下的痕迹</h2>
+                <p className="home-muted">记录暂时无法读取；不会将读取失败显示为没有记录。</p>
+              </section>
+            )}
+            <section aria-labelledby="home-routines-title">
+              <div className="home-section-heading">
+                <h2 id="home-routines-title">日常的节奏</h2>
+                <button type="button" onClick={() => session.openSection('routines')}>
+                  查看例行 →
+                </button>
+              </div>
+              <div className="home-routines">
+                {snapshot.today ? (
+                  routines.length ? (
+                    routines.slice(0, 5).map((routine) => (
+                      <div className="home-routine" key={routine.id}>
+                        <span className="home-routine-mark" aria-hidden="true">
+                          ↻
+                        </span>
+                        <div>
+                          <strong>{routine.name}</strong>
+                          <span>
+                            {routine.record
+                              ? routineRecordOutcomeText[routine.record.outcome]
+                              : '今天尚未记录'}
+                          </span>
+                        </div>
+                        <button type="button" onClick={() => session.openTodayRoutine(routine.id)}>
+                          {routine.record ? '查看' : '去记录'}
+                        </button>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="home-muted">
+                      今天没有安排例行。有想重复做的小事时，再添加也不迟。
+                    </p>
+                  )
+                ) : (
+                  <p className="home-muted">今天的例行暂时无法读取。</p>
+                )}
+              </div>
+              {routines.length > 5 ? (
+                <button
+                  className="home-text-button"
+                  type="button"
+                  onClick={() => session.openSection('today')}
+                >
+                  查看今天全部 {routines.length} 项例行 →
+                </button>
+              ) : null}
+              <p className="home-order-note">只展示今天安排的例行，记录不等于完成配额。</p>
+            </section>
+          </div>
+          <section className="home-history" aria-labelledby="home-recent-title">
+            <div className="home-section-heading">
+              <h2 id="home-recent-title">最近的几笔</h2>
+              <button type="button" onClick={() => session.openSection('progress')}>
+                查看完整进展 →
+              </button>
+            </div>
+            {recordDataAvailable ? (
+              records.length ? (
+                <div className="home-recent">
+                  {records.slice(0, 3).map((record) => (
+                    <button
+                      key={`${record.type}:${record.id}`}
+                      type="button"
+                      onClick={() => openRecord(record)}
+                    >
+                      <time dateTime={record.occurredOn}>
+                        {record.occurredOn}
+                        {record.durationMinutes !== null ? ` · ${record.durationMinutes} 分钟` : ''}
+                      </time>
+                      <strong>{record.title}</strong>
+                      <span>{record.note || record.outcomeText}</span>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="home-muted">现在还没有记录。做过一点以后，随时回来记下。</p>
+              )
+            ) : (
+              <p className="home-muted">最近记录暂时无法读取。</p>
+            )}
+          </section>
+        </>
+      )}
+    </div>
+  )
+}

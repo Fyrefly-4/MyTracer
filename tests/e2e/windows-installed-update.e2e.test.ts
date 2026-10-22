@@ -307,7 +307,9 @@ test('offline upgrade fixture covers lifecycle states and preserves facts throug
   try {
     application = await test.step('launch isolated fixture application', open)
     const page = await application.firstWindow()
-    await expect(page.getByRole('heading', { name: '今天', exact: true })).toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: '看看最近走到了哪里。', exact: true })
+    ).toBeVisible()
     await test.step('create synthetic lifecycle facts', () => createInstalledUpdateFacts(page))
     const exported = await test.step('export synthetic baseline', () =>
       exportInstalledFacts(application!, join(root.exports, 'offline.json')))

@@ -111,6 +111,7 @@ test('runs Action and Today focus lifecycle and preserves facts through a real r
     application = undefined
     application = await launchApplication(root)
     page = await application.firstWindow()
+    await page.getByRole('navigation').getByRole('button', { name: '今天', exact: true }).click()
     await expect(page.locator('.focus-row')).toHaveCount(3)
     await expect(
       page.locator('.focus-row').filter({ hasText: '运行一个 React 状态更新示例' })

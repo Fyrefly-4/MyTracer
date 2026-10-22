@@ -361,6 +361,10 @@ test('keeps existing work reachable, restores selection, and records without imp
     await expect(panel.getByLabel('明确将记录中的下一步创建为目标当前下一步')).toHaveCount(0)
     await expect(panel.getByText('仅保存记录，行动状态和当前下一步保持不变。')).toBeVisible()
     await panel.getByRole('button', { name: '放弃草稿' }).click()
+    await page
+      .getByLabel('今日例行计划', { exact: true })
+      .getByRole('button', { name: /散步/ })
+      .click()
     const routinePanel = page.getByLabel('散步 例行记录', { exact: true })
     await routinePanel.getByRole('button', { name: '记录例行' }).click()
     await expect(routinePanel.getByLabel('本次结果')).toBeInViewport()
