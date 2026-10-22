@@ -182,8 +182,8 @@ function GoalWorkspace(): ReactNode {
   const [createName, setCreateName] = useState('')
   const [createDescription, setCreateDescription] = useState('')
   const [createNextAction, setCreateNextAction] = useState('')
-  const editName = contentDraft.snapshot?.name ?? ''
-  const editDescription = contentDraft.snapshot?.description ?? ''
+  const editName = contentDraft.snapshot?.name ?? detail?.name ?? ''
+  const editDescription = contentDraft.snapshot?.description ?? detail?.description ?? ''
   const [selectedActionId, setSelectedActionId] = useState(unsetNextActionOption)
   const [pendingGoalEnd, setPendingGoalEnd] = useState<PendingGoalEnd | null>(null)
   const [recoveryGoalId, setRecoveryGoalId] = useState<string | null>(session.recoveryGoalId)
@@ -505,8 +505,9 @@ function GoalWorkspace(): ReactNode {
       return
     }
     const preferred = chooseVisibleSelection(pageItems, session.goalId, (item) => item.id)
-    const candidates = routeGoalId
-      ? [routeGoalId, ...pageItems.map((item) => item.id)]
+    const requestedGoalId = contentDraft.retained ? contentDraft.snapshot!.goalId : routeGoalId
+    const candidates = requestedGoalId
+      ? [requestedGoalId, ...pageItems.map((item) => item.id)]
       : preferred
         ? [
             preferred.id,
@@ -1025,7 +1026,7 @@ function GoalWorkspace(): ReactNode {
                       <input
                         required
                         value={editName}
-                        readOnly={contentMissing}
+                        readOnly={contentMissing || contentDraft.snapshot?.goalId !== detail.id}
                         onChange={(event) =>
                           contentDraft.edit(detail.id, 'name', event.target.value)
                         }
@@ -1037,7 +1038,7 @@ function GoalWorkspace(): ReactNode {
                         aria-labelledby="goal-edit-description-label"
                         rows={2}
                         value={editDescription}
-                        readOnly={contentMissing}
+                        readOnly={contentMissing || contentDraft.snapshot?.goalId !== detail.id}
                         onChange={(event) =>
                           contentDraft.edit(detail.id, 'description', event.target.value)
                         }
@@ -1046,7 +1047,12 @@ function GoalWorkspace(): ReactNode {
                     <button
                       className="secondary-button"
                       type="submit"
-                      disabled={busy || contentDraft.saving || contentMissing}
+                      disabled={
+                        busy ||
+                        contentDraft.saving ||
+                        contentMissing ||
+                        contentDraft.snapshot?.goalId !== detail.id
+                      }
                     >
                       保存修改
                     </button>
