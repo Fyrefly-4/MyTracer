@@ -1,3 +1,4 @@
+import { addLocalDateDays, createLocalDate } from '../domain/local-date'
 import { createAction } from '../domain/action'
 import { setGoalCurrentNextAction, type Goal } from '../domain/goal'
 import {
@@ -142,6 +143,19 @@ export class ReviewService {
     }
     const record = repository.findReviewResultByPeriodStartedOn(period.periodStartedOn)
     return record ? reviewFromPersistence(record) : null
+  }
+
+  public getPreviousAdjustment(
+    period: ReviewPeriod
+  ): ReviewPeriod & { readonly nextAdjustment: string | null } {
+    this.assertPeriod(period)
+    const previousStart = String(addLocalDateDays(createLocalDate(period.periodStartedOn), -7))
+    const previous = {
+      periodStartedOn: previousStart,
+      periodEndedOn: String(reviewPeriodEndedOn(previousStart))
+    }
+    const result = this.getReviewResult(previous)
+    return Object.freeze({ ...previous, nextAdjustment: result?.nextAdjustment ?? null })
   }
 
   public completeReview(

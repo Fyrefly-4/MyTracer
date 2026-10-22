@@ -1,3 +1,4 @@
+import { PreviousAdjustment } from './PreviousAdjustment'
 import { usePagePosition, useUiSession, useUnsavedContent } from '../../app/ui-session'
 import { type ReactNode, useEffect, useState } from 'react'
 import type {
@@ -285,6 +286,8 @@ export function ReviewPage(): ReactNode {
           </button>
         ) : null}
       </div>
+
+      {contextId && summary ? <PreviousAdjustment key={contextId} contextId={contextId} /> : null}
 
       {error ? (
         <div className="review-error" role="alert">

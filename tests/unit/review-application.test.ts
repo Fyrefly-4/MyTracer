@@ -247,3 +247,67 @@ describe('Review application atomic completion', () => {
     expect(harness.state().reviews.size).toBe(0)
   })
 })
+
+describe('previous calendar week adjustment reference', () => {
+  it.each([
+    ['2026-01-05', '2026-01-11', '2025-12-29', '2026-01-04'],
+    ['2026-03-02', '2026-03-08', '2026-02-23', '2026-03-01'],
+    ['2024-03-04', '2024-03-10', '2024-02-26', '2024-03-03'],
+    ['2026-03-09', '2026-03-15', '2026-03-02', '2026-03-08'],
+    ['2026-11-02', '2026-11-08', '2026-10-26', '2026-11-01']
+  ])(
+    'uses calendar arithmetic from %s regardless of the clock',
+    (start, end, previousStart, previousEnd) => {
+      const find = vi.fn(() => null)
+      const service = new ReviewService({
+        repository: {
+          queryReviewSummarySnapshot: emptySnapshot,
+          findReviewResultByPeriodStartedOn: find
+        } as unknown as RepositoryPort,
+        clock: new FakeClock({
+          instant: '2030-01-01T23:30:00Z',
+          localDate: '2030-01-02',
+          timeZone: 'Asia/Shanghai'
+        })
+      })
+      expect(service.getPreviousAdjustment({ periodStartedOn: start, periodEndedOn: end })).toEqual(
+        {
+          periodStartedOn: previousStart,
+          periodEndedOn: previousEnd,
+          nextAdjustment: null
+        }
+      )
+      expect(find).toHaveBeenCalledExactlyOnceWith(previousStart)
+    }
+  )
+  it('projects only the saved adjustment, preserving full multiline text', () => {
+    const nextAdjustment = '一行\n二行' + '很长的原文'.repeat(200)
+    const find = vi.fn(() => ({
+      id: 'saved',
+      periodStartedOn: '2025-12-29',
+      confirmedProgress: 'private progress',
+      mainObstacle: 'private obstacle',
+      nextAdjustment,
+      goalId: null,
+      createdAt: 'now',
+      updatedAt: 'now'
+    }))
+    const service = new ReviewService({
+      repository: {
+        queryReviewSummarySnapshot: emptySnapshot,
+        findReviewResultByPeriodStartedOn: find
+      } as unknown as RepositoryPort,
+      clock: new FakeClock({
+        instant: '2026-01-05T00:00:00Z',
+        localDate: '2026-01-05',
+        timeZone: 'UTC'
+      })
+    })
+    expect(
+      service.getPreviousAdjustment({ periodStartedOn: '2026-01-05', periodEndedOn: '2026-01-11' })
+    ).toEqual({ periodStartedOn: '2025-12-29', periodEndedOn: '2026-01-04', nextAdjustment })
+    expect(() =>
+      service.getPreviousAdjustment({ periodStartedOn: '2026-01-06', periodEndedOn: '2026-01-11' })
+    ).toThrow()
+  })
+})
