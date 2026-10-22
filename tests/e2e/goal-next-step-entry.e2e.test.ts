@@ -46,7 +46,7 @@ test('a name-only goal offers an optional keyboard entry into the existing next-
     await expect(detail.getByLabel('选择当前下一步', { exact: true })).toHaveValue(
       '__new-next-action__'
     )
-    await expect(detail.locator('form').filter({ has: title })).toHaveCount(1)
+    await expect(title).toHaveCount(1)
     await title.fill('读一个小例子')
     await detail.getByLabel('下一步说明（选填）').fill('保留这一点上下文')
     await detail.getByLabel('目标名称', { exact: true }).fill('未保存的目标名称')
