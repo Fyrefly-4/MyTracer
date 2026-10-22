@@ -517,11 +517,7 @@ function GoalWorkspace(): ReactNode {
                 </button>
               </div>
               <div className="page-actions workspace-toolbar">
-                <p className="workspace-count">
-                  {goals.length
-                    ? `${goals.length} 个目标 · 留下方向，也留一点余地`
-                    : '从一个想继续的方向开始'}
-                </p>
+                <p className="workspace-count">{goals.length} 个目标</p>
                 <button
                   type="button"
                   className="secondary-button"
@@ -568,14 +564,6 @@ function GoalWorkspace(): ReactNode {
                   </select>
                 </label>
               </div>
-              <div className="object-list-help">
-                <p className="empty-copy">
-                  可以先保留少量活跃目标，把注意力留给现在想做的事；数量由你决定。
-                </p>
-              </div>
-              {activity ? (
-                <p className="empty-copy">行动日期截至 {activity.asOfLocalDate}</p>
-              ) : null}
               {activityError ? (
                 <p role="status">
                   行动日期暂时无法读取。
@@ -586,6 +574,13 @@ function GoalWorkspace(): ReactNode {
               ) : null}
             </div>
             <div className="object-master-scroll" data-scroll-key="master">
+              <details className="goal-list-guidance">
+                <summary>目标与行动日期说明</summary>
+                <p>
+                  留下方向，也留一点余地。可以先保留少量活跃目标，把注意力留给现在想做的事；数量由你决定。
+                </p>
+                {activity ? <p>行动日期截至 {activity.asOfLocalDate}</p> : null}
+              </details>
               {filteredItems.length ? (
                 <div className="goal-list">
                   {pageItems.map((goal) => (
