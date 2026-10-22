@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'none'; img-src 'none'; base-uri 'none'; form-action 'none'"
+    />
+    <title>MyTracer · 材质实验</title>
+    <link rel="stylesheet" href="shell.css" />
+    <script src="renderer.js" defer></script>
+  </head>
+  <body>
+    <header class="titlebar">
+      <span>◈ &nbsp; MyTracer</span><span class="experiment">独立材质实验</span>
+    </header>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="brand">留一点空间，<br />给今天。</div>
+        <nav aria-label="静态导航示意">
+          <div class="selected">◉ &nbsp; 首页</div>
+          <div>◎ &nbsp; 目标</div>
+          <div>▤ &nbsp; 行动与例行</div>
+          <div>▦ &nbsp; 记录</div>
+        </nav>
+        <p class="sidebar-note">只有一个壳子<br />所有内容均为静态示意</p>
+      </aside>
+      <main>
+        <p class="eyebrow">MATERIAL STUDY / 01</p>
+        <h1>让界面轻一点。</h1>
+        <p class="intro">环境留在边缘，内容保持清晰。观察标题栏、侧边栏与外缘的细微变化。</p>
+        <section class="controls" aria-label="材质控制">
+          <label
+            >外壳模式<select id="mode">
+              <option value="solid">实色奶白</option>
+              <option value="environment" selected>环境材质</option>
+            </select></label
+          >
+          <label
+            >原生材质<select id="material">
+              <option value="mica">Mica</option>
+              <option value="acrylic">Acrylic</option>
+            </select></label
+          >
+          <label
+            >环境显现强度<select id="intensity">
+              <option value="subtle">轻微 · Subtle</option>
+              <option value="standard">标准 · Standard</option>
+              <option value="strong">明显 · Strong</option>
+            </select></label
+          >
+          <p id="status" role="status">正在读取环境…</p>
+          <p class="hint">强度只改变外壳奶白覆盖层；正文、卡片和文字始终不透明。</p>
+        </section>
+        <div class="cards">
+          <article>
+            <span class="tag">今天 · 静态示意</span>
+            <h2>从一件小事开始</h2>
+            <p>读几页书，散步片刻。给日常留下一点轻松的节奏。</p>
+            <div class="sample-row">阅读 <span>20 分钟</span></div>
+          </article>
+          <article>
+            <span class="tag">观察重点</span>
+            <h2>清晰，而有层次</h2>
+            <p>这张奶白卡片是固定参照。切换强度时，它的颜色与文字对比度不应改变。</p>
+            <div class="sample-row">内容面 <span>100% 不透明</span></div>
+          </article>
+        </div>
+        <footer>无数据库 · 无业务逻辑 · 无更新器 · 不读取真实数据</footer>
+      </main>
+    </div>
+  </body>
+</html>
