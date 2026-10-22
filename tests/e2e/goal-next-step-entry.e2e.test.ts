@@ -88,9 +88,11 @@ test('the empty-step entry is limited to active goals and does not leak drafts b
     await openGoals(page)
     const list = page.getByLabel('目标列表', { exact: true })
     await list.getByRole('button', { name: /活跃空目标甲/ }).click()
+    await expect(page.getByLabel('活跃空目标甲 详情', { exact: true })).toBeVisible()
     await page.getByRole('button', { name: '新建下一步', exact: true }).click()
     await page.getByLabel('下一步名称', { exact: true }).fill('只属于甲的输入')
     await list.getByRole('button', { name: /活跃空目标乙/ }).click()
+    await expect(page.getByLabel('活跃空目标乙 详情', { exact: true })).toBeVisible()
     await page.getByRole('button', { name: '新建下一步', exact: true }).click()
     await expect(page.getByLabel('下一步名称', { exact: true })).toHaveValue('')
     for (const name of ['暂停空目标', '结束空目标', '已有下一步']) {
