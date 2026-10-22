@@ -1,3 +1,4 @@
+import type { ReviewSummaryDto } from '../../../contracts/review'
 import { browserSelectionPreferences, type SelectionPage } from './selection-preferences'
 import {
   createContext,
@@ -53,7 +54,33 @@ export interface DataRecordSelection {
   readonly id: string
 }
 
+export interface ReviewWritingDraft {
+  readonly summary: ReviewSummaryDto
+  readonly loadedDraft: string
+  readonly confirmedProgress: string
+  readonly mainObstacle: string
+  readonly nextAdjustment: string
+  readonly relatedGoalId: string
+  readonly nextStepKind: 'none' | 'use-existing' | 'create-and-use'
+  readonly existingActionId: string
+  readonly newActionTitle: string
+}
+
 export class UiSession {
+  private pendingReviewSave: Promise<void> | null = null
+  getPendingReviewSave(): Promise<void> | null {
+    return this.pendingReviewSave
+  }
+  setPendingReviewSave(pending: Promise<void> | null): void {
+    this.pendingReviewSave = pending
+  }
+  private reviewWritingDraft: ReviewWritingDraft | null = null
+  getReviewDraft(): ReviewWritingDraft | null {
+    return this.reviewWritingDraft
+  }
+  setReviewDraft(draft: ReviewWritingDraft | null): void {
+    this.reviewWritingDraft = draft
+  }
   private selectedGoal: string | null = null
   private selectedAction: string | null = null
   private selectedToday: { type: 'action' | 'routine'; id: string } | null = null
@@ -212,6 +239,7 @@ export class UiSession {
   hasUnsavedContent(): boolean {
     return (
       this.unsavedContent.size > 0 ||
+      this.reviewWritingDraft !== null ||
       this.actionDrafts.size > 0 ||
       this.routineDrafts.size > 0 ||
       this.goalCoverDrafts.size > 0

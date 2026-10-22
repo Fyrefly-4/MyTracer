@@ -22,6 +22,7 @@
     "src/renderer/src/app/selection-preferences.ts",
     "src/renderer/src/app/navigation.ts",
     "src/renderer/src/features/home/calendar.ts",
+    "src/renderer/src/features/review/review-reference.ts",
     "src/renderer/src/features/goals/goal-cover.ts",
     "src/renderer/src/features/home/home-model.ts",
     "src/renderer/src/app/ui-text.ts"
