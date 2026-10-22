@@ -1,4 +1,5 @@
 import { browserSelectionPreferences, type SelectionPage } from './selection-preferences'
+import { RoutineEditSession } from './routine-edit-session'
 import {
   createContext,
   useContext,
@@ -54,6 +55,7 @@ export interface DataRecordSelection {
 }
 
 export class UiSession {
+  readonly routineEditor = new RoutineEditSession()
   private selectedGoal: string | null = null
   private selectedAction: string | null = null
   private selectedToday: { type: 'action' | 'routine'; id: string } | null = null
@@ -211,6 +213,7 @@ export class UiSession {
   }
   hasUnsavedContent(): boolean {
     return (
+      this.routineEditor.hasDraft() ||
       this.unsavedContent.size > 0 ||
       this.actionDrafts.size > 0 ||
       this.routineDrafts.size > 0 ||
