@@ -98,10 +98,54 @@ test('previous adjustment is optional, read-only and does not replace the curren
     expect(await app.evaluate(() => Reflect.get(globalThis, '__previousRead').calls)).toBe(0)
     const disclosure = page.locator('.previous-adjustment')
     const summary = disclosure.locator('summary')
+    // Observe the actual Renderer fulfillment callback for this synthetic late result.
+    // Main resolving a promise alone does not prove that the component has received it.
+    await page.evaluate(() => {
+      const originalThen = Promise.prototype.then
+      Reflect.set(globalThis, '__lateAdjustmentHandled', false)
+      Reflect.set(
+        Promise.prototype,
+        'then',
+        function (
+          this: Promise<unknown>,
+          fulfilled?: (value: unknown) => unknown,
+          rejected?: (reason: unknown) => unknown
+        ) {
+          return originalThen.call(
+            this,
+            (value: unknown) => {
+              const late = Boolean(
+                value &&
+                typeof value === 'object' &&
+                Reflect.get(value, 'ok') === true &&
+                Reflect.get(value, 'value')?.nextAdjustment === '迟到原文'
+              )
+              const result = fulfilled ? fulfilled(value) : value
+              if (late && fulfilled) {
+                Reflect.set(Promise.prototype, 'then', originalThen)
+                // Wait for a render opportunity after the callback, not an elapsed-time guess.
+                requestAnimationFrame(() =>
+                  requestAnimationFrame(() => {
+                    Reflect.set(globalThis, '__lateAdjustmentHandled', true)
+                  })
+                )
+              }
+              return result
+            },
+            rejected
+          )
+        }
+      )
+    })
     await mode('hold')
     await summary.focus()
     await summary.press('Enter')
     await expect(disclosure.getByRole('status')).toContainText('正在读取')
+    await expect
+      .poll(() =>
+        app!.evaluate(() => Reflect.get(globalThis, '__previousRead').pending.length as number)
+      )
+      .toBe(1)
     await summary.click()
     await mode('real')
     await summary.click()
@@ -109,9 +153,19 @@ test('previous adjustment is optional, read-only and does not replace the curren
     await expect(disclosure.locator('.previous-adjustment-text')).not.toContainText('最后一行')
     await disclosure.getByRole('button', { name: '查看完整原文' }).click()
     await expect(disclosure.locator('.previous-adjustment-text')).toHaveText(original)
-    await app.evaluate(() => {
-      for (const resolve of Reflect.get(globalThis, '__previousRead').pending.splice(0)) resolve()
+    const released = await app.evaluate(() => {
+      const pending = Reflect.get(globalThis, '__previousRead').pending.splice(0) as Array<
+        () => void
+      >
+      for (const resolve of pending) resolve()
+      return pending.length
     })
+    expect(released).toBe(1)
+    await expect
+      .poll(() =>
+        page.evaluate(() => Reflect.get(globalThis, '__lateAdjustmentHandled') as boolean)
+      )
+      .toBe(true)
     await expect(disclosure.locator('.previous-adjustment-text')).toHaveText(original)
     for (const width of [1440, 820, 547]) {
       await page.setViewportSize({ width, height: 650 })
