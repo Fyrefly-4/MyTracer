@@ -26,6 +26,7 @@ function row(
     actionId: 'action-1',
     goalId: goal.id,
     actionTitle: 'Run a state update example',
+    hasRecordedText: false,
     occurredOn: '2026-08-12',
     durationMinutes: 25,
     outcome: 'partial',

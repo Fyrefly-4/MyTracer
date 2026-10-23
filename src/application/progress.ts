@@ -54,6 +54,7 @@ function recordsFromRows(rows: readonly ProgressQueryRowPersistenceRecord[]): Pr
         actionId: row.actionId,
         goalId: row.goalId,
         actionTitle: row.actionTitle,
+        hasRecordedText: row.hasRecordedText,
         occurredOn: row.occurredOn,
         durationMinutes: row.durationMinutes,
         outcome: row.outcome,

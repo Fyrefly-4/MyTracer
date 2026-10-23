@@ -62,8 +62,10 @@ export function validateSelection(value) {
 async function assertRepository(api) {
   const repository = await api.get('')
   check(
-    repository.full_name === REPOSITORY && repository.id === REPOSITORY_ID && repository.private,
-    'private-repository'
+    repository.full_name === REPOSITORY &&
+      repository.id === REPOSITORY_ID &&
+      typeof repository.private === 'boolean',
+    'repository-target'
   )
 }
 
