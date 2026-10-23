@@ -292,18 +292,14 @@ function ActionRecordingPanel(props: {
     })
     if (!activeRef.current) return
     setBusy(false)
-    if (!result.ok) {
-      if (result.error.code === 'invalid-recording-context') {
-        resetForm()
-        setSavedMessage('已放弃未保存草稿。')
-        return
-      }
+    if (!result.ok && result.error.code !== 'invalid-recording-context') {
       setError(recordErrorText[result.error.code])
       return
     }
     restoreBeginFocus.current = true
     resetForm()
     setError(null)
+    setSavedMessage('已放弃未保存草稿，已有记录保持不变。')
   }
 
   const showRecordDetail = async (recordId: string): Promise<void> => {

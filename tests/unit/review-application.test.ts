@@ -133,6 +133,7 @@ describe('Review application query', () => {
           actionId: 'action-1',
           goalId: null,
           actionTitle: 'Act',
+          hasRecordedText: false,
           occurredOn: '2026-08-12',
           durationMinutes: 8,
           outcome: 'partial',

@@ -11,6 +11,7 @@ import {
   publishRelease,
   ReleaseError,
   safeErrorCode,
+  recoverySelection,
   selectRelease,
   validateAssets,
   validateSelection
@@ -89,6 +90,7 @@ async function fixture(t) {
       if (path === '/releases/10') return state.release
       if (path === '/releases/10/assets?per_page=100') return [...state.remote]
       if (path === `/commits/${sha}/pulls?per_page=100`) return state.prs
+      if (path === `/commits/${otherSha}/pulls?per_page=100`) return []
       throw Error(`Unexpected fixture read: ${path}`)
     },
     async allReleases() {
@@ -199,6 +201,48 @@ test('ordinary push cannot publish an older draft', async (t) => {
   noWrites(f)
 })
 
+test('an approved release missing from the API cannot silently skip the build', async (t) => {
+  const f = await fixture(t)
+  f.state.releases = []
+  await assert.rejects(() => f.select({ created: '' }), /approved-release-not-found/)
+  noWrites(f)
+})
+
+test('manual recovery selects the exact old release independently of the workflow SHA', async (t) => {
+  const f = await fixture(t)
+  f.state.releases = [] // Direct ID lookup also works when the list omits the draft.
+  assert.deepEqual(await f.select({ eventSha: otherSha, recovery: selection }), selection)
+  noWrites(f)
+})
+
+test('recovery validates identity and refuses newer stable releases before building', async (t) => {
+  const f = await fixture(t)
+  await assert.rejects(
+    () => f.select({ recovery: { ...selection, tag: 'v0.1.6', version: '0.1.6' } }),
+    /release-target/
+  )
+  f.state.releases.push({ id: 11, tag_name: 'v0.2.0', draft: false, prerelease: false })
+  await assert.rejects(() => f.select({ recovery: selection }), /newer-version-exists/)
+  noWrites(f)
+})
+
+test('dispatch requires main and all exact inputs; push ignores recovery inputs', () => {
+  const env = {
+    GITHUB_REF: 'refs/heads/main',
+    GITHUB_EVENT_NAME: 'workflow_dispatch',
+    RECOVERY_RELEASE_ID: '10',
+    RECOVERY_TAG: selection.tag,
+    RECOVERY_SOURCE_SHA: sha
+  }
+  assert.deepEqual(recoverySelection(env), selection)
+  for (const key of ['RECOVERY_RELEASE_ID', 'RECOVERY_TAG', 'RECOVERY_SOURCE_SHA']) {
+    assert.throws(() => recoverySelection({ ...env, [key]: '' }))
+  }
+  assert.throws(() => recoverySelection({ ...env, GITHUB_REF: 'refs/heads/feature' }))
+  assert.throws(() => recoverySelection({ ...env, GITHUB_EVENT_NAME: 'pull_request' }))
+  assert.equal(recoverySelection({ ...env, GITHUB_EVENT_NAME: 'push' }), undefined)
+})
+
 test('retry of a published version is a read-only no-op', async (t) => {
   const f = await fixture(t)
   f.state.release.draft = false
@@ -219,8 +263,16 @@ for (const [name, mutate, code] of [
   ['wrong draft tag', (f) => (f.state.release.tag_name = 'v0.1.6'), 'release-target'],
   ['prerelease', (f) => (f.state.release.prerelease = true), 'release-target'],
   ['non-main source', (f) => (f.state.main = false), 'non-main-source'],
-  ['public repository', (f) => (f.state.repository.private = false), 'private-repository'],
-  ['wrong repository ID', (f) => (f.state.repository.id = 1), 'private-repository'],
+  ['missing visibility', (f) => delete f.state.repository.private, 'repository-target'],
+  ['null visibility', (f) => (f.state.repository.private = null), 'repository-target'],
+  ['string visibility', (f) => (f.state.repository.private = 'false'), 'repository-target'],
+  ['numeric visibility', (f) => (f.state.repository.private = 0), 'repository-target'],
+  [
+    'wrong repository name',
+    (f) => (f.state.repository.full_name = 'other/repo'),
+    'repository-target'
+  ],
+  ['wrong repository ID', (f) => (f.state.repository.id = 1), 'repository-target'],
   ['missing release PR', (f) => (f.state.prs = []), 'merged-release-pr-required'],
   ['unmerged release PR', (f) => (f.state.prs[0].merged_at = null), 'merged-release-pr-required'],
   [
@@ -304,6 +356,8 @@ test('uploads all three assets and verifies bytes before visibility', async (t) 
   await f.publish()
   assert.equal(f.calls.filter((c) => c.startsWith('upload:')).length, 3)
   assert(f.calls.indexOf('verify') > f.calls.findLastIndex((c) => c.startsWith('upload:')))
+  assert(f.calls.includes('verify'))
+  assert(f.calls.includes('visible'))
   assert(f.calls.indexOf('visible') > f.calls.indexOf('verify'))
   assert.equal(f.calls.at(-1), 'visible')
   assert.equal(f.state.release.draft, false)
@@ -553,5 +607,31 @@ for (const [name, mutate] of [
     assert(f.calls.includes('verify'))
     noWrites(f)
     assert.equal(f.state.release.draft, false)
+  })
+}
+
+for (const visibility of [true, false]) {
+  test(`repository.private=${visibility} preserves selection, publication and retry`, async (t) => {
+    const f = await fixture(t)
+    f.state.repository.private = visibility
+    assert.deepEqual(await f.select(), selection)
+    noWrites(f)
+    await f.publish()
+    assert.equal(f.calls.filter((c) => c.startsWith('upload:')).length, 3)
+    assert(f.calls.includes('verify'))
+    assert(f.calls.includes('visible'))
+    assert(f.calls.indexOf('visible') > f.calls.indexOf('verify'))
+    assert.equal(f.state.release.draft, false)
+    f.calls.length = 0
+    await f.publish()
+    noWrites(f)
+  })
+}
+for (const invalid of [undefined, null, 'false', 0]) {
+  test(`publication rejects malformed visibility ${String(invalid)} before writes`, async (t) => {
+    const f = await fixture(t)
+    f.state.repository.private = invalid
+    await assert.rejects(f.publish, /repository-target/)
+    noWrites(f)
   })
 }
