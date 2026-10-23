@@ -3,6 +3,25 @@ name: Release
 on:
   push:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      release_id:
+        description: Existing approved release ID to recover
+        required: true
+        type: string
+      tag:
+        description: Exact stable tag (vX.Y.Z)
+        required: true
+        type: string
+      source_sha:
+        description: Exact merged release PR commit (40-character SHA)
+        required: true
+        type: string
+
+env:
+  RECOVERY_RELEASE_ID: ${{ inputs.release_id }}
+  RECOVERY_TAG: ${{ inputs.tag }}
+  RECOVERY_SOURCE_SHA: ${{ inputs.source_sha }}
 
 permissions:
   contents: read
@@ -13,7 +32,7 @@ concurrency:
 
 jobs:
   release-pr:
-    if: github.repository == 'Fyrefly-4/MyTracer'
+    if: github.repository == 'Fyrefly-4/MyTracer' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -50,6 +69,7 @@ jobs:
           permission-pull-requests: write
           skip-token-revoke: false
       - name: Maintain release PR or create approved draft
+        if: github.event_name == 'push'
         id: release
         uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
         with:
@@ -60,7 +80,7 @@ jobs:
       - name: Select exact approved release including retry
         id: select
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.release-app.outputs.token }}
           RELEASE_CREATED: ${{ steps.release.outputs.release_created }}
           RELEASE_ID: ${{ steps.release.outputs.id }}
           RELEASE_SHA: ${{ steps.release.outputs.sha }}
@@ -107,8 +127,14 @@ jobs:
           if ((Get-AuthenticodeSignature -LiteralPath $setup).Status -ne 'NotSigned') {
             throw 'Unexpected signing policy.'
           }
+      - name: Checkout release tooling from workflow revision
+        uses: actions/checkout@v6.0.2
+        with:
+          ref: ${{ github.sha }}
+          path: .tmp/release-tooling
+          persist-credentials: false
       - name: Validate and collect updater files
-        run: node tools/release/release-pr.mjs bundle
+        run: node .tmp/release-tooling/tools/release/release-pr.mjs bundle
       - name: Transfer tested bytes within this run
         uses: actions/upload-artifact@v4.6.2
         with:
@@ -138,6 +164,28 @@ jobs:
         with:
           node-version: 24.18.0
           package-manager-cache: false
+      - name: Checkout release tooling from workflow revision
+        uses: actions/checkout@v6.0.2
+        with:
+          ref: ${{ github.sha }}
+          path: .tmp/release-tooling
+          persist-credentials: false
+      - name: Require release App configuration
+        env:
+          RELEASE_APP_CLIENT_ID: ${{ vars.MYTRACER_RELEASE_APP_CLIENT_ID }}
+          RELEASE_APP_PRIVATE_KEY: ${{ secrets.MYTRACER_RELEASE_APP_PRIVATE_KEY }}
+        run: node tools/release/check-app-config.mjs
+      - name: Create repository-scoped release App token
+        id: release-app
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3
+        with:
+          client-id: ${{ vars.MYTRACER_RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.MYTRACER_RELEASE_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: MyTracer
+          permission-contents: write
+          permission-pull-requests: write
+          skip-token-revoke: false
       - name: Download tested bytes from this run
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
@@ -147,8 +195,8 @@ jobs:
       - name: Select the latest successful build attempt
         shell: bash
         run: |
-          node tools/release/select-run-assets.mjs
+          node .tmp/release-tooling/tools/release/select-run-assets.mjs
       - name: Publish complete stable release
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: node tools/release/release-pr.mjs publish
+          GH_TOKEN: ${{ steps.release-app.outputs.token }}
+        run: node .tmp/release-tooling/tools/release/release-pr.mjs publish
