@@ -1,0 +1,36 @@
+name: Installer validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - build/installer/**
+      - resources/brand/**
+      - tools/installer/**
+      - electron-builder.yml
+      - package.json
+      - package-lock.json
+      - .github/workflows/installer.yml
+
+permissions:
+  contents: read
+
+jobs:
+  installer:
+    name: NSIS compile and scope fixtures
+    runs-on: windows-2025
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6.0.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6.4.0
+        with:
+          node-version: 24.18.0
+          cache: npm
+      - run: npm.cmd ci
+      - run: npm.cmd exec -- install-electron --no
+      - name: Execute isolated NSIS decision fixtures
+        run: node tools/installer/verify.mjs
+      - name: Compile real installer and uninstaller (never publish)
+        run: npm.cmd run package
