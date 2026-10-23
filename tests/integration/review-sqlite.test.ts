@@ -384,3 +384,32 @@ describe('ReviewResult SQLite completion', () => {
     connection.close()
   })
 })
+
+it('reads the exact previous saved week without fallback or modifying either result', async () => {
+  const { connection } = await openDatabase()
+  try {
+    const service = reviewService(connection)
+    const input = {
+      confirmedProgress: '进展',
+      mainObstacle: '阻力',
+      nextAdjustment: '原文\n保持换行',
+      relatedGoalId: null,
+      nextStepChange: { kind: 'none' as const }
+    }
+    service.completeReview({ periodStartedOn: '2025-12-22', periodEndedOn: '2025-12-28' }, input)
+    const current = { periodStartedOn: '2026-01-05', periodEndedOn: '2026-01-11' }
+    const saved = service.completeReview(current, { ...input, nextAdjustment: '本周保存内容' })
+    expect(service.getPreviousAdjustment(current)).toEqual({
+      periodStartedOn: '2025-12-29',
+      periodEndedOn: '2026-01-04',
+      nextAdjustment: null
+    })
+    const previous = { periodStartedOn: '2025-12-29', periodEndedOn: '2026-01-04' }
+    const previousSaved = service.completeReview(previous, input)
+    expect(service.getPreviousAdjustment(current).nextAdjustment).toBe(input.nextAdjustment)
+    expect(service.getReviewResult(previous)).toEqual(previousSaved)
+    expect(service.getReviewResult(current)).toEqual(saved)
+  } finally {
+    connection.close()
+  }
+})

@@ -1,0 +1,15 @@
+.previous-adjustment {
+  margin-block: 12px;
+  min-width: 0;
+}
+.previous-adjustment summary {
+  cursor: pointer;
+}
+.previous-adjustment-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.7;
+}
+.previous-adjustment-hint {
+  font-size: 0.9em;
+}

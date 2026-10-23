@@ -3,6 +3,7 @@ import { ReviewApplicationError, type ReviewService } from '../application/revie
 import {
   REVIEW_CHANNELS,
   type BeginReviewDto,
+  type PreviousReviewAdjustmentDto,
   type CompleteReviewInputDto,
   type ReviewErrorCode,
   type ReviewResult,
@@ -175,6 +176,13 @@ export function registerReviewIpc(options: RegisterReviewIpcOptions): void {
       const context = options.contexts.get(event.sender.id, parseContext(args))
       const result = options.service.getReviewResult(context)
       return result ? resultDto(result) : null
+    })
+  })
+  options.ipc.handle(REVIEW_CHANNELS.getPreviousAdjustment, (event, ...args) => {
+    options.assertSender(event)
+    return execute<PreviousReviewAdjustmentDto>(() => {
+      const context = options.contexts.get(event.sender.id, parseContext(args))
+      return options.service.getPreviousAdjustment(context)
     })
   })
   options.ipc.handle(REVIEW_CHANNELS.complete, (event, ...args) => {
