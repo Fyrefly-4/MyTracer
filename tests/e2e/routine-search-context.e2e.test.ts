@@ -76,6 +76,10 @@ test('empty database and unmatched search are distinct; clearing is keyboard acc
       window.setContentSize(820, 650)
       window.webContents.setZoomFactor(1.5)
     })
+    // Native resize/zoom reaches the renderer asynchronously. Compare both layouts only
+    // after the requested CSS viewport is visible, not across two different window sizes.
+    await expect.poll(() => page.evaluate(() => innerWidth)).toBeCloseTo(820 / 1.5, 0)
+    await expect.poll(() => page.evaluate(() => innerHeight)).toBeCloseTo(650 / 1.5, 0)
     const scroll = list.locator('.object-master-scroll')
     const before = await scroll.boundingBox()
     await search.fill('合成')
