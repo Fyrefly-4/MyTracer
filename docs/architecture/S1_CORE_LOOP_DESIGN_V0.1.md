@@ -199,7 +199,11 @@ understandings       = children of filtered records where revokedAt is null
 openConfusions       = children of filtered records where status = open
 ```
 
-`ProgressView` 使用一个不重复事实的分层 DTO：顶层包含规范化 filter、`totalDurationMinutes`、`realActionCount` 和 `records[]`；每个 record fact 只包含 `recordId`、`actionId`、`goalId?`、用于展示的 Action 标题、`occurredOn`、分钟、outcome、`understandings[]` 与 `openConfusions[]`。Progress 不返回 note/下一步编辑入口，也不另外复制一套扁平子实体；UI 展示“确认理解/开放困惑”时从 `records[]` 投影。
+S1 基线的 `ProgressView` 使用一个不重复事实的分层 DTO：顶层包含规范化 filter、`totalDurationMinutes`、`realActionCount` 和 `records[]`；每个 record fact 只包含 `recordId`、`actionId`、`goalId?`、用于展示的 Action 标题、`occurredOn`、分钟、outcome、`understandings[]` 与 `openConfusions[]`。Progress 不返回 note/下一步编辑入口，也不另外复制一套扁平子实体；UI 展示“确认理解/开放困惑”时从 `records[]` 投影。
+
+**后续演进（2026-10，PR #106）：行动补充原文按需只读展示。** 当前列表的 record fact 增加布尔值 `hasRecordedText`，仅说明 note 或历史 nextStep 是否存在，不把原文批量加入 `ProgressView`。用户展开记录时，Renderer 通过既有 `records.getDetail({ recordId })` 读取该条原文；只含理解/困惑时不新增详情请求。收起、翻页、离页或刷新替换列表后释放原文并使旧响应失效，读取失败可就地重试；详情身份、日期、时长或结果与列表快照不符时提示重新读取列表。
+
+这一扩展不提供编辑入口，不生成或修改当前计划；历史 nextStep 明确标为当时的记录。列表过滤、排序、去重和事实统计不变；Review 显式投影原有字段，不携带 `hasRecordedText`、note 或 nextStep，Recovery 输出不变。没有新增 IPC 权限、AI 上下文、持久化或 schema；原有全范围列表查询成本仍然存在。本节记录后续行为，不改写 S1 的历史验收结论。
 
 约束：
 
