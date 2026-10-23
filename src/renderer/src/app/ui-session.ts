@@ -1,5 +1,7 @@
 import type { ReviewSummaryDto } from '../../../contracts/review'
+import { GoalContentDraft } from '../features/goals/goal-content-draft'
 import { browserSelectionPreferences, type SelectionPage } from './selection-preferences'
+import { RoutineEditSession } from './routine-edit-session'
 import {
   createContext,
   useContext,
@@ -81,6 +83,8 @@ export class UiSession {
   setReviewDraft(draft: ReviewWritingDraft | null): void {
     this.reviewWritingDraft = draft
   }
+  readonly goalContentDraft = new GoalContentDraft()
+  readonly routineEditor = new RoutineEditSession()
   private selectedGoal: string | null = null
   private selectedAction: string | null = null
   private selectedToday: { type: 'action' | 'routine'; id: string } | null = null
@@ -88,6 +92,7 @@ export class UiSession {
   private recoveryGoal: string | null = null
   private selectedDataRecord: DataRecordSelection | null = null
   private filter: GoalStatusDto | '' = ''
+  private goalQuery = ''
   private progressHistoryPage = 1
   private progressDraft: ProgressFilterState = { goalId: '', from: '', through: '' }
   private progressApplied: ProgressFilterState = { goalId: '', from: '', through: '' }
@@ -142,6 +147,12 @@ export class UiSession {
   }
   get goalFilter(): GoalStatusDto | '' {
     return this.filter
+  }
+  get goalSearchQuery(): string {
+    return this.goalQuery
+  }
+  setGoalSearchQuery(query: string): void {
+    this.goalQuery = query
   }
   get routineId(): string | null {
     return this.selectedRoutine
@@ -238,8 +249,11 @@ export class UiSession {
   }
   hasUnsavedContent(): boolean {
     return (
+      this.routineEditor.hasDraft() ||
       this.unsavedContent.size > 0 ||
       this.reviewWritingDraft !== null ||
+      this.goalContentDraft.dirty ||
+      this.goalContentDraft.saving ||
       this.actionDrafts.size > 0 ||
       this.routineDrafts.size > 0 ||
       this.goalCoverDrafts.size > 0
@@ -270,12 +284,13 @@ export class UiSession {
     this.positions[source] = document.querySelector('main')?.scrollTop ?? 0
     this.onNavigate(section)
   }
-  openGoal(goalId: string): void {
+  openGoal(goalId: string, source: 'home' | 'today' = 'home'): void {
     this.selectGoal(goalId)
     this.navigationSelection.add('goals')
     this.filter = ''
+    this.goalQuery = ''
     this.setPanePosition('goals', 'detail', 0)
-    this.openSection('goals')
+    this.openSection('goals', source)
   }
   openTodayRoutine(routineId: string): void {
     this.navigationSelection.add('today')
@@ -301,7 +316,7 @@ export class UiSession {
   }
   openDataRecord(
     selection: DataRecordSelection,
-    source: 'goals' | 'progress' | 'review' | 'home'
+    source: 'goals' | 'progress' | 'review' | 'home' | 'today'
   ): void {
     this.selectedDataRecord = selection
     if (selection) this.preferences.remember('data', selection)

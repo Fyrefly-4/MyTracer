@@ -217,8 +217,8 @@ export function validatePublication(context) {
   requireCondition(
     repository.full_name === REPOSITORY &&
       repository.id === REPOSITORY_ID &&
-      repository.private === true,
-    'private-target'
+      typeof repository.private === 'boolean',
+    'repository-target'
   )
   requireCondition(
     SHA.test(dispatch.sourceRevision) &&

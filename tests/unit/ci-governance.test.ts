@@ -346,7 +346,7 @@ describe('workflow safety boundaries', () => {
     expect(command).not.toMatch(/test:e2e|npm run build|package|publish|test:installed/)
   })
 
-  test('isolates the release App token from selection, builds and publication', () => {
+  test('uses job-local App tokens for draft access without passing them to builds', () => {
     const source = readFileSync(
       join(repositoryRoot, '.github/workflows/release.yml'),
       'utf8'
@@ -364,11 +364,14 @@ describe('workflow safety boundaries', () => {
     expect(releaseJob).toContain('permission-contents: write')
     expect(releaseJob).toContain('permission-pull-requests: write')
     expect(releaseJob).toContain('skip-token-revoke: false')
-    expect(source.match(/steps\.release-app\.outputs\.token/g)).toHaveLength(1)
+    expect(source.match(/steps\.release-app\.outputs\.token/g)).toHaveLength(3)
     expect(releaseJob).toContain('token: ${{ steps.release-app.outputs.token }}')
-    expect(releaseJob).toContain('GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}')
-    expect(downstream).not.toMatch(/release-app|RELEASE_APP|create-github-app-token/)
-    expect(downstream).toContain('GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}')
+    expect(releaseJob).toContain('GH_TOKEN: ${{ steps.release-app.outputs.token }}')
+    expect(downstream.split('\n  publish:')[0]).not.toMatch(
+      /release-app|RELEASE_APP|create-github-app-token/
+    )
+    expect(downstream).toContain('GH_TOKEN: ${{ steps.release-app.outputs.token }}')
+    expect(downstream).toContain('Create repository-scoped release App token')
     expect(source).not.toMatch(/permission-(actions|administration|workflows|issues):/)
     expect(source).not.toContain('|| secrets.GITHUB_TOKEN')
   })
@@ -402,7 +405,13 @@ describe('workflow safety boundaries', () => {
       'utf8'
     ).replaceAll('\r\n', '\n')
     expect(release).toContain('branches: [main]')
-    expect(release).not.toContain('workflow_dispatch:')
+    expect(release).toContain('workflow_dispatch:')
+    expect(release).toContain("github.ref == 'refs/heads/main'")
+    expect(release).toContain("if: github.event_name == 'push'")
+    for (const input of ['release_id', 'tag', 'source_sha'])
+      expect(release).toContain(`inputs.${input}`)
+    expect(release).toContain('path: .tmp/release-tooling')
+    expect(release).toContain('node .tmp/release-tooling/tools/release/release-pr.mjs publish')
     expect(release).not.toContain('pull_request_target')
     expect(release).not.toContain('tags:')
     expect(release).toContain('googleapis/release-please-action@')

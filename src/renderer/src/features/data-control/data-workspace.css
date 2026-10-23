@@ -552,3 +552,20 @@
   overflow-y: auto;
   scrollbar-width: thin;
 }
+
+.data-workspace .data-read-state {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--color-muted);
+}
+.data-workspace .data-read-state p {
+  margin: 0 0 12px;
+  line-height: 1.6;
+}
+.data-workspace .data-read-state [role='alert'] {
+  color: var(--color-text);
+}
+.data-workspace .data-history button[aria-disabled='true'] {
+  opacity: 0.6;
+  cursor: wait;
+}

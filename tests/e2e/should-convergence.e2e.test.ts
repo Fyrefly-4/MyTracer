@@ -72,6 +72,7 @@ test('shows factual dates, unlimited soft guidance and explicitly scoped weekly 
       today: await window.myTracer.today.get({})
     }))
     await page.getByRole('navigation').getByRole('button', { name: '目标', exact: true }).click()
+    await page.locator('.goal-list-guidance > summary').click()
     await expect(page.getByText(/可以先保留少量活跃目标/)).toBeVisible()
     await expect(page.locator('.goal-list-item')).toHaveCount(6)
     await expect(

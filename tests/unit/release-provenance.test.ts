@@ -43,8 +43,10 @@ describe('release acceptance binds exact trusted artifacts before publication', 
     expect(result.status, result.stderr).toBe(0)
   })
 
-  test('accepts exact owner tag/main/run/artifact and stable source compatibility', () => {
-    expect(run('validatePublication(context);').status).toBe(0)
+  test.each([true, false])('accepts exact provenance with repository.private=%s', (visibility) => {
+    expect(
+      run(`context.repository.private=${visibility};validatePublication(context);`).status
+    ).toBe(0)
   })
   test('accepts a manual candidate rebuild on the owner tag after its main source was verified', () => {
     expect(
@@ -63,7 +65,10 @@ describe('release acceptance binds exact trusted artifacts before publication', 
     'context.dispatch.runAttempt=2;',
     "context.dispatch.artifactDigest='sha256:'+'c'.repeat(64);",
     "context.dispatch.manifestSha256='abc';",
-    'context.repository.private=false;',
+    'delete context.repository.private;',
+    'context.repository.private=null;',
+    "context.repository.private='false';",
+    'context.repository.private=0;',
     'context.repository.id=1;',
     "context.repository.full_name='other/repo';",
     'context.mainRevisions=[];',
