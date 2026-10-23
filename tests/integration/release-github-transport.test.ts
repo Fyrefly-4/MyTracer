@@ -23,6 +23,23 @@ test('never forwards private API authentication to the signed asset host', () =>
     `const api=new GithubApi('synthetic-token',false,async(url,options)=>{calls.push({url,options});return calls.length===1?new Response(null,{status:302,headers:{location:'https://release-assets.githubusercontent.com/fixed?synthetic=1'}}):new Response('synthetic bytes');});await api.request('/repos/Fyrefly-4/MyTracer/releases/assets/10',{binary:true});assert.equal(calls[0].options.headers.Authorization,'Bearer synthetic-token');assert.equal(calls[1].options.headers,undefined);assert.equal(calls[1].options.redirect,'error');`
   )
   expect(result.status, result.stderr).toBe(0)
+  expect(result.error).toBeUndefined()
+  expect(result.stderr).toBe('')
+})
+
+test('unexpected JSON redirects still fail with a diagnostic', () => {
+  const result = run(`
+    const api=new GithubApi('synthetic-token',false,async()=>{
+      calls.push('get');
+      return new Response(null,{status:302,headers:{location:'https://evil.invalid/?token=private'}});
+    });
+    await assert.rejects(()=>api.allReleases(),/github-http-302/);
+    assert.equal(calls.length,1);
+  `)
+  expect(result.error).toBeUndefined()
+  expect(result.status, result.stderr).toBe(0)
+  expect(result.stderr).toContain('HTTP 302')
+  expect(result.stderr).not.toMatch(/synthetic-token|evil.invalid|token=private/)
 })
 test.each([
   'http://release-assets.githubusercontent.com/file',
@@ -44,6 +61,46 @@ test('permission failure does not masquerade as absent release', () => {
   const result = run(
     `const api=new GithubApi('synthetic-token',false,async()=>new Response('{}',{status:403}));await assert.rejects(()=>api.assertReleaseAvailable('v0.1.4','a'.repeat(40),'a'.repeat(40)),/github-http-403/);`
   )
+  expect(result.status, result.stderr).toBe(0)
+})
+
+test('retries transient GET failures with bounded exponential backoff', () => {
+  const result = run(`
+    const waits=[];
+    const api=new GithubApi('synthetic-token',false,async()=>{
+      calls.push('get');
+      return calls.length<4?new Response('private response',{status:[500,502,503][calls.length-1]}):new Response('[]');
+    },async ms=>waits.push(ms));
+    assert.deepEqual(await api.allReleases(),[]);
+    assert.deepEqual(waits,[1000,2000,4000]);
+    assert.equal(calls.length,4);
+  `)
+  expect(result.status, result.stderr).toBe(0)
+  expect(result.stderr).not.toMatch(/synthetic-token|private response/)
+})
+
+test('stops after four failed reads and emits safe request diagnostics', () => {
+  const result = run(`
+    const api=new GithubApi('synthetic-token',false,async()=>{
+      calls.push('get');return new Response('private response',{status:504,headers:{'x-github-request-id':'ABC:123'}});
+    },async()=>{});
+    await assert.rejects(()=>api.allReleases(),/github-http-504/);
+    assert.equal(calls.length,4);
+  `)
+  expect(result.status, result.stderr).toBe(0)
+  expect(result.stderr).toContain('GitHub GET /repos/Fyrefly-4/MyTracer/releases: HTTP 504')
+  expect(result.stderr).toContain('request ABC:123; attempt 4')
+  expect(result.stderr).not.toMatch(/synthetic-token|private response|per_page/)
+})
+
+test.each(['POST', 'PATCH', 'DELETE'])('never automatically retries %s writes', (method) => {
+  const result = run(`
+    const api=new GithubApi('synthetic-token',true,async()=>{
+      calls.push('write');return new Response('{}',{status:503});
+    },async()=>assert.fail('must not retry'));
+    await assert.rejects(()=>api.request('/repos/Fyrefly-4/MyTracer/releases/10',{method:'${method}'}),/github-http-503/);
+    assert.equal(calls.length,1);
+  `)
   expect(result.status, result.stderr).toBe(0)
 })
 

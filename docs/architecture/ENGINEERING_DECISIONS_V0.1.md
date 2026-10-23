@@ -7,7 +7,7 @@
 
 ## 1. 使用规则
 
-- 本文记录现行工程决定、主要替代方案和取舍，不修改冻结产品语义。
+- 本文记录现行工程决定、主要替代方案和取舍，不自行修改产品语义；明确批准的演进按[需求变更规则](../REQUIREMENTS_CHANGE_POLICY.md)记录受影响决定。
 - 改变 ED-001～019 时必须先评估受影响架构、数据迁移、测试和任务，并同步相关文档。
 - S0 工具链及 T062 首个 Provider 已获批准并实施，批准证据见 §6；当前版本以 package.json/package-lock.json 为准。新增/升级依赖、更换 Provider 或扩大权限仍需 owner 批准。
 - 延期能力不能通过工程决定进入 v0.1。
@@ -111,7 +111,7 @@
 
 - **决定**：Provider 接口可替换；最多最近 5 条直接相关 Record；返回 1～3 条建议；本次会话输入只存内存。
 - **写入**：接受/修改后创建关联当前 Goal 的 pending Action 并设为当前下一步；Provider 不直接写数据。
-- **实现期选择**：首个 Provider、模型、SDK、环境变量名和总字符/令牌预算需另行批准。
+- **初始化选择（已完成）**：首个 Provider、模型、SDK、环境变量名和预算的批准与实现见 §6；不再作为启动门槛，后续调整仍需具体授权。
 
 ## 5. Electron 与 SQLite 实现决定
 
@@ -135,12 +135,12 @@
 - T062 首个适配器：LiteLLM Gateway、模型 `gemini-3.7-flash`、SDK `openai@7.8.0`；环境变量 `MYTRACER_LITELLM_API_KEY`，配置与 safeStorage 仅在 Main。固定 origin、超时、预算及无自动重试的批准值见 [EV-T062-001](../implementation/ACCEPTANCE_EVIDENCE_V0.1.md#ev-t062-001)，不扩大既有上下文或写权限。
 - S8 更新依赖 `electron-updater@6.8.10` 已独立批准；private/unsigned/schema3/export2 与用户确认安装边界不变。2026-10-11 的发布改造 dev-only 状态见历史 [EV-DOC-CALIBRATION-001](../implementation/ACCEPTANCE_EVIDENCE_V0.1.md#ev-doc-calibration-001)；该改造后续已随 PR #70 进入 main（`0a58305`），不据此推定真实发布成功。当前操作见[发布维护](../maintenance/RELEASE.md)。
 
-任何后续依赖新增/升级、Provider/模型/权限调整和迁移仍需其自身批准；现有批准不授权延期功能。
+任何后续依赖新增/升级、Provider/模型/权限调整和所有 schema 迁移（包括非破坏性迁移）仍需其自身批准；现有批准不授权延期功能。
 
 ## 7. 审批结论
 
 - ED-001～019：已批准。
-- GW-001～010：已在 `docs/implementation/GITHUB_WORKFLOW_V0.1.md` 作为开发流程基线批准，不改变产品或架构语义。
+- 原 GW-001～010 的批准属于开发阶段历史；当前 Git/CI 操作以[日常工作流](../implementation/GITHUB_WORKFLOW_V0.1.md)为准，不恢复旧条目或流程。
 - 架构阶段门 G1：通过。
 - 需求冲突：未发现。
 - 范围变化：无。

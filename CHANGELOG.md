@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/Fyrefly-4/MyTracer/compare/v1.2.0...v1.2.1) (2026-10-22)
+
+
+### Bug Fixes
+
+* 恢复已批准的发布草稿，避免静默跳过构建 ([#96](https://github.com/Fyrefly-4/MyTracer/issues/96)) ([87dc0cf](https://github.com/Fyrefly-4/MyTracer/commit/87dc0cfe05a117c5e60a39f0ce21c039bb325678))
+
 ## [1.2.0](https://github.com/Fyrefly-4/MyTracer/compare/v1.1.0...v1.2.0) (2026-10-22)
 
 
