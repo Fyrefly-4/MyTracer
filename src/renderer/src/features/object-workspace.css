@@ -347,3 +347,47 @@
   border-radius: 0;
   background: transparent;
 }
+
+/* Goals keep controls compact; optional guidance scrolls with the list. */
+.goal-workspace.notebook-object-workspace .object-master-heading {
+  padding: 16px 20px 12px;
+}
+.goal-workspace.notebook-object-workspace .workspace-toolbar {
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 10px 0;
+}
+.goal-workspace.notebook-object-workspace .workspace-count {
+  flex: 0 1 auto;
+  margin: 0;
+}
+.goal-workspace.notebook-object-workspace .goal-list-guidance {
+  margin: 0 10px 8px;
+  color: var(--color-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.goal-workspace.notebook-object-workspace .goal-list-guidance > summary {
+  padding: 4px 0;
+  cursor: pointer;
+}
+.goal-workspace.notebook-object-workspace .goal-list-guidance > summary:focus-visible {
+  outline-offset: -2px;
+}
+.goal-workspace.notebook-object-workspace .goal-list-guidance p {
+  margin: 8px 0;
+}
+@media (max-height: 650px) {
+  .goal-workspace.notebook-object-workspace .object-master-heading {
+    padding: 12px 14px 10px;
+  }
+  .goal-workspace.notebook-object-workspace .workspace-toolbar {
+    margin: 4px 0;
+  }
+  .goal-workspace.notebook-object-workspace .object-pager {
+    gap: 4px;
+    padding: 8px;
+    white-space: nowrap;
+  }
+}

@@ -27,6 +27,7 @@ export interface ProgressRecordFactDto {
   readonly actionId: string
   readonly goalId: string | null
   readonly actionTitle: string
+  readonly hasRecordedText: boolean
   readonly occurredOn: string
   readonly durationMinutes: number
   readonly outcome: 'completed' | 'partial' | 'stopped'
