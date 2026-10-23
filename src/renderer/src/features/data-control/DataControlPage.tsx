@@ -1,6 +1,7 @@
 import { chooseVisibleSelection } from '../../app/selection-preferences'
 import {
   createContext,
+  useCallback,
   type ReactNode,
   type RefObject,
   useContext,
@@ -766,6 +767,10 @@ interface DataHistoryRow {
 function DataControlWorkspace(): ReactNode {
   const session = useUiSession()
   const [data, setData] = useState<DataControlListDto | null>(null)
+  const dataRef = useRef<DataControlListDto | null>(null)
+  const readSequence = useRef(0)
+  const [readState, setReadState] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [readError, setReadError] = useState('')
   const [error, setError] = useState<string | null>(null)
   usePagePosition('data', data !== null)
   const [backfillMessage, setBackfillMessage] = useState('')
@@ -806,23 +811,26 @@ function DataControlWorkspace(): ReactNode {
   const [routineNote, setRoutineNote] = useState('')
   const [exportMessage, setExportMessage] = useState<string | null>(null)
   const [exporting, setExporting] = useState(false)
-  useUnsavedContent(
-    'data-backfill',
-    Boolean(
-      actionDate ||
-      actionUnderstanding ||
-      actionConfusion ||
-      actionNextStep ||
-      actionNote ||
-      actionDuration !== '0' ||
-      actionOutcome !== 'partial' ||
-      routineDate ||
-      routineNote ||
-      routineDuration ||
-      routinePlanned ||
-      routineOutcome !== 'not_done'
-    )
+  const actionBackfillDirty = Boolean(
+    actionDate ||
+    actionUnderstanding ||
+    actionConfusion ||
+    actionNextStep ||
+    actionNote ||
+    actionDuration !== '0' ||
+    actionOutcome !== 'partial'
   )
+  const routineBackfillDirty = Boolean(
+    routineDate || routineNote || routineDuration || routinePlanned || routineOutcome !== 'not_done'
+  )
+  const backfillSelectionRef = useRef({ actionId: '', routineId: '' })
+  useLayoutEffect(() => {
+    backfillSelectionRef.current = {
+      actionId: actionBackfillDirty ? actionId : '',
+      routineId: routineBackfillDirty ? routineId : ''
+    }
+  }, [actionBackfillDirty, actionId, routineBackfillDirty, routineId])
+  useUnsavedContent('data-backfill', actionBackfillDirty || routineBackfillDirty)
 
   const history = useMemo<readonly DataHistoryRow[]>(() => {
     if (!data) return []
@@ -959,50 +967,91 @@ function DataControlWorkspace(): ReactNode {
     applySelection(selection)
   }
 
-  const load = async (): Promise<void> => {
-    const result = await window.myTracer.dataControl.list()
-    if (!result.ok) return setError(dataControlErrorText[result.error.code])
-    setData(result.value)
-    setError(null)
-    setActionId((current) =>
-      result.value.actions.some((item) => item.id === current)
-        ? current
-        : (result.value.actions[0]?.id ?? '')
-    )
-    setRoutineId((current) =>
-      result.value.routines.some((item) => item.id === current)
-        ? current
-        : (result.value.routines[0]?.id ?? '')
-    )
-    setSelectedRecord((current) => {
-      if (!current) return null
-      const exists =
-        current.type === 'action-record'
-          ? result.value.actionRecords.some((record) => record.id === current.id)
-          : result.value.routineRecords.some((record) => record.id === current.id)
-      return exists ? current : null
-    })
-  }
+  const load = useCallback(async (): Promise<void> => {
+    const sequence = ++readSequence.current
+    setReadState('loading')
+    setReadError('')
+    try {
+      const result = await window.myTracer.dataControl.list()
+      if (sequence !== readSequence.current) return
+      if (!result.ok) {
+        setReadState('error')
+        setReadError('记录暂时无法读取。这不表示记录不存在，请重新读取。')
+        return
+      }
+      const backfill = backfillSelectionRef.current
+      if (
+        (backfill.actionId &&
+          !result.value.actions.some((item) => item.id === backfill.actionId)) ||
+        (backfill.routineId &&
+          !result.value.routines.some((item) => item.id === backfill.routineId))
+      ) {
+        setReadState('error')
+        setReadError('补记对象已变化。请先取消补记或明确选择其他对象，再重新读取。')
+        return
+      }
+      // Keep mounted editors if an intervening change removed a record with a draft.
+      const previous = dataRef.current
+      if (
+        previous &&
+        [...recordDrafts.values()].some(Boolean) &&
+        (previous.actionRecords.some(
+          (record) => !result.value.actionRecords.some((item) => item.id === record.id)
+        ) ||
+          previous.routineRecords.some(
+            (record) => !result.value.routineRecords.some((item) => item.id === record.id)
+          ) ||
+          previous.understandings.some(
+            (fact) => !result.value.understandings.some((item) => item.id === fact.id)
+          ) ||
+          previous.confusions.some(
+            (fact) => !result.value.confusions.some((item) => item.id === fact.id)
+          ))
+      ) {
+        setReadState('error')
+        setReadError('记录列表已变化。请先保存或取消当前修改，再重新读取。')
+        return
+      }
+      dataRef.current = result.value
+      setData(result.value)
+      setReadState('ready')
+      setActionId((current) =>
+        result.value.actions.some((item) => item.id === current)
+          ? current
+          : (result.value.actions[0]?.id ?? '')
+      )
+      setRoutineId((current) =>
+        result.value.routines.some((item) => item.id === current)
+          ? current
+          : (result.value.routines[0]?.id ?? '')
+      )
+      setSelectedRecord((current) => {
+        if (!current) return null
+        const exists =
+          current.type === 'action-record'
+            ? result.value.actionRecords.some((record) => record.id === current.id)
+            : result.value.routineRecords.some((record) => record.id === current.id)
+        return exists ? current : null
+      })
+    } catch {
+      if (sequence !== readSequence.current) return
+      setReadState('error')
+      setReadError('记录暂时无法读取。这不表示记录不存在，请重新读取。')
+    }
+  }, [recordDrafts])
   const refreshAfterMutation = async (): Promise<void> => {
     await Promise.all([load(), window.myTracer.progress.get({}), window.myTracer.today.get({})])
   }
   useEffect(() => {
     let active = true
-    void window.myTracer.dataControl.list().then((result) => {
-      if (!active) return
-      if (!result.ok) {
-        setError(dataControlErrorText[result.error.code])
-        return
-      }
-      setData(result.value)
-      setActionId(result.value.actions[0]?.id ?? '')
-      setRoutineId(result.value.routines[0]?.id ?? '')
-      setError(null)
+    void Promise.resolve().then(() => {
+      if (active) void load()
     })
     return () => {
       active = false
+      readSequence.current += 1
     }
-  }, [])
+  }, [load])
 
   const previewId = preview?.previewId
   useEffect(() => {
@@ -1096,6 +1145,7 @@ function DataControlWorkspace(): ReactNode {
         note: actionNote || null
       })
       if (!result.ok) return setError(dataControlErrorText[result.error.code])
+      setError(null)
       setBackfillMessage(
         `已补记：${data?.actions.find((item) => item.id === actionId)?.title ?? '记录'} · ${actionDate}`
       )
@@ -1132,6 +1182,7 @@ function DataControlWorkspace(): ReactNode {
         note: routineNote || null
       })
       if (!result.ok) return setError(dataControlErrorText[result.error.code])
+      setError(null)
       setBackfillMessage(
         `已补记：${data?.routines.find((item) => item.id === routineId)?.name ?? '记录'} · ${routineDate}`
       )
@@ -1507,7 +1558,34 @@ function DataControlWorkspace(): ReactNode {
         <section className="goal-card data-history" aria-label="历史记录">
           <div className="card-heading">
             <h2>历史记录</h2>
-            <span>{history.length} 条 · 每页 8 条</span>
+            <button
+              className="quiet-button"
+              type="button"
+              aria-disabled={readState === 'loading'}
+              onClick={() => {
+                if (readState !== 'loading') void load()
+              }}
+            >
+              重新读取
+            </button>
+          </div>
+          <div className="data-read-state">
+            {readState === 'loading' ? (
+              <p role="status">
+                {data ? '正在重新读取；暂时显示上次读取的内容。' : '正在读取记录…'}
+              </p>
+            ) : readState === 'error' ? (
+              <div role="alert">
+                <p>{readError}</p>
+                {data ? <p>当前页面仍是上次读取的内容，可能不是最新结果。</p> : null}
+              </div>
+            ) : null}
+            {data ? (
+              <p className="data-history-count">
+                {readState !== 'ready' ? '上次读取 · ' : ''}
+                {history.length} 条 · 每页 8 条
+              </p>
+            ) : null}
           </div>
           <details className="data-filter-panel">
             <summary>
@@ -1644,9 +1722,11 @@ function DataControlWorkspace(): ReactNode {
                   ))}
                 </tbody>
               </table>
-            ) : (
+            ) : readState === 'ready' ? (
               <p className="empty-copy">当前筛选下没有记录。</p>
-            )}
+            ) : data ? (
+              <p className="empty-copy">上次读取时没有匹配记录，当前结果尚未确认。</p>
+            ) : null}
           </div>
           {history.length > 8 ? (
             <nav className="data-pagination" aria-label="历史记录分页">
@@ -1762,8 +1842,12 @@ function DataControlWorkspace(): ReactNode {
             ) : (
               <div className="data-detail-empty">
                 <span aria-hidden="true">◷</span>
-                <h2>{data ? '当前没有匹配的记录' : '正在读取记录…'}</h2>
-                <p>可以调整筛选条件，或在“数据工具”中补记历史记录。</p>
+                <h2>{readState === 'ready' ? '当前没有匹配的记录' : '记录暂时不可用'}</h2>
+                <p>
+                  {readState === 'ready'
+                    ? '可以调整筛选条件，或在“数据工具”中补记历史记录。'
+                    : '读取成功后，可以在这里查看记录详情。'}
+                </p>
                 {recordKind !== 'all' || recordGoalId !== 'all' || recordDate ? (
                   <button
                     type="button"

@@ -79,6 +79,7 @@ describe('Recovery pure projection', () => {
             actionId: 'action-1',
             goalId: goal.id,
             actionTitle: 'First',
+            hasRecordedText: true,
             occurredOn: '2026-08-17',
             durationMinutes: 0,
             outcome: 'stopped',
@@ -144,6 +145,7 @@ describe('Recovery pure projection', () => {
       daysSinceLastRealAction: 2,
       latestRealRecord: { recordId: 'acted', durationMinutes: 0 }
     })
+    expect(result.latestRealRecord).not.toHaveProperty('hasRecordedText')
     expect(result.confirmedUnderstandings).toEqual([
       { id: 'u', text: 'Known', createdAt: '2026-08-17T12:01:00.000Z' }
     ])
@@ -164,6 +166,7 @@ describe('Recovery pure projection', () => {
             actionId: 'action-1',
             goalId: goal.id,
             actionTitle: 'First',
+            hasRecordedText: false,
             occurredOn: '2026-08-20',
             durationMinutes: 0,
             outcome: 'partial',

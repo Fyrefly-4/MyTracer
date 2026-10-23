@@ -1,6 +1,7 @@
 import { join } from 'node:path'
 import Database from 'better-sqlite3'
 import { afterEach, describe, expect, it } from 'vitest'
+import { asActionRecordRepository } from '../../src/application/ports/persistence'
 import { ProgressService } from '../../src/application/progress'
 import type {
   ActionPersistenceRecord,
@@ -197,6 +198,64 @@ function seed(connection: SqliteConnection): void {
 }
 
 describe('Progress SQLite projection', () => {
+  it('projects only a presence flag, preserving filters and totals after original text edits', async () => {
+    const { connection } = await openDatabase()
+    try {
+      seed(connection)
+      const repository = connection.repository
+      const service = new ProgressService({ repository })
+      const before = service.getProgress({
+        goalId: 'goal-1',
+        from: '2026-08-12',
+        through: '2026-08-12'
+      })
+      const original = asActionRecordRepository(repository).findActionRecordById('record-a')
+      if (!original) throw Error('record missing')
+      const note = '第一行：读到例题二。\n第二行：换成纸笔后顺了。'
+      const nextStep = '下次只重做例题二\n不安排日期'
+      repository.saveActionRecord({ ...original, note, nextStep })
+      const after = service.getProgress({
+        goalId: 'goal-1',
+        from: '2026-08-12',
+        through: '2026-08-12'
+      })
+      expect(after.records.find((record) => record.recordId === original.id)).toMatchObject({
+        hasRecordedText: true
+      })
+      expect(after.totalDurationMinutes).toBe(before.totalDurationMinutes)
+      expect(after.realActionCount).toBe(before.realActionCount)
+      expect(after.records.map((record) => record.recordId)).toEqual(
+        before.records.map((record) => record.recordId)
+      )
+      expect(after.records.find((record) => record.recordId === 'record-b')).toMatchObject({
+        hasRecordedText: false
+      })
+      expect(after.records[0]).not.toHaveProperty('note')
+      expect(after.records[0]).not.toHaveProperty('nextStep')
+      expect(JSON.stringify(after)).not.toContain('换成纸笔后顺了')
+      expect(JSON.stringify(after)).not.toContain(nextStep)
+      expect(
+        service.getProgress({ goalId: 'goal-2' }).records.every((record) => !record.hasRecordedText)
+      ).toBe(true)
+      repository.saveActionRecord({ ...original, note: '修改后的备注', nextStep: null })
+      expect(
+        service.getProgress({}).records.find((record) => record.recordId === original.id)
+      ).toMatchObject({ hasRecordedText: true })
+      repository.saveActionRecord({ ...original, note: null, nextStep: '仅下一步' })
+      expect(
+        service.getProgress({}).records.find((record) => record.recordId === original.id)
+          ?.hasRecordedText
+      ).toBe(true)
+      repository.saveActionRecord({ ...original, note: null, nextStep: null })
+      expect(
+        service.getProgress({}).records.find((record) => record.recordId === original.id)
+          ?.hasRecordedText
+      ).toBe(false)
+    } finally {
+      connection.close()
+    }
+  })
+
   it('filters inclusively, counts every ActionRecord, and sorts facts explicitly', async () => {
     const { connection } = await openDatabase()
     seed(connection)
