@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.5.0](https://github.com/Fyrefly-4/MyTracer/compare/v1.4.0...v1.5.0) (2026-10-23)
+
+
+### Features
+
+* **goals:** 为尚无下一步的目标提供可选创建入口 ([#103](https://github.com/Fyrefly-4/MyTracer/issues/103)) ([a22d17e](https://github.com/Fyrefly-4/MyTracer/commit/a22d17e6bc97af24942d5b67dbd8fc17e7c469be))
+* **home:** offer an optional goal-free action entry ([#105](https://github.com/Fyrefly-4/MyTracer/issues/105)) ([0269bd0](https://github.com/Fyrefly-4/MyTracer/commit/0269bd00368cf80783a12e405d0b98d7062386bf))
+* **today:** recall goal history before continuing an action ([#99](https://github.com/Fyrefly-4/MyTracer/issues/99)) ([a3ab594](https://github.com/Fyrefly-4/MyTracer/commit/a3ab5942cab004df5fc292651a42764c5662d672))
+
+
+### Bug Fixes
+
+* **goals:** 查看记录返回后保留目标搜索上下文 ([#104](https://github.com/Fyrefly-4/MyTracer/issues/104)) ([1963046](https://github.com/Fyrefly-4/MyTracer/commit/196304663e59b67448f6096040f788c4ffff567f))
+
 ## [1.4.0](https://github.com/Fyrefly-4/MyTracer/compare/v1.3.0...v1.4.0) (2026-10-23)
 
 
