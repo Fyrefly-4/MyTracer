@@ -103,6 +103,31 @@ test('keeps the notebook shell reachable with native controls and enlarged inter
       }
       await page.getByRole('button', { name: '关于与更新', exact: true }).click()
       await expect(page.locator('.update-panel')).toBeVisible()
+      for (const [container, width, height] of [
+        ['.topbar', 120, 39],
+        ['.about-brand', 240, 78]
+      ] as const) {
+        const wordmark = page.locator(container).getByRole('img', { name: 'MyTracer', exact: true })
+        await expect(wordmark).toBeVisible()
+        const bounds = await wordmark.evaluate((image: HTMLImageElement) => {
+          const box = image.getBoundingClientRect()
+          const parent = image.closest('.topbar, .update-panel')!.getBoundingClientRect()
+          return {
+            loaded: image.complete && image.naturalWidth === 800 && image.naturalHeight === 260,
+            width: box.width,
+            height: box.height,
+            contained:
+              box.left >= parent.left &&
+              box.right <= parent.right &&
+              box.top >= parent.top &&
+              box.bottom <= parent.bottom
+          }
+        })
+        expect(bounds.loaded, `${container} at ${zoom}x`).toBe(true)
+        expect(bounds.width).toBeCloseTo(width, 1)
+        expect(bounds.height).toBeCloseTo(height, 1)
+        expect(bounds.contained, `${container} at ${zoom}x`).toBe(true)
+      }
       await page.locator('.update-close').click()
       await expect(page.locator('.update-panel')).toHaveCount(0)
     }

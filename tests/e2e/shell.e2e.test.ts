@@ -59,7 +59,7 @@ test('runs the Electron shell with an isolated userData root', async () => {
       page.getByRole('heading', { name: '看看最近走到了哪里。', exact: true })
     ).toBeVisible()
 
-    const mark = page.locator('.titlebar-brand-mark')
+    const mark = page.getByRole('banner').getByRole('img', { name: 'MyTracer', exact: true })
     await expect(mark).toBeVisible()
     expect(
       await mark.evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth > 0)
