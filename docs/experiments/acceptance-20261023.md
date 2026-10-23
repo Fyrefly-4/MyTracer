@@ -23,7 +23,7 @@
 | [#108](https://github.com/Fyrefly-4/MyTracer/pull/108) | `a16d681ba219395f69a7a430c3707229eda6c7ab` |
 | [#109](https://github.com/Fyrefly-4/MyTracer/pull/109) | `00c6d396b02d7761db0aa088e9c0b7fa262a6a0c` |
 
-只在 UiSession 的独立导入、成员声明和 hasUnsavedContent 汇总处人工解决文本冲突，保留两侧内容。Goal/Routine 内容、行动/例行记录、封面、Review 正文与 pending-save 都保留；没有选择一方覆盖另一方。源 PR 分支未改动。草稿保护是当前应用会话内的能力，退出应用不会把未保存正文写入磁盘。
+只在 UiSession 的独立导入、成员声明和 hasUnsavedContent 汇总处人工解决文本冲突，保留两侧内容。Goal/Routine 内容、行动/例行记录、封面、Review 正文与 pending-save 都保留；没有选择一方覆盖另一方。源 PR 分支未改动。草稿保护是当前应用会话内的能力，退出应用不会把未保存正文写入磁盘。已保存的合成记录仅保留在本次临时 profile 中；每次执行下方命令都会新建 profile，不会自动带入上次资料。
 
 ## 安全拉取与隔离预览（Windows）
 
