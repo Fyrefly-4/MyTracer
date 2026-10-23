@@ -44,9 +44,15 @@ interface PendingGoalEnd {
 const newNextActionOption = '__new-next-action__'
 const unsetNextActionOption = '__unset-next-action__'
 
-function NewNextActionForm(props: {
+function NewNextActionForm({
+  goalId,
+  visible,
+  titleRef,
+  onSaved
+}: {
   readonly goalId: string
   readonly visible: boolean
+  readonly titleRef: React.RefObject<HTMLInputElement | null>
   readonly onSaved: () => Promise<void>
 }): ReactNode {
   const activeRef = useUiLifetime()
@@ -54,7 +60,7 @@ function NewNextActionForm(props: {
   const [description, setDescription] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  useUnsavedContent(`goal-next-action-${props.goalId}`, Boolean(title || description))
+  useUnsavedContent(`goal-next-action-${goalId}`, Boolean(title || description))
 
   const submit = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault()
@@ -67,7 +73,7 @@ function NewNextActionForm(props: {
     setError(null)
     try {
       const result = await window.myTracer.goals.createAndSetCurrentNextAction({
-        goalId: props.goalId,
+        goalId: goalId,
         title: title.trim(),
         description: description.trim() || null
       })
@@ -78,7 +84,7 @@ function NewNextActionForm(props: {
       }
       setTitle('')
       setDescription('')
-      await props.onSaved()
+      await onSaved()
     } catch {
       if (activeRef.current) setError(goalErrorText['persistence-failed'])
     } finally {
@@ -86,7 +92,7 @@ function NewNextActionForm(props: {
     }
   }
 
-  if (!props.visible) return null
+  if (!visible) return null
 
   return (
     <form className="current-action-control" onSubmit={(event) => void submit(event)}>
@@ -94,6 +100,7 @@ function NewNextActionForm(props: {
       <label>
         下一步名称
         <input
+          ref={titleRef}
           required
           value={title}
           disabled={busy}
@@ -172,6 +179,8 @@ function GoalWorkspace(): ReactNode {
   const [selectionError, setSelectionError] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
   const detailRef = useRef<HTMLElement | null>(null)
+  const managementRef = useRef<HTMLDetailsElement | null>(null)
+  const nextActionTitleRef = useRef<HTMLInputElement | null>(null)
   usePagePosition('goals', loaded && selectionLoaded)
   const [refreshVersion, setRefreshVersion] = useState(0)
   const [goals, setGoals] = useState<readonly GoalSummaryDto[]>([])
@@ -918,6 +927,21 @@ function GoalWorkspace(): ReactNode {
                     >
                       去今天处理
                     </button>
+                  ) : detail.status === 'active' ? (
+                    <>
+                      <p className="empty-copy">可以先保留方向，想开始时再添一个小步骤。</p>
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={() => {
+                          if (managementRef.current) managementRef.current.open = true
+                          setSelectedActionId(newNextActionOption)
+                          requestAnimationFrame(() => nextActionTitleRef.current?.focus())
+                        }}
+                      >
+                        新建下一步
+                      </button>
+                    </>
                   ) : null}
                 </div>
                 <button
@@ -1020,7 +1044,7 @@ function GoalWorkspace(): ReactNode {
                     <p className="empty-copy">暂无记录。做过一点后，可以从行动入口留下记录。</p>
                   )}
                 </section>
-                <details className="disclosure" key={detail.id}>
+                <details className="disclosure" key={detail.id} ref={managementRef}>
                   <summary>编辑与管理目标</summary>
                   <form className="detail-form" onSubmit={(event) => void submitUpdate(event)}>
                     <label>
@@ -1125,6 +1149,7 @@ function GoalWorkspace(): ReactNode {
                       <NewNextActionForm
                         key={detail.id}
                         goalId={detail.id}
+                        titleRef={nextActionTitleRef}
                         visible={selectedActionId === newNextActionOption}
                         onSaved={() => reloadDetail(detail.id)}
                       />
