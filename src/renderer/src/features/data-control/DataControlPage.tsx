@@ -34,7 +34,7 @@ import {
   usePagePosition,
   useUiSession,
   useUnsavedContent,
-  useActiveUnsavedContent
+  useDataUnsavedContent
 } from '../../app/ui-session'
 import type { CompleteExportErrorCode } from '../../../../contracts/exports'
 import './data-workspace.css'
@@ -871,7 +871,7 @@ function DataControlWorkspace(): ReactNode {
   const deleteTriggerRef = useRef<HTMLElement | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
-  const activeUnsaved = useActiveUnsavedContent()
+  const dataUnsaved = useDataUnsavedContent()
   const [routeRecord, setRouteRecord] = useState(() =>
     session.takeNavigationSelection('data') ? session.dataRecord : null
   )
@@ -975,7 +975,7 @@ function DataControlWorkspace(): ReactNode {
   const reconcileSelection = useEffectEvent((): void => {
     if (
       !data ||
-      activeUnsaved ||
+      dataUnsaved ||
       pendingSelection ||
       preview ||
       deleting ||
@@ -1020,7 +1020,7 @@ function DataControlWorkspace(): ReactNode {
       active = false
     }
   }, [
-    activeUnsaved,
+    dataUnsaved,
     visibleIds,
     data,
     selectedRecord,

@@ -130,6 +130,7 @@ test('goal cover drafts do not block leaving Data while record edits still requi
     for (let visit = 0; visit < 2; visit++) {
       await navigate('数据')
       await expect(page.locator('.data-history-row')).toHaveCount(8)
+      await expect(page.getByRole('button', { name: '编辑记录', exact: true })).toBeVisible()
       await navigate('今天')
       await expect(page.locator('.app-shell')).toHaveAttribute('data-section', 'today')
       await expect(leave).toHaveCount(0)

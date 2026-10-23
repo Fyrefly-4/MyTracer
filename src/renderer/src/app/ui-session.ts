@@ -395,3 +395,8 @@ export function useActiveUnsavedContent(): boolean {
   const session = useUiSession()
   return useSyncExternalStore(session.subscribeUnsaved, session.hasActiveUnsavedContent)
 }
+
+export function useDataUnsavedContent(): boolean {
+  const session = useUiSession()
+  return useSyncExternalStore(session.subscribeUnsaved, session.hasDataUnsavedContent)
+}
