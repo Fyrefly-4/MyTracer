@@ -42,6 +42,29 @@ Electron E2E 需要可启动 Windows 桌面进程的环境。测试使用唯一�
 
 [Release](../.github/workflows/release.yml) 的版本协调和发布任务仍使用 Ubuntu，Windows 构建任务负责验证、打包与安装 smoke。无需为了统一平台迁移纯协调任务。测试实验分支应选择 Verification，不能用 Release recovery 代替验证；仓库可见性与额度决定也不自动授权合并或发布。托管检查不等于人工视觉、辅助技术或本机体验验收。
 
+## 聚焦 UX 检查与环境边界
+
+在已安装锁定依赖、可启动桌面进程的 Windows 环境，复用现有测试即可做小范围冒烟检查，无需新建启动脚本。例如：
+
+```powershell
+npm.cmd run build
+npm.cmd run test:e2e:run -- tests/e2e/shell.e2e.test.ts tests/e2e/review-summary.e2e.test.ts
+```
+
+第一条更新构建产物；`test:e2e:run` 本身不构建。上述三个用例覆盖壳层隔离与基本导航、合成周期事实以及跨周边界，不替代全量 E2E 或人工体验检查。新增实际 UX 探针应复用 [临时数据根](../tests/support/temporary-test-root.ts) 与 [最小 Electron 环境](../tests/support/electron-environment.ts)，保留清理逻辑，使用合成资料；不要复用开发或真实用户的数据目录。
+
+| 环境／检查 | 可以据此报告 | 仍不能据此报告 |
+| --- | --- | --- |
+| Windows CI 的 Electron E2E | 日志所列提交、用例与实际 UI—IPC—持久化行为通过 | Windows 本机字体、MicaStrong、触控板及辅助技术人工验收通过；未运行的安装包测试通过 |
+| 浏览器中的 Renderer 预览或替身接口 | 对应资料、尺寸与缩放下的排版、焦点及前端交互观察 | 真实 Electron／Preload／IPC／SQLite 连通、保存与重启可靠性 |
+| Linux 中实际启动的 Electron | 已执行的界面和应用流程；须同时注明显示后端及沙箱配置 | Windows 原生材质／系统窗口行为，或仅凭窗口打开就认定安全配置正确 |
+
+云端 Linux 的启动条件须分别核对：缺少 X server／`DISPLAY` 是显示后端问题；改用 headless 后仍可能因宿主沙箱配置失败。锁定版本的 Playwright Electron 启动器在 Linux 默认会加入禁用沙箱参数，因此“没有手动传入该参数”不等于启用了沙箱。要求保留沙箱的探针应显式设置 `chromiumSandbox: true`，核对实际启动日志和宿主支持；无法启动时记录具体错误并停止，不通过禁用沙箱或修改宿主权限绕过。
+
+当前仓库没有统一的、已验证保留沙箱的 Linux headless UX 冒烟入口。上述 Windows 命令不是跨平台启动承诺；Linux 中将 `npm.cmd` 换成 `npm` 也不会补齐显示、沙箱或发布测试的 Windows 工具依赖。环境启动失败应与产品断言失败分别记录，不能笼统写成“E2E 已坏”或“E2E 已通过”。
+
+报告截图时附上实际资料、窗口尺寸、缩放、执行环境与代码提交；使用评审者可访问的图片链接，本地文件路径不能充当 PR 截图附件。托管 CI 同时注明 PR head 和日志中的测试合并提交；跳过项与未执行的人工检查保持明确。
+
 ## 页面阅读选择
 
 今天、目标和数据页保持原有双栏及独立滚动。普通进入页面时，只在当前列表结果（目标与记录含当前分页）内恢复上次查看项；找不到时查看首项。首页等明确链接优先打开指定内容；新建、保存或状态调整的结果保持可见，不被列表刷新抢走。空结果提供新建、补记提示或清除筛选入口。
