@@ -2,12 +2,6 @@
 
 欢迎反馈问题、提出想法，或提交一个小改动。先从你遇到的具体情况说起，不需要准备完整方案。
 
-## 反馈与讨论
-
-在 [Issues](https://github.com/Fyrefly-4/MyTracer/issues) 中先看看是否已有相关讨论。报告问题时，写明应用版本、Windows 版本、复现步骤、预期与实际结果；建议新功能时，说明想解决的问题和使用场景。
-
-文案、文档和范围清楚的小修复可以直接提交 PR。较大的功能、行为调整、依赖或数据迁移，请先开 Issue 讨论范围，再投入实现。产品与工程约束见 [AGENTS.md](AGENTS.md) 和[维护入口](docs/MAINTENANCE.md)。
-
 ## 本地开发
 
 MyTracer 使用 Electron、React、TypeScript 和 SQLite，面向 Windows x64。在 Windows 上准备符合 [package.json](package.json) `engines` 的 Node.js 与 npm，然后在仓库根目录运行：
