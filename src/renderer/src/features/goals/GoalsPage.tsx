@@ -1,7 +1,14 @@
 import { chooseVisibleSelection } from '../../app/selection-preferences'
 import '../forms-workspace.css'
 import '../object-workspace.css'
-import { type ReactNode, useEffect, useEffectEvent, useRef, useState } from 'react'
+import {
+  type ReactNode,
+  useEffect,
+  useEffectEvent,
+  useRef,
+  useState,
+  useSyncExternalStore
+} from 'react'
 import type {
   GoalDetailDto,
   GoalErrorCode,
@@ -117,9 +124,21 @@ function NewNextActionForm(props: {
 
 function GoalWorkspace(): ReactNode {
   const session = useUiSession()
-  const [routeGoalId, setRouteGoalId] = useState(() =>
-    session.takeNavigationSelection('goals') ? session.goalId : null
+  const contentDraft = session.goalContentDraft
+  useSyncExternalStore(contentDraft.subscribe, contentDraft.getVersion)
+  const [pendingContentGoal, setPendingContentGoal] = useState<string | null>(() =>
+    contentDraft.retained && session.goalId !== contentDraft.snapshot?.goalId
+      ? session.goalId
+      : null
   )
+  const [contentMissing, setContentMissing] = useState(false)
+  const shownGoalId = useRef<string | null>(null)
+  const retainedContentRef = useRef<HTMLTextAreaElement | null>(null)
+  const shownSelectionRequest = useRef(0)
+  const [routeGoalId, setRouteGoalId] = useState(() => {
+    const explicit = session.takeNavigationSelection('goals')
+    return contentDraft.retained ? contentDraft.snapshot!.goalId : explicit ? session.goalId : null
+  })
   const selectionRequest = useRef(0)
   const [loadedFilter, setLoadedFilter] = useState<string | null>(null)
   const [masterCollapsed, setMasterCollapsed] = useState(false)
@@ -164,16 +183,14 @@ function GoalWorkspace(): ReactNode {
   const [createName, setCreateName] = useState('')
   const [createDescription, setCreateDescription] = useState('')
   const [createNextAction, setCreateNextAction] = useState('')
-  const [editName, setEditName] = useState('')
-  const [editDescription, setEditDescription] = useState('')
+  const editName = contentDraft.snapshot?.name ?? detail?.name ?? ''
+  const editDescription = contentDraft.snapshot?.description ?? detail?.description ?? ''
   const [selectedActionId, setSelectedActionId] = useState(unsetNextActionOption)
   const [pendingGoalEnd, setPendingGoalEnd] = useState<PendingGoalEnd | null>(null)
   const [recoveryGoalId, setRecoveryGoalId] = useState<string | null>(session.recoveryGoalId)
   useUnsavedContent(
     'goal-form',
-    Boolean(createName || createDescription || createNextAction) ||
-      (detail !== null &&
-        (editName !== detail.name || editDescription !== (detail.description ?? '')))
+    Boolean(createName || createDescription || createNextAction) || contentDraft.retained
   )
   const goalEndTriggerRef = useRef<HTMLButtonElement | null>(null)
 
@@ -224,13 +241,27 @@ function GoalWorkspace(): ReactNode {
     }
   }, [statusFilter, refreshVersion])
 
-  const showDetail = (nextDetail: GoalDetailDto): void => {
+  const showDetail = (nextDetail: GoalDetailDto, readVersion = contentDraft.savedVersion): void => {
     if (!activeRef.current) return
+    if (contentDraft.retained && contentDraft.snapshot?.goalId !== nextDetail.id) {
+      setPendingContentGoal(nextDetail.id)
+      return
+    }
+    const content = contentDraft.read(nextDetail, readVersion)
+    shownGoalId.current = nextDetail.id
+    shownSelectionRequest.current = selectionRequest.current
+    setContentMissing(false)
     setSelectionError(null)
     session.selectGoal(nextDetail.id)
-    setDetail(nextDetail)
-    setEditName(nextDetail.name)
-    setEditDescription(nextDetail.description ?? '')
+    setDetail(
+      readVersion < contentDraft.savedVersion
+        ? {
+            ...nextDetail,
+            name: content.baselineName,
+            description: content.baselineDescription || null
+          }
+        : nextDetail
+    )
     setSelectedActionId(nextDetail.currentNextActionId ?? unsetNextActionOption)
     setPendingGoalEnd(null)
     if (session.recoveryGoalId !== nextDetail.id) {
@@ -241,41 +272,83 @@ function GoalWorkspace(): ReactNode {
 
   const selectGoal = async (goalId: string, reveal = true): Promise<void> => {
     if (!activeRef.current) return
+    if (contentDraft.retained && contentDraft.snapshot?.goalId !== goalId) {
+      setPendingContentGoal(goalId)
+      return
+    }
     setRouteGoalId(null)
     const request = ++selectionRequest.current
     session.selectGoal(goalId)
     setBusy(true)
-    const result = await window.myTracer.goals.getDetail({ goalId })
-    if (!activeRef.current || request !== selectionRequest.current) return
-    setBusy(false)
-    if (result.ok) {
-      showDetail(result.value)
-      if (reveal) requestAnimationFrame(() => revealStart(detailRef.current))
-      setError(null)
-    } else {
-      setError(goalErrorText[result.error.code])
+    const readVersion = contentDraft.savedVersion
+    try {
+      const result = await window.myTracer.goals.getDetail({ goalId })
+      if (!activeRef.current || request !== selectionRequest.current) return
+      if (result.ok) {
+        showDetail(result.value, readVersion)
+        if (reveal) requestAnimationFrame(() => revealStart(detailRef.current))
+        setError(null)
+      } else {
+        if (result.error.code === 'not-found' && contentDraft.snapshot?.goalId === goalId) {
+          setContentMissing(true)
+          setDetail(null)
+        }
+        setError(goalErrorText[result.error.code])
+      }
+    } catch {
+      if (activeRef.current && request === selectionRequest.current)
+        setError(goalErrorText['persistence-failed'])
+    } finally {
+      if (activeRef.current && request === selectionRequest.current) setBusy(false)
     }
   }
 
-  const reloadDetail = async (goalId: string): Promise<void> => {
-    await selectGoal(goalId, false)
+  const reloadDetail = async (
+    goalId: string,
+    request = shownSelectionRequest.current
+  ): Promise<void> => {
+    if (!activeRef.current) return
     setRefreshVersion((version) => version + 1)
+    if (shownGoalId.current !== goalId || request !== selectionRequest.current) return
+    await selectGoal(goalId, false)
   }
 
   const refreshAfterRecoveryMutation = async (): Promise<void> => {
-    if (!detail) return
-    const result = await window.myTracer.goals.getDetail({ goalId: detail.id })
-    if (result.ok) {
-      setDetail(result.value)
-      setEditName(result.value.name)
-      setEditDescription(result.value.description ?? '')
-      setSelectedActionId(result.value.currentNextActionId ?? unsetNextActionOption)
-      setRefreshVersion((version) => version + 1)
-      setError(null)
-    } else {
-      setError(goalErrorText[result.error.code])
-    }
+    if (detail) await reloadDetail(detail.id)
   }
+
+  const refreshSavedContent = useEffectEvent((): void => {
+    const saved = contentDraft.lastSaved
+    if (!saved) return
+    // A content acknowledgement updates only its own displayed metadata, never navigation.
+    setGoals((current) =>
+      current.map((goal) =>
+        goal.id === saved.id ? { ...goal, name: saved.name, description: saved.description } : goal
+      )
+    )
+    setDetail((current) =>
+      current?.id === saved.id
+        ? { ...current, name: saved.name, description: saved.description }
+        : current
+    )
+  })
+  useEffect(() => {
+    let active = true
+    void Promise.resolve().then(() => {
+      if (active && contentDraft.savedVersion > 0) refreshSavedContent()
+    })
+    return () => {
+      active = false
+    }
+  }, [contentDraft.savedVersion])
+  useEffect(() => {
+    if (contentDraft.retained) {
+      const management = detailRef.current
+        ?.querySelector('form.detail-form')
+        ?.closest<HTMLDetailsElement>('details')
+      if (management) management.open = true
+    }
+  }, [contentDraft, detail?.id])
 
   const submitCreate = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault()
@@ -305,28 +378,43 @@ function GoalWorkspace(): ReactNode {
 
   const submitUpdate = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault()
-    if (!detail) return
-    setBusy(true)
-    const result = await window.myTracer.goals.updateDetails({
-      goalId: detail.id,
-      name: editName,
-      description: editDescription || null
-    })
-    setBusy(false)
-    if (result.ok) {
-      await reloadDetail(detail.id)
-    } else {
-      setError(goalErrorText[result.error.code])
+    if (!detail || contentMissing) return
+    const submitted = contentDraft.beginSave()
+    if (!submitted) return
+    const request = selectionRequest.current
+    try {
+      const result = await window.myTracer.goals.updateDetails({
+        goalId: submitted.goalId,
+        name: submitted.name,
+        description: submitted.description || null
+      })
+      contentDraft.finishSave(submitted, result.ok, result.ok ? result.value : undefined)
+      if (!activeRef.current || request !== selectionRequest.current) return
+      if (result.ok) {
+        setError(null)
+      } else {
+        if (result.error.code === 'not-found') {
+          setContentMissing(true)
+          setDetail(null)
+        }
+        setError(goalErrorText[result.error.code])
+      }
+    } catch {
+      contentDraft.finishSave(submitted, false)
+      if (activeRef.current && request === selectionRequest.current)
+        setError('目标内容未能保存，输入仍保留。请重试保存。')
     }
   }
 
   const changeStatus = async (transition: 'pause' | 'resume'): Promise<void> => {
     if (!detail) return
+    const request = selectionRequest.current
     setBusy(true)
     const result = await window.myTracer.goals[transition]({ goalId: detail.id })
+    if (!activeRef.current || request !== selectionRequest.current) return
     setBusy(false)
     if (result.ok) {
-      await reloadDetail(detail.id)
+      await reloadDetail(detail.id, request)
     } else {
       setError(goalErrorText[result.error.code])
     }
@@ -347,20 +435,24 @@ function GoalWorkspace(): ReactNode {
   const confirmGoalEnd = async (): Promise<void> => {
     if (!pendingGoalEnd) return
     const request = pendingGoalEnd
+    const selection = selectionRequest.current
     setBusy(true)
     try {
       const result = await window.myTracer.goals.end({ goalId: request.goalId })
+      if (!activeRef.current || selection !== selectionRequest.current) return
       setPendingGoalEnd(null)
       if (result.ok) {
-        await reloadDetail(request.goalId)
+        await reloadDetail(request.goalId, selection)
       } else {
         setError(goalErrorText[result.error.code])
       }
     } catch {
-      setPendingGoalEnd(null)
-      setError(goalErrorText['persistence-failed'])
+      if (activeRef.current && selection === selectionRequest.current) {
+        setPendingGoalEnd(null)
+        setError(goalErrorText['persistence-failed'])
+      }
     } finally {
-      setBusy(false)
+      if (activeRef.current && selection === selectionRequest.current) setBusy(false)
     }
   }
 
@@ -371,14 +463,16 @@ function GoalWorkspace(): ReactNode {
       selectedActionId === unsetNextActionOption
     )
       return
+    const request = selectionRequest.current
     setBusy(true)
     const result = await window.myTracer.goals.setCurrentNextAction({
       goalId: detail.id,
       actionId: selectedActionId || null
     })
+    if (!activeRef.current || request !== selectionRequest.current) return
     setBusy(false)
     if (result.ok) {
-      await reloadDetail(detail.id)
+      await reloadDetail(detail.id, request)
     } else {
       setError(goalErrorText[result.error.code])
     }
@@ -398,20 +492,25 @@ function GoalWorkspace(): ReactNode {
     busy ||
     Boolean(pendingGoalEnd) ||
     Boolean(createName || createDescription || createNextAction) ||
-    Boolean(
-      detail && (editName !== detail.name || editDescription !== (detail.description ?? ''))
-    ) ||
+    Boolean(detail && contentDraft.retained) ||
+    Boolean(pendingContentGoal) ||
     Boolean(detail && selectedActionId !== (detail.currentNextActionId ?? unsetNextActionOption))
   const reconcileSelection = useEffectEvent(async (isActive: () => boolean): Promise<void> => {
-    if (!loaded || loadedFilter !== statusFilter || selectionBlocked) return
+    if (
+      !loaded ||
+      loadedFilter !== statusFilter ||
+      (selectionBlocked && !(contentDraft.retained && !detail && !creating && !busy))
+    )
+      return
     const current = detail?.id
     if (current && pageItems.some((item) => item.id === current)) {
       setSelectionLoaded(true)
       return
     }
     const preferred = chooseVisibleSelection(pageItems, session.goalId, (item) => item.id)
-    const candidates = routeGoalId
-      ? [routeGoalId, ...pageItems.map((item) => item.id)]
+    const requestedGoalId = contentDraft.retained ? contentDraft.snapshot!.goalId : routeGoalId
+    const candidates = requestedGoalId
+      ? [requestedGoalId, ...pageItems.map((item) => item.id)]
       : preferred
         ? [
             preferred.id,
@@ -420,11 +519,21 @@ function GoalWorkspace(): ReactNode {
         : []
     const request = ++selectionRequest.current
     for (const goalId of candidates) {
+      const readVersion = contentDraft.savedVersion
       try {
         const result = await window.myTracer.goals.getDetail({ goalId })
         if (!isActive() || request !== selectionRequest.current) return
         if (result.ok) {
-          showDetail(result.value)
+          showDetail(result.value, readVersion)
+          setSelectionLoaded(true)
+          return
+        }
+        if (
+          result.error.code === 'not-found' &&
+          contentDraft.retained &&
+          contentDraft.snapshot?.goalId === goalId
+        ) {
+          setContentMissing(true)
           setSelectionLoaded(true)
           return
         }
@@ -485,6 +594,90 @@ function GoalWorkspace(): ReactNode {
           {error}
         </p>
       ) : null}
+      {contentDraft.saveFailed ? (
+        <p role="alert">
+          目标内容未能保存，草稿仍保留。请重试保存；若目标已不存在，可复制后放弃草稿。
+        </p>
+      ) : null}
+      {pendingContentGoal ? (
+        <div
+          className="transition-confirmation"
+          role="alertdialog"
+          aria-label="切换目标前处理内容草稿"
+        >
+          <p>
+            {contentMissing
+              ? '原目标已不存在，草稿不能保存。请先复制需要保留的文字；放弃后将清除本次会话中的这份草稿并切换目标。'
+              : contentDraft.saving
+                ? '目标内容正在保存。离开不会撤销已提交的保存；放弃只清除本地草稿。'
+                : contentDraft.dirty
+                  ? '当前目标的名称或说明尚未保存。继续编辑，或放弃这两项修改后切换。'
+                  : '目标内容已保存。可以继续查看或切换目标。'}
+          </p>
+          <button
+            type="button"
+            autoFocus
+            onClick={() => {
+              setPendingContentGoal(null)
+              requestAnimationFrame(() => {
+                if (contentMissing) retainedContentRef.current?.focus()
+                else
+                  detailRef.current
+                    ?.querySelector<HTMLInputElement>('form.detail-form input')
+                    ?.focus()
+              })
+            }}
+          >
+            {contentMissing ? '继续查看目标草稿' : '继续编辑目标内容'}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const next = pendingContentGoal
+              contentDraft.discard()
+              setPendingContentGoal(null)
+              void selectGoal(next)
+            }}
+          >
+            {contentDraft.retained ? '放弃目标内容并切换' : '切换目标'}
+          </button>
+        </div>
+      ) : null}
+      {!detail && contentDraft.retained && contentDraft.snapshot ? (
+        <section aria-label="保留的目标内容草稿" className="goal-card">
+          <p role="status">
+            {contentMissing
+              ? '原目标已不存在。草稿仍可阅读和复制，不能保存，也不会重新创建目标。'
+              : '尚未读到原目标，草稿仍保留。可以重试读取；读取成功前不能保存。'}
+          </p>
+          <label>
+            草稿目标名称
+            <input readOnly value={editName} />
+          </label>
+          <label>
+            草稿目标说明
+            <textarea ref={retainedContentRef} readOnly value={editDescription} />
+          </label>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void selectGoal(contentDraft.snapshot!.goalId)}
+          >
+            重试读取原目标
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              contentDraft.discard()
+              setRouteGoalId(null)
+              setContentMissing(false)
+              setRefreshVersion((version) => version + 1)
+            }}
+          >
+            放弃保留的目标内容
+          </button>
+        </section>
+      ) : null}
       <div className={`goal-grid object-grid${masterCollapsed ? ' master-collapsed' : ''}`}>
         <aside className="goal-column object-master" aria-label="目标列表">
           <button
@@ -517,11 +710,7 @@ function GoalWorkspace(): ReactNode {
                 </button>
               </div>
               <div className="page-actions workspace-toolbar">
-                <p className="workspace-count">
-                  {goals.length
-                    ? `${goals.length} 个目标 · 留下方向，也留一点余地`
-                    : '从一个想继续的方向开始'}
-                </p>
+                <p className="workspace-count">{goals.length} 个目标</p>
                 <button
                   type="button"
                   className="secondary-button"
@@ -568,14 +757,6 @@ function GoalWorkspace(): ReactNode {
                   </select>
                 </label>
               </div>
-              <div className="object-list-help">
-                <p className="empty-copy">
-                  可以先保留少量活跃目标，把注意力留给现在想做的事；数量由你决定。
-                </p>
-              </div>
-              {activity ? (
-                <p className="empty-copy">行动日期截至 {activity.asOfLocalDate}</p>
-              ) : null}
               {activityError ? (
                 <p role="status">
                   行动日期暂时无法读取。
@@ -586,6 +767,13 @@ function GoalWorkspace(): ReactNode {
               ) : null}
             </div>
             <div className="object-master-scroll" data-scroll-key="master">
+              <details className="goal-list-guidance">
+                <summary>目标与行动日期说明</summary>
+                <p>
+                  留下方向，也留一点余地。可以先保留少量活跃目标，把注意力留给现在想做的事；数量由你决定。
+                </p>
+                {activity ? <p>行动日期截至 {activity.asOfLocalDate}</p> : null}
+              </details>
               {filteredItems.length ? (
                 <div className="goal-list">
                   {pageItems.map((goal) => (
@@ -840,7 +1028,10 @@ function GoalWorkspace(): ReactNode {
                       <input
                         required
                         value={editName}
-                        onChange={(event) => setEditName(event.target.value)}
+                        readOnly={contentMissing || contentDraft.snapshot?.goalId !== detail.id}
+                        onChange={(event) =>
+                          contentDraft.edit(detail.id, 'name', event.target.value)
+                        }
                       />
                     </label>
                     <label>
@@ -849,12 +1040,42 @@ function GoalWorkspace(): ReactNode {
                         aria-labelledby="goal-edit-description-label"
                         rows={2}
                         value={editDescription}
-                        onChange={(event) => setEditDescription(event.target.value)}
+                        readOnly={contentMissing || contentDraft.snapshot?.goalId !== detail.id}
+                        onChange={(event) =>
+                          contentDraft.edit(detail.id, 'description', event.target.value)
+                        }
                       />
                     </label>
-                    <button className="secondary-button" type="submit" disabled={busy}>
+                    <button
+                      className="secondary-button"
+                      type="submit"
+                      disabled={
+                        busy ||
+                        contentDraft.saving ||
+                        contentMissing ||
+                        contentDraft.snapshot?.goalId !== detail.id
+                      }
+                    >
                       保存修改
                     </button>
+                    {contentDraft.retained ? (
+                      <p className="empty-copy">
+                        目标名称和说明的草稿仅保留在本次应用会话，关闭应用后不会恢复。
+                      </p>
+                    ) : null}
+                    {contentDraft.retained ? (
+                      <button
+                        type="button"
+                        disabled={contentDraft.saving}
+                        onClick={() => {
+                          contentDraft.discard()
+                          contentDraft.read(detail)
+                          setRefreshVersion((version) => version + 1)
+                        }}
+                      >
+                        放弃目标内容修改
+                      </button>
+                    ) : null}
                   </form>
 
                   <GoalCoverAppearance key={detail.id} goalId={detail.id} />
