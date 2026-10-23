@@ -249,12 +249,12 @@ export class UiSession {
     this.positions[source] = document.querySelector('main')?.scrollTop ?? 0
     this.onNavigate(section)
   }
-  openGoal(goalId: string): void {
+  openGoal(goalId: string, source: 'home' | 'today' = 'home'): void {
     this.selectGoal(goalId)
     this.navigationSelection.add('goals')
     this.filter = ''
     this.setPanePosition('goals', 'detail', 0)
-    this.openSection('goals')
+    this.openSection('goals', source)
   }
   openTodayRoutine(routineId: string): void {
     this.navigationSelection.add('today')
@@ -280,7 +280,7 @@ export class UiSession {
   }
   openDataRecord(
     selection: DataRecordSelection,
-    source: 'goals' | 'progress' | 'review' | 'home'
+    source: 'goals' | 'progress' | 'review' | 'home' | 'today'
   ): void {
     this.selectedDataRecord = selection
     if (selection) this.preferences.remember('data', selection)
