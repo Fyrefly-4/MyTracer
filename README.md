@@ -26,21 +26,21 @@ Windows x64
 
 ### 首页概览
 
-![首页概览](docs/resources/readme/home.svg)
+![首页概览](docs/resources/readme/home-overview-windows.jpg)
 
 看看最近的记录，找到想继续的一件小事。
 
 ### 行动记录
 
-![行动记录](docs/resources/readme/record.svg)
+![今天的行动记录](docs/resources/readme/today-action-records-windows.jpg)
 
 留下实际投入、收获与困惑，不必等全部完成。
 
-### 复盘与下一步
+### 数据与历史记录
 
-![复盘与下一步](docs/resources/readme/reflect.svg)
+![数据与历史记录](docs/resources/readme/data-history-windows.jpg)
 
-回顾已有的积累，再想想接下来愿意尝试什么。
+查看历史记录、投入与备注，留下当时的理解与困惑。
 
 ## 不是把每一天都填满
 
