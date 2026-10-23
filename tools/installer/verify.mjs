@@ -10,27 +10,45 @@ import { createRequire } from 'node:module'
 
 const require = createRequire(import.meta.url)
 const { getMakeNsisPath } = require('app-builder-lib/out/toolsets/windows')
+const { nsisEscapeString } = require('app-builder-lib/out/targets/nsis/nsisScriptGenerator')
 const root = fileURLToPath(new URL('../../', import.meta.url))
 assert.equal(require('electron-builder/package.json').version, '26.15.3')
 assert.equal(require('electron-updater/package.json').version, '6.8.10')
+// Bind fixtures to the actual pinned registry writer, not an assumed schema.
+const registryWriter = await readFile(
+  path.join(root, 'node_modules/app-builder-lib/templates/nsis/include/installer.nsh'),
+  'utf8'
+)
+for (const instruction of [
+  'WriteRegStr SHELL_CONTEXT "${INSTALL_REGISTRY_KEY}" InstallLocation "$INSTDIR"',
+  'StrCpy $2 "$INSTDIR\\${UNINSTALL_FILENAME}"',
+  'WriteRegStr SHELL_CONTEXT "${UNINSTALL_REGISTRY_KEY}" UninstallString \'"$2" $0\'',
+  'StrCpy $0 "/allusers"',
+  'StrCpy $0 "/currentuser"'
+]) {
+  assert.ok(
+    registryWriter.includes(instruction),
+    `Upstream registry contract changed: ${instruction}`
+  )
+}
 const empty = {
   Updated: '1',
   DirectoryOverride: '',
   UserPath: '',
-  UserUninstallPath: '',
+  UserUninstallCommand: '',
   MachinePath: '',
-  MachineUninstallPath: '',
+  MachineUninstallCommand: '',
   UserExists: '0',
   MachineExists: '0'
 }
 const user = {
   UserPath: 'C:\\Custom notes',
-  UserUninstallPath: 'C:\\Custom notes',
+  UserUninstallCommand: '"C:\\Custom notes\\Uninstall MyTracer.exe" /currentuser',
   UserExists: '1'
 }
 const machine = {
   MachinePath: 'C:\\Shared notes',
-  MachineUninstallPath: 'C:\\Shared notes',
+  MachineUninstallCommand: '"C:\\Shared notes\\Uninstall MyTracer.exe" /allusers',
   MachineExists: '1'
 }
 const cases = [
@@ -40,17 +58,24 @@ const cases = [
   ['user update', user, 'user'],
   ['machine update', machine, 'machine'],
   ['both scopes', { ...user, ...machine }, ''],
-  ['orphan other uninstall', { ...user, MachineUninstallPath: 'C:\\Old' }, ''],
-  ['missing uninstall', { ...user, UserUninstallPath: '' }, ''],
-  ['mismatched uninstall', { ...machine, MachineUninstallPath: 'C:\\Old' }, ''],
+  ['orphan user product key', { ...machine, UserPath: 'C:\\Old' }, ''],
+  ['orphan machine product key', { ...user, MachinePath: 'C:\\Old' }, ''],
+  [
+    'wrong uninstall scope',
+    { ...user, UserUninstallCommand: '"C:\\Custom notes\\Uninstall MyTracer.exe" /allusers' },
+    ''
+  ],
+  ['orphan other uninstall', { ...user, MachineUninstallCommand: 'C:\\Old' }, ''],
+  ['missing uninstall', { ...user, UserUninstallCommand: '' }, ''],
+  ['mismatched uninstall', { ...machine, MachineUninstallCommand: 'C:\\Old' }, ''],
   ['missing executable', { ...user, UserExists: '0' }, ''],
   ['explicit directory', { ...user, DirectoryOverride: 'C:\\Other' }, ''],
   ['elevated machine', machine, 'machine', true],
   ['elevated different HKCU', { ...user, ...machine }, 'machine', true],
   ['elevated missing records', {}, '', true],
-  ['elevated missing uninstall', { ...machine, MachineUninstallPath: '' }, '', true],
+  ['elevated missing uninstall', { ...machine, MachineUninstallCommand: '' }, '', true],
   ['elevated missing exe', { ...machine, MachineExists: '0' }, '', true],
-  ['elevated mismatched path', { ...machine, MachineUninstallPath: 'C:\\Old' }, '', true]
+  ['elevated mismatched path', { ...machine, MachineUninstallCommand: 'C:\\Old' }, '', true]
 ]
 const temporary = await mkdtemp(path.join(tmpdir(), 'mytracer-nsis-fixture-'))
 try {
@@ -62,7 +87,9 @@ try {
       expected === 'user' ? inputs.UserPath : expected === 'machine' ? inputs.MachinePath : ''
     return [
       `; ${name}`,
-      ...Object.entries(inputs).map(([key, value]) => `StrCpy $myTracer${key} "${value}"`),
+      ...Object.entries(inputs).map(
+        ([key, value]) => `StrCpy $myTracer${key} "${nsisEscapeString(value)}"`
+      ),
       `!insertmacro ${elevated ? 'MyTracerSelectElevatedUpdateScope' : 'MyTracerSelectUpdateScope'}`,
       `StrCmp $myTracerUpdateScope "${expected}" +3`,
       `SetErrorLevel ${index + 1}`,
@@ -80,6 +107,7 @@ try {
       'SilentInstall silent',
       `OutFile "${exe}"`,
       '!include LogicLib.nsh',
+      '!define UNINSTALL_FILENAME "Uninstall MyTracer.exe"',
       `!include "${path.join(root, 'build/installer/update-scope.nsh')}"`,
       ...[...Object.keys(empty), 'UpdateScope', 'UpdatePath'].map((key) => `Var myTracer${key}`),
       'Section',

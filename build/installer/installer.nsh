@@ -13,9 +13,9 @@ Var myTracerUpdatePath
 Var myTracerUpdated
 Var myTracerDirectoryOverride
 Var myTracerUserPath
-Var myTracerUserUninstallPath
+Var myTracerUserUninstallCommand
 Var myTracerMachinePath
-Var myTracerMachineUninstallPath
+Var myTracerMachineUninstallCommand
 Var myTracerUserExists
 Var myTracerMachineExists
 !endif
@@ -45,9 +45,9 @@ Var myTracerMachineExists
   !insertmacro GetDParameter $myTracerDirectoryOverride
   ; .onInit has already selected the correct registry view for x64.
   ReadRegStr $myTracerUserPath HKCU "${INSTALL_REGISTRY_KEY}" "InstallLocation"
-  ReadRegStr $myTracerUserUninstallPath HKCU "${UNINSTALL_REGISTRY_KEY}" "InstallLocation"
+  ReadRegStr $myTracerUserUninstallCommand HKCU "${UNINSTALL_REGISTRY_KEY}" "UninstallString"
   ReadRegStr $myTracerMachinePath HKLM "${INSTALL_REGISTRY_KEY}" "InstallLocation"
-  ReadRegStr $myTracerMachineUninstallPath HKLM "${UNINSTALL_REGISTRY_KEY}" "InstallLocation"
+  ReadRegStr $myTracerMachineUninstallCommand HKLM "${UNINSTALL_REGISTRY_KEY}" "UninstallString"
   StrCpy $myTracerUserExists "0"
   StrCpy $myTracerMachineExists "0"
   ${If} ${FileExists} "$myTracerUserPath\${APP_EXECUTABLE_FILENAME}"

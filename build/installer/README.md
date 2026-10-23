@@ -9,8 +9,8 @@
 只有同时满足以下条件才跳过范围页和目录页：
 
 - 有 `--updated`，且无显式 `/D=` 目录覆盖或 `--allusers`／`--currentuser` 范围覆盖；
-- HKCU 或 HKLM 恰有一类安装；另一类的产品与卸载 `InstallLocation` 均为空；
-- 所选范围的产品键和卸载键 `InstallLocation` 完全相同、非空，且该目录的 `MyTracer.exe` 存在。
+- HKCU 或 HKLM 恰有一类安装；另一类的产品 `InstallLocation` 与卸载 `UninstallString` 均为空；
+- 产品键 `InstallLocation` 非空，卸载键 `UninstallString` 精确匹配该目录的 `"Uninstall MyTracer.exe" /currentuser` 或 `/allusers` 命令，且该目录的 `MyTracer.exe` 存在。
 
 读取上游已选择的 x64 注册表视图，不写注册表来推断范围。缺失、陈旧、两类同时存在或路径不一致时保留原生范围和目录页，由用户核实。普通双击 EXE 没有更新标记，保留通常选择流程。欢迎页、进度、完成页始终使用可见原生向导；没有引入静默参数。
 
@@ -30,7 +30,7 @@
 
 ## 验证与人工验收
 
-`node tools/installer/verify.mjs` 编译生产用的 NSIS 决策宏，在 Windows 直接执行无注册表写入的临时 EXE，覆盖普通安装、两类更新、冲突、缺失、路径不一致、显式目录覆盖和提权后重新核实机器记录，共 17 个场景。非 Windows 主机仅编译，明确报告未执行。这个 fixture 不模拟 UAC 成功，也不等同于真实安装测试。
+`node tools/installer/verify.mjs` 编译生产用的 NSIS 决策宏，在 Windows 直接执行无注册表写入的临时 EXE，覆盖普通安装、两类更新、冲突、缺失、路径不一致、显式目录覆盖和提权后重新核实机器记录，共 20 个场景。非 Windows 主机仅编译，明确报告未执行。这个 fixture 不模拟 UAC 成功，也不等同于真实安装测试。
 
 专用 `Installer validation` Windows CI 执行上述 fixture，再 `npm run package` 编译真实安装器及卸载器，不发布。原 `CI Gate` 继续执行完整应用验证。
 

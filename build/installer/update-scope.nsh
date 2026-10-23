@@ -6,17 +6,17 @@
   ${If} $myTracerUpdated == "1"
   ${AndIf} $myTracerDirectoryOverride == ""
     ${If} $myTracerUserPath != ""
-    ${AndIf} $myTracerUserPath == $myTracerUserUninstallPath
+    ${AndIf} $myTracerUserUninstallCommand == '"$myTracerUserPath\${UNINSTALL_FILENAME}" /currentuser'
     ${AndIf} $myTracerUserExists == "1"
     ${AndIf} $myTracerMachinePath == ""
-    ${AndIf} $myTracerMachineUninstallPath == ""
+    ${AndIf} $myTracerMachineUninstallCommand == ""
       StrCpy $myTracerUpdateScope "user"
       StrCpy $myTracerUpdatePath $myTracerUserPath
     ${ElseIf} $myTracerMachinePath != ""
-    ${AndIf} $myTracerMachinePath == $myTracerMachineUninstallPath
+    ${AndIf} $myTracerMachineUninstallCommand == '"$myTracerMachinePath\${UNINSTALL_FILENAME}" /allusers'
     ${AndIf} $myTracerMachineExists == "1"
     ${AndIf} $myTracerUserPath == ""
-    ${AndIf} $myTracerUserUninstallPath == ""
+    ${AndIf} $myTracerUserUninstallCommand == ""
       StrCpy $myTracerUpdateScope "machine"
       StrCpy $myTracerUpdatePath $myTracerMachinePath
     ${EndIf}
@@ -29,7 +29,7 @@
   StrCpy $myTracerUpdateScope ""
   StrCpy $myTracerUpdatePath ""
   ${If} $myTracerMachinePath != ""
-  ${AndIf} $myTracerMachinePath == $myTracerMachineUninstallPath
+  ${AndIf} $myTracerMachineUninstallCommand == '"$myTracerMachinePath\${UNINSTALL_FILENAME}" /allusers'
   ${AndIf} $myTracerMachineExists == "1"
   ${AndIf} $myTracerDirectoryOverride == ""
     StrCpy $myTracerUpdateScope "machine"
