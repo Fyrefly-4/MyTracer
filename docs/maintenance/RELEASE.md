@@ -1,10 +1,14 @@
-# 私有发布维护
+# 发布维护
 
 ## 目标与边界
 
 MyTracer 已用于 owner 的日常使用。发布流程服务于快速迭代：开发并合入 main，累积到想发布时合并 Release Please 的发布 PR，随后自动验证、打包并发布；本地应用继续使用内置更新。普通代码合并只更新发布 PR，不自动发布，也不再要求先手动构建、试用和批准候选包。
 
 [Release workflow](../../.github/workflows/release.yml) 负责版本管理与发布编排。合并发布 PR 是这次版本发布的明确决定；构建成功后将草稿转为正式 Release 是同一次自动化的后续步骤，不新增第二次人工确认。Agent 创建实现 PR 不等于获准合并发布 PR、创建真实版本或操作用户数据库；具体权限仍以 owner 当次请求和 [AGENTS.md](../../AGENTS.md) 为准。
+
+仓库可为 private 或 public：发布与来源校验都要求 GitHub 返回的 `private` 字段为布尔值，同时固定仓库全名 `Fyrefly-4/MyTracer` 与 ID `1326905280`；缺失或错误类型不会被当作 public 接受。可见性变化不放宽源提交、workflow、制品、发布 PR 审批、草稿完整性或重试规则。此兼容性不负责修改仓库可见性或凭据权限。
+
+已安装客户端的更新令牌行为不变：仍需本机有效的 `MYTRACER_UPDATE_TOKEN`，不会因仓库公开自动转为匿名更新。公开仓库的正式 Release 对公众可见；草稿仍须先完成全部验证才能发布。不要将仓库 public/private 与 Release draft/published 混为一谈。
 
 ## 日常操作
 

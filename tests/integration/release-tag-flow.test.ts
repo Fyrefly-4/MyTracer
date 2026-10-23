@@ -58,16 +58,19 @@ function scenario(body: string) {
 }
 
 describe('tag publication resolves and pins a real safely extracted bundle', () => {
-  test('prepare stays read-only; publish reuses the exact selection without discovery', () => {
-    const result = scenario(`
-      const selection=await prepare();assert(!calls.includes('draft'));assert.equal(selection.artifactId,200);
+  test.each([true, false])(
+    'prepare/publish preserves exact selection with repository.private=%s',
+    (visibility) => {
+      const result = scenario(`
+      f.context.repository.private=${visibility};const selection=await prepare();assert(!calls.includes('draft'));assert.equal(selection.artifactId,200);
       assert.equal(await readFile(output,'utf8'),'selection='+JSON.stringify(selection)+'\\n');
       env.MYTRACER_RELEASE_SELECTION=JSON.stringify(selection);calls.length=0;
       await publish();assert(!calls.includes('discover'));assert.equal(calls.filter(c=>c==='upload').length,5);
       assert(calls.indexOf('verify')<calls.indexOf('visible'));assert.equal(calls.at(-1),'visible');
     `)
-    expect(result.status, result.error?.message ?? result.stderr).toBe(0)
-  })
+      expect(result.status, result.error?.message ?? result.stderr).toBe(0)
+    }
+  )
   test('pins an annotated tag even when the event reports its peeled commit', () => {
     const result = scenario(
       `api.resolveTag=async()=>({sourceRevision:sha,tagObjectRevision:'b'.repeat(40)});const selection=await prepare();assert.equal(selection.tagObjectRevision,'b'.repeat(40));env.MYTRACER_RELEASE_SELECTION=JSON.stringify(selection);await publish();assert(calls.includes('visible'));`
@@ -106,7 +109,7 @@ describe('tag publication resolves and pins a real safely extracted bundle', () 
     "api.resolveTag=async()=>({sourceRevision:'c'.repeat(40),tagObjectRevision:sha});",
     'f.context.artifact.expires_at=new Date(Date.now()-1000).toISOString();',
     "api.allReleases=async()=>[{tag_name:'v0.1.5'}];",
-    'f.context.repository.private=false;',
+    "f.context.repository.private='false';",
     'api.candidateRuns=async()=>[];',
     "f.context.artifact.digest='sha256:'+'c'.repeat(64);",
     'api.runArtifacts=async()=>[f.context.artifact,f.context.artifact];',
