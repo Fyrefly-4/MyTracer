@@ -1,5 +1,33 @@
 # Changelog
 
+## [1.4.0](https://github.com/Fyrefly-4/MyTracer/compare/v1.3.0...v1.4.0) (2026-10-23)
+
+
+### Features
+
+* **routines:** 保护会话内内容草稿并明确放弃切换 ([#107](https://github.com/Fyrefly-4/MyTracer/issues/107)) ([c7fc30c](https://github.com/Fyrefly-4/MyTracer/commit/c7fc30c56b004f21a51c7f2994b16427bfe285b7))
+* 在当前会话保护已有目标名称与说明草稿 ([#109](https://github.com/Fyrefly-4/MyTracer/issues/109)) ([a732562](https://github.com/Fyrefly-4/MyTracer/commit/a73256277e4a6213a19a1b0614c2a785e37b3f57))
+
+
+### Bug Fixes
+
+* acknowledge discarded recording drafts consistently ([#94](https://github.com/Fyrefly-4/MyTracer/issues/94)) ([21f0235](https://github.com/Fyrefly-4/MyTracer/commit/21f0235fdac79ed1d9eca1530406100a7cf4d961))
+
+## [1.3.0](https://github.com/Fyrefly-4/MyTracer/compare/v1.2.1...v1.3.0) (2026-10-23)
+
+
+### Features
+
+* **progress:** 原型实验，在折叠详情中读回行动备注与历史下一步 ([#106](https://github.com/Fyrefly-4/MyTracer/issues/106)) ([0c9151d](https://github.com/Fyrefly-4/MyTracer/commit/0c9151d46fccd874584e5d9c80b2281624334d35))
+
+
+### Bug Fixes
+
+* distinguish failed history reads and provide safe retry ([#97](https://github.com/Fyrefly-4/MyTracer/issues/97)) ([fb9870e](https://github.com/Fyrefly-4/MyTracer/commit/fb9870e14eb13d2d84d8a999cec3a3e60d9001ec))
+* reclaim goal list space in short and zoomed windows ([#95](https://github.com/Fyrefly-4/MyTracer/issues/95)) ([3c26da4](https://github.com/Fyrefly-4/MyTracer/commit/3c26da4c8865bc990bb7dd55c0e88d3c97034738))
+* **routines:** 区分搜索无匹配并说明保留详情 ([#101](https://github.com/Fyrefly-4/MyTracer/issues/101)) ([334e00c](https://github.com/Fyrefly-4/MyTracer/commit/334e00ca6f4d7679c506f77956d4ef6ee1be5e0c))
+* 兼容公开与私有发布仓库并明确 Windows 验证安排 ([#110](https://github.com/Fyrefly-4/MyTracer/issues/110)) ([b04d91b](https://github.com/Fyrefly-4/MyTracer/commit/b04d91bba694999ed10e4bdb615735843a0d25b6))
+
 ## [1.2.1](https://github.com/Fyrefly-4/MyTracer/compare/v1.2.0...v1.2.1) (2026-10-22)
 
 
