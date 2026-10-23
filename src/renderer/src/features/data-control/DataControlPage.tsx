@@ -782,6 +782,30 @@ function DataPanel(props: {
       className={`confirmation-dialog data-panel${props.drawer ? ' data-drawer' : ''}`}
       aria-label={props.title}
       aria-modal="true"
+      onKeyDown={(event) => {
+        if (event.key !== 'Tab') return
+        const dialog = event.currentTarget
+        const controls = [
+          ...dialog.querySelectorAll<HTMLElement>(
+            'button, input, select, textarea, a[href], [tabindex]'
+          )
+        ].filter(
+          (element) =>
+            element.closest('dialog') === dialog &&
+            !element.matches(':disabled') &&
+            element.tabIndex >= 0 &&
+            element.getClientRects().length > 0
+        )
+        const first = controls[0]
+        const last = controls.at(-1)
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault()
+          last?.focus()
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault()
+          first?.focus()
+        }
+      }}
       onCancel={(event) => {
         event.preventDefault()
         event.stopPropagation()

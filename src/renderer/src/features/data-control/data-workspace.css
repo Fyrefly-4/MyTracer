@@ -582,18 +582,21 @@
     overflow: auto;
   }
   .data-workspace .data-browser {
-    display: flex;
-    flex-direction: column;
+    display: block;
     flex: none;
     overflow: visible;
   }
   .data-workspace .data-browser > .data-history {
+    display: block;
+    height: auto;
     padding: 0 0 20px;
     border-right: 0;
     border-bottom: 1px solid var(--color-line);
     overflow: visible;
   }
   .data-workspace .data-history-list {
+    display: block;
+    height: auto;
     flex: none;
     overflow: visible;
   }
