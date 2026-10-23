@@ -203,6 +203,19 @@ test('reading panes and modal forms remain usable at small windows and 100/125/1
             detail: 'visible'
           })
         }
+        if (!layout.wide) {
+          const row = page.locator('.data-history-row[aria-pressed="false"]').first()
+          await row.click()
+          await expect
+            .poll(() =>
+              page.locator('.selected-data-record').evaluate((el) => {
+                const workspace = el.closest('.data-workspace')!.getBoundingClientRect()
+                const detail = el.getBoundingClientRect()
+                return detail.top >= workspace.top - 1 && detail.top < workspace.bottom
+              })
+            )
+            .toBe(true)
+        }
         await page.getByRole('button', { name: '补记记录', exact: true }).click()
         const drawer = page.getByRole('dialog', { name: '补记历史记录', exact: true })
         expect(await drawer.evaluate((el) => el.scrollWidth <= el.clientWidth + 1)).toBe(true)

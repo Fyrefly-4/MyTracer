@@ -1009,25 +1009,29 @@ function DataControlWorkspace(): ReactNode {
     historyPage
   ])
 
+  const revealSelectedRecord = (): void => {
+    const element = selectedRecordRef.current
+    element?.scrollTo({ top: 0 })
+    if (element && getComputedStyle(element).overflowY === 'visible') {
+      element.scrollIntoView({ block: 'start' })
+    } else {
+      revealStart(element)
+    }
+  }
+
   const applySelection = (selection: NonNullable<typeof selectedRecord>): void => {
     setRouteRecord(null)
     setPendingSelection(null)
     setSelectedRecord(selection)
     session.selectDataRecord(selection)
-    requestAnimationFrame(() => {
-      selectedRecordRef.current?.scrollTo({ top: 0 })
-      revealStart(selectedRecordRef.current)
-    })
+    requestAnimationFrame(revealSelectedRecord)
   }
 
   const chooseRecord = (selection: NonNullable<typeof selectedRecord>): void => {
     if (selection.id === selectedRecord?.id && selection.type === selectedRecord.type) return
     if ([...recordDrafts.values()].some(Boolean)) {
       setPendingSelection(selection)
-      requestAnimationFrame(() => {
-        selectedRecordRef.current?.scrollTo({ top: 0 })
-        revealStart(selectedRecordRef.current)
-      })
+      requestAnimationFrame(revealSelectedRecord)
       return
     }
     applySelection(selection)
