@@ -59,13 +59,9 @@ MyTracer 已用于 owner 的日常使用。发布流程服务于快速迭代：�
 
 操作依据：[提交正文 Release-As](https://github.com/googleapis/release-please#how-do-i-change-the-version-number)、[manifest 配置 release-as](https://github.com/googleapis/release-please/blob/main/docs/manifest-releaser.md#configfile)。
 
-### 本次 v1.0.0 版本提案
+### 历史 v1.0.0 版本提案
 
-本轮 notebook UI 调整的下一次发布目标由 owner 指定为 **v1.0.0**。在 `release-please-config.json` 的 `packages["."]` 中临时设置 `"release-as": "1.0.0"`，不手工修改 package 版本或 manifest 的已发布基线。配置随文件合并，因此普通 PR 使用 squash、merge 或 rebase 都不会像提交正文指令那样丢失改号意图。
-
-先将 `experiment/ui-ux-20261022` 的普通 PR 合入 main（标题按实际 UI 变更使用 `feat:`），等 bot 提出 v1.0.0 发布 PR、版本文件同步且最新 CI 通过，再由 owner 决定合并发布 PR。实验分支上的提交本身不发布。**v1.0.0 发布 PR 合并后，另开普通 PR 移除临时 `release-as`，恢复自动版本计算。**
-
-本轮已完成窗口样式、独立滚动与长记录分页；首屏空态/说明位置、例行记录面板位置，以及空间层次（包括是否采用毛玻璃）留待下一轮讨论，不作为本轮已完成功能。
+notebook UI 调整曾以 **v1.0.0** 为发布目标，并通过临时 `release-as` 配置提出版本。该提案属于历史背景，不是当前待执行的发布步骤；不要重新应用旧版本覆盖或重启实验分支的发布流程。后续版本以实际 tag、Release、版本文件及发布 PR 为准，手动改号遵循上面的通用流程。
 
 ## 首次接入与历史基线
 
@@ -108,7 +104,7 @@ CI 使用 GitHub Actions 的发布权限，客户端继续使用专用只读 `MY
 - `tag`：对应稳定标签 `vX.Y.Z`。
 - `source_sha`：已合并发布 PR 的完整 40 位合并提交 SHA。
 
-例如本次已批准但尚未发布的 v1.2.0：ID `420962324`、tag `v1.2.0`、source SHA `27762b2f5d041071baa509f4d48c09f13c4580a5`。这些值仅是恢复操作参数，不是工作流默认值，也不改变下一次自动发布的选择。
+历史 v1.2.0 恢复操作曾使用以下参数：ID `420962324`、tag `v1.2.0`、source SHA `27762b2f5d041071baa509f4d48c09f13c4580a5`。这些值仅是恢复操作参数，不是工作流默认值，也不改变下一次自动发布的选择。
 
 恢复只允许从 main 手动触发，不运行 Release Please，不创建 tag 或新版本。按 ID 读取既有 Release，并核对 tag、原始 SHA、main 祖先关系和已合并发布 PR。更高稳定版已发布时阻止恢复旧草稿；相同版本已正式发布时只读退出，不覆盖、不重新设置 latest。
 

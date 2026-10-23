@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="360" viewBox="0 0 960 360" role="img" aria-labelledby="title">
+  <title id="title">行动记录</title>
+  <rect width="960" height="360" rx="20" fill="#F5F1E7"/>
+  <circle cx="480" cy="180" r="94" fill="none" stroke="#214C3D" stroke-opacity=".12" stroke-width="2"/>
+  <path d="M120 180h210m300 0h210" stroke="#214C3D" stroke-opacity=".12" stroke-width="2"/>
+  <text x="480" y="195" text-anchor="middle" font-family="Georgia,serif" font-size="48" fill="#214C3D" fill-opacity=".65">02</text>
+</svg>
