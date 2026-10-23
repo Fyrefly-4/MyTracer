@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.4.0](https://github.com/Fyrefly-4/MyTracer/compare/v1.3.0...v1.4.0) (2026-10-23)
+
+
+### Features
+
+* **routines:** 保护会话内内容草稿并明确放弃切换 ([#107](https://github.com/Fyrefly-4/MyTracer/issues/107)) ([c7fc30c](https://github.com/Fyrefly-4/MyTracer/commit/c7fc30c56b004f21a51c7f2994b16427bfe285b7))
+* 在当前会话保护已有目标名称与说明草稿 ([#109](https://github.com/Fyrefly-4/MyTracer/issues/109)) ([a732562](https://github.com/Fyrefly-4/MyTracer/commit/a73256277e4a6213a19a1b0614c2a785e37b3f57))
+
+
+### Bug Fixes
+
+* acknowledge discarded recording drafts consistently ([#94](https://github.com/Fyrefly-4/MyTracer/issues/94)) ([21f0235](https://github.com/Fyrefly-4/MyTracer/commit/21f0235fdac79ed1d9eca1530406100a7cf4d961))
+
 ## [1.3.0](https://github.com/Fyrefly-4/MyTracer/compare/v1.2.1...v1.3.0) (2026-10-23)
 
 
