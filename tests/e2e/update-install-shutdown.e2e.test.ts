@@ -165,8 +165,7 @@ test('blocks Action, Routine, Review, Record, and Data drafts before installer h
     await expect(page.getByLabel('一个真实进展')).toHaveValue('T083 review draft')
 
     await page.getByRole('button', { name: '数据', exact: true }).click()
-    await page.locator('.data-tools-panel > summary').click()
-    await page.getByText('补记历史记录', { exact: true }).click()
+    await page.getByRole('button', { name: '补记记录', exact: true }).click()
     await page.getByLabel('行动补记日期').fill('2026-09-29')
     await expectBlocked()
     await expect(page.getByLabel('行动补记日期')).toHaveValue('2026-09-29')

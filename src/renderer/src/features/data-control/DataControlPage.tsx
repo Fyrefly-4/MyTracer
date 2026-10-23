@@ -753,6 +753,69 @@ function ConfusionEditor(props: {
   )
 }
 
+// Native modal dialogs provide focus containment and Escape semantics, as in delete preview.
+function DataPanel(props: {
+  title: string
+  drawer?: boolean
+  busy?: boolean
+  onClose: () => void
+  children: ReactNode
+}): ReactNode {
+  const ref = useRef<HTMLDialogElement>(null)
+  useEffect(() => {
+    const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const dialog = ref.current!
+    dialog.showModal()
+    return () => {
+      dialog.close()
+      if (trigger?.isConnected) {
+        const target = trigger.matches(':disabled')
+          ? trigger.closest('dialog')?.querySelector<HTMLElement>('button:not(:disabled)')
+          : trigger
+        target?.focus()
+      }
+    }
+  }, [])
+  return (
+    <dialog
+      ref={ref}
+      className={`confirmation-dialog data-panel${props.drawer ? ' data-drawer' : ''}`}
+      aria-label={props.title}
+      aria-modal="true"
+      onCancel={(event) => {
+        event.preventDefault()
+        event.stopPropagation()
+        if (!props.busy) props.onClose()
+      }}
+      onClick={(event) => {
+        if (event.target !== event.currentTarget || props.busy) return
+        const box = event.currentTarget.getBoundingClientRect()
+        if (
+          event.clientX < box.left ||
+          event.clientX > box.right ||
+          event.clientY < box.top ||
+          event.clientY > box.bottom
+        )
+          props.onClose()
+      }}
+    >
+      <div className="data-panel-heading">
+        <h2>{props.title}</h2>
+        <button
+          type="button"
+          autoFocus
+          disabled={props.busy}
+          aria-label={`关闭${props.title}`}
+          onClick={props.onClose}
+        >
+          ×
+        </button>
+      </div>
+      {props.children}
+    </dialog>
+  )
+}
+
 interface DataHistoryRow {
   readonly type: 'action-record' | 'routine-record'
   readonly id: string
@@ -773,6 +836,9 @@ function DataControlWorkspace(): ReactNode {
   const [readError, setReadError] = useState('')
   const [error, setError] = useState<string | null>(null)
   usePagePosition('data', data !== null)
+  const [panel, setPanel] = useState<'backfill' | 'export' | 'more' | 'filters' | null>(null)
+  const [discardBackfill, setDiscardBackfill] = useState(false)
+  const [backfillKind, setBackfillKind] = useState<'action' | 'routine'>('action')
   const [backfillMessage, setBackfillMessage] = useState('')
   const [savingBackfill, setSavingBackfill] = useState(false)
   const [preview, setPreview] = useState<DeletePreviewDto | null>(null)
@@ -1201,26 +1267,31 @@ function DataControlWorkspace(): ReactNode {
   }
   const generateExport = async (): Promise<void> => {
     setExporting(true)
-    const result = await window.myTracer.exports.generate()
-    setExporting(false)
-    if (!result.ok) {
-      const messages: Record<CompleteExportErrorCode, string> = {
-        validation: '导出请求无效。',
-        'snapshot-failed': '无法读取一致的完整数据快照。',
-        'serialization-failed': '无法序列化导出文件。',
-        'export-validation-failed': '导出内容校验未通过，未交付文件。',
-        'write-failed': '文件未能安全写入。',
-        'destination-changed': '目标文件发生变化，请重新选择。',
-        'replace-not-supported': '请使用新文件名，现有导出文件未被修改。'
+    try {
+      const result = await window.myTracer.exports.generate()
+      if (!result.ok) {
+        const messages: Record<CompleteExportErrorCode, string> = {
+          validation: '导出请求无效。',
+          'snapshot-failed': '无法读取一致的完整数据快照。',
+          'serialization-failed': '无法序列化导出文件。',
+          'export-validation-failed': '导出内容校验未通过，未交付文件。',
+          'write-failed': '文件未能安全写入。',
+          'destination-changed': '目标文件发生变化，请重新选择。',
+          'replace-not-supported': '请使用新文件名，现有导出文件未被修改。'
+        }
+        setExportMessage(messages[result.error.code])
+        return
       }
-      setExportMessage(messages[result.error.code])
-      return
+      setExportMessage(
+        result.value.kind === 'cancelled'
+          ? '已取消导出，未创建文件。'
+          : `已导出 ${result.value.fileName}（${result.value.byteLength} 字节）。`
+      )
+    } catch {
+      setExportMessage('导出暂时失败，请重试。')
+    } finally {
+      setExporting(false)
     }
-    setExportMessage(
-      result.value.kind === 'cancelled'
-        ? '已取消导出，未创建文件。'
-        : `已导出 ${result.value.fileName}（${result.value.byteLength} 字节）。`
-    )
   }
   const selectedActionRecord =
     selectedRecord?.type === 'action-record'
@@ -1258,302 +1329,350 @@ function DataControlWorkspace(): ReactNode {
 
   return (
     <section className="data-workspace" aria-label="历史记录与数据控制">
-      {error ? (
+      {error && !panel ? (
         <p className="form-error" role="alert">
           {error}
         </p>
       ) : null}
-      <details className="data-tools-panel">
-        <summary>数据工具 · 导出、补记与删除</summary>
-        <div className="data-tools-scroll">
-          <details className="goal-card data-tool export-card">
-            <summary>导出数据</summary>
-            <h2>导出完整数据</h2>
-            <p>导出包含目标、行动、例行、记录及其关联状态，并由你选择保存位置。</p>
-            <p>目前只支持导出；尚不支持自动导入或一键恢复。</p>
-            <button
-              className="primary-button"
-              type="button"
-              disabled={exporting}
-              onClick={() => void generateExport()}
+      <div className="data-toolbar" aria-label="数据操作">
+        <button type="button" onClick={() => setPanel('backfill')}>
+          补记记录{actionBackfillDirty || routineBackfillDirty ? ' · 有草稿' : ''}
+        </button>
+        <button type="button" onClick={() => setPanel('export')}>
+          导出
+        </button>
+        <button type="button" onClick={() => setPanel('more')}>
+          更多
+        </button>
+      </div>
+      {panel === 'export' ? (
+        <DataPanel title="导出数据" busy={exporting} onClose={() => setPanel(null)}>
+          <p>导出包含目标、行动、例行、记录及其关联状态，并由你选择保存位置。</p>
+          <p>目前只支持导出；尚不支持自动导入或一键恢复。</p>
+          <button
+            className="primary-button"
+            type="button"
+            disabled={exporting}
+            onClick={() => void generateExport()}
+          >
+            {exporting ? '正在准备导出…' : '导出完整数据'}
+          </button>
+          {exportMessage ? <p role="status">{exportMessage}</p> : null}
+        </DataPanel>
+      ) : null}
+      {panel === 'backfill' ? (
+        <DataPanel title="补记历史记录" drawer busy={savingBackfill} onClose={() => setPanel(null)}>
+          <p className="data-panel-note">关闭或切换类型会保留本页草稿；离开页面前会提示确认。</p>
+          <label className="field">
+            补记类型
+            <select
+              aria-label="补记类型"
+              value={backfillKind}
+              disabled={savingBackfill}
+              onChange={(event) => setBackfillKind(event.target.value as 'action' | 'routine')}
             >
-              {exporting ? '正在准备导出…' : '导出完整数据'}
-            </button>
-            {exportMessage ? <p role="status">{exportMessage}</p> : null}
-          </details>
+              <option value="action">行动记录{actionBackfillDirty ? ' · 有草稿' : ''}</option>
+              <option value="routine">例行记录{routineBackfillDirty ? ' · 有草稿' : ''}</option>
+            </select>
+          </label>
+          <button
+            type="button"
+            disabled={
+              savingBackfill ||
+              !(backfillKind === 'action' ? actionBackfillDirty : routineBackfillDirty)
+            }
+            onClick={() => setDiscardBackfill(true)}
+          >
+            清空当前草稿
+          </button>
+          {discardBackfill ? (
+            <DataPanel title="放弃当前补记草稿" onClose={() => setDiscardBackfill(false)}>
+              <p>当前类型的未保存内容将被清空，另一类型的草稿会保留。</p>
+              <button type="button" onClick={() => setDiscardBackfill(false)}>
+                继续补记
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (backfillKind === 'action') {
+                    setActionDate('')
+                    setActionDuration('0')
+                    setActionOutcome('partial')
+                    setActionUnderstanding('')
+                    setActionConfusion('')
+                    setActionNextStep('')
+                    setActionNote('')
+                  } else {
+                    setRoutineDate('')
+                    setRoutineDuration('')
+                    setRoutineOutcome('not_done')
+                    setRoutinePlanned(false)
+                    setRoutineNote('')
+                  }
+                  setError(null)
+                  setBackfillMessage('已清空当前草稿，未保存记录。')
+                  setDiscardBackfill(false)
+                }}
+              >
+                放弃草稿
+              </button>
+            </DataPanel>
+          ) : null}
+          {error ? (
+            <p className="form-error" role="alert">
+              {error}
+            </p>
+          ) : null}
           {backfillMessage ? (
             <p className="success-message" role="status">
               {backfillMessage}
             </p>
           ) : null}
-          <details className="goal-card data-tool">
-            <summary>补记历史记录</summary>
-            <div className="data-backfill-grid">
-              <section className="goal-card">
-                <h2>补记行动记录</h2>
-                {data && !data.actions.length ? (
-                  <p className="empty-copy">还没有可补记的行动，请先在今天或目标页创建行动。</p>
-                ) : null}
-                <fieldset
-                  className="backfill-fields"
-                  disabled={savingBackfill || !data?.actions.length}
-                >
-                  <Field label="行动（必选）">
-                    <select
-                      aria-label="补记行动"
-                      value={actionId}
-                      onChange={(event) => setActionId(event.target.value)}
-                    >
-                      {data?.actions.map((item) => (
-                        <option key={item.id} value={item.id}>
-                          {item.title} · {actionStatusText[item.status]}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                  <Field label="发生日期（必填）" hint="选择实际发生的本地日期。">
-                    <input
-                      aria-label="行动补记日期"
-                      type="date"
-                      value={actionDate}
-                      onChange={(event) => setActionDate(event.target.value)}
-                    />
-                  </Field>
-                  <Field label="投入时长（分钟，必填）" hint="0 表示不足 1 分钟但确有行动。">
-                    <input
-                      aria-label="行动补记分钟"
-                      type="number"
-                      min="0"
-                      step="1"
-                      value={actionDuration}
-                      onChange={(event) => setActionDuration(event.target.value)}
-                    />
-                  </Field>
-                  <Field label="本次结果（必填）">
-                    <select
-                      aria-label="行动补记结果"
-                      value={actionOutcome}
-                      onChange={(event) =>
-                        setActionOutcome(event.target.value as ActionRecordDataDto['outcome'])
-                      }
-                    >
-                      <option value="completed">本次达到预期</option>
-                      <option value="partial">本次完成一部分</option>
-                      <option value="stopped">本次在这里停下</option>
-                    </select>
-                  </Field>
-                  <Field label="我理解了（可选）">
-                    <input
-                      aria-label="行动补记理解"
-                      value={actionUnderstanding}
-                      onChange={(event) => setActionUnderstanding(event.target.value)}
-                      placeholder="写下已经确认的理解（可选）"
-                    />
-                  </Field>
-                  <Field label="我仍困惑（可选）">
-                    <input
-                      aria-label="行动补记困惑"
-                      value={actionConfusion}
-                      onChange={(event) => setActionConfusion(event.target.value)}
-                      placeholder="写下仍未解决的困惑（可选）"
-                    />
-                  </Field>
-                  <Field
-                    label="记录中的下一步（可选）"
-                    hint="仅写入这条记录，不替换目标的当前下一步。"
-                  >
-                    <input
-                      aria-label="行动补记下一步"
-                      value={actionNextStep}
-                      onChange={(event) => setActionNextStep(event.target.value)}
-                      placeholder="下一步（可选）"
-                    />
-                  </Field>
-                  <Field label="备注（可选）">
-                    <input
-                      aria-label="行动补记备注"
-                      value={actionNote}
-                      onChange={(event) => setActionNote(event.target.value)}
-                      placeholder="备注（可选）"
-                    />
-                  </Field>
-                  <button
-                    className="primary-button"
-                    type="button"
-                    disabled={savingBackfill || !actionId || !actionDate || actionDuration === ''}
-                    onClick={() => void backfillAction()}
-                  >
-                    补记行动记录
-                  </button>
-                  <button
-                    type="button"
-                    disabled={savingBackfill}
-                    onClick={() => {
-                      setActionDate('')
-                      setActionDuration('0')
-                      setActionOutcome('partial')
-                      setActionUnderstanding('')
-                      setActionConfusion('')
-                      setActionNextStep('')
-                      setActionNote('')
-                      setBackfillMessage('已取消行动补记，未保存记录。')
-                      setError(null)
-                    }}
-                  >
-                    取消行动补记
-                  </button>
-                </fieldset>
-              </section>
-              <section className="goal-card">
-                <h2>补记例行记录</h2>
-                {data && !data.routines.length ? (
-                  <p className="empty-copy">还没有可补记的例行，请先在例行页创建。</p>
-                ) : null}
-                <fieldset
-                  className="backfill-fields"
-                  disabled={savingBackfill || !data?.routines.length}
-                >
-                  <Field label="例行（必选）">
-                    <select
-                      aria-label="补记例行"
-                      value={routineId}
-                      onChange={(event) => setRoutineId(event.target.value)}
-                    >
-                      {data?.routines.map((item) => (
-                        <option key={item.id} value={item.id}>
-                          {item.name} · {goalStatusText[item.status]}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                  <Field label="发生日期（必填）" hint="选择实际发生的本地日期。">
-                    <input
-                      aria-label="例行补记日期"
-                      type="date"
-                      value={routineDate}
-                      onChange={(event) => setRoutineDate(event.target.value)}
-                    />
-                  </Field>
-                  <Field label="本次结果（必填）">
-                    <select
-                      aria-label="例行补记结果"
-                      value={routineOutcome}
-                      onChange={(event) =>
-                        setRoutineOutcome(event.target.value as RoutineRecordDataDto['outcome'])
-                      }
-                    >
-                      <option value="target_met">达到目标</option>
-                      <option value="acted">有所行动</option>
-                      <option value="intentional_rest">主动休息</option>
-                      <option value="not_done">未进行</option>
-                    </select>
-                  </Field>
-                  <Field
-                    label="投入时长（分钟，可选）"
-                    hint="留空表示未记录时长；0 表示不足 1 分钟但确有行动。主动休息或未进行时不填写。"
-                  >
-                    <input
-                      aria-label="例行补记分钟"
-                      type="number"
-                      min="0"
-                      step="1"
-                      disabled={
-                        routineOutcome === 'intentional_rest' || routineOutcome === 'not_done'
-                      }
-                      value={routineDuration}
-                      onChange={(event) => setRoutineDuration(event.target.value)}
-                    />
-                  </Field>
-                  <Field label="备注（可选）">
-                    <input
-                      aria-label="例行补记备注"
-                      value={routineNote}
-                      onChange={(event) => setRoutineNote(event.target.value)}
-                      placeholder="备注（可选）"
-                    />
-                  </Field>
-                  <label className="inline-check">
-                    <input
-                      type="checkbox"
-                      checked={routinePlanned}
-                      onChange={(event) => setRoutinePlanned(event.target.checked)}
-                    />
-                    该历史日期当时属于计划日（请按当时实际安排确认）
-                  </label>
-                  <button
-                    className="primary-button"
-                    type="button"
-                    disabled={savingBackfill || !routineId || !routineDate}
-                    onClick={() => void backfillRoutine()}
-                  >
-                    补记例行记录
-                  </button>
-                  <button
-                    type="button"
-                    disabled={savingBackfill}
-                    onClick={() => {
-                      setRoutineDate('')
-                      setRoutineDuration('')
-                      setRoutineOutcome('not_done')
-                      setRoutinePlanned(false)
-                      setRoutineNote('')
-                      setBackfillMessage('已取消例行补记，未保存记录。')
-                      setError(null)
-                    }}
-                  >
-                    取消例行补记
-                  </button>
-                </fieldset>
-              </section>
-            </div>
-          </details>
-
-          <details className="goal-card data-tool destructive-tool">
-            <summary>删除目标、行动或例行</summary>
-            <h2>选择要永久删除的内容</h2>
-            <p>暂停、结束或取消会保留历史；永久删除只适合确实不再需要的数据。</p>
-            <div className="data-delete-picker">
-              <label>
-                内容类型
-                <select
-                  value={deleteType}
-                  onChange={(event) => {
-                    setDeleteType(event.target.value as 'goal' | 'action' | 'routine')
-                    setDeleteId('')
-                  }}
-                >
-                  <option value="goal">目标</option>
-                  <option value="action">行动</option>
-                  <option value="routine">例行</option>
-                </select>
-              </label>
-              <label>
-                选择内容
-                <select
-                  value={effectiveDeleteId}
-                  onChange={(event) => setDeleteId(event.target.value)}
-                >
-                  {deleteOptions.map((option) => (
-                    <option key={option.id} value={option.id}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <button
-                className="danger-button"
-                type="button"
-                disabled={!effectiveDeleteId}
-                onClick={() =>
-                  void requestDelete({ type: deleteType, id: effectiveDeleteId } as DeleteTargetDto)
-                }
+          {backfillKind === 'action' ? (
+            <section className="data-backfill-form">
+              <h2>补记行动记录</h2>
+              {data && !data.actions.length ? (
+                <p className="empty-copy">还没有可补记的行动，请先在今天或目标页创建行动。</p>
+              ) : null}
+              <fieldset
+                className="backfill-fields"
+                disabled={savingBackfill || !data?.actions.length}
               >
-                预览永久删除影响
-              </button>
-            </div>
-          </details>
-        </div>
-      </details>
+                <Field label="行动（必选）">
+                  <select
+                    aria-label="补记行动"
+                    value={actionId}
+                    onChange={(event) => setActionId(event.target.value)}
+                  >
+                    {data?.actions.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.title} · {actionStatusText[item.status]}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="发生日期（必填）" hint="选择实际发生的本地日期。">
+                  <input
+                    aria-label="行动补记日期"
+                    type="date"
+                    value={actionDate}
+                    onChange={(event) => setActionDate(event.target.value)}
+                  />
+                </Field>
+                <Field label="投入时长（分钟，必填）" hint="0 表示不足 1 分钟但确有行动。">
+                  <input
+                    aria-label="行动补记分钟"
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={actionDuration}
+                    onChange={(event) => setActionDuration(event.target.value)}
+                  />
+                </Field>
+                <Field label="本次结果（必填）">
+                  <select
+                    aria-label="行动补记结果"
+                    value={actionOutcome}
+                    onChange={(event) =>
+                      setActionOutcome(event.target.value as ActionRecordDataDto['outcome'])
+                    }
+                  >
+                    <option value="completed">本次达到预期</option>
+                    <option value="partial">本次完成一部分</option>
+                    <option value="stopped">本次在这里停下</option>
+                  </select>
+                </Field>
+                <Field label="我理解了（可选）">
+                  <input
+                    aria-label="行动补记理解"
+                    value={actionUnderstanding}
+                    onChange={(event) => setActionUnderstanding(event.target.value)}
+                    placeholder="写下已经确认的理解（可选）"
+                  />
+                </Field>
+                <Field label="我仍困惑（可选）">
+                  <input
+                    aria-label="行动补记困惑"
+                    value={actionConfusion}
+                    onChange={(event) => setActionConfusion(event.target.value)}
+                    placeholder="写下仍未解决的困惑（可选）"
+                  />
+                </Field>
+                <Field
+                  label="记录中的下一步（可选）"
+                  hint="仅写入这条记录，不替换目标的当前下一步。"
+                >
+                  <input
+                    aria-label="行动补记下一步"
+                    value={actionNextStep}
+                    onChange={(event) => setActionNextStep(event.target.value)}
+                    placeholder="下一步（可选）"
+                  />
+                </Field>
+                <Field label="备注（可选）">
+                  <input
+                    aria-label="行动补记备注"
+                    value={actionNote}
+                    onChange={(event) => setActionNote(event.target.value)}
+                    placeholder="备注（可选）"
+                  />
+                </Field>
+                <button
+                  className="primary-button"
+                  type="button"
+                  disabled={savingBackfill || !actionId || !actionDate || actionDuration === ''}
+                  onClick={() => void backfillAction()}
+                >
+                  补记行动记录
+                </button>
+                <button type="button" disabled={savingBackfill} onClick={() => setPanel(null)}>
+                  取消行动补记
+                </button>
+              </fieldset>
+            </section>
+          ) : (
+            <section className="data-backfill-form">
+              <h2>补记例行记录</h2>
+              {data && !data.routines.length ? (
+                <p className="empty-copy">还没有可补记的例行，请先在例行页创建。</p>
+              ) : null}
+              <fieldset
+                className="backfill-fields"
+                disabled={savingBackfill || !data?.routines.length}
+              >
+                <Field label="例行（必选）">
+                  <select
+                    aria-label="补记例行"
+                    value={routineId}
+                    onChange={(event) => setRoutineId(event.target.value)}
+                  >
+                    {data?.routines.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name} · {goalStatusText[item.status]}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="发生日期（必填）" hint="选择实际发生的本地日期。">
+                  <input
+                    aria-label="例行补记日期"
+                    type="date"
+                    value={routineDate}
+                    onChange={(event) => setRoutineDate(event.target.value)}
+                  />
+                </Field>
+                <Field label="本次结果（必填）">
+                  <select
+                    aria-label="例行补记结果"
+                    value={routineOutcome}
+                    onChange={(event) =>
+                      setRoutineOutcome(event.target.value as RoutineRecordDataDto['outcome'])
+                    }
+                  >
+                    <option value="target_met">达到目标</option>
+                    <option value="acted">有所行动</option>
+                    <option value="intentional_rest">主动休息</option>
+                    <option value="not_done">未进行</option>
+                  </select>
+                </Field>
+                <Field
+                  label="投入时长（分钟，可选）"
+                  hint="留空表示未记录时长；0 表示不足 1 分钟但确有行动。主动休息或未进行时不填写。"
+                >
+                  <input
+                    aria-label="例行补记分钟"
+                    type="number"
+                    min="0"
+                    step="1"
+                    disabled={
+                      routineOutcome === 'intentional_rest' || routineOutcome === 'not_done'
+                    }
+                    value={routineDuration}
+                    onChange={(event) => setRoutineDuration(event.target.value)}
+                  />
+                </Field>
+                <Field label="备注（可选）">
+                  <input
+                    aria-label="例行补记备注"
+                    value={routineNote}
+                    onChange={(event) => setRoutineNote(event.target.value)}
+                    placeholder="备注（可选）"
+                  />
+                </Field>
+                <label className="inline-check">
+                  <input
+                    type="checkbox"
+                    checked={routinePlanned}
+                    onChange={(event) => setRoutinePlanned(event.target.checked)}
+                  />
+                  该历史日期当时属于计划日（请按当时实际安排确认）
+                </label>
+                <button
+                  className="primary-button"
+                  type="button"
+                  disabled={savingBackfill || !routineId || !routineDate}
+                  onClick={() => void backfillRoutine()}
+                >
+                  补记例行记录
+                </button>
+                <button type="button" disabled={savingBackfill} onClick={() => setPanel(null)}>
+                  取消例行补记
+                </button>
+              </fieldset>
+            </section>
+          )}
+        </DataPanel>
+      ) : null}
+      {panel === 'more' ? (
+        <DataPanel title="删除目标、行动或例行" onClose={() => setPanel(null)}>
+          {error ? (
+            <p className="form-error" role="alert">
+              {error}
+            </p>
+          ) : null}
+          <h2>选择要永久删除的内容</h2>
+          <p>暂停、结束或取消会保留历史；永久删除只适合确实不再需要的数据。</p>
+          <div className="data-delete-picker">
+            <label>
+              内容类型
+              <select
+                value={deleteType}
+                onChange={(event) => {
+                  setDeleteType(event.target.value as 'goal' | 'action' | 'routine')
+                  setDeleteId('')
+                }}
+              >
+                <option value="goal">目标</option>
+                <option value="action">行动</option>
+                <option value="routine">例行</option>
+              </select>
+            </label>
+            <label>
+              选择内容
+              <select
+                value={effectiveDeleteId}
+                onChange={(event) => setDeleteId(event.target.value)}
+              >
+                {deleteOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              className="danger-button"
+              type="button"
+              disabled={!effectiveDeleteId}
+              onClick={() =>
+                void requestDelete({ type: deleteType, id: effectiveDeleteId } as DeleteTargetDto)
+              }
+            >
+              预览永久删除影响
+            </button>
+          </div>
+        </DataPanel>
+      ) : null}
       <div className="data-browser">
         <section className="goal-card data-history" aria-label="历史记录">
           <div className="card-heading">
@@ -1587,77 +1706,84 @@ function DataControlWorkspace(): ReactNode {
               </p>
             ) : null}
           </div>
-          <details className="data-filter-panel">
-            <summary>
-              筛选记录 ·{' '}
-              {
-                [recordKind !== 'all', recordGoalId !== 'all', Boolean(recordDate)].filter(Boolean)
-                  .length
-              }{' '}
-              项条件
-            </summary>
-            <div className="data-history-filters">
-              <label>
-                记录类型
-                <select
-                  value={recordKind}
-                  onChange={(event) => {
-                    setRecordKind(event.target.value as 'all' | 'action-record' | 'routine-record')
+          <button className="data-filter-entry" type="button" onClick={() => setPanel('filters')}>
+            筛选记录 ·{' '}
+            {
+              [recordKind !== 'all', recordGoalId !== 'all', Boolean(recordDate)].filter(Boolean)
+                .length
+            }{' '}
+            项条件
+          </button>
+          {panel === 'filters' ? (
+            <DataPanel title="筛选记录" onClose={() => setPanel(null)}>
+              <div className="data-history-filters">
+                <label>
+                  记录类型
+                  <select
+                    value={recordKind}
+                    onChange={(event) => {
+                      setRecordKind(
+                        event.target.value as 'all' | 'action-record' | 'routine-record'
+                      )
+                      setRouteRecord(null)
+                      setHistoryPage(1)
+                    }}
+                  >
+                    <option value="all">全部记录</option>
+                    <option value="action-record">行动记录</option>
+                    <option value="routine-record">例行记录</option>
+                  </select>
+                </label>
+                <label>
+                  关联目标
+                  <select
+                    value={recordGoalId}
+                    onChange={(event) => {
+                      setRecordGoalId(event.target.value)
+                      setRouteRecord(null)
+                      setHistoryPage(1)
+                    }}
+                  >
+                    <option value="all">全部目标</option>
+                    <option value="none">未关联目标</option>
+                    {data?.goals.map((goal) => (
+                      <option key={goal.id} value={goal.id}>
+                        {goal.title}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  发生日期
+                  <input
+                    type="date"
+                    value={recordDate}
+                    onChange={(event) => {
+                      setRecordDate(event.target.value)
+                      setRouteRecord(null)
+                      setHistoryPage(1)
+                    }}
+                  />
+                </label>
+                <button
+                  className="quiet-button"
+                  type="button"
+                  onClick={() => {
+                    setRecordKind('all')
+                    setRecordGoalId('all')
+                    setRecordDate('')
                     setRouteRecord(null)
                     setHistoryPage(1)
                   }}
                 >
-                  <option value="all">全部记录</option>
-                  <option value="action-record">行动记录</option>
-                  <option value="routine-record">例行记录</option>
-                </select>
-              </label>
-              <label>
-                关联目标
-                <select
-                  value={recordGoalId}
-                  onChange={(event) => {
-                    setRecordGoalId(event.target.value)
-                    setRouteRecord(null)
-                    setHistoryPage(1)
-                  }}
-                >
-                  <option value="all">全部目标</option>
-                  <option value="none">未关联目标</option>
-                  {data?.goals.map((goal) => (
-                    <option key={goal.id} value={goal.id}>
-                      {goal.title}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                发生日期
-                <input
-                  type="date"
-                  value={recordDate}
-                  onChange={(event) => {
-                    setRecordDate(event.target.value)
-                    setRouteRecord(null)
-                    setHistoryPage(1)
-                  }}
-                />
-              </label>
-              <button
-                className="quiet-button"
-                type="button"
-                onClick={() => {
-                  setRecordKind('all')
-                  setRecordGoalId('all')
-                  setRecordDate('')
-                  setRouteRecord(null)
-                  setHistoryPage(1)
-                }}
-              >
-                清除筛选
+                  清除筛选
+                </button>
+              </div>
+              <button type="button" onClick={() => setPanel(null)}>
+                完成筛选
               </button>
-            </div>
-          </details>
+            </DataPanel>
+          ) : null}
           <div
             className="data-history-list"
             data-scroll-key="master"
@@ -1845,7 +1971,7 @@ function DataControlWorkspace(): ReactNode {
                 <h2>{readState === 'ready' ? '当前没有匹配的记录' : '记录暂时不可用'}</h2>
                 <p>
                   {readState === 'ready'
-                    ? '可以调整筛选条件，或在“数据工具”中补记历史记录。'
+                    ? '可以调整筛选条件，或通过“补记记录”添加历史记录。'
                     : '读取成功后，可以在这里查看记录详情。'}
                 </p>
                 {recordKind !== 'all' || recordGoalId !== 'all' || recordDate ? (

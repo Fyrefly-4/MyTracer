@@ -133,8 +133,9 @@ test('retry retains filters, page, selection and drafts; a late read cannot repl
     })
     const original = await snapshot(page)
     await openData(page)
-    await page.locator('.data-filter-panel > summary').click()
+    await page.getByRole('button', { name: /筛选记录 ·/ }).click()
     await page.getByRole('combobox', { name: /记录类型/ }).selectOption('action-record')
+    await page.getByRole('button', { name: '完成筛选' }).click()
     await page.getByRole('button', { name: '下一页', exact: true }).click()
     const rows = page.locator('.data-history-row')
     await rows.last().click()
@@ -152,7 +153,9 @@ test('retry retains filters, page, selection and drafts; a late read cannot repl
     await retry.click()
     await expect(page.getByRole('alert')).toHaveCount(0)
     await expect(page.getByLabel('行动分钟', { exact: true })).toHaveValue('42')
+    await page.getByRole('button', { name: /筛选记录 ·/ }).click()
     await expect(page.getByRole('combobox', { name: /记录类型/ })).toHaveValue('action-record')
+    await page.getByRole('button', { name: '完成筛选' }).click()
     await expect(page.getByLabel('历史记录分页')).toContainText('第 2 / 2 页')
     // Hold an old failure; saving the editor starts a newer successful read.
     await setRead(app, null, true)
@@ -214,8 +217,8 @@ for (const kind of ['action', 'routine'] as const) {
       }, kind)
       const original = await snapshot(page)
       await openData(page)
-      await page.locator('.data-tools-panel > summary').click()
-      await page.getByText('补记历史记录', { exact: true }).click()
+      await page.getByRole('button', { name: '补记记录', exact: true }).click()
+      await page.getByLabel('补记类型', { exact: true }).selectOption(kind)
       const label = kind === 'action' ? '行动' : '例行'
       const picker = page.getByLabel(`补记${label}`, { exact: true })
       await picker.selectOption(ids[0])
@@ -224,10 +227,12 @@ for (const kind of ['action', 'routine'] as const) {
       if (kind === 'action') {
         await page.getByLabel('行动补记分钟', { exact: true }).fill('-1')
         await page.getByRole('button', { name: '补记行动记录', exact: true }).click()
-        await expect(page.locator('.data-workspace > .form-error')).toContainText('请检查日期')
+        await expect(page.locator('.form-error')).toContainText('请检查日期')
         await setRead(app, original)
+        await page.getByRole('button', { name: '关闭补记历史记录' }).click()
         await page.getByRole('button', { name: '重新读取', exact: true }).click()
-        await expect(page.locator('.data-workspace > .form-error')).toContainText('请检查日期')
+        await expect(page.locator('.form-error')).toContainText('请检查日期')
+        await page.getByRole('button', { name: /补记记录/ }).click()
         await page.getByLabel('行动补记分钟', { exact: true }).fill('8')
       }
       await setRead(app, {
@@ -241,17 +246,22 @@ for (const kind of ['action', 'routine'] as const) {
             ? original.routines.filter((item) => item.id !== ids[0])
             : original.routines
       })
+      await page.getByRole('button', { name: '关闭补记历史记录' }).click()
       await page.getByRole('button', { name: '重新读取', exact: true }).click()
       await expect(page.locator('.data-read-state').getByRole('alert')).toContainText(
         '补记对象已变化'
       )
+      await page.getByRole('button', { name: /补记记录/ }).click()
       await expect(picker).toHaveValue(ids[0])
       await expect(page.getByLabel(`${label}补记备注`, { exact: true })).toHaveValue(
         '只属于原对象的草稿'
       )
-      await page.getByRole('button', { name: `取消${label}补记`, exact: true }).click()
+      await page.getByRole('button', { name: '清空当前草稿' }).click()
+      await page.getByRole('button', { name: '放弃草稿', exact: true }).click()
+      await page.getByRole('button', { name: '关闭补记历史记录' }).click()
       await page.getByRole('button', { name: '重新读取', exact: true }).click()
       await expect(page.locator('.data-read-state').getByRole('alert')).toHaveCount(0)
+      await page.getByRole('button', { name: /补记记录/ }).click()
       await expect(picker).toHaveValue(ids[1])
       await expect(page.getByLabel(`${label}补记备注`, { exact: true })).toHaveValue('')
     })

@@ -352,31 +352,12 @@
   min-width: 0;
   flex-direction: column;
   gap: 16px;
-  overflow: auto;
-}
-.data-workspace .data-tools-panel {
-  flex-shrink: 0;
-  font-size: 12px;
-  color: var(--color-muted);
-}
-.data-workspace .data-tools-panel > summary {
-  cursor: pointer;
-  padding: 4px 0;
-}
-.data-workspace .data-tools-scroll {
-  max-height: 300px;
-  overflow: auto;
-  padding: 12px 2px;
-}
-.data-workspace .data-tools-scroll > .data-tool {
-  border: 0;
-  padding: 12px 0;
-  margin: 0;
+  overflow: hidden;
 }
 .data-workspace .data-browser {
   display: grid;
-  flex: 1 0 360px;
-  min-height: 360px;
+  flex: 1;
+  min-height: 0;
   grid-template-columns: minmax(280px, 0.95fr) minmax(0, 1.1fr);
   align-items: stretch;
   gap: 0;
@@ -516,43 +497,6 @@
   border-bottom: 1px solid var(--color-line);
   border-radius: 0;
 }
-@media (max-width: 760px) {
-  .data-workspace .data-browser {
-    grid-template-columns: minmax(240px, 1fr) minmax(260px, 1fr);
-    overflow-x: auto;
-  }
-  .data-workspace .data-browser > .data-history {
-    padding-right: 14px;
-  }
-  .data-workspace .data-browser .selected-data-record {
-    padding-left: 14px;
-  }
-}
-
-/* Filters should never consume the record reading area, even at 150% zoom. */
-.data-workspace .data-filter-panel {
-  flex: 0 0 auto;
-  margin-bottom: 14px;
-  font-size: 12px;
-}
-.data-workspace .data-filter-panel > summary {
-  cursor: pointer;
-  color: var(--color-muted);
-  padding: 4px 0;
-}
-.data-workspace .data-filter-panel[open] .data-history-filters {
-  max-height: 150px;
-  overflow: auto;
-  padding: 12px 2px 8px;
-}
-.data-workspace .data-history-list {
-  min-height: 160px;
-}
-.data-workspace .data-browser > .data-history {
-  overflow-y: auto;
-  scrollbar-width: thin;
-}
-
 .data-workspace .data-read-state {
   flex-shrink: 0;
   font-size: 12px;
@@ -568,4 +512,93 @@
 .data-workspace .data-history button[aria-disabled='true'] {
   opacity: 0.6;
   cursor: wait;
+}
+
+/* Tools live in the modal layer; only the two reading panes scroll on desktop. */
+.data-workspace .data-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.data-workspace .data-filter-entry {
+  align-self: flex-start;
+  margin-bottom: 14px;
+  flex-shrink: 0;
+}
+.data-workspace .data-panel {
+  box-sizing: border-box;
+  width: min(520px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  padding: 24px;
+  overflow: auto;
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: none;
+}
+.data-workspace .data-drawer {
+  width: min(580px, 100vw);
+  height: 100dvh;
+  max-height: 100dvh;
+  margin: 0 0 0 auto;
+  border-radius: 0;
+}
+.data-workspace .data-panel-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.data-workspace .data-panel-heading h2 {
+  margin: 0;
+  font-size: 20px;
+}
+.data-workspace .data-panel-heading button {
+  flex-shrink: 0;
+}
+.data-workspace .data-panel-note {
+  color: var(--color-muted);
+  line-height: 1.7;
+}
+.data-workspace .data-backfill-form {
+  margin-top: 24px;
+}
+.data-workspace .data-backfill-form h2 {
+  font-size: 18px;
+}
+.data-workspace .data-history-filters {
+  display: grid;
+  padding: 0 0 20px;
+}
+.data-workspace .data-panel input,
+.data-workspace .data-panel select {
+  min-width: 0;
+  max-width: 100%;
+}
+
+@media (max-width: 1000px), (max-height: 560px) {
+  .data-workspace {
+    overflow: auto;
+  }
+  .data-workspace .data-browser {
+    display: flex;
+    flex-direction: column;
+    flex: none;
+    overflow: visible;
+  }
+  .data-workspace .data-browser > .data-history {
+    padding: 0 0 20px;
+    border-right: 0;
+    border-bottom: 1px solid var(--color-line);
+    overflow: visible;
+  }
+  .data-workspace .data-history-list {
+    flex: none;
+    overflow: visible;
+  }
+  .data-workspace .data-browser .selected-data-record {
+    padding: 24px 0;
+    overflow: visible;
+  }
 }
