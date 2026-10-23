@@ -1,5 +1,6 @@
 import '../forms-workspace.css'
 import '../object-workspace.css'
+import './routine-search-context.css'
 import {
   revealStart,
   usePagePosition,
@@ -480,6 +481,7 @@ function RoutineWorkspace(): ReactNode {
     ;(masterCollapsed ? expandMasterRef : collapseMasterRef).current?.focus({ preventScroll: true })
   }, [masterCollapsed])
   const [listQuery, setListQuery] = useState('')
+  const searchRef = useRef<HTMLInputElement | null>(null)
   const [listPage, updateListPage] = useState(() => session.getListPage('routines', 'master'))
   const setListPage = (page: number): void => {
     session.setListPage('routines', 'master', page)
@@ -712,6 +714,10 @@ function RoutineWorkspace(): ReactNode {
   const currentListPage = Math.min(listPage, listPageCount)
   const pageItems = filteredItems.slice((currentListPage - 1) * 6, currentListPage * 6)
 
+  const detailOutsideResults =
+    detail !== null && !filteredItems.some((item) => item.id === detail.id)
+  const detailOutsidePage = detail !== null && !pageItems.some((item) => item.id === detail.id)
+
   return (
     <section className="routine-workspace notebook-object-workspace" aria-label="例行管理">
       {error ? (
@@ -766,18 +772,35 @@ function RoutineWorkspace(): ReactNode {
                 </button>
               </div>
 
-              <label className="object-search">
-                <span className="visually-hidden">搜索例行</span>
-                <input
-                  value={listQuery}
-                  placeholder="搜索例行…"
-                  onChange={(event) => {
-                    setListQuery(event.target.value)
-                    setListPage(1)
-                  }}
-                />
-              </label>
+              <div className="routine-search-controls">
+                <label className="object-search">
+                  <span className="visually-hidden">搜索例行</span>
+                  <input
+                    ref={searchRef}
+                    value={listQuery}
+                    placeholder="搜索例行…"
+                    onChange={(event) => {
+                      setListQuery(event.target.value)
+                      setListPage(1)
+                    }}
+                  />
+                </label>
 
+                {listQuery ? (
+                  <button
+                    type="button"
+                    className="quiet-button routine-clear-search"
+                    aria-label="清除例行搜索"
+                    onClick={() => {
+                      setListQuery('')
+                      setListPage(1)
+                      searchRef.current?.focus()
+                    }}
+                  >
+                    清除
+                  </button>
+                ) : null}
+              </div>
               <div className="card-heading">
                 <p className="eyebrow">例行列表</p>
                 <h2>我的例行</h2>
@@ -804,7 +827,11 @@ function RoutineWorkspace(): ReactNode {
                     </button>
                   ))
                 ) : (
-                  <p className="empty-copy">还没有例行。</p>
+                  <p className="empty-copy">
+                    {routines.length
+                      ? '没有匹配的例行。试试其他关键词，或清除搜索。'
+                      : '还没有例行。'}
+                  </p>
                 )}
               </div>
             </div>
@@ -908,6 +935,14 @@ function RoutineWorkspace(): ReactNode {
           <div className="object-selected-content" hidden={createOpen}>
             {detail ? (
               <article className="goal-card goal-detail" aria-label={`${detail.name} 例行详情`}>
+                {detailOutsidePage ? (
+                  <p className="routine-detail-context" role="status">
+                    {detailOutsideResults
+                      ? '当前详情不在搜索结果中。'
+                      : '当前详情不在这一列表页中。'}
+                    仍保留你正在查看的例行，选择列表中的其他例行才会切换。
+                  </p>
+                ) : null}
                 <div className="detail-title-row">
                   <div>
                     <p className="eyebrow">
