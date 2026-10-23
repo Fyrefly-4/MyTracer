@@ -27,31 +27,46 @@
 
 ## 安全拉取与隔离预览（Windows）
 
-在已有 clone 中创建独立 worktree；目录须尚不存在，不切换或覆盖你现有的工作区：
+准备 package.json 指定的 Node 24.18.0 / npm 11.16.0，在 **PowerShell 7** 中从已有 clone 一次执行下方整个代码块。独立 worktree 目录须尚不存在。每条 git/npm 命令检查退出码；任一步失败即退出脚本块，不启动可能残留的旧构建。
+
+复用现有测试的唯一临时根、最小环境和 `--user-data-dir` 机制；不使用默认开发或正式用户数据，不加载原有 AI/update 凭据，不修改当前 shell 环境。请只手动创建合成资料。
 
 ```powershell
-git fetch origin codex/experiment-acceptance-20261023
-git worktree add --detach ../MyTracer-experiment-preview origin/codex/experiment-acceptance-20261023
-Set-Location ../MyTracer-experiment-preview
+& {
+$ErrorActionPreference = "Stop" # 仅脚本块内；原生命令仍逐条检查退出码
+$previewDirectory = [IO.Path]::GetFullPath((Join-Path (Get-Location).Path "../MyTracer-experiment-preview"))
+if (Test-Path -LiteralPath $previewDirectory) { throw "预览目录已存在，请停止并另选新目录。" }
+git fetch origin refs/heads/codex/experiment-acceptance-20261023:refs/remotes/origin/codex/experiment-acceptance-20261023
+if ($LASTEXITCODE -ne 0) { throw "获取预览分支失败。" }
+$expectedHead = git rev-parse --verify refs/remotes/origin/codex/experiment-acceptance-20261023
+if ($LASTEXITCODE -ne 0) { throw "无法读取预览提交。" }
+git worktree add --detach $previewDirectory $expectedHead
+if ($LASTEXITCODE -ne 0) { throw "创建预览工作区失败。" }
+Set-Location -LiteralPath $previewDirectory -ErrorAction Stop
+$actualRoot = git rev-parse --show-toplevel
+if ($LASTEXITCODE -ne 0) { throw "无法核对工作区。" }
+if ([IO.Path]::GetFullPath($actualRoot) -ne $previewDirectory) { throw "当前目录不是预期预览工作区。" }
+$actualHead = git rev-parse HEAD
+if ($LASTEXITCODE -ne 0) { throw "无法核对当前提交。" }
+if ($actualHead -ne $expectedHead) { throw "预览提交不匹配。" }
+Write-Host "预览提交：" $actualHead
 npm.cmd ci
+if ($LASTEXITCODE -ne 0) { throw "安装依赖失败；不启动应用。" }
 npm.cmd exec -- install-electron --no
+if ($LASTEXITCODE -ne 0) { throw "安装 Electron 失败；不启动应用。" }
 npm.cmd run build
-```
-
-准备 package.json 指定的 Node 24.18.0 / npm 11.16.0。然后在 **PowerShell 7** 中运行以下代码：复用现有测试的唯一临时根、最小环境和 `--user-data-dir` 机制，启动本地构建的 Electron，不使用默认开发或正式用户数据。不会加载原有 AI/update 凭据，不修改当前 shell 环境；请只手动创建合成目标和记录。
-
-```powershell
+if ($LASTEXITCODE -ne 0) { throw "构建失败；不启动旧 out。" }
 $previewRoot = Join-Path ([IO.Path]::GetTempPath()) ("mytracer-preview-" + [guid]::NewGuid())
 $paths = @{}
 foreach ($name in @("user-data", "roaming", "local", "temp")) {
   $paths[$name] = Join-Path $previewRoot $name
-  New-Item -ItemType Directory -Path $paths[$name] -Force | Out-Null
+  New-Item -ItemType Directory -Path $paths[$name] -Force -ErrorAction Stop | Out-Null
 }
 $start = [Diagnostics.ProcessStartInfo]::new()
-$start.FileName = (Resolve-Path "node_modules/electron/dist/electron.exe").Path
+$start.FileName = (Resolve-Path "node_modules/electron/dist/electron.exe" -ErrorAction Stop).Path
 $start.UseShellExecute = $false
 $start.WorkingDirectory = $previewRoot
-$start.ArgumentList.Add((Resolve-Path "out/main/index.js").Path)
+$start.ArgumentList.Add((Resolve-Path "out/main/index.js" -ErrorAction Stop).Path)
 $start.ArgumentList.Add("--user-data-dir=" + $paths["user-data"])
 $start.Environment.Clear()
 foreach ($name in @("PATH", "SystemRoot", "WINDIR", "ComSpec", "PATHEXT")) {
@@ -68,6 +83,7 @@ $start.Environment["ELECTRON_RENDERER_URL"] = ""
 Write-Host "本次合成数据目录：" $previewRoot
 $preview = [Diagnostics.Process]::Start($start)
 $preview.WaitForExit()
+}
 ```
 
 本手动命令经过代码路径核对，尚未在本机 Windows 执行；不代表人工验收通过。保留打印出的目录以便排查，勿把真实数据库复制进去。没有关闭 sandbox 的参数；若环境不能安全启动，应停止并记录原因。
@@ -76,6 +92,7 @@ $preview.WaitForExit()
 
 ```powershell
 npm.cmd run verify
+if ($LASTEXITCODE -ne 0) { throw "验证未通过，请保留日志并停止。" }
 ```
 
 该命令包含格式、lint、类型、单元、集成、构建和常规 Electron E2E，不包含需单独开关的安装包 smoke 或 live AI contract。不要在当前 Linux 环境通过关闭 sandbox 运行 Electron。
