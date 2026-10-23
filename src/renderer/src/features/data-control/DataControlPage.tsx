@@ -53,7 +53,7 @@ const dataControlErrorText: Record<DataControlErrorCode, string> = {
 const DataDraftContext = createContext<Map<string, boolean> | null>(null)
 
 function useDataDraft(source: string, dirty: boolean): void {
-  useUnsavedContent(source, dirty)
+  useUnsavedContent(`data-${source}`, dirty)
   const drafts = useContext(DataDraftContext)
   useLayoutEffect(() => {
     drafts?.set(source, dirty)

@@ -107,6 +107,52 @@ test('backfill drawer retains both drafts across close routes, traps focus and g
   })
 })
 
+test('goal cover drafts do not block leaving Data while record edits still require confirmation', async () => {
+  await withData(async (_app, page) => {
+    const navigate = async (name: string): Promise<void> => {
+      await page.getByRole('navigation').getByRole('button', { name, exact: true }).click()
+    }
+    const goalName = '合成目标封面草稿'
+    await page.evaluate(async (name) => {
+      const goal = await window.myTracer.goals.create({ name })
+      if (!goal.ok) throw Error('goal fixture failed')
+    }, goalName)
+    const openAppearance = async (): Promise<void> => {
+      await navigate('目标')
+      await page.locator('.goal-list-item').filter({ hasText: goalName }).click()
+      const detail = page.getByLabel(`${goalName} 详情`, { exact: true })
+      await detail.getByText('编辑与管理目标', { exact: true }).click()
+      await detail.getByText('外观', { exact: true }).click()
+    }
+    await openAppearance()
+    await page.getByLabel('首页标记（可选）', { exact: true }).fill('新')
+    const leave = page.getByRole('dialog', { name: '离开数据页' })
+    for (let visit = 0; visit < 2; visit++) {
+      await navigate('数据')
+      await expect(page.locator('.data-history-row')).toHaveCount(8)
+      await navigate('今天')
+      await expect(page.locator('.app-shell')).toHaveAttribute('data-section', 'today')
+      await expect(leave).toHaveCount(0)
+    }
+    await navigate('数据')
+    await page.getByRole('button', { name: '编辑记录', exact: true }).click()
+    await page.getByLabel('行动分钟', { exact: true }).fill('42')
+    await navigate('今天')
+    await expect(leave).toBeVisible()
+    await leave.getByRole('button', { name: '继续留在数据页' }).click()
+    await expect(page.getByLabel('行动分钟', { exact: true })).toHaveValue('42')
+    await navigate('今天')
+    await leave.getByRole('button', { name: '放弃修改并离开' }).click()
+    await navigate('数据')
+    await expect(page.getByLabel('行动分钟', { exact: true })).toHaveCount(0)
+    await navigate('今天')
+    await expect(page.locator('.app-shell')).toHaveAttribute('data-section', 'today')
+    await expect(leave).toHaveCount(0)
+    await openAppearance()
+    await expect(page.getByLabel('首页标记（可选）', { exact: true })).toHaveValue('新')
+  })
+})
+
 test('export opens an explanatory dialog and remains usable after rejected export', async () => {
   await withData(async (app, page) => {
     await app.evaluate(({ ipcMain }) => {

@@ -33,7 +33,7 @@ export function AppShell(): ReactNode {
   }, [pendingDataNavigation])
   const navigate = (section: AppSectionId): void => {
     if (section === activeSection) return
-    if (activeSection === 'data' && session.hasActiveUnsavedContent()) {
+    if (activeSection === 'data' && session.hasDataUnsavedContent()) {
       setPendingDataNavigation(section)
       return
     }
