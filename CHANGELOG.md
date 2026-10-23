@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.6.0](https://github.com/Fyrefly-4/MyTracer/compare/v1.5.0...v1.6.0) (2026-10-23)
+
+
+### Features
+
+* **review:** 事实辅助复盘原型实验，保持填写可达与显式引用 ([#100](https://github.com/Fyrefly-4/MyTracer/issues/100)) ([17314d8](https://github.com/Fyrefly-4/MyTracer/commit/17314d8ccc8f54936c7f6d38821d9b912faeff2a))
+* **review:** 原型实验，可选回看上一自然周的已保存调整 ([#108](https://github.com/Fyrefly-4/MyTracer/issues/108)) ([fea98ee](https://github.com/Fyrefly-4/MyTracer/commit/fea98eeae21f08698476032c57127bd764180552))
+
 ## [1.5.0](https://github.com/Fyrefly-4/MyTracer/compare/v1.4.0...v1.5.0) (2026-10-23)
 
 
