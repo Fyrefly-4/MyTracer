@@ -1,0 +1,24 @@
+.routine-workspace .routine-search-controls {
+  position: relative;
+}
+
+.routine-workspace .routine-search-controls input {
+  padding-right: 64px;
+}
+
+.routine-workspace .routine-clear-search {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  padding: 4px 8px;
+}
+
+.routine-workspace .routine-detail-context {
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border-left: 2px solid var(--color-action);
+  background: var(--color-surface);
+  color: var(--color-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}

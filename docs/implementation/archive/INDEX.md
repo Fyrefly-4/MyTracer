@@ -1,6 +1,6 @@
 # 历史归档索引
 
-归档只用于历史追溯，不是普通工作的执行入口。既有阶段任务状态见[任务索引](../TASK_INDEX_V0.1.md)，验证、失败与豁免见[验收证据](../ACCEPTANCE_EVIDENCE_V0.1.md)；它们不维护所有后续修复的状态，也不恢复旧权限。日常操作从[维护入口](../../MAINTENANCE.md)开始，原设计中的任务依赖、批准状态和阶段门见[阶段执行归档](stage-execution/INDEX.md)。产品、架构、模板、元数据与仍待处理的[分支历史提案](../ESCALATION_DOC_BRANCH_ANCESTRY.md)保留在现行位置。
+归档只用于历史追溯，不是普通工作的执行入口。既有阶段任务状态见[任务索引](../TASK_INDEX_V0.1.md)，验证、失败与豁免见[验收证据](../ACCEPTANCE_EVIDENCE_V0.1.md)；它们不维护所有后续修复的状态，也不恢复旧权限。日常操作从[维护入口](../../MAINTENANCE.md)开始，原设计中的任务依赖、批准状态和阶段门见[阶段执行归档](stage-execution/INDEX.md)。产品、架构、模板、元数据与已被现行工作流取代的[分支历史提案](../ESCALATION_DOC_BRANCH_ANCESTRY.md)保留在现行位置。
 
 ## 阶段摘要
 
@@ -61,6 +61,6 @@ git show 346d508ac7976b55ba83d025432f50af0a211208:docs/implementation/T071_SHOUL
 | T081_UPGRADE_TEST_PROCEDURE.md | [T081](S8_T081_T084_T809_ARCHIVE.md#t081) |
 | T084_STAGE_ACCEPTANCE_PROCEDURE.md | [T084](S8_T081_T084_T809_ARCHIVE.md#t084) |
 | T082_UPDATE_SOURCE_OPERATIONS.md | [凭据配置](../../maintenance/UPDATE.md#凭据配置) |
-| T084_RELEASE_OPERATIONS.md | [部署状态与发布前提](../../maintenance/RELEASE.md#部署状态与发布前提) |
+| T084_RELEASE_OPERATIONS.md | [首次接入与历史基线](../../maintenance/RELEASE.md#首次接入与历史基线) |
 
 更早的 S0～S6 与治理完整合同使用各阶段摘要中的恢复 revision。历史元数据中的文件范围保持当时的路径，不改成新的实施授权；需要审计时在对应 source 或此快照解释。账本不因归档删除失败、skip、owner-reported 或 waived-by-owner。
