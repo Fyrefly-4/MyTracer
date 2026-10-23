@@ -1,5 +1,6 @@
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import './progress-workspace.css'
+import { ProgressActionNotes } from './ProgressActionNotes'
 import type { GoalSummaryDto } from '../../../../contracts/goals'
 import type {
   ProgressErrorCode,
@@ -30,6 +31,7 @@ function ProgressWorkspace(): ReactNode {
   const [from, setFrom] = useState(initialDraft.from)
   const [through, setThrough] = useState(initialDraft.through)
   const [appliedFilter, setAppliedFilter] = useState(initialApplied)
+  const [detailRevision, setDetailRevision] = useState(0)
   const [progress, setProgress] = useState<ProgressViewDto | null>(null)
   usePagePosition('progress', progress !== null)
   const [recordPage, updateRecordPage] = useState(session.progressRecordPage)
@@ -81,6 +83,7 @@ function ProgressWorkspace(): ReactNode {
   }
 
   const load = async (filter: ProgressFilterState): Promise<void> => {
+    setDetailRevision((revision) => revision + 1)
     setBusy(true)
     const result = await window.myTracer.progress.get({
       goalId: filter.goalId || null,
@@ -94,6 +97,8 @@ function ProgressWorkspace(): ReactNode {
       setRecordPage(1)
       timelineRef.current?.scrollTo({ top: 0 })
       setProgress(result.value)
+      // Rows can be reopened while the previous snapshot is still visible during a refresh.
+      setDetailRevision((revision) => revision + 1)
       setComparisonVersion((version) => version + 1)
       setError(null)
     } else {
@@ -117,6 +122,7 @@ function ProgressWorkspace(): ReactNode {
         if (goalResult.ok) setGoals(goalResult.value)
         if (progressResult.ok) {
           setProgress(progressResult.value)
+          setDetailRevision((revision) => revision + 1)
           setError(null)
         } else {
           setError(progressErrorText[progressResult.error.code])
@@ -324,11 +330,6 @@ function ProgressWorkspace(): ReactNode {
                   <tbody>
                     {visibleTimeline.map((item) => {
                       const record = item.record
-                      const hasNotes =
-                        item.kind === 'action'
-                          ? item.record.understandings.length > 0 ||
-                            item.record.openConfusions.length > 0
-                          : Boolean(item.record.note)
                       return (
                         <tr key={`${item.kind}-${record.recordId}`}>
                           <td>
@@ -350,26 +351,15 @@ function ProgressWorkspace(): ReactNode {
                                 ? ` · ${item.record.plannedForDate ? '计划日记录' : '非计划日记录'}`
                                 : ''}
                             </p>
-                            {hasNotes ? (
+                            {item.kind === 'action' ? (
+                              <ProgressActionNotes
+                                key={`${record.recordId}:${detailRevision}`}
+                                record={item.record}
+                              />
+                            ) : item.record.note ? (
                               <details className="progress-record-notes">
                                 <summary>展开理解与记录</summary>
-                                {item.kind === 'action' && item.record.understandings.length ? (
-                                  <div className="progress-fact-group">
-                                    <h3>已确认的理解</h3>
-                                    {item.record.understandings.map((fact) => (
-                                      <p key={fact.id}>{fact.text}</p>
-                                    ))}
-                                  </div>
-                                ) : null}
-                                {item.kind === 'action' && item.record.openConfusions.length ? (
-                                  <div className="progress-fact-group">
-                                    <h3>尚未解决的困惑</h3>
-                                    {item.record.openConfusions.map((fact) => (
-                                      <p key={fact.id}>{fact.text}</p>
-                                    ))}
-                                  </div>
-                                ) : null}
-                                {item.kind === 'routine' ? <p>{item.record.note}</p> : null}
+                                <p>{item.record.note}</p>
                               </details>
                             ) : null}
                           </td>
