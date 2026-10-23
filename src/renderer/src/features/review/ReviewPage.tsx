@@ -733,6 +733,7 @@ export function ReviewPage(): ReactNode {
               </div>
               <div
                 className="review-fact-browser"
+                data-scroll-key="review-facts"
                 ref={factsRef}
                 tabIndex={0}
                 aria-label="可选择的周期事实"

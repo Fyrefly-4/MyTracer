@@ -130,6 +130,48 @@ test('facts are explicitly cited without duplicating or replacing drafts; refres
   })
 })
 
+test('fact pane position survives opening a full record and returning, with or without a draft', async () => {
+  test.slow()
+  await fixture(async (app, page) => {
+    await seed(page)
+    await app.evaluate(({ BrowserWindow }) => {
+      BrowserWindow.getAllWindows()[0].setContentSize(1120, 760)
+    })
+    await navigate(page, '复盘')
+    const progress = page.getByLabel('一个真实进展', { exact: true })
+    const browser = page.getByLabel('可选择的周期事实')
+    for (const draft of ['', '往返查看记录时保留的草稿']) {
+      await expect(progress).toBeEnabled()
+      if (draft) await progress.fill(draft)
+      const openRecord = page
+        .getByLabel('周期行动记录')
+        .locator('li')
+        .nth(12)
+        .getByRole('button', { name: '查看完整记录或修改' })
+      await openRecord.scrollIntoViewIfNeeded()
+      // Allow the native scroll event to reach AppShell before navigating away.
+      await browser.evaluate(
+        () =>
+          new Promise<void>((resolve) =>
+            requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+          )
+      )
+      const before = await browser.evaluate((element) => element.scrollTop)
+      expect(before).toBeGreaterThan(200)
+      await openRecord.click()
+      await expect(page.getByRole('heading', { name: '事实参考', exact: true })).toHaveCount(0)
+      await navigate(page, '复盘')
+      await expect(progress).toBeEnabled()
+      await expect
+        .poll(async () =>
+          Math.abs((await browser.evaluate((element) => element.scrollTop)) - before)
+        )
+        .toBeLessThanOrEqual(2)
+      await expect(progress).toHaveValue(draft)
+    }
+  })
+})
+
 test('explicit citations persist through the existing save and reload flow', async () => {
   await fixture(async (_app, page) => {
     await seed(page, 1)
