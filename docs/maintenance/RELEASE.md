@@ -77,7 +77,7 @@ main 中的 `0.1.5` 只是旧流程的版本准备，没有同版已发布 Relea
 
 ## 更新文件与凭据
 
-继续使用现有私有仓库、Windows x64 NSIS、stable/latest 通道和 unsigned 策略。保持 appId、安装身份、数据目录以及客户端更新校验协议不变。每版必须完整上传：
+继续使用固定身份的现有仓库、Windows x64 NSIS、stable/latest 通道和 unsigned 策略。保持 appId、安装身份、数据目录以及客户端更新校验协议不变。每版必须完整上传：
 
 - `MyTracer-${version}-x64-setup.exe`
 - 对应安装包的 `.blockmap`

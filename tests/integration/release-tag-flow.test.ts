@@ -66,7 +66,7 @@ describe('tag publication resolves and pins a real safely extracted bundle', () 
       assert.equal(await readFile(output,'utf8'),'selection='+JSON.stringify(selection)+'\\n');
       env.MYTRACER_RELEASE_SELECTION=JSON.stringify(selection);calls.length=0;
       await publish();assert(!calls.includes('discover'));assert.equal(calls.filter(c=>c==='upload').length,5);
-      assert(calls.indexOf('verify')<calls.indexOf('visible'));assert.equal(calls.at(-1),'visible');
+      assert(calls.includes('verify'));assert(calls.includes('visible'));assert(calls.indexOf('verify')<calls.indexOf('visible'));assert.equal(calls.at(-1),'visible');
     `)
       expect(result.status, result.error?.message ?? result.stderr).toBe(0)
     }
