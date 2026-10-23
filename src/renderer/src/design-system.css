@@ -646,9 +646,9 @@ body {
   min-width: 180px;
 }
 
-.titlebar-brand-mark {
-  width: 32px;
-  height: 32px;
+.titlebar-wordmark {
+  width: 120px;
+  height: 39px;
   flex: none;
 }
 .about-brand {
@@ -656,4 +656,10 @@ body {
   align-items: center;
   gap: 12px;
   margin-block: 16px;
+}
+
+.about-brand img {
+  display: block;
+  max-width: 100%;
+  height: auto;
 }

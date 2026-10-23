@@ -1,4 +1,7 @@
-<img src="resources/brand/MyTracer-app-icon.svg" width="80" height="80" alt="MyTracer" />
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="resources/brand/MyTracer-wordmark-milk.svg" />
+  <img src="resources/brand/MyTracer-wordmark-green.svg" width="400" height="130" alt="MyTracer" />
+</picture>
 
 # MyTracer
 
