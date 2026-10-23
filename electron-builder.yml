@@ -25,6 +25,9 @@ win:
         - x64
 artifactName: MyTracer-${version}-${arch}-setup.${ext}
 nsis:
+  include: build/installer/installer.nsh
+  installerSidebar: resources/brand/installer-sidebar.bmp
+  uninstallerSidebar: resources/brand/installer-sidebar.bmp
   installerIcon: resources/brand/MyTracer.ico
   uninstallerIcon: resources/brand/MyTracer.ico
   installerHeaderIcon: resources/brand/MyTracer.ico

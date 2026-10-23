@@ -1,4 +1,4 @@
-import brandMark from '../../../../resources/brand/MyTracer-mark-green.svg'
+import wordmark from '../../../../resources/brand/MyTracer-wordmark-green.svg'
 import type { AppearanceSettings, AppearanceState } from '../../../contracts/appearance'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import type { ShellStatus } from '../../../contracts/shell'
@@ -147,8 +147,7 @@ export function AppShell(): ReactNode {
       <div className="app-shell" data-section={activeSection}>
         <header className="topbar" aria-label="窗口标题栏">
           <p className="brand">
-            <img className="titlebar-brand-mark" src={brandMark} alt="" draggable={false} />
-            MyTracer<span aria-hidden="true"> ·</span>
+            <img className="titlebar-wordmark" src={wordmark} alt="MyTracer" draggable={false} />
           </p>
         </header>
 
