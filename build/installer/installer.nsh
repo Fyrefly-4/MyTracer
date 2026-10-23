@@ -1,5 +1,5 @@
 ; electron-builder 26.15.3 assisted installer hooks. No replacement installer script.
-!include "${__FILEDIR__}/update-scope.nsh"
+!include "${__FILEDIR__}\update-scope.nsh"
 !define MUI_WELCOMEFINISHPAGE_BITMAP_STRETCH FitControl
 !define MUI_UNWELCOMEFINISHPAGE_BITMAP_STRETCH FitControl
 
@@ -91,7 +91,7 @@ Var myTracerMachineExists
   !insertmacro MUI_PAGE_WELCOME
   ; common.nsh is loaded before this hook. Replace its unconditional --updated
   ; page skip only here, before assistedInstaller emits license/directory pages.
-  !include "${BUILD_RESOURCES_DIR}/installer/update-pages.nsh"
+  !include "${BUILD_RESOURCES_DIR}\installer\update-pages.nsh"
   Function MyTracerSkipRecognizedUpdate
     ${If} $myTracerUpdateScope != ""
       Abort
