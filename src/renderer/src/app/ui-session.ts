@@ -1,3 +1,4 @@
+import type { ReviewSummaryDto } from '../../../contracts/review'
 import { GoalContentDraft } from '../features/goals/goal-content-draft'
 import { browserSelectionPreferences, type SelectionPage } from './selection-preferences'
 import { RoutineEditSession } from './routine-edit-session'
@@ -55,7 +56,33 @@ export interface DataRecordSelection {
   readonly id: string
 }
 
+export interface ReviewWritingDraft {
+  readonly summary: ReviewSummaryDto
+  readonly loadedDraft: string
+  readonly confirmedProgress: string
+  readonly mainObstacle: string
+  readonly nextAdjustment: string
+  readonly relatedGoalId: string
+  readonly nextStepKind: 'none' | 'use-existing' | 'create-and-use'
+  readonly existingActionId: string
+  readonly newActionTitle: string
+}
+
 export class UiSession {
+  private pendingReviewSave: Promise<void> | null = null
+  getPendingReviewSave(): Promise<void> | null {
+    return this.pendingReviewSave
+  }
+  setPendingReviewSave(pending: Promise<void> | null): void {
+    this.pendingReviewSave = pending
+  }
+  private reviewWritingDraft: ReviewWritingDraft | null = null
+  getReviewDraft(): ReviewWritingDraft | null {
+    return this.reviewWritingDraft
+  }
+  setReviewDraft(draft: ReviewWritingDraft | null): void {
+    this.reviewWritingDraft = draft
+  }
   readonly goalContentDraft = new GoalContentDraft()
   readonly routineEditor = new RoutineEditSession()
   private selectedGoal: string | null = null
@@ -224,6 +251,7 @@ export class UiSession {
     return (
       this.routineEditor.hasDraft() ||
       this.unsavedContent.size > 0 ||
+      this.reviewWritingDraft !== null ||
       this.goalContentDraft.dirty ||
       this.goalContentDraft.saving ||
       this.actionDrafts.size > 0 ||
