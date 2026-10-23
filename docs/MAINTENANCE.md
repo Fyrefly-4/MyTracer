@@ -11,7 +11,7 @@
 | 定位故障并修改代码 | 先读相关代码和测试；涉及行为时按需核对[产品需求](PRODUCT_REQUIREMENTS_V0.1.md)、[产品决定](DECISIONS.md)和[变更规则](REQUIREMENTS_CHANGE_POLICY.md) |
 | 理解模块、数据、删除、日期或 AI 边界 | [架构入口](architecture/README.md) |
 | 配置或轮换更新凭据、处理更新失败 | [更新与凭据维护](maintenance/UPDATE.md) |
-| 管理发布 PR、打包与私有更新 | [发布维护](maintenance/RELEASE.md) |
+| 管理发布 PR、打包与更新 | [发布维护](maintenance/RELEASE.md) |
 | 创建分支、提交或 PR；理解 CI | [GitHub 日常工作流](implementation/GITHUB_WORKFLOW_V0.1.md) |
 
 ## 开发与验证
@@ -33,6 +33,14 @@
 按变更影响面选择本地验证，不因查阅本页要求每次运行全部命令。`verify` 包含 E2E 所需构建，不包含安装依赖、打包、真实安装或 live AI。构建输出位于 `out/`，打包输出位于 `release/`；构建通过不等于人工验收通过。
 
 Electron E2E 需要可启动 Windows 桌面进程的环境。测试使用唯一临时数据库/数据根，日期边界使用 fake Clock，常规 AI 测试使用 fake Provider；不得触碰真实用户数据。风险与测试层级参考[测试策略](architecture/TEST_STRATEGY_V0.1.md)。
+
+## 托管 Windows 验证与手动组合检查
+
+[Verification](../.github/workflows/verify.yml) 的 CI Gate 已运行在 `windows-2025`，无需将它从 Linux 迁移。PR 按变更分类：纯文档做文档与 diff 检查；发布工具变更运行 `verify:release-tooling`；应用源码运行完整 `verify`（含构建与 Electron E2E）。Linux 本地检查可提前发现问题，但缺少 `npm.cmd`、`powershell.exe` 或原生 Electron 环境的结果不能替代 Windows 验证，也不应通过放宽测试掩盖。
+
+同一 workflow 已支持 `workflow_dispatch`。需要验证实验组合时，先记录 main、各源 head、组合提交与冲突处理，再使用有权限的 GitHub Actions 页面选择 **Verification → Run workflow → 目标分支**；该事件强制完整源码验证，不走纯文档或发布工具精简路径。执行后核对 run 的实际 head SHA 与记录一致。普通非 main 分支 push 不会自动触发此 workflow；没有认证入口时应记录“未触发”，不要当作通过。集中一次提交再验证，避免为轮询结果重复启动运行。
+
+[Release](../.github/workflows/release.yml) 的版本协调和发布任务仍使用 Ubuntu，Windows 构建任务负责验证、打包与安装 smoke。无需为了统一平台迁移纯协调任务。测试实验分支应选择 Verification，不能用 Release recovery 代替验证；仓库可见性与额度决定也不自动授权合并或发布。托管检查不等于人工视觉、辅助技术或本机体验验收。
 
 ## 聚焦 UX 检查与环境边界
 

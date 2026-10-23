@@ -2,7 +2,11 @@
 
 > 2026-10-11；执行通信记录，不是需求、架构决定或 Git 写入授权。本次文档修复已由 owner 明确要求执行；实际分支历史处置暂不执行。
 
-## Proposal
+## 当前状态
+
+此提案已被当前 `main` 单基线维护流程取代，不再是待处理的 main/dev 同步事项。`dev` 已退出集成目标，不应据此重建晋升或回流流程；现行操作见 [GitHub 工作流](GITHUB_WORKFLOW_V0.1.md)。以下保留 2026-10-11 的观察、备选方案与当时授权边界，不追改历史祖先关系或证据。
+
+## 历史 Proposal
 
 ```yaml
 type: baseline_drift
@@ -66,4 +70,4 @@ recommended_resume_point:
 - `git merge-base --is-ancestor 69c7f56 main`：exit 1；`git merge-base dev main`：`a37c0eb00d4e3675769ba5e291133de341bfe517`。
 - GitHub 插件只读核验 [PR #62](https://github.com/Fyrefly-4/MyTracer/pull/62) 已合并；源 `69c7f566fa90d667d5c81cfe983e3d3ee09df39a`，main 结果 `97667606d1f21bbcece7705387cb1929d9ca6d47`。里程碑 CI 成功不改变 Git 的实际父提交。
 
-本记录不猜测 owner 是否曾在其他会话批准例外，也不追认新的合并规则。当前文档修复可完成；实际历史处置须在新的精确授权下执行。
+本记录不猜测 owner 是否曾在其他会话批准例外，也不追认历史合并规则。上面的恢复建议仅表示当时的方案，不是当前待办。

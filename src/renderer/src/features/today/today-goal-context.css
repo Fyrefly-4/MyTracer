@@ -1,0 +1,63 @@
+.today-goal-context {
+  margin-block: 14px;
+  padding-block: 12px;
+  border-block: 1px solid var(--color-line);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.today-goal-context > summary {
+  cursor: pointer;
+  color: var(--color-action);
+  padding: 4px 2px;
+}
+.today-goal-context > summary:focus-visible {
+  outline-offset: -2px;
+}
+.today-goal-context-body {
+  padding: 12px 2px 0;
+  overflow-wrap: anywhere;
+}
+.today-goal-context-body p {
+  margin: 0 0 8px;
+}
+.today-goal-context-body h3 {
+  margin: 12px 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.today-goal-context-heading,
+.today-goal-context-date {
+  color: var(--color-muted);
+  font-size: 12px;
+}
+.today-goal-context button[aria-disabled='true'] {
+  opacity: 0.6;
+  cursor: wait;
+}
+.today-goal-context .today-goal-record-link {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  width: 100%;
+  text-align: left;
+}
+.today-goal-record-link strong,
+.today-goal-context-facts li {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+.today-goal-context-facts ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.today-goal-context-facts li {
+  margin-bottom: 8px;
+}
+.today-goal-context-facts p {
+  font-size: 12px;
+  color: var(--color-muted);
+}

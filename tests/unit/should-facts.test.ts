@@ -24,6 +24,7 @@ function action(
     actionId: 'action',
     goalId: 'goal',
     actionTitle: 'Example',
+    hasRecordedText: false,
     occurredOn,
     durationMinutes,
     outcome,

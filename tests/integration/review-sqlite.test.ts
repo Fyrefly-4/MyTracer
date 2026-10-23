@@ -178,7 +178,16 @@ describe('Review SQLite summary snapshot', () => {
       routineOutcomeCounts: { targetMet: 1, acted: 1, intentionalRest: 1, notDone: 1 },
       unknownPolicy: 'absence-is-unknown-not-counted-as-not-done'
     })
-    expect(first.actionRecords).toEqual(progress.records)
+    expect(first.actionRecords).toEqual(
+      progress.records.map((record) => {
+        const { hasRecordedText, ...facts } = record
+        expect(hasRecordedText).toBe(false)
+        return facts
+      })
+    )
+    expect(first.actionRecords[0]).not.toHaveProperty('hasRecordedText')
+    expect(first.actionRecords[0]).not.toHaveProperty('note')
+    expect(first.actionRecords[0]).not.toHaveProperty('nextStep')
     expect(first.routineRecords).toEqual(progress.routineRecords)
     expect(first.understandings.map((fact) => fact.text)).toEqual(['State updates are queued'])
     expect(first.openConfusions.map((fact) => fact.text)).toEqual(['When is the queue flushed?'])
@@ -374,4 +383,33 @@ describe('ReviewResult SQLite completion', () => {
     expect(repository.readSnapshot().reviewResults).toEqual([])
     connection.close()
   })
+})
+
+it('reads the exact previous saved week without fallback or modifying either result', async () => {
+  const { connection } = await openDatabase()
+  try {
+    const service = reviewService(connection)
+    const input = {
+      confirmedProgress: '进展',
+      mainObstacle: '阻力',
+      nextAdjustment: '原文\n保持换行',
+      relatedGoalId: null,
+      nextStepChange: { kind: 'none' as const }
+    }
+    service.completeReview({ periodStartedOn: '2025-12-22', periodEndedOn: '2025-12-28' }, input)
+    const current = { periodStartedOn: '2026-01-05', periodEndedOn: '2026-01-11' }
+    const saved = service.completeReview(current, { ...input, nextAdjustment: '本周保存内容' })
+    expect(service.getPreviousAdjustment(current)).toEqual({
+      periodStartedOn: '2025-12-29',
+      periodEndedOn: '2026-01-04',
+      nextAdjustment: null
+    })
+    const previous = { periodStartedOn: '2025-12-29', periodEndedOn: '2026-01-04' }
+    const previousSaved = service.completeReview(previous, input)
+    expect(service.getPreviousAdjustment(current).nextAdjustment).toBe(input.nextAdjustment)
+    expect(service.getReviewResult(previous)).toEqual(previousSaved)
+    expect(service.getReviewResult(current)).toEqual(saved)
+  } finally {
+    connection.close()
+  }
 })

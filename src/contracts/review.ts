@@ -4,6 +4,7 @@ export const REVIEW_CHANNELS = Object.freeze({
   begin: 'review:begin',
   getSummary: 'review:get-summary',
   getResult: 'review:get-result',
+  getPreviousAdjustment: 'review:get-previous-adjustment',
   complete: 'review:complete',
   cancel: 'review:cancel-context'
 } as const)
@@ -15,6 +16,11 @@ export interface ReviewContextInputDto {
 export interface BeginReviewDto extends ReviewContextInputDto {
   readonly periodStartedOn: string
   readonly periodEndedOn: string
+}
+export interface PreviousReviewAdjustmentDto {
+  readonly periodStartedOn: string
+  readonly periodEndedOn: string
+  readonly nextAdjustment: string | null
 }
 export interface ReviewResultDto {
   readonly id: string
@@ -64,7 +70,7 @@ export interface ReviewSummaryDto {
   readonly confirmedUnderstandingCount: number
   readonly openConfusionCount: number
   readonly hasRecordedFacts: boolean
-  readonly actionRecords: readonly ProgressRecordFactDto[]
+  readonly actionRecords: readonly Omit<ProgressRecordFactDto, 'hasRecordedText'>[]
   readonly routineRecords: readonly RoutineProgressRecordFactDto[]
   readonly understandings: readonly ReviewChildFactDto[]
   readonly openConfusions: readonly ReviewChildFactDto[]
@@ -96,6 +102,9 @@ export interface ReviewApi {
   readonly getResult: (
     input: ReviewContextInputDto
   ) => Promise<ReviewResult<ReviewResultDto | null>>
+  readonly getPreviousAdjustment: (
+    input: ReviewContextInputDto
+  ) => Promise<ReviewResult<PreviousReviewAdjustmentDto>>
   readonly complete: (input: CompleteReviewInputDto) => Promise<ReviewResult<ReviewResultDto>>
   readonly cancel: (
     input: ReviewContextInputDto

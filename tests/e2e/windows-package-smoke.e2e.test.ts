@@ -151,6 +151,7 @@ async function verifyPackagedApplication(
       'begin',
       'getSummary',
       'getResult',
+      'getPreviousAdjustment',
       'complete',
       'cancel'
     ])

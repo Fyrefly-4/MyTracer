@@ -277,6 +277,7 @@ test('keeps existing work reachable, restores selection, and records without imp
       await expect(panel.getByText('仅保存记录，行动状态和当前下一步保持不变。')).toBeVisible()
       await panel.getByRole('button', { name: '放弃草稿' }).click()
       await expect(panel.getByRole('button', { name: '开始记录' })).toBeFocused()
+      await expect(panel.getByRole('status')).toHaveText('已放弃未保存草稿，已有记录保持不变。')
       await page.locator('main').evaluate((main) => {
         main.scrollTop = main.scrollHeight
       })

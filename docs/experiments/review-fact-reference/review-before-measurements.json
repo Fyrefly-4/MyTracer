@@ -1,0 +1,42 @@
+[
+  {
+    "width": 1440,
+    "height": 900,
+    "zoom": 1,
+    "formY": 6555.3125,
+    "mainHeight": 7204,
+    "composerHeight": 655
+  },
+  {
+    "width": 1120,
+    "height": 760,
+    "zoom": 1,
+    "formY": 6789.3125,
+    "mainHeight": 7438,
+    "composerHeight": 655
+  },
+  {
+    "width": 820,
+    "height": 650,
+    "zoom": 1,
+    "formY": 6944.171875,
+    "mainHeight": 7593,
+    "composerHeight": 655
+  },
+  {
+    "width": 1120,
+    "height": 760,
+    "zoom": 1.25,
+    "formY": 6911.42529296875,
+    "mainHeight": 7560,
+    "composerHeight": 655
+  },
+  {
+    "width": 820,
+    "height": 650,
+    "zoom": 1.25,
+    "formY": 7768.125,
+    "mainHeight": 8417,
+    "composerHeight": 655
+  }
+]
