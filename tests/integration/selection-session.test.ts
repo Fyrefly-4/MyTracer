@@ -1,6 +1,38 @@
 import { afterEach, expect, it, vi } from 'vitest'
 import { UiSession } from '../../src/renderer/src/app/ui-session'
 afterEach(() => vi.unstubAllGlobals())
+
+it('limits data-page leave protection to data drafts while preserving global protection', () => {
+  const session = new UiSession(vi.fn())
+  session.setGoalCoverDraft('goal', '新')
+  session.setUnsavedContent('goal-next-action-goal', true)
+  expect(session.hasActiveUnsavedContent()).toBe(true)
+  expect(session.hasUnsavedContent()).toBe(true)
+  expect(session.hasDataUnsavedContent()).toBe(false)
+
+  const sources = [
+    'data-backfill',
+    'data-action-record-edit-action',
+    'data-routine-record-edit-routine',
+    'data-understanding-edit-understanding',
+    'data-confusion-edit-confusion'
+  ]
+  for (const source of sources) {
+    session.setUnsavedContent(source, true)
+    expect(session.hasDataUnsavedContent()).toBe(true)
+    session.setUnsavedContent(source, false)
+    expect(session.hasDataUnsavedContent()).toBe(false)
+  }
+  session.setUnsavedContent(sources[0], true)
+  session.setUnsavedContent(sources[1], true)
+  session.setUnsavedContent(sources[0], false)
+  expect(session.hasDataUnsavedContent()).toBe(true)
+  session.setUnsavedContent(sources[1], false)
+  expect(session.hasDataUnsavedContent()).toBe(false)
+  expect(session.getGoalCoverDraft('goal')).toBe('新')
+  expect(session.hasUnsavedContent()).toBe(true)
+})
+
 it('integrates page preferences, one-shot explicit routes and reactive draft protection', () => {
   let saved: string | null = null
   vi.stubGlobal('window', {

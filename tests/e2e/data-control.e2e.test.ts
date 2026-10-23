@@ -122,8 +122,7 @@ test('edits, backfills, previews, deletes, and reopens T031 facts through the tr
     await expect(page.getByLabel('例行发生日期')).toHaveValue('2026-08-11')
     await expect(page.getByText('历史计划由用户确认')).toBeVisible()
 
-    await page.locator('.data-tools-panel > summary').click()
-    await page.getByText('删除目标、行动或例行', { exact: true }).click()
+    await page.getByRole('button', { name: '更多', exact: true }).click()
     await page.getByLabel('内容类型').selectOption('goal')
     await page.getByLabel('选择内容').selectOption({ label: 'T031 Goal' })
     await page.getByRole('button', { name: '预览永久删除影响' }).click()

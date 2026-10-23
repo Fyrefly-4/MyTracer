@@ -400,11 +400,12 @@ test('labels historical facts and falls back to a visible routine after deleting
     const page = await application.firstWindow()
     await navigate(page, '数据')
     await expectStableWorkspace(page, '.data-workspace')
-    await page.locator('.data-tools-panel > summary').click()
-    await page.getByText('补记历史记录', { exact: true }).click()
+    await page.getByRole('button', { name: '补记记录', exact: true }).click()
     await expect(page.getByText('还没有可补记的行动，请先在今天或目标页创建行动。')).toBeVisible()
     await expect(page.getByRole('button', { name: '补记行动记录', exact: true })).toBeDisabled()
+    await page.getByLabel('补记类型', { exact: true }).selectOption('routine')
     await expect(page.getByRole('button', { name: '补记例行记录', exact: true })).toBeDisabled()
+    await page.getByRole('button', { name: '关闭补记历史记录' }).click()
     const ids = await page.evaluate(async () => {
       const goal = await window.myTracer.goals.create({
         name: '历史阅读',
@@ -427,8 +428,7 @@ test('labels historical facts and falls back to a visible routine after deleting
     await page.getByRole('button', { name: '去今天处理' }).click()
     await expect(page.getByLabel('历史行动 行动详情')).toBeVisible()
     await navigate(page, '数据')
-    await page.locator('.data-tools-panel > summary').click()
-    await page.getByText('补记历史记录', { exact: true }).click()
+    await page.getByRole('button', { name: '补记记录', exact: true }).click()
     await page.getByLabel('行动补记日期', { exact: true }).fill('2026-09-01')
     await page.getByLabel('行动补记分钟', { exact: true }).fill('9')
     const dateField = page.getByLabel('行动补记日期', { exact: true }).locator('..')
@@ -437,6 +437,7 @@ test('labels historical facts and falls back to a visible routine after deleting
     await expect(page.getByRole('status').filter({ hasText: '已补记' })).toContainText(
       '历史行动 · 2026-09-01'
     )
+    await page.getByLabel('补记类型', { exact: true }).selectOption('routine')
     await page.getByLabel('例行补记日期', { exact: true }).fill('2026-09-02')
     await page.getByLabel('例行补记结果', { exact: true }).selectOption('acted')
     await page.getByLabel('例行补记分钟', { exact: true }).fill('3')
@@ -444,10 +445,14 @@ test('labels historical facts and falls back to a visible routine after deleting
     await expect(page.getByRole('status').filter({ hasText: '已补记' })).toContainText(
       '历史散步 · 2026-09-02'
     )
+    await page.getByLabel('补记类型', { exact: true }).selectOption('action')
     await page.getByLabel('行动补记日期', { exact: true }).fill('2026-08-31')
-    await page.getByRole('button', { name: '取消行动补记' }).click()
+    await page.getByRole('button', { name: '清空当前草稿' }).click()
+    await page.getByRole('button', { name: '放弃草稿', exact: true }).click()
+    await page.getByLabel('补记类型', { exact: true }).selectOption('routine')
     await page.getByLabel('例行补记日期', { exact: true }).fill('2026-08-31')
-    await page.getByRole('button', { name: '取消例行补记' }).click()
+    await page.getByRole('button', { name: '清空当前草稿' }).click()
+    await page.getByRole('button', { name: '放弃草稿', exact: true }).click()
     const facts = await page.evaluate(() => window.myTracer.dataControl.list())
     expect(facts).toMatchObject({
       ok: true,
@@ -469,7 +474,8 @@ test('labels historical facts and falls back to a visible routine after deleting
         ]
       }
     })
-    await page.getByText('删除目标、行动或例行', { exact: true }).click()
+    await page.getByRole('button', { name: '关闭补记历史记录' }).click()
+    await page.getByRole('button', { name: '更多', exact: true }).click()
     await page.getByLabel('内容类型').selectOption('action')
     await page.getByLabel('选择内容').selectOption({ label: '历史行动' })
     await page.getByRole('button', { name: '预览永久删除影响', exact: true }).click()
@@ -483,6 +489,7 @@ test('labels historical facts and falls back to a visible routine after deleting
     ).toBe(true)
     await dialog.getByRole('button', { name: '永久删除', exact: true }).click()
     await expect(dialog).toHaveCount(0)
+    await page.getByRole('button', { name: '关闭删除目标、行动或例行' }).click()
     await navigate(page, '今天')
     await expect(page.getByLabel('历史行动 行动详情')).toHaveCount(0)
     await expect(page.getByLabel('历史散步 例行详情', { exact: true })).toBeVisible()

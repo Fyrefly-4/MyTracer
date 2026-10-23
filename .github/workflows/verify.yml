@@ -86,8 +86,6 @@ jobs:
         uses: actions/upload-artifact@v4.6.2
         with:
           name: ci-failures-${{ github.run_id }}-${{ github.run_attempt }}
-          path: |
-            test-results/
-            playwright-report/
+          path: ${{ runner.temp }}/mytracer-playwright-results/
           if-no-files-found: ignore
           retention-days: 7

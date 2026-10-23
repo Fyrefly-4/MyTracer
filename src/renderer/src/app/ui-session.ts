@@ -113,6 +113,9 @@ export class UiSession {
   hasActiveUnsavedContent = (): boolean =>
     this.unsavedContent.size > 0 || this.goalCoverDrafts.size > 0
 
+  hasDataUnsavedContent = (): boolean =>
+    [...this.unsavedContent].some((source) => source.startsWith('data-'))
+
   private readonly preferences = browserSelectionPreferences()
   private navigationSelection = new Set<SelectionPage>()
   constructor(private readonly onNavigate: (section: AppSectionId) => void) {
@@ -391,4 +394,9 @@ export function revealStart(element: HTMLElement | null): void {
 export function useActiveUnsavedContent(): boolean {
   const session = useUiSession()
   return useSyncExternalStore(session.subscribeUnsaved, session.hasActiveUnsavedContent)
+}
+
+export function useDataUnsavedContent(): boolean {
+  const session = useUiSession()
+  return useSyncExternalStore(session.subscribeUnsaved, session.hasDataUnsavedContent)
 }

@@ -19,8 +19,24 @@ export function AppShell(): ReactNode {
   const [activeSection, setActiveSection] = useState<AppSectionId>('home')
   const mainRef = useRef<HTMLElement | null>(null)
   const [session] = useState(() => new UiSession((section) => setActiveSection(section)))
+  const [pendingDataNavigation, setPendingDataNavigation] = useState<AppSectionId | null>(null)
+  const dataNavigationDialog = useRef<HTMLDialogElement>(null)
+  useEffect(() => {
+    if (!pendingDataNavigation) return
+    const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const dialog = dataNavigationDialog.current!
+    dialog.showModal()
+    return () => {
+      dialog.close()
+      if (trigger?.isConnected) trigger.focus()
+    }
+  }, [pendingDataNavigation])
   const navigate = (section: AppSectionId): void => {
     if (section === activeSection) return
+    if (activeSection === 'data' && session.hasDataUnsavedContent()) {
+      setPendingDataNavigation(section)
+      return
+    }
     session.setPosition(activeSection, mainRef.current?.scrollTop ?? 0)
     setActiveSection(section)
   }
@@ -139,6 +155,36 @@ export function AppShell(): ReactNode {
           <UpdatePanel onClose={() => setUpdateOpen(false)} />
         ) : null}
 
+        {pendingDataNavigation ? (
+          <dialog
+            ref={dataNavigationDialog}
+            className="confirmation-dialog"
+            aria-label="离开数据页"
+            aria-modal="true"
+            onCancel={(event) => {
+              event.preventDefault()
+              setPendingDataNavigation(null)
+            }}
+          >
+            <h2>数据页还有未保存的修改</h2>
+            <p>离开会放弃补记和记录编辑中的草稿。可以返回继续编辑或保存。</p>
+            <div className="dialog-actions">
+              <button type="button" autoFocus onClick={() => setPendingDataNavigation(null)}>
+                继续留在数据页
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  session.setPosition('data', mainRef.current?.scrollTop ?? 0)
+                  setActiveSection(pendingDataNavigation)
+                  setPendingDataNavigation(null)
+                }}
+              >
+                放弃修改并离开
+              </button>
+            </div>
+          </dialog>
+        ) : null}
         <div className="workspace" inert={installPreparing}>
           <nav className="sidebar" aria-label="主要视图">
             {appSections.map((section) => (
