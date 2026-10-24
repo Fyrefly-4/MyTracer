@@ -64,6 +64,53 @@ async function seed(page: Page) {
   })
 }
 
+test('record book main scrollport exposes continuous content without an inner clipping pane', async () => {
+  await withApplication(async (app, page) => {
+    await seed(page)
+    await navigate(page, '进展')
+    await page.locator('.progress-more summary').click()
+    await page.getByRole('button', { name: '阅读记录册', exact: true }).click()
+    await expect(page.locator('.rb-day')).toHaveCount(24)
+    for (const width of [1280, 820]) {
+      await app.evaluate(
+        ({ BrowserWindow }, width) => BrowserWindow.getAllWindows()[0].setSize(width, 900),
+        width
+      )
+      const main = page.locator('main.content-book')
+      await expect
+        .poll(() =>
+          main.evaluate((node) => ({
+            mainOverflow: getComputedStyle(node).overflowY,
+            innerOverflow: getComputedStyle(node.querySelector('.content-inner')!).overflowY,
+            display: getComputedStyle(node.querySelector('.content-inner')!).display,
+            scrollRange: node.scrollHeight - node.clientHeight > 650
+          }))
+        )
+        .toEqual({
+          mainOverflow: 'auto',
+          innerOverflow: 'visible',
+          display: 'block',
+          scrollRange: true
+        })
+      await main.evaluate((node) => {
+        node.scrollTop = 650
+      })
+      await expect.poll(() => main.evaluate((node) => node.scrollTop)).toBe(650)
+      expect(
+        await page.locator('.content-book .content-inner').evaluate((node) => node.scrollTop)
+      ).toBe(0)
+      expect(await page.evaluate(() => document.scrollingElement?.scrollTop)).toBe(0)
+      // A real wheel gesture must scroll the same main container, not a nested/document pane.
+      const bounds = await main.boundingBox()
+      expect(bounds).not.toBeNull()
+      await page.mouse.move(bounds!.x + bounds!.width / 2, bounds!.y + bounds!.height - 80)
+      const beforeWheel = await main.evaluate((node) => node.scrollTop)
+      await page.mouse.wheel(0, 200)
+      await expect.poll(() => main.evaluate((node) => node.scrollTop)).toBeGreaterThan(beforeWheel)
+    }
+  })
+})
+
 test('book month navigation, original visit, source filters and scroll return with fresh saved data', async () => {
   await withApplication(async (_app, page) => {
     await seed(page)
@@ -72,13 +119,16 @@ test('book month navigation, original visit, source filters and scroll return wi
     await query.fill('合成检索原文')
     await expect(page.locator('.data-history-row')).toHaveCount(8)
     await page.locator('.data-history-row').nth(2).click()
-    const selected = await page.getByLabel('所选记录').innerText()
+    await expect(page.getByLabel('所选记录')).toContainText('2026-08-22')
+    // Match toHaveText's textContent semantics, including collapsed understanding/confusion text.
+    const selected = (await page.getByLabel('所选记录').textContent())!
     await page.locator('[data-scroll-key="master"]').evaluate((node) => {
       node.scrollTop = 110
     })
     const sourceScroll = await page
       .locator('[data-scroll-key="master"]')
       .evaluate((node) => node.scrollTop)
+    expect(sourceScroll).toBeGreaterThan(0)
     await openBook(page)
     const month = page.getByRole('combobox', { name: '跳转到月份' })
     await expect(month).toHaveValue('2026-08')
