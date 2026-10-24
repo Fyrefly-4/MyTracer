@@ -7,9 +7,24 @@ import { createTemporaryTestRoot, removeTemporaryTestRoot } from '../support/tem
 const raw =
   '工作台左侧盒子\n<script>不执行</script> **原文** C:\\materials\\draft.txt https://example.invalid/?a=1&b=2'
 const long = `${raw}\n${'合成材料位置与说明 '.repeat(100)}\n最后一行：从这里继续`
+// Printed steps remain available in job logs even when artifact download is unavailable.
+async function step<T>(name: string, run: () => Promise<T>): Promise<T> {
+  console.log(`[action-description] start: ${name}`)
+  try {
+    const result = await test.step(name, run)
+    console.log(`[action-description] done: ${name}`)
+    return result
+  } catch (error) {
+    console.log(`[action-description] failed: ${name}`)
+    throw error
+  }
+}
+
 async function withApplication(run: (app: ElectronApplication, page: Page) => Promise<void>) {
   const root = await createTemporaryTestRoot()
   let app: ElectronApplication | undefined
+  let failed = false
+  let tracing = false
   try {
     app = await electron.launch({
       chromiumSandbox: true,
@@ -21,14 +36,33 @@ async function withApplication(run: (app: ElectronApplication, page: Page) => Pr
       ],
       env: minimalElectronEnvironment(root)
     })
-    await run(app, await app.firstWindow())
+    const page = await step('open isolated window', () => app!.firstWindow())
+    // Fail the actual waiting operation before the unchanged 30s overall budget expires.
+    page.setDefaultTimeout(5_000)
+    await app.context().tracing.start({ screenshots: true, snapshots: true, sources: true })
+    tracing = true
+    await run(app, page)
+  } catch (error) {
+    failed = true
+    throw error
   } finally {
-    await app?.close()
+    if (tracing) {
+      await app!
+        .context()
+        .tracing.stop(
+          failed ? { path: test.info().outputPath('action-description-trace.zip') } : {}
+        )
+    }
+    await step('close isolated Electron', async () => {
+      await app?.close()
+    })
     await removeTemporaryTestRoot(root)
   }
 }
 const nav = (page: Page, name: string) =>
-  page.getByRole('navigation').getByRole('button', { name, exact: true }).click()
+  step(`navigate to ${name}`, () =>
+    page.getByRole('navigation').getByRole('button', { name, exact: true }).click()
+  )
 const description = (page: Page) => page.getByLabel('当前行动说明', { exact: true })
 async function seed(page: Page) {
   return page.evaluate(
@@ -119,79 +153,126 @@ test('continue shows saved short/plain action text and no empty panel; delayed h
 
 test('long text retains reading context, editor and record drafts with keyboard and narrow zoom layouts', async () => {
   await withApplication(async (app, page) => {
-    const data = await seed(page)
+    const data = await step('seed synthetic actions', () => seed(page))
     await nav(page, '今天')
-    await page.getByRole('button', { name: /阅读长说明.*待行动/ }).click()
+    await step('select long action', () =>
+      page.getByRole('button', { name: /阅读长说明.*待行动/ }).click()
+    )
     const panel = description(page)
     const toggle = panel.locator('summary')
-    await expect(panel.locator('p')).not.toBeVisible()
-    await toggle.focus()
-    await page.keyboard.press('Space')
-    await expect(panel.locator('p')).toBeVisible()
-    expect(await panel.locator('p').textContent()).toBe(long)
-    await nav(page, '目标')
-    await nav(page, '今天')
-    await expect(panel.locator('p')).toBeVisible()
-    await expect(page.locator('.action-detail h2')).toHaveText('阅读长说明')
-    await page.getByText('编辑与管理行动', { exact: true }).click()
-    const editor = page.getByLabel('说明（可选）', { exact: true })
-    await editor.fill('未保存的编辑草稿')
-    await toggle.click()
-    await toggle.click()
-    await expect(editor).toHaveValue('未保存的编辑草稿')
-    expect(await panel.locator('p').textContent()).toBe(long)
-    await editor.fill(long)
-    const recording = page.getByLabel('阅读长说明 行动记录', { exact: true })
-    await recording.getByRole('button', { name: '开始记录', exact: true }).click()
-    await recording.getByLabel('投入时长（分钟，可选）').fill('7')
-    await toggle.click()
-    await toggle.click()
-    await expect(recording.getByLabel('投入时长（分钟，可选）')).toHaveValue('7')
-    await nav(page, '目标')
-    await nav(page, '今天')
-    await expect(recording.getByLabel('投入时长（分钟，可选）')).toHaveValue('7')
-    await expect(panel.locator('p')).toBeVisible()
-    for (const zoom of [1, 1.25, 1.5]) {
-      await app.evaluate(({ BrowserWindow }, zoom) => {
-        const win = BrowserWindow.getAllWindows()[0]
-        win.setContentSize(820, 600)
-        win.webContents.setZoomFactor(zoom)
-      }, zoom)
+    await step('expand long text and return with reading context', async () => {
+      await expect(panel.locator('p')).not.toBeVisible()
       await toggle.focus()
       await page.keyboard.press('Space')
-      await expect(panel.locator('p')).not.toBeVisible()
-      await page.keyboard.press('Enter')
       await expect(panel.locator('p')).toBeVisible()
-      const layout = await panel.locator('p').evaluate((element) => ({
-        overflow: getComputedStyle(element).overflowY,
-        width: element.scrollWidth - element.clientWidth,
-        height: element.scrollHeight - element.clientHeight
-      }))
-      expect(layout.overflow).toBe('visible')
-      expect(layout.width).toBeLessThanOrEqual(1)
-      expect(layout.height).toBeLessThanOrEqual(1)
-      const pane = page.locator('.today-detail-pane')
-      const bounds = await pane.boundingBox()
-      if (!bounds) throw Error('detail pane not laid out')
-      await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2)
-      await page.mouse.wheel(0, 10000)
-      await expect.poll(() => pane.evaluate((element) => element.scrollTop)).toBeGreaterThan(0)
-      await recording.getByRole('button', { name: '保存记录', exact: true }).focus()
-      await expect(
-        recording.getByRole('button', { name: '保存记录', exact: true })
-      ).toBeInViewport()
-      const position = await pane.evaluate((element) => element.scrollTop)
+      expect(await panel.locator('p').textContent()).toBe(long)
       await nav(page, '目标')
       await nav(page, '今天')
       await expect(panel.locator('p')).toBeVisible()
-      await expect
-        .poll(() => pane.evaluate((element) => element.scrollTop))
-        .toBeCloseTo(position, 0)
+      await expect(page.locator('.action-detail h2')).toHaveText('阅读长说明')
+    })
+    await step('toggle description while editing without replacing the draft', async () => {
+      await page.getByText('编辑与管理行动', { exact: true }).click()
+      const editor = page.getByLabel('说明（可选）', { exact: true })
+      await editor.fill('未保存的编辑草稿')
+      await toggle.click()
+      await toggle.click()
+      await expect(editor).toHaveValue('未保存的编辑草稿')
+      expect(await panel.locator('p').textContent()).toBe(long)
+      await editor.fill(long)
+    })
+    const recording = page.getByLabel('阅读长说明 行动记录', { exact: true })
+    await step(
+      'start record and retain draft across description toggles and navigation',
+      async () => {
+        await recording.getByRole('button', { name: '开始记录', exact: true }).click()
+        await recording.getByLabel('投入时长（分钟，可选）').fill('7')
+        await toggle.click()
+        await toggle.click()
+        await expect(recording.getByLabel('投入时长（分钟，可选）')).toHaveValue('7')
+        await nav(page, '目标')
+        await nav(page, '今天')
+        await expect(recording.getByLabel('投入时长（分钟，可选）')).toHaveValue('7')
+        await expect(panel.locator('p')).toBeVisible()
+      }
+    )
+    for (const zoom of [1, 1.25, 1.5]) {
+      await step(`keyboard, wheel and return at zoom ${zoom}`, async () => {
+        await app.evaluate(({ BrowserWindow }, zoom) => {
+          const win = BrowserWindow.getAllWindows()[0]
+          win.setContentSize(820, 600)
+          win.webContents.setZoomFactor(zoom)
+        }, zoom)
+        await toggle.focus()
+        await page.keyboard.press('Space')
+        await expect(panel.locator('p')).not.toBeVisible()
+        await page.keyboard.press('Enter')
+        await expect(panel.locator('p')).toBeVisible()
+        const layout = await panel.locator('p').evaluate((element) => ({
+          overflow: getComputedStyle(element).overflowY,
+          width: element.scrollWidth - element.clientWidth,
+          height: element.scrollHeight - element.clientHeight
+        }))
+        expect(layout.overflow).toBe('visible')
+        expect(layout.width).toBeLessThanOrEqual(1)
+        expect(layout.height).toBeLessThanOrEqual(1)
+        const pane = page.locator('.today-detail-pane')
+        const bounds = await pane.boundingBox()
+        if (!bounds) throw Error('detail pane not laid out')
+        await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2)
+        await page.mouse.wheel(0, 10000)
+        await expect.poll(() => pane.evaluate((element) => element.scrollTop)).toBeGreaterThan(0)
+        await recording.getByRole('button', { name: '保存记录', exact: true }).focus()
+        await expect(
+          recording.getByRole('button', { name: '保存记录', exact: true })
+        ).toBeInViewport()
+        console.log(
+          `[action-description] zoom ${zoom}: save control reachable; checking return position`
+        )
+        const position = await pane.evaluate((element) => element.scrollTop)
+        await nav(page, '目标')
+        await nav(page, '今天')
+        await expect(panel.locator('p')).toBeVisible()
+        await expect
+          .poll(() => pane.evaluate((element) => element.scrollTop))
+          .toBeCloseTo(position, 0)
+      })
     }
     const saved = await page.evaluate(
       (actionId) => window.myTracer.actions.getDetail({ actionId }),
       data.secondId
     )
     expect(saved.ok && saved.value.description).toBe(long)
+  })
+})
+
+test('saving short and long descriptions updates the reader without truncating the stored text', async () => {
+  await withApplication(async (_app, page) => {
+    const data = await seed(page)
+    await nav(page, '今天')
+    await page.getByRole('button', { name: /阅读长说明.*待行动/ }).click()
+    const panel = description(page)
+    await panel.locator('summary').click()
+    await expect(panel.locator('p')).toHaveText(long)
+    await page.getByText('编辑与管理行动', { exact: true }).click()
+    const editor = page.getByLabel('说明（可选）', { exact: true })
+    for (const text of [raw, long]) {
+      await step(`save ${text === raw ? 'short' : 'long'} description`, async () => {
+        await editor.fill(text)
+        await page.getByRole('button', { name: '保存行动修改', exact: true }).click()
+        await expect(panel.locator('p')).toHaveText(text)
+        await expect(panel.locator('p')).toBeVisible()
+        await expect(panel.locator('summary')).toHaveCount(text === raw ? 0 : 1)
+        const saved = await page.evaluate(
+          (actionId) => window.myTracer.actions.getDetail({ actionId }),
+          data.secondId
+        )
+        expect(saved.ok && saved.value.description).toBe(text)
+      })
+    }
+    await nav(page, '目标')
+    await nav(page, '今天')
+    await expect(panel.locator('p')).toHaveText(long)
+    await expect(panel.locator('p')).toBeVisible()
   })
 })

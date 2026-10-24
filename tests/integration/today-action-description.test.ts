@@ -35,3 +35,14 @@ it('retains complete long or multiline text and isolates session expansion by ac
   expect(session.hasUnsavedContent()).toBe(false)
   expect(render('长'.repeat(241), 'one')).not.toContain('<details open')
 })
+
+it('keeps exactly 240 characters and four lines inline, expanding only beyond either boundary', () => {
+  for (const text of ['字'.repeat(240), '一\n二\n三\n四', '一\r\n二\r\n三\r\n四']) {
+    expect(render(text)).not.toContain('<details')
+    expect(render(text)).toContain(text)
+  }
+  for (const text of ['字'.repeat(241), '一\n二\n三\n四\n五', '一\r二\r三\r四\r五']) {
+    expect(render(text)).toContain('<details>')
+    expect(render(text)).toContain(text)
+  }
+})
