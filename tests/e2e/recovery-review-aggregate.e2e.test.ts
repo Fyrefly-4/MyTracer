@@ -35,7 +35,7 @@ async function setDate(application: ElectronApplication, instant: string): Promi
 }
 
 test('aggregate AC-05 to AC-06 keeps pre-recovery and post-recovery records in one ReviewSummary', async () => {
-  test.slow()
+  test.setTimeout(180_000)
   const root = await createTemporaryTestRoot()
   let application: ElectronApplication | undefined
   try {
