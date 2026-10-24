@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.9.0](https://github.com/Fyrefly-4/MyTracer/compare/v1.8.1...v1.9.0) (2026-10-24)
+
+
+### Features
+
+* 按月阅读记录册与全书离线 HTML（[#124](https://github.com/Fyrefly-4/MyTracer/issues/124) A） ([#144](https://github.com/Fyrefly-4/MyTracer/issues/144)) ([4512df0](https://github.com/Fyrefly-4/MyTracer/commit/4512df04f48c43e634bdde48fb81de9331114aff))
+* 数据历史支持本地字面关键词检索（[#123](https://github.com/Fyrefly-4/MyTracer/issues/123) C） ([#140](https://github.com/Fyrefly-4/MyTracer/issues/140)) ([3f1975b](https://github.com/Fyrefly-4/MyTracer/commit/3f1975b402016da036505b2878716f223d55a197))
+* 无固定安排例行与 Today 随时可记（[#132](https://github.com/Fyrefly-4/MyTracer/issues/132) C） ([#145](https://github.com/Fyrefly-4/MyTracer/issues/145)) ([4872a4f](https://github.com/Fyrefly-4/MyTracer/commit/4872a4f14e389623edd666ec5602e8ed6953bd4c))
+
 ## [1.8.1](https://github.com/Fyrefly-4/MyTracer/compare/v1.8.0...v1.8.1) (2026-10-24)
 
 
