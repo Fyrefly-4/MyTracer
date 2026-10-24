@@ -2,6 +2,7 @@ import { join } from 'node:path'
 import { expect, test, type ElectronApplication, type Page } from '@playwright/test'
 import { _electron as electron } from 'playwright'
 import { minimalElectronEnvironment } from '../support/electron-environment'
+import { openManagement } from '../support/ui-disclosure'
 import { createTemporaryTestRoot, removeTemporaryTestRoot } from '../support/temporary-test-root'
 
 const raw =
@@ -64,6 +65,14 @@ const nav = (page: Page, name: string) =>
     page.getByRole('navigation').getByRole('button', { name, exact: true }).click()
   )
 const description = (page: Page) => page.getByLabel('当前行动说明', { exact: true })
+// Label textContent includes React's initial textarea text. Match the textbox's
+// accessible name instead, scoped to this action's existing editor.
+const descriptionEditor = (page: Page) =>
+  page.locator('.action-detail > details.disclosure > .detail-form').getByRole('textbox', {
+    name: '说明（可选）',
+    exact: true,
+    includeHidden: true
+  })
 async function seed(page: Page) {
   return page.evaluate(
     async ({ raw, long }) => {
@@ -112,7 +121,8 @@ test('continue shows saved short/plain action text and no empty panel; delayed h
     await expect(description(page).locator('p')).toHaveText(raw)
     expect(await description(page).locator('p').textContent()).toBe(raw)
     await expect(description(page).locator('a, script, textarea')).toHaveCount(0)
-    await expect(page.getByLabel('说明（可选）', { exact: true })).not.toBeVisible()
+    await expect(descriptionEditor(page)).toHaveCount(1)
+    await expect(descriptionEditor(page)).not.toBeVisible()
     await app.evaluate(({ ipcMain }, context) => {
       ipcMain.removeHandler('recovery:get-context')
       ipcMain.handle(
@@ -172,8 +182,9 @@ test('long text retains reading context, editor and record drafts with keyboard 
       await expect(page.locator('.action-detail h2')).toHaveText('阅读长说明')
     })
     await step('toggle description while editing without replacing the draft', async () => {
-      await page.getByText('编辑与管理行动', { exact: true }).click()
-      const editor = page.getByLabel('说明（可选）', { exact: true })
+      await openManagement(page.locator('.action-detail'), '行动')
+      const editor = descriptionEditor(page)
+      await expect(editor).toHaveAccessibleName('说明（可选）')
       await editor.fill('未保存的编辑草稿')
       await toggle.click()
       await toggle.click()
@@ -254,8 +265,9 @@ test('saving short and long descriptions updates the reader without truncating t
     const panel = description(page)
     await panel.locator('summary').click()
     await expect(panel.locator('p')).toHaveText(long)
-    await page.getByText('编辑与管理行动', { exact: true }).click()
-    const editor = page.getByLabel('说明（可选）', { exact: true })
+    await openManagement(page.locator('.action-detail'), '行动')
+    const editor = descriptionEditor(page)
+    await expect(editor).toHaveAccessibleName('说明（可选）')
     for (const text of [raw, long]) {
       await step(`save ${text === raw ? 'short' : 'long'} description`, async () => {
         await editor.fill(text)
