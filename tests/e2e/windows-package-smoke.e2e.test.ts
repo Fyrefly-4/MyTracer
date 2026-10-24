@@ -96,6 +96,7 @@ async function verifyPackagedApplication(
     ).toBeVisible()
     expect(await page.evaluate(() => Object.keys(window.myTracer.goals))).toEqual([
       'create',
+      'createStage',
       'updateDetails',
       'pause',
       'resume',

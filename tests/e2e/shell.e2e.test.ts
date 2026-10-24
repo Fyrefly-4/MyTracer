@@ -107,6 +107,7 @@ test('runs the Electron shell with an isolated userData root', async () => {
     ])
     expect(await page.evaluate(() => Object.keys(window.myTracer.goals))).toEqual([
       'create',
+      'createStage',
       'updateDetails',
       'pause',
       'resume',
