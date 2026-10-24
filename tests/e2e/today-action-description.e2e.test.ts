@@ -197,6 +197,7 @@ test('long text retains reading context, editor and record drafts with keyboard 
       'start record and retain draft across description toggles and navigation',
       async () => {
         await recording.getByRole('button', { name: '开始记录', exact: true }).click()
+        await expect(recording.getByLabel('投入时长（分钟，可选）')).toBeFocused()
         await recording.getByLabel('投入时长（分钟，可选）').fill('7')
         await toggle.click()
         await toggle.click()
@@ -247,6 +248,10 @@ test('long text retains reading context, editor and record drafts with keyboard 
         await expect
           .poll(() => pane.evaluate((element) => element.scrollTop))
           .toBeCloseTo(position, 0)
+        await expect(
+          page.getByRole('navigation').getByRole('button', { name: '今天', exact: true })
+        ).toBeFocused()
+        await expect(recording.getByLabel('投入时长（分钟，可选）')).toHaveValue('7')
       })
     }
     const saved = await page.evaluate(
