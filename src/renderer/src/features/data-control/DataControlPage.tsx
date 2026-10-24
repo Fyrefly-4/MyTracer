@@ -196,7 +196,16 @@ function ActionRecordEditor(props: {
             <dt>简述</dt>
             <dd className="record-summary">{props.record.summary || '未填写'}</dd>
             <dt>补充笔记</dt>
-            <dd>{props.record.note ? <RecordNote text={props.record.note} /> : '未填写'}</dd>
+            <dd>
+              {props.record.note ? (
+                <RecordNote
+                  readingKey={`data:action:${props.record.id}`}
+                  text={props.record.note}
+                />
+              ) : (
+                '未填写'
+              )}
+            </dd>
           </div>
           <div className="data-summary-wide">
             <dt>记录中的下一步</dt>
@@ -427,7 +436,16 @@ function RoutineRecordEditor(props: {
             <dt>简述</dt>
             <dd className="record-summary">{props.record.summary || '未填写'}</dd>
             <dt>补充笔记</dt>
-            <dd>{props.record.note ? <RecordNote text={props.record.note} /> : '未填写'}</dd>
+            <dd>
+              {props.record.note ? (
+                <RecordNote
+                  readingKey={`data:routine:${props.record.id}`}
+                  text={props.record.note}
+                />
+              ) : (
+                '未填写'
+              )}
+            </dd>
           </div>
         </dl>
       ) : (

@@ -1,5 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { recordNoteCss } from '../../presentation/record-note'
 import { App } from './App'
 import './styles.css'
 import './design-system.css'
@@ -12,6 +13,7 @@ if (!rootElement) {
 
 createRoot(rootElement).render(
   <StrictMode>
+    <style>{recordNoteCss}</style>
     <App />
   </StrictMode>
 )

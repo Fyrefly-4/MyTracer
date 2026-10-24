@@ -1,5 +1,6 @@
-import { useId, useState, type ReactNode } from 'react'
-import { renderRecordNote, recordNoteCss } from '../../../presentation/record-note'
+import { useContext, useId, useState, type ReactNode } from 'react'
+import { UiSessionContext } from './ui-session'
+import { renderRecordNote } from '../../../presentation/record-note'
 
 export function RecordSummaryInput({
   value,
@@ -67,15 +68,33 @@ export function RecordNoteInput({
   )
 }
 
-export function RecordNote({ text }: { readonly text: string }): ReactNode {
+export function RecordNote({
+  text,
+  readingKey
+}: {
+  readonly text: string
+  readonly readingKey?: string
+}): ReactNode {
+  const session = useContext(UiSessionContext)
+  const [expanded, setExpanded] = useState(() =>
+    Boolean(readingKey && session?.expandedRecordNotes.has(readingKey))
+  )
   const content = (
-    <>
-      <style>{recordNoteCss}</style>
-      <div className="record-note" dangerouslySetInnerHTML={{ __html: renderRecordNote(text) }} />
-    </>
+    <div className="record-note" dangerouslySetInnerHTML={{ __html: renderRecordNote(text) }} />
   )
   return text.length > 500 || text.split('\n').length > 8 ? (
-    <details className="record-note-details">
+    <details
+      className="record-note-details"
+      open={expanded}
+      onToggle={(event) => {
+        const open = event.currentTarget.open
+        setExpanded(open)
+        if (readingKey && session) {
+          if (open) session.expandedRecordNotes.add(readingKey)
+          else session.expandedRecordNotes.delete(readingKey)
+        }
+      }}
+    >
       <summary>展开完整笔记</summary>
       {content}
     </details>

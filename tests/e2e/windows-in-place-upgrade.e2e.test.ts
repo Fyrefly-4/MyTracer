@@ -342,6 +342,12 @@ test('keeps all old-version facts and synthetic configuration through an in-plac
     expect(afterExport).toMatchObject({ exportVersion: 6, sourceDataVersion: 7 })
     expect(afterExport.data).toEqual({
       ...(beforeExport.data as object),
+      actionRecords: (beforeExport.data as { actionRecords: object[] }).actionRecords.map(
+        (record) => ({ ...record, summary: null })
+      ),
+      routineRecords: (beforeExport.data as { routineRecords: object[] }).routineRecords.map(
+        (record) => ({ ...record, summary: null })
+      ),
       goals: (beforeExport.data as { goals: object[] }).goals.map((goal) => ({
         ...goal,
         predecessorGoalId: null
@@ -355,6 +361,14 @@ test('keeps all old-version facts and synthetic configuration through an in-plac
     application = undefined
     expect(snapshotDatabase(databasePath)).toEqual({
       ...beforeDatabase,
+      action_records: beforeDatabase.action_records.map((record) => ({
+        ...(record as object),
+        summary: null
+      })),
+      routine_records: beforeDatabase.routine_records.map((record) => ({
+        ...(record as object),
+        summary: null
+      })),
       goals: beforeDatabase.goals.map((goal) => ({
         ...(goal as object),
         predecessor_goal_id: null
@@ -364,7 +378,7 @@ test('keeps all old-version facts and synthetic configuration through an in-plac
         arrangement_mode: 'weekly'
       })),
       metadata: beforeDatabase.metadata.map((row) =>
-        (row as { key: string }).key === 'schemaVersion' ? { ...(row as object), value: '6' } : row
+        (row as { key: string }).key === 'schemaVersion' ? { ...(row as object), value: '7' } : row
       )
     })
 
@@ -494,6 +508,12 @@ test('observes a running old application during installation', async () => {
     )
     expect(afterExport.data).toEqual({
       ...(beforeExport.data as object),
+      actionRecords: (beforeExport.data as { actionRecords: object[] }).actionRecords.map(
+        (record) => ({ ...record, summary: null })
+      ),
+      routineRecords: (beforeExport.data as { routineRecords: object[] }).routineRecords.map(
+        (record) => ({ ...record, summary: null })
+      ),
       goals: (beforeExport.data as { goals: object[] }).goals.map((goal) => ({
         ...goal,
         predecessorGoalId: null
@@ -507,6 +527,14 @@ test('observes a running old application during installation', async () => {
     application = undefined
     expect(snapshotDatabase(databasePath)).toEqual({
       ...beforeDatabase,
+      action_records: beforeDatabase.action_records.map((record) => ({
+        ...(record as object),
+        summary: null
+      })),
+      routine_records: beforeDatabase.routine_records.map((record) => ({
+        ...(record as object),
+        summary: null
+      })),
       goals: beforeDatabase.goals.map((goal) => ({
         ...(goal as object),
         predecessor_goal_id: null
@@ -516,7 +544,7 @@ test('observes a running old application during installation', async () => {
         arrangement_mode: 'weekly'
       })),
       metadata: beforeDatabase.metadata.map((row) =>
-        (row as { key: string }).key === 'schemaVersion' ? { ...(row as object), value: '6' } : row
+        (row as { key: string }).key === 'schemaVersion' ? { ...(row as object), value: '7' } : row
       )
     })
   } finally {
@@ -618,6 +646,12 @@ test('repairs a failed package launch without replacing old facts', async () => 
     )
     expect(afterExport.data).toEqual({
       ...(beforeExport.data as object),
+      actionRecords: (beforeExport.data as { actionRecords: object[] }).actionRecords.map(
+        (record) => ({ ...record, summary: null })
+      ),
+      routineRecords: (beforeExport.data as { routineRecords: object[] }).routineRecords.map(
+        (record) => ({ ...record, summary: null })
+      ),
       goals: (beforeExport.data as { goals: object[] }).goals.map((goal) => ({
         ...goal,
         predecessorGoalId: null
@@ -631,6 +665,14 @@ test('repairs a failed package launch without replacing old facts', async () => 
     application = undefined
     expect(snapshotDatabase(databasePath)).toEqual({
       ...beforeDatabase,
+      action_records: beforeDatabase.action_records.map((record) => ({
+        ...(record as object),
+        summary: null
+      })),
+      routine_records: beforeDatabase.routine_records.map((record) => ({
+        ...(record as object),
+        summary: null
+      })),
       goals: beforeDatabase.goals.map((goal) => ({
         ...(goal as object),
         predecessor_goal_id: null
@@ -640,7 +682,7 @@ test('repairs a failed package launch without replacing old facts', async () => 
         arrangement_mode: 'weekly'
       })),
       metadata: beforeDatabase.metadata.map((row) =>
-        (row as { key: string }).key === 'schemaVersion' ? { ...(row as object), value: '6' } : row
+        (row as { key: string }).key === 'schemaVersion' ? { ...(row as object), value: '7' } : row
       )
     })
 

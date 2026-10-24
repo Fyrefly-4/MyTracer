@@ -73,7 +73,11 @@ test('summary and note stay separate through editing, keyboard collapse, safe re
     ).toHaveCount(0)
     await selected.getByRole('button', { name: '编辑记录', exact: true }).click()
     const summary = selected.getByRole('textbox', { name: '简述（可选）', exact: true })
-    const note = selected.getByRole('textbox', { name: '行动备注', exact: true })
+    const note = selected.getByRole('textbox', {
+      name: '行动备注',
+      exact: true,
+      includeHidden: true
+    })
     await expect(note).toBeVisible()
     await expect(note).toHaveValue(ids.note)
     await note.fill('')

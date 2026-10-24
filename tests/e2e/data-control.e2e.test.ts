@@ -192,7 +192,7 @@ test('edits, backfills, previews, deletes, and reopens T031 facts through the tr
     try {
       expect(
         inspected.prepare("SELECT value FROM metadata WHERE key = 'schemaVersion'").get()
-      ).toEqual({ value: '6' })
+      ).toEqual({ value: '7' })
       expect(inspected.prepare('PRAGMA foreign_key_check').all()).toEqual([])
     } finally {
       inspected.close()

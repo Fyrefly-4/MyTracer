@@ -121,7 +121,8 @@ test('book month navigation, original visit, source filters and scroll return wi
     await expect(page.locator('.data-history-row')).toHaveCount(8)
     await page.locator('.data-history-row').nth(2).click()
     await expect(page.getByLabel('所选记录')).toContainText('2026-08-22')
-    // Match toHaveText's textContent semantics, including collapsed understanding/confusion text.
+    // Record text includes collapsed facts, while shared styles belong outside the record.
+    await expect(page.getByLabel('所选记录').locator('style')).toHaveCount(0)
     const selected = (await page.getByLabel('所选记录').textContent())!
     await page.locator('[data-scroll-key="master"]').evaluate((node) => {
       node.scrollTop = 110

@@ -229,6 +229,16 @@ test('reading panes and modal forms remain usable at small windows and 100/125/1
           }
         })
         if (layout.wide) {
+          const note = page.locator('.selected-data-record .record-note-details')
+          if ((await note.getAttribute('open')) === null)
+            await note.locator(':scope > summary').click()
+          await expect
+            .poll(() =>
+              page
+                .locator('.selected-data-record')
+                .evaluate((el) => el.scrollHeight - el.clientHeight)
+            )
+            .toBeGreaterThanOrEqual(100)
           expect(layout).toMatchObject({
             workspace: 'hidden',
             history: 'hidden',

@@ -34,7 +34,9 @@ test('first record preserves drafts, explicit choices, retry identity and modal 
     await dialog
       .getByRole('textbox', { name: '简述（可选）', exact: true })
       .fill('合成简述\n第二行')
-    await openRecordNote(dialog.getByRole('textbox', { name: '备注（可选）', exact: true }))
+    await openRecordNote(
+      dialog.getByRole('textbox', { name: '备注（可选）', exact: true, includeHidden: true })
+    )
     await dialog
       .getByLabel('备注（可选）', { exact: true })
       .fill('合成长文字，保留事实而不自动完成。'.repeat(80))

@@ -97,8 +97,12 @@ test('aggregate AC-05 to AC-06 keeps pre-recovery and post-recovery records in o
     await expect(page.getByRole('heading', { name: '2026-08-24 至 2026-08-30' })).toBeVisible()
     await expect(page.getByLabel('周期汇总')).toContainText('已记录时长合计10 分钟')
     await expect(page.getByLabel('周期汇总')).toContainText('真实行动次数2')
-    await expect(page.getByText('恢复前事实')).toBeVisible()
-    await expect(page.getByText('恢复后事实')).toBeVisible()
+    await expect(
+      page.getByLabel('周期已确认理解').getByText('恢复前事实', { exact: true })
+    ).toBeVisible()
+    await expect(
+      page.getByLabel('周期已确认理解').getByText('恢复后事实', { exact: true })
+    ).toBeVisible()
     await page.getByLabel('一个真实进展').fill('完成恢复并继续行动')
     await page.getByLabel('一个主要阻力').fill('重新进入上下文需要时间')
     await page.getByLabel('下一周期的一个调整').fill('保留一个更小的下一步')
