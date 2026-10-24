@@ -47,6 +47,7 @@ describe('ActionRecord domain', () => {
         durationMinutes: 0,
         outcome,
         nextStep: null,
+        summary: null,
         note: null
       })
     }
@@ -61,10 +62,11 @@ describe('ActionRecord domain', () => {
         durationMinutes: 25,
         outcome: 'partial',
         nextStep: '  Run another example  ',
+        summary: null,
         note: '  ',
         now
       })
-    ).toMatchObject({ nextStep: 'Run another example', note: null })
+    ).toMatchObject({ nextStep: 'Run another example', note: '  ' })
   })
 
   it('rejects negative, fractional, and invalid occurrence values', () => {
@@ -145,6 +147,7 @@ describe('ActionRecord domain', () => {
         occurredOn: '2026-08-11',
         durationMinutes: 3,
         outcome: 'stopped',
+        summary: null,
         note: 'Edited',
         now: '2026-08-13T08:00:00.000Z'
       })

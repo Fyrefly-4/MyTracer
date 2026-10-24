@@ -1,3 +1,4 @@
+import { openRecordNote } from '../support/ui-disclosure'
 import Database from 'better-sqlite3'
 import { join } from 'node:path'
 import { expect, test, type ElectronApplication } from '@playwright/test'
@@ -92,6 +93,7 @@ test('saves quick and deep records without a Today prerequisite and preserves th
     await panel.getByLabel('我理解了（可选）').fill('状态归属应保持单一')
     await panel.getByLabel('我仍困惑（可选）').fill('错误边界如何呈现')
     await panel.getByLabel('记录中的下一步（可选）').fill('写一个边界测试')
+    await openRecordNote(panel.getByLabel('备注（可选）'))
     await panel.getByLabel('备注（可选）').fill('先保存事实，再决定状态')
     await panel.getByRole('button', { name: '调整行动状态或当前下一步（可选）' }).click()
     await panel.getByLabel('保存记录后').selectOption('complete')

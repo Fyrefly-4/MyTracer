@@ -68,7 +68,8 @@ describe('bounded Home read model', () => {
       expect(overview.latestByGoal[1]).toMatchObject({
         id: 'old',
         occurredOn: '2025-01-01',
-        note: 'Old insight'
+        summary: null,
+        hasNote: false
       })
       expect(overview.recentRecords).toHaveLength(3)
       expect(overview.currentActions).toHaveLength(3)

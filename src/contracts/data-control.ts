@@ -30,6 +30,7 @@ export interface ActionRecordDataDto {
   readonly durationMinutes: number | null
   readonly outcome: 'completed' | 'partial' | 'stopped'
   readonly nextStep: string | null
+  readonly summary: string | null
   readonly note: string | null
   readonly createdAt: string
   readonly updatedAt: string
@@ -43,6 +44,7 @@ export interface RoutineRecordDataDto {
   readonly plannedForDate: boolean
   readonly plannedForDateBasis: 'schedule_at_recording' | 'user_confirmed_history'
   readonly durationMinutes: number | null
+  readonly summary: string | null
   readonly note: string | null
   readonly createdAt: string
   readonly updatedAt: string
@@ -124,6 +126,7 @@ export interface BackfillActionRecordInputDto {
   readonly understanding?: string | null
   readonly confusion?: string | null
   readonly nextStep?: string | null
+  readonly summary?: string | null
   readonly note?: string | null
 }
 
@@ -133,6 +136,7 @@ export interface UpdateActionRecordInputDto {
   readonly durationMinutes: number | null
   readonly outcome: 'completed' | 'partial' | 'stopped'
   readonly nextStep?: string | null
+  readonly summary?: string | null
   readonly note?: string | null
 }
 
@@ -142,6 +146,7 @@ export interface BackfillRoutineRecordInputDto {
   readonly outcome: 'target_met' | 'acted' | 'intentional_rest' | 'not_done'
   readonly plannedForDate: boolean
   readonly durationMinutes?: number | null
+  readonly summary?: string | null
   readonly note?: string | null
 }
 
@@ -151,6 +156,7 @@ export interface UpdateRoutineRecordInputDto {
   readonly outcome: 'target_met' | 'acted' | 'intentional_rest' | 'not_done'
   readonly plannedForDate?: boolean
   readonly durationMinutes?: number | null
+  readonly summary?: string | null
   readonly note?: string | null
 }
 

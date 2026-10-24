@@ -52,6 +52,7 @@ export function buildRecordBook(data: CorePersistenceSnapshot): RecordBook {
         ),
         field('行动状态（读取时）', action ? states[action.status] : '不可用'),
         association(action?.goalId ?? null),
+        original('简述', record.summary),
         original('原备注', record.note),
         original('记录时写下的下一步', record.nextStep),
         ...(understandings.get(record.id) ?? []).flatMap((row) => [
@@ -85,6 +86,7 @@ export function buildRecordBook(data: CorePersistenceSnapshot): RecordBook {
           '计划日依据',
           record.plannedForDateBasis === 'schedule_at_recording' ? '记录时日程' : '用户确认的历史'
         ),
+        original('简述', record.summary),
         original('原备注', record.note)
       ]
     })

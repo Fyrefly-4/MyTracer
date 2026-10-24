@@ -29,6 +29,7 @@ test('Home wheel scrolling reaches recent records at a constrained size and rest
           actionId: goal.value.currentNextActionId,
           occurredOn: today.value.localDate,
           outcome: 'partial',
+          summary: null,
           note: `底部记录 ${i}`,
           durationMinutes: 10
         })

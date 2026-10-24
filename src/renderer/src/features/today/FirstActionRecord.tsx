@@ -1,3 +1,4 @@
+import { RecordSummaryInput, RecordNoteInput } from '../../app/RecordText'
 import { createPortal } from 'react-dom'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { ActionDetailDto } from '../../../../contracts/actions'
@@ -84,6 +85,7 @@ export function FirstActionRecord(props: {
         unknownDuration: false,
         outcome: '',
         lifecycle: '',
+        summary: '',
         note: ''
       })
       setDates(null)
@@ -119,7 +121,8 @@ export function FirstActionRecord(props: {
       durationMinutes: draft.unknownDuration ? null : Number(draft.durationMinutes),
       outcome: draft.outcome as FirstActionRecordInputDto['outcome'],
       lifecycle: draft.lifecycle as FirstActionRecordInputDto['lifecycle'],
-      note: draft.note.trim() || null,
+      summary: draft.summary.trim() ? draft.summary : null,
+      note: draft.note.trim() ? draft.note : null,
       dateChoice
     }
     // capturedOn is owned by Main, never sent back as renderer authority.
@@ -131,6 +134,7 @@ export function FirstActionRecord(props: {
       durationMinutes,
       outcome,
       lifecycle,
+      summary,
       note
     } = input
     const request: FirstActionRecordInputDto = {
@@ -141,6 +145,7 @@ export function FirstActionRecord(props: {
       durationMinutes,
       outcome,
       lifecycle,
+      summary,
       note,
       dateChoice: input.dateChoice
     }
@@ -379,14 +384,14 @@ export function FirstActionRecord(props: {
                 <p className="empty-copy">
                   本次达到预期不等于整个行动已完成。不会自动加入今天或改变目标下一步。
                 </p>
-                <label>
-                  备注（可选）
-                  <textarea
-                    rows={3}
-                    value={draft.note}
-                    onChange={(event) => change({ ...draft, note: event.target.value })}
-                  />
-                </label>
+                <RecordSummaryInput
+                  value={draft.summary}
+                  onChange={(summary) => change({ ...draft, summary })}
+                />
+                <RecordNoteInput
+                  value={draft.note}
+                  onChange={(note) => change({ ...draft, note })}
+                />
                 <label>
                   <span id="first-record-goal-label">关联目标（可选）</span>
                   <select

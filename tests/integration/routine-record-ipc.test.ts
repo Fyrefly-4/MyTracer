@@ -87,6 +87,12 @@ describe('RoutineRecord IPC boundary', () => {
   it('rejects unknown, invalid duration, extra fields, and untrusted senders', () => {
     const { assertSender, invoke, service } = setup()
     for (const input of [
+      ...[123, {}, 'x'.repeat(501)].map((summary) => ({
+        routineId,
+        recordingContextId: contextId,
+        outcome: 'acted',
+        summary
+      })),
       { routineId, recordingContextId: contextId, outcome: 'unknown' },
       { routineId, recordingContextId: contextId, outcome: 'not_done', durationMinutes: 0 },
       { routineId, recordingContextId: contextId, outcome: 'acted', durationMinutes: -1 },

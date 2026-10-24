@@ -99,6 +99,7 @@ describe('Recovery pure projection', () => {
             outcome: 'intentional_rest',
             plannedForDate: true,
             durationMinutes: null,
+            summary: null,
             note: null,
             createdAt: '2026-08-20T12:00:00.000Z'
           },
@@ -111,6 +112,7 @@ describe('Recovery pure projection', () => {
             outcome: 'not_done',
             plannedForDate: true,
             durationMinutes: null,
+            summary: null,
             note: null,
             createdAt: '2026-08-19T12:00:00.000Z'
           },
@@ -123,6 +125,7 @@ describe('Recovery pure projection', () => {
             outcome: 'acted',
             plannedForDate: false,
             durationMinutes: 0,
+            summary: null,
             note: null,
             createdAt: '2026-08-18T12:00:00.000Z'
           },
@@ -135,6 +138,7 @@ describe('Recovery pure projection', () => {
             outcome: 'target_met',
             plannedForDate: true,
             durationMinutes: null,
+            summary: null,
             note: null,
             createdAt: '2026-08-16T12:00:00.000Z'
           }
@@ -186,6 +190,7 @@ describe('Recovery pure projection', () => {
             outcome: 'target_met',
             plannedForDate: true,
             durationMinutes: null,
+            summary: null,
             note: null,
             createdAt: '2026-08-20T12:00:00.000Z'
           }

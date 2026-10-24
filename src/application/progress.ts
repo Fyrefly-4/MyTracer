@@ -107,6 +107,7 @@ export function buildProgressViewFromSnapshot(
       outcome: record.outcome,
       plannedForDate: record.plannedForDate,
       durationMinutes: record.durationMinutes,
+      summary: record.summary,
       note: record.note,
       createdAt: record.recordCreatedAt
     })

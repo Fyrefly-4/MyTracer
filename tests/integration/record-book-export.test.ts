@@ -115,6 +115,7 @@ describe('record book safe delivery', () => {
             occurredOn: date,
             durationMinutes: index === 0 ? null : 0,
             outcome: 'partial',
+            summary: null,
             note: '</script> 合成文字',
             nextStep: null,
             createdAt: snapshot.readAt,

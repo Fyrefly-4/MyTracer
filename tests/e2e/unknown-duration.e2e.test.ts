@@ -1,3 +1,4 @@
+import { openRecordNote } from '../support/ui-disclosure'
 import { join } from 'node:path'
 import { expect, test, type ElectronApplication } from '@playwright/test'
 import { _electron as electron } from 'playwright'
@@ -54,6 +55,7 @@ test('unknown duration stays distinct from zero across recording, backfill, edit
     }
     await page.getByRole('button', { name: '补记记录', exact: true }).click()
     await page.getByLabel('行动补记日期', { exact: true }).fill('2026-08-20')
+    await openRecordNote(page.getByLabel('行动补记备注', { exact: true }))
     await page.getByLabel('行动补记备注', { exact: true }).fill('未计时的历史事实')
     await page.keyboard.press('Escape')
     await page.getByRole('button', { name: /补记记录/ }).click()

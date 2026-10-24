@@ -93,6 +93,7 @@ function seed(connection: SqliteConnection): void {
       durationMinutes: 0,
       outcome: 'partial',
       nextStep: null,
+      summary: null,
       note: null,
       createdAt: at(12, 1),
       updatedAt: at(12, 1)
@@ -104,6 +105,7 @@ function seed(connection: SqliteConnection): void {
       durationMinutes: 25,
       outcome: 'completed',
       nextStep: null,
+      summary: null,
       note: null,
       createdAt: at(12, 1),
       updatedAt: at(12, 1)
@@ -115,6 +117,7 @@ function seed(connection: SqliteConnection): void {
       durationMinutes: 10,
       outcome: 'stopped',
       nextStep: null,
+      summary: null,
       note: null,
       createdAt: at(11),
       updatedAt: at(11)
@@ -126,6 +129,7 @@ function seed(connection: SqliteConnection): void {
       durationMinutes: 5,
       outcome: 'partial',
       nextStep: null,
+      summary: null,
       note: null,
       createdAt: at(10),
       updatedAt: at(10)

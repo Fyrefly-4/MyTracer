@@ -1,3 +1,4 @@
+import { openRecordNote } from '../support/ui-disclosure'
 import { join } from 'node:path'
 import { expect, test, type ElectronApplication } from '@playwright/test'
 import { _electron as electron } from 'playwright'
@@ -62,6 +63,7 @@ for (const [delayedChannel, arrangementMode] of [
       expect(masterBox && panelBox && panelBox.x >= masterBox.x + masterBox.width).toBe(true)
       await panel.getByRole('button', { name: '记录例行', exact: true }).click()
       await panel.getByLabel('投入时长（分钟，可选）').fill('8')
+      await openRecordNote(panel.getByLabel('备注（可选）'))
       await panel.getByLabel('备注（可选）').fill('切换选择和页面之后继续')
 
       // This uncommitted action is in 其它行动, not the focus/intention lists.
@@ -196,6 +198,10 @@ for (const remountSubmittedRoutine of [false, true]) {
       const currentPanel = page.getByLabel('继续编辑例行 例行记录', { exact: true })
       await first.click()
       await savedPanel.getByRole('button', { name: '记录例行', exact: true }).click()
+      await savedPanel
+        .getByRole('textbox', { name: '简述（可选）', exact: true })
+        .fill('提交的简述')
+      await openRecordNote(savedPanel.getByLabel('备注（可选）'))
       await savedPanel.getByLabel('备注（可选）').fill('提交的旧草稿')
       await application.evaluate(({ ipcMain }) => {
         const channel = 'routine-records:record'
@@ -222,6 +228,10 @@ for (const remountSubmittedRoutine of [false, true]) {
         .toBe(true)
       await second.click()
       await currentPanel.getByRole('button', { name: '记录例行', exact: true }).click()
+      await currentPanel
+        .getByRole('textbox', { name: '简述（可选）', exact: true })
+        .fill('新选择的简述')
+      await openRecordNote(currentPanel.getByLabel('备注（可选）'))
       await currentPanel.getByLabel('备注（可选）').fill('保留新选择的草稿')
       // Remount A before its old request settles: its restored draft is a new
       // object but still owns the consumed recording context.
@@ -239,6 +249,9 @@ for (const remountSubmittedRoutine of [false, true]) {
       ).toHaveCount(0)
       await expect(savedPanel).not.toContainText('已恢复')
       await second.click()
+      await expect(
+        currentPanel.getByRole('textbox', { name: '简述（可选）', exact: true })
+      ).toHaveValue('新选择的简述')
       await expect(currentPanel.getByLabel('备注（可选）')).toHaveValue('保留新选择的草稿')
       await currentPanel.getByRole('button', { name: '放弃草稿', exact: true }).click()
     } finally {

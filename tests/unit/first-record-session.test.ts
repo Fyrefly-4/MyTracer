@@ -12,6 +12,7 @@ describe('first record session draft', () => {
       unknownDuration: true,
       outcome: 'completed',
       lifecycle: 'keep-pending',
+      summary: '',
       note: '还要继续'
     }
     session.setFirstActionDraft(draft)

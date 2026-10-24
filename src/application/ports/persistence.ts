@@ -57,6 +57,7 @@ export interface ActionRecordPersistenceRecord {
   readonly durationMinutes: number | null
   readonly outcome: 'completed' | 'partial' | 'stopped'
   readonly nextStep: string | null
+  readonly summary: string | null
   readonly note: string | null
   readonly createdAt: string
   readonly updatedAt: string
@@ -70,6 +71,7 @@ export interface RoutineRecordPersistenceRecord {
   readonly plannedForDate: boolean
   readonly plannedForDateBasis: RoutinePlannedForDateBasis
   readonly durationMinutes: number | null
+  readonly summary: string | null
   readonly note: string | null
   readonly createdAt: string
   readonly updatedAt: string
@@ -115,6 +117,7 @@ export interface GoalActionRecordSummaryPersistenceRecord {
   readonly durationMinutes: number | null
   readonly outcome: ActionRecordPersistenceRecord['outcome']
   readonly nextStep: string | null
+  readonly summary: string | null
   readonly note: string | null
   readonly createdAt: string
 }
@@ -152,6 +155,7 @@ export interface RoutineProgressQueryRecordPersistence {
   readonly outcome: RoutineRecordOutcome
   readonly plannedForDate: boolean
   readonly durationMinutes: number | null
+  readonly summary: string | null
   readonly note: string | null
   readonly recordCreatedAt: string
 }

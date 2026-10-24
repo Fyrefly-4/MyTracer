@@ -41,6 +41,7 @@ export interface GoalRecordSummaryDto {
   readonly durationMinutes: number | null
   readonly outcome: 'completed' | 'partial' | 'stopped'
   readonly nextStep: string | null
+  readonly summary: string | null
   readonly note: string | null
   readonly createdAt: string
 }

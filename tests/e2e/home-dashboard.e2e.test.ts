@@ -36,6 +36,7 @@ test('home reads real records, routes without mutations and remembers both calen
         occurredOn: today.value.localDate,
         durationMinutes: 12,
         outcome: 'partial',
+        summary: null,
         note: '真实记录片段，不是生成的摘要'
       })
       const routine = await window.myTracer.routines.create({
@@ -50,6 +51,7 @@ test('home reads real records, routes without mutations and remembers both calen
         occurredOn: today.value.localDate,
         outcome: 'intentional_rest',
         plannedForDate: true,
+        summary: null,
         note: '今天主动休息'
       })
       if (!rest.ok) throw new Error('seed rest failed')
@@ -61,7 +63,8 @@ test('home reads real records, routes without mutations and remembers both calen
     })
     await page.getByRole('navigation').getByRole('button', { name: '首页', exact: true }).click()
     const card = page.getByRole('article', { name: '首页真实目标 概览' })
-    await expect(card.getByText('真实记录片段，不是生成的摘要', { exact: false })).toBeVisible()
+    await expect(card).toContainText('从首页继续行动')
+    await expect(card).not.toContainText('真实记录片段，不是生成的摘要')
     await expect(
       page.getByRole('button', { name: `${seeded.today} · 2 条记录`, exact: true })
     ).toBeVisible()
@@ -257,6 +260,7 @@ test('Home calendar requests bounded day pages and reports day-query failure wit
           occurredOn: date.value.localDate,
           outcome: 'partial',
           durationMinutes: 0,
+          summary: null,
           note: `记录 ${index}`
         })
         if (!result.ok) throw new Error('record failed')

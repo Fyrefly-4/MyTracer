@@ -65,6 +65,7 @@ test('edits, backfills, previews, deletes, and reopens T031 facts through the tr
         occurredOn: '2026-08-11',
         durationMinutes: 9,
         outcome: 'stopped',
+        summary: null,
         note: 'Edited history'
       })
       const movedRoutine = await window.myTracer.dataControl.updateRoutineRecord({
@@ -191,7 +192,7 @@ test('edits, backfills, previews, deletes, and reopens T031 facts through the tr
     try {
       expect(
         inspected.prepare("SELECT value FROM metadata WHERE key = 'schemaVersion'").get()
-      ).toEqual({ value: '6' })
+      ).toEqual({ value: '7' })
       expect(inspected.prepare('PRAGMA foreign_key_check').all()).toEqual([])
     } finally {
       inspected.close()

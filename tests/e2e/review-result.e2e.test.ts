@@ -161,6 +161,7 @@ test('AC-06 cancels cleanly, saves and edits one stable ReviewResult, resolves n
           occurredOn: '2026-08-10',
           durationMinutes: 9,
           outcome: 'partial',
+          summary: null,
           note: null
         }),
       seeded

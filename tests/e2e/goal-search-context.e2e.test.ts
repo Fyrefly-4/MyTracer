@@ -28,6 +28,7 @@ test('goal search survives a record round trip, missing results and deletion; ex
           occurredOn: `2026-08-${10 + index}`,
           durationMinutes: index,
           outcome: 'partial',
+          summary: null,
           note: `搜索往返记录${index}`
         })
         if (!record.ok) throw Error('seed record')

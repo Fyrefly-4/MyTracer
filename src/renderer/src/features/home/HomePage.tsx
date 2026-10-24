@@ -176,7 +176,7 @@ export function HomePage(): ReactNode {
                               {record ? (
                                 <>
                                   <time dateTime={record.occurredOn}>{record.occurredOn}</time> ·{' '}
-                                  {record.note || `${record.title} · ${record.outcomeText}`}
+                                  {record.summary || `${record.title} · ${record.outcomeText}`}
                                 </>
                               ) : recordDataAvailable ? (
                                 '还没有留下记录，可以从一个小步骤开始。'
@@ -329,7 +329,10 @@ export function HomePage(): ReactNode {
                           : ''}
                       </time>
                       <strong>{record.title}</strong>
-                      <span>{record.note || record.outcomeText}</span>
+                      <span>
+                        {record.summary || record.outcomeText}
+                        {record.hasNote ? ' · 有笔记' : ''}
+                      </span>
                     </button>
                   ))}
                 </div>

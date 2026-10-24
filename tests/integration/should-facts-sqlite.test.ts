@@ -53,6 +53,7 @@ it('queries isolated Goal dates and weekly facts without writes, recalculates co
       durationMinutes: 0,
       outcome: 'stopped',
       nextStep: null,
+      summary: null,
       note: null,
       createdAt: timestamp,
       updatedAt: timestamp
@@ -81,6 +82,7 @@ it('queries isolated Goal dates and weekly facts without writes, recalculates co
         plannedForDate: false,
         plannedForDateBasis: 'schedule_at_recording',
         durationMinutes: null,
+        summary: null,
         note: null,
         createdAt: timestamp,
         updatedAt: timestamp
@@ -116,6 +118,7 @@ it('queries isolated Goal dates and weekly facts without writes, recalculates co
       durationMinutes: 15,
       outcome: 'partial',
       nextStep: null,
+      summary: null,
       note: null,
       createdAt: timestamp,
       updatedAt: timestamp
@@ -135,6 +138,7 @@ it('queries isolated Goal dates and weekly facts without writes, recalculates co
       durationMinutes: 40,
       outcome: 'completed',
       nextStep: null,
+      summary: null,
       note: null,
       createdAt: timestamp,
       updatedAt: timestamp

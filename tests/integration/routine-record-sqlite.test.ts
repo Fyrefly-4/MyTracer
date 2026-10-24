@@ -77,9 +77,14 @@ describe('RoutineRecord SQLite integration', () => {
           routineId,
           capturedOn: day,
           outcome,
+          summary: '例行简述',
+          note: '  # 原始笔记\n',
           durationMinutes: outcome === 'target_met' || outcome === 'acted' ? index : null
         })
-      ).toMatchObject({ kind: 'saved', record: { outcome } })
+      ).toMatchObject({
+        kind: 'saved',
+        record: { outcome, summary: '例行简述', note: '  # 原始笔记\n' }
+      })
     }
     expect(connection.repository.readSnapshot().routineRecords).toHaveLength(4)
     expect(() =>

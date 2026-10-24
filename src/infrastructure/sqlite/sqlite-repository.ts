@@ -102,11 +102,11 @@ export class SqliteRepository
   saveActionRecord(record: ActionRecordPersistenceRecord): void {
     this.database
       .prepare(
-        `INSERT INTO action_records (id, action_id, occurred_on, duration_minutes, outcome, next_step, note, created_at, updated_at)
-         VALUES (@id, @actionId, @occurredOn, @durationMinutes, @outcome, @nextStep, @note, @createdAt, @updatedAt)
+        `INSERT INTO action_records (id, action_id, occurred_on, duration_minutes, outcome, next_step, note, summary, created_at, updated_at)
+         VALUES (@id, @actionId, @occurredOn, @durationMinutes, @outcome, @nextStep, @note, @summary, @createdAt, @updatedAt)
          ON CONFLICT(id) DO UPDATE SET action_id = excluded.action_id, occurred_on = excluded.occurred_on,
            duration_minutes = excluded.duration_minutes, outcome = excluded.outcome, next_step = excluded.next_step,
-           note = excluded.note, updated_at = excluded.updated_at`
+           note = excluded.note, summary = excluded.summary, updated_at = excluded.updated_at`
       )
       .run(record)
   }
@@ -114,8 +114,8 @@ export class SqliteRepository
   createActionRecord(record: ActionRecordPersistenceRecord): boolean {
     const result = this.database
       .prepare(
-        `INSERT INTO action_records (id, action_id, occurred_on, duration_minutes, outcome, next_step, note, created_at, updated_at)
-         VALUES (@id, @actionId, @occurredOn, @durationMinutes, @outcome, @nextStep, @note, @createdAt, @updatedAt)
+        `INSERT INTO action_records (id, action_id, occurred_on, duration_minutes, outcome, next_step, note, summary, created_at, updated_at)
+         VALUES (@id, @actionId, @occurredOn, @durationMinutes, @outcome, @nextStep, @note, @summary, @createdAt, @updatedAt)
          ON CONFLICT(id) DO NOTHING`
       )
       .run(record)
@@ -126,7 +126,7 @@ export class SqliteRepository
     const result = this.database
       .prepare(
         `UPDATE action_records SET occurred_on = @occurredOn, duration_minutes = @durationMinutes,
-           outcome = @outcome, next_step = @nextStep, note = @note, updated_at = @updatedAt
+           outcome = @outcome, next_step = @nextStep, note = @note, summary = @summary, updated_at = @updatedAt
          WHERE id = @id AND action_id = @actionId`
       )
       .run(record)
@@ -136,12 +136,12 @@ export class SqliteRepository
   saveRoutineRecord(record: RoutineRecordPersistenceRecord): void {
     this.database
       .prepare(
-        `INSERT INTO routine_records (id, routine_id, occurred_on, outcome, planned_for_date, planned_for_date_basis, duration_minutes, note, created_at, updated_at)
-         VALUES (@id, @routineId, @occurredOn, @outcome, @plannedForDate, @plannedForDateBasis, @durationMinutes, @note, @createdAt, @updatedAt)
+        `INSERT INTO routine_records (id, routine_id, occurred_on, outcome, planned_for_date, planned_for_date_basis, duration_minutes, note, summary, created_at, updated_at)
+         VALUES (@id, @routineId, @occurredOn, @outcome, @plannedForDate, @plannedForDateBasis, @durationMinutes, @note, @summary, @createdAt, @updatedAt)
          ON CONFLICT(id) DO UPDATE SET routine_id = excluded.routine_id, occurred_on = excluded.occurred_on,
            outcome = excluded.outcome, planned_for_date = excluded.planned_for_date,
            planned_for_date_basis = excluded.planned_for_date_basis,
-           duration_minutes = excluded.duration_minutes, note = excluded.note, updated_at = excluded.updated_at`
+           duration_minutes = excluded.duration_minutes, note = excluded.note, summary = excluded.summary, updated_at = excluded.updated_at`
       )
       .run({ ...record, plannedForDate: record.plannedForDate ? 1 : 0 })
   }
@@ -150,8 +150,8 @@ export class SqliteRepository
     try {
       this.database
         .prepare(
-          `INSERT INTO routine_records (id, routine_id, occurred_on, outcome, planned_for_date, planned_for_date_basis, duration_minutes, note, created_at, updated_at)
-           VALUES (@id, @routineId, @occurredOn, @outcome, @plannedForDate, @plannedForDateBasis, @durationMinutes, @note, @createdAt, @updatedAt)`
+          `INSERT INTO routine_records (id, routine_id, occurred_on, outcome, planned_for_date, planned_for_date_basis, duration_minutes, note, summary, created_at, updated_at)
+           VALUES (@id, @routineId, @occurredOn, @outcome, @plannedForDate, @plannedForDateBasis, @durationMinutes, @note, @summary, @createdAt, @updatedAt)`
         )
         .run({ ...record, plannedForDate: record.plannedForDate ? 1 : 0 })
       return true
@@ -172,7 +172,7 @@ export class SqliteRepository
       .prepare(
         `UPDATE routine_records SET occurred_on = @occurredOn, outcome = @outcome,
            planned_for_date = @plannedForDate, planned_for_date_basis = @plannedForDateBasis,
-           duration_minutes = @durationMinutes, note = @note, updated_at = @updatedAt
+           duration_minutes = @durationMinutes, note = @note, summary = @summary, updated_at = @updatedAt
          WHERE id = @id AND routine_id = @routineId`
       )
       .run({ ...record, plannedForDate: record.plannedForDate ? 1 : 0 })
@@ -427,6 +427,7 @@ export class SqliteRepository
       durationMinutes: row.duration_minutes === null ? null : Number(row.duration_minutes),
       outcome: asString(row, 'outcome') as ActionRecordPersistenceRecord['outcome'],
       nextStep: asNullableString(row, 'next_step'),
+      summary: asNullableString(row, 'summary'),
       note: asNullableString(row, 'note'),
       createdAt: asString(row, 'created_at')
     }))
@@ -666,7 +667,7 @@ export class SqliteRepository
       .prepare(
         `SELECT records.id AS record_id, records.action_id, actions.goal_id,
            actions.title AS action_title, records.occurred_on, records.duration_minutes,
-           records.outcome, (records.note IS NOT NULL OR records.next_step IS NOT NULL) AS has_recorded_text,
+           records.outcome, (records.summary IS NOT NULL OR records.note IS NOT NULL OR records.next_step IS NOT NULL) AS has_recorded_text,
            records.created_at AS record_created_at,
            understandings.id AS understanding_id, understandings.text AS understanding_text,
            understandings.created_at AS understanding_created_at,
@@ -717,7 +718,7 @@ export class SqliteRepository
       .prepare(
         `SELECT records.id AS record_id, records.routine_id, routines.goal_id,
            routines.name AS routine_name, records.occurred_on, records.outcome,
-           records.planned_for_date, records.duration_minutes, records.note,
+           records.planned_for_date, records.duration_minutes, records.note, records.summary,
            records.created_at AS record_created_at
          FROM routine_records AS records
          INNER JOIN routines ON routines.id = records.routine_id
@@ -741,6 +742,7 @@ export class SqliteRepository
       outcome: asString(row, 'outcome') as RoutineRecordPersistenceRecord['outcome'],
       plannedForDate: Number(row.planned_for_date) === 1,
       durationMinutes: row.duration_minutes === null ? null : Number(row.duration_minutes),
+      summary: asNullableString(row, 'summary'),
       note: asNullableString(row, 'note'),
       recordCreatedAt: asString(row, 'record_created_at')
     }))
@@ -972,6 +974,7 @@ export class SqliteRepository
           durationMinutes: row.duration_minutes === null ? null : Number(row.duration_minutes),
           outcome: asString(row, 'outcome') as ActionRecordPersistenceRecord['outcome'],
           nextStep: asNullableString(row, 'next_step'),
+          summary: asNullableString(row, 'summary'),
           note: asNullableString(row, 'note'),
           createdAt: asString(row, 'created_at'),
           updatedAt: asString(row, 'updated_at')
@@ -1124,6 +1127,7 @@ export class SqliteRepository
         'planned_for_date_basis'
       ) as RoutineRecordPersistenceRecord['plannedForDateBasis'],
       durationMinutes: row.duration_minutes === null ? null : Number(row.duration_minutes),
+      summary: asNullableString(row, 'summary'),
       note: asNullableString(row, 'note'),
       createdAt: asString(row, 'created_at'),
       updatedAt: asString(row, 'updated_at')
@@ -1148,6 +1152,7 @@ export class SqliteRepository
       durationMinutes: row.duration_minutes === null ? null : Number(row.duration_minutes),
       outcome: asString(row, 'outcome') as ActionRecordPersistenceRecord['outcome'],
       nextStep: asNullableString(row, 'next_step'),
+      summary: asNullableString(row, 'summary'),
       note: asNullableString(row, 'note'),
       createdAt: asString(row, 'created_at'),
       updatedAt: asString(row, 'updated_at')

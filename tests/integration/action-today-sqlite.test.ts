@@ -194,6 +194,7 @@ describe('Action and Today SQLite integration', () => {
       durationMinutes: 25,
       outcome: 'partial',
       nextStep: null,
+      summary: null,
       note: null,
       createdAt: instant,
       updatedAt: instant

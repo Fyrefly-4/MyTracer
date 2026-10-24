@@ -24,17 +24,18 @@ export class SqliteHomeQuery implements HomeQueryPort {
         ? this.database
             .prepare(
               `SELECT r.id, r.occurred_on AS occurredOn, a.title, a.goal_id AS goalId,
-          COALESCE(NULLIF(r.note, ''), (SELECT u.text FROM understandings u WHERE u.action_record_id=r.id AND u.revoked_at IS NULL ORDER BY u.created_at, u.id LIMIT 1)) AS note,
+          r.summary, (r.note IS NOT NULL AND r.note != '') AS hasNote,
           r.outcome, r.duration_minutes AS durationMinutes FROM action_records r JOIN actions a ON a.id=r.action_id WHERE r.id=?`
             )
             .get(key.id)
         : this.database
             .prepare(
               `SELECT r.id, r.occurred_on AS occurredOn, a.name AS title, a.goal_id AS goalId,
-          r.note, r.outcome, r.duration_minutes AS durationMinutes FROM routine_records r JOIN routines a ON a.id=r.routine_id WHERE r.id=?`
+          r.summary, (r.note IS NOT NULL AND r.note != '') AS hasNote, r.outcome, r.duration_minutes AS durationMinutes FROM routine_records r JOIN routines a ON a.id=r.routine_id WHERE r.id=?`
             )
             .get(key.id)
-    return { ...(row as Omit<HomeRecordDto, 'type'>), type: key.type }
+    const result = row as Omit<HomeRecordDto, 'type'>
+    return { ...result, hasNote: Boolean(result.hasNote), type: key.type }
   }
   overview(today: string, from: string): HomeOverviewDto {
     return this.database.transaction(() => {

@@ -1,3 +1,4 @@
+import { openRecordNote } from '../support/ui-disclosure'
 import { join } from 'node:path'
 import { readFile } from 'node:fs/promises'
 import { expect, test, type ElectronApplication, type Page } from '@playwright/test'
@@ -120,7 +121,8 @@ test('book month navigation, original visit, source filters and scroll return wi
     await expect(page.locator('.data-history-row')).toHaveCount(8)
     await page.locator('.data-history-row').nth(2).click()
     await expect(page.getByLabel('所选记录')).toContainText('2026-08-22')
-    // Match toHaveText's textContent semantics, including collapsed understanding/confusion text.
+    // Record text includes collapsed facts, while shared styles belong outside the record.
+    await expect(page.getByLabel('所选记录').locator('style')).toHaveCount(0)
     const selected = (await page.getByLabel('所选记录').textContent())!
     await page.locator('[data-scroll-key="master"]').evaluate((node) => {
       node.scrollTop = 110
@@ -176,6 +178,7 @@ test('book month navigation, original visit, source filters and scroll return wi
         occurredOn: '2025-01-02',
         durationMinutes: 0,
         outcome: 'partial',
+        summary: null,
         note: '新保存原文'
       })
       if (!record.ok) throw new Error(record.error.message)
@@ -195,6 +198,7 @@ test('book preserves data drafts, exports the full offline book and retains keyb
     await navigate(page, '数据')
     await page.locator('.data-history-row').first().click()
     await page.getByRole('button', { name: '编辑记录', exact: true }).click()
+    await openRecordNote(page.getByLabel('行动备注', { exact: true }))
     await page.getByLabel('行动备注', { exact: true }).fill('尚未保存的合成草稿')
     await openBook(page)
     const guard = page.getByRole('dialog', { name: '离开数据页' })

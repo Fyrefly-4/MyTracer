@@ -1,3 +1,4 @@
+import { RecordSummaryInput, RecordNoteInput, RecordNote } from '../../app/RecordText'
 import { chooseVisibleSelection } from '../../app/selection-preferences'
 import {
   createContext,
@@ -104,6 +105,7 @@ function ActionRecordEditor(props: {
   const [duration, setDuration] = useState(String(props.record.durationMinutes ?? ''))
   const [outcome, setOutcome] = useState(props.record.outcome)
   const [nextStep, setNextStep] = useState(props.record.nextStep ?? '')
+  const [summary, setSummary] = useState(props.record.summary ?? '')
   const [note, setNote] = useState(props.record.note ?? '')
   const [error, setError] = useState<string | null>(null)
   useDataDraft(
@@ -112,6 +114,7 @@ function ActionRecordEditor(props: {
       duration !== String(props.record.durationMinutes ?? '') ||
       outcome !== props.record.outcome ||
       nextStep !== (props.record.nextStep ?? '') ||
+      summary !== (props.record.summary ?? '') ||
       note !== (props.record.note ?? '')
   )
   const reset = (): void => {
@@ -119,6 +122,7 @@ function ActionRecordEditor(props: {
     setDuration(String(props.record.durationMinutes ?? ''))
     setOutcome(props.record.outcome)
     setNextStep(props.record.nextStep ?? '')
+    setSummary(props.record.summary ?? '')
     setNote(props.record.note ?? '')
     setError(null)
   }
@@ -132,6 +136,7 @@ function ActionRecordEditor(props: {
         durationMinutes: duration === '' ? null : Number(duration),
         outcome,
         nextStep: nextStep || null,
+        summary: summary.trim() ? summary : null,
         note: note || null
       })
       if (!result.ok) return setError(dataControlErrorText[result.error.code])
@@ -140,6 +145,7 @@ function ActionRecordEditor(props: {
       setDuration(String(result.value.durationMinutes ?? ''))
       setOutcome(result.value.outcome)
       setNextStep(result.value.nextStep ?? '')
+      setSummary(result.value.summary ?? '')
       setNote(result.value.note ?? '')
       await props.onChanged()
       setEditing(false)
@@ -187,8 +193,19 @@ function ActionRecordEditor(props: {
             <dd>{recordOutcomeText[props.record.outcome]}</dd>
           </div>
           <div className="data-summary-wide">
-            <dt>备注</dt>
-            <dd>{props.record.note || '未填写'}</dd>
+            <dt>简述</dt>
+            <dd className="record-summary">{props.record.summary || '未填写'}</dd>
+            <dt>补充笔记</dt>
+            <dd>
+              {props.record.note ? (
+                <RecordNote
+                  readingKey={`data:action:${props.record.id}`}
+                  text={props.record.note}
+                />
+              ) : (
+                '未填写'
+              )}
+            </dd>
           </div>
           <div className="data-summary-wide">
             <dt>记录中的下一步</dt>
@@ -234,15 +251,8 @@ function ActionRecordEditor(props: {
                 <option value="stopped">本次在这里停下</option>
               </select>
             </Field>
-            <Field label="备注（可选）">
-              <textarea
-                aria-label="行动备注"
-                rows={3}
-                value={note}
-                onChange={(event) => setNote(event.target.value)}
-                placeholder="备注（可选）"
-              />
-            </Field>
+            <RecordSummaryInput value={summary} onChange={setSummary} />
+            <RecordNoteInput label="行动备注" value={note} onChange={setNote} />
             <Field label="记录中的下一步（可选）" hint="仅写入这条记录，不替换目标的当前下一步。">
               <textarea
                 aria-label="行动下一步"
@@ -257,7 +267,7 @@ function ActionRecordEditor(props: {
             <button
               className="primary-button"
               type="button"
-              disabled={!occurredOn}
+              disabled={!occurredOn || Array.from(summary).length > 500}
               onClick={() => void submit()}
             >
               {saving ? '正在保存…' : '保存修改'}
@@ -312,6 +322,7 @@ function RoutineRecordEditor(props: {
   )
   const [outcome, setOutcome] = useState(props.record.outcome)
   const [planned, setPlanned] = useState(props.record.plannedForDate)
+  const [summary, setSummary] = useState(props.record.summary ?? '')
   const [note, setNote] = useState(props.record.note ?? '')
   const [error, setError] = useState<string | null>(null)
   const dateChanged = occurredOn !== props.record.occurredOn
@@ -322,6 +333,7 @@ function RoutineRecordEditor(props: {
         (props.record.durationMinutes === null ? '' : String(props.record.durationMinutes)) ||
       outcome !== props.record.outcome ||
       planned !== props.record.plannedForDate ||
+      summary !== (props.record.summary ?? '') ||
       note !== (props.record.note ?? '')
   )
   const reset = (): void => {
@@ -329,6 +341,7 @@ function RoutineRecordEditor(props: {
     setDuration(props.record.durationMinutes === null ? '' : String(props.record.durationMinutes))
     setOutcome(props.record.outcome)
     setPlanned(props.record.plannedForDate)
+    setSummary(props.record.summary ?? '')
     setNote(props.record.note ?? '')
     setError(null)
   }
@@ -342,6 +355,7 @@ function RoutineRecordEditor(props: {
         outcome,
         plannedForDate: dateChanged ? planned : undefined,
         durationMinutes: duration === '' ? null : Number(duration),
+        summary: summary.trim() ? summary : null,
         note: note || null
       })
       if (!result.ok) return setError(dataControlErrorText[result.error.code])
@@ -362,6 +376,7 @@ function RoutineRecordEditor(props: {
       setDuration(result.value.durationMinutes === null ? '' : String(result.value.durationMinutes))
       setOutcome(result.value.outcome)
       setPlanned(result.value.plannedForDate)
+      setSummary(result.value.summary ?? '')
       setNote(result.value.note ?? '')
       await props.onChanged()
       setEditing(false)
@@ -418,8 +433,19 @@ function RoutineRecordEditor(props: {
             <dd>{props.record.plannedForDate ? '计划日' : '非计划日'}</dd>
           </div>
           <div className="data-summary-wide">
-            <dt>备注</dt>
-            <dd>{props.record.note || '未填写'}</dd>
+            <dt>简述</dt>
+            <dd className="record-summary">{props.record.summary || '未填写'}</dd>
+            <dt>补充笔记</dt>
+            <dd>
+              {props.record.note ? (
+                <RecordNote
+                  readingKey={`data:routine:${props.record.id}`}
+                  text={props.record.note}
+                />
+              ) : (
+                '未填写'
+              )}
+            </dd>
           </div>
         </dl>
       ) : (
@@ -465,15 +491,8 @@ function RoutineRecordEditor(props: {
                 onChange={(event) => setDuration(event.target.value)}
               />
             </Field>
-            <Field label="备注（可选）">
-              <textarea
-                aria-label="例行备注"
-                rows={3}
-                value={note}
-                onChange={(event) => setNote(event.target.value)}
-                placeholder="备注（可选）"
-              />
-            </Field>
+            <RecordSummaryInput value={summary} onChange={setSummary} />
+            <RecordNoteInput label="例行备注" value={note} onChange={setNote} />
             {dateChanged ? (
               <label className="inline-check">
                 <input
@@ -489,7 +508,7 @@ function RoutineRecordEditor(props: {
             <button
               className="primary-button"
               type="button"
-              disabled={!occurredOn}
+              disabled={!occurredOn || Array.from(summary).length > 500}
               onClick={() => void submit()}
             >
               {saving ? '正在保存…' : '保存修改'}
@@ -917,11 +936,13 @@ function DataControlWorkspace({
   const [actionUnderstanding, setActionUnderstanding] = useState('')
   const [actionConfusion, setActionConfusion] = useState('')
   const [actionNextStep, setActionNextStep] = useState('')
+  const [actionSummary, setActionSummary] = useState('')
   const [actionNote, setActionNote] = useState('')
   const [routineDate, setRoutineDate] = useState('')
   const [routinePlanned, setRoutinePlanned] = useState(false)
   const [routineOutcome, setRoutineOutcome] = useState<RoutineRecordDataDto['outcome']>('not_done')
   const [routineDuration, setRoutineDuration] = useState('')
+  const [routineSummary, setRoutineSummary] = useState('')
   const [routineNote, setRoutineNote] = useState('')
   const [exportMessage, setExportMessage] = useState<string | null>(null)
   const [exporting, setExporting] = useState(false)
@@ -930,12 +951,18 @@ function DataControlWorkspace({
     actionUnderstanding ||
     actionConfusion ||
     actionNextStep ||
+    actionSummary ||
     actionNote ||
     actionDuration !== '' ||
     actionOutcome !== 'partial'
   )
   const routineBackfillDirty = Boolean(
-    routineDate || routineNote || routineDuration || routinePlanned || routineOutcome !== 'not_done'
+    routineDate ||
+    routineSummary ||
+    routineNote ||
+    routineDuration ||
+    routinePlanned ||
+    routineOutcome !== 'not_done'
   )
   const backfillSelectionRef = useRef({ actionId: '', routineId: '' })
   useLayoutEffect(() => {
@@ -1230,6 +1257,7 @@ function DataControlWorkspace({
         understanding: actionUnderstanding || null,
         confusion: actionConfusion || null,
         nextStep: actionNextStep || null,
+        summary: actionSummary.trim() ? actionSummary : null,
         note: actionNote || null
       })
       if (!result.ok) return setError(dataControlErrorText[result.error.code])
@@ -1243,6 +1271,7 @@ function DataControlWorkspace({
       setActionUnderstanding('')
       setActionConfusion('')
       setActionNextStep('')
+      setActionSummary('')
       setActionNote('')
       await refreshAfterMutation()
     } catch {
@@ -1267,6 +1296,7 @@ function DataControlWorkspace({
             : routineDuration === ''
               ? null
               : Number(routineDuration),
+        summary: routineSummary.trim() ? routineSummary : null,
         note: routineNote || null
       })
       if (!result.ok) return setError(dataControlErrorText[result.error.code])
@@ -1278,6 +1308,7 @@ function DataControlWorkspace({
       setRoutinePlanned(false)
       setRoutineOutcome('not_done')
       setRoutineDuration('')
+      setRoutineSummary('')
       setRoutineNote('')
       await window.myTracer.routines.getDayState({ routineId, localDate: routineDate })
       await refreshAfterMutation()
@@ -1450,12 +1481,14 @@ function DataControlWorkspace({
                     setActionUnderstanding('')
                     setActionConfusion('')
                     setActionNextStep('')
+                    setActionSummary('')
                     setActionNote('')
                   } else {
                     setRoutineDate('')
                     setRoutineDuration('')
                     setRoutineOutcome('not_done')
                     setRoutinePlanned(false)
+                    setRoutineSummary('')
                     setRoutineNote('')
                   }
                   setError(null)
@@ -1534,6 +1567,7 @@ function DataControlWorkspace({
                     <option value="stopped">本次在这里停下</option>
                   </select>
                 </Field>
+                <RecordSummaryInput value={actionSummary} onChange={setActionSummary} />
                 <Field label="我理解了（可选）">
                   <input
                     aria-label="行动补记理解"
@@ -1561,18 +1595,17 @@ function DataControlWorkspace({
                     placeholder="下一步（可选）"
                   />
                 </Field>
-                <Field label="备注（可选）">
-                  <input
-                    aria-label="行动补记备注"
-                    value={actionNote}
-                    onChange={(event) => setActionNote(event.target.value)}
-                    placeholder="备注（可选）"
-                  />
-                </Field>
+
+                <RecordNoteInput label="行动补记备注" value={actionNote} onChange={setActionNote} />
                 <button
                   className="primary-button"
                   type="button"
-                  disabled={savingBackfill || !actionId || !actionDate}
+                  disabled={
+                    savingBackfill ||
+                    !actionId ||
+                    !actionDate ||
+                    Array.from(actionSummary).length > 500
+                  }
                   onClick={() => void backfillAction()}
                 >
                   补记行动记录
@@ -1643,14 +1676,12 @@ function DataControlWorkspace({
                     onChange={(event) => setRoutineDuration(event.target.value)}
                   />
                 </Field>
-                <Field label="备注（可选）">
-                  <input
-                    aria-label="例行补记备注"
-                    value={routineNote}
-                    onChange={(event) => setRoutineNote(event.target.value)}
-                    placeholder="备注（可选）"
-                  />
-                </Field>
+                <RecordSummaryInput value={routineSummary} onChange={setRoutineSummary} />
+                <RecordNoteInput
+                  label="例行补记备注"
+                  value={routineNote}
+                  onChange={setRoutineNote}
+                />
                 <label className="inline-check">
                   <input
                     type="checkbox"
@@ -1662,7 +1693,12 @@ function DataControlWorkspace({
                 <button
                   className="primary-button"
                   type="button"
-                  disabled={savingBackfill || !routineId || !routineDate}
+                  disabled={
+                    savingBackfill ||
+                    !routineId ||
+                    !routineDate ||
+                    Array.from(routineSummary).length > 500
+                  }
                   onClick={() => void backfillRoutine()}
                 >
                   补记例行记录
@@ -1807,7 +1843,7 @@ function DataControlWorkspace({
               <DataPanel title="搜索范围" onClose={() => setPanel(null)}>
                 <p>按原文片段查找，忽略大小写；不使用通配符。</p>
                 <p>
-                  包含行动标题、例行名称、备注、行动记录下一步、关联理解、困惑与解决说明（含已撤销/已解决）。
+                  包含行动标题、例行名称、简述、备注、行动记录下一步、关联理解、困惑与解决说明（含已撤销/已解决）。
                 </p>
                 <p>标题、文字与状态均以当前保存内容为准，不还原旧版本或已删除文字。</p>
               </DataPanel>

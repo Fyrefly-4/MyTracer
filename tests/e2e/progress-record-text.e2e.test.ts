@@ -34,6 +34,7 @@ test('Progress reads original optional text without changing statistics or curre
           occurredOn: `2026-08-${String(day).padStart(2, '0')}`,
           durationMinutes: 5,
           outcome: 'partial',
+          summary: null,
           note: day === 10 ? note : null,
           nextStep: day === 9 ? nextStep : null
         })
@@ -56,6 +57,7 @@ test('Progress reads original optional text without changing statistics or curre
     await expect(rows.filter({ hasText: '2026-08-08' }).locator('details')).toHaveCount(0)
     await noteRow.locator('summary').focus()
     await noteRow.locator('summary').press('Enter')
+    await noteRow.getByText('展开完整笔记', { exact: true }).click()
     await expect(noteRow.locator('.progress-fact-group p')).toHaveText(seed.note)
     await nextRow.locator('summary').click()
     await expect(nextRow.locator('.progress-fact-group p')).toHaveText(seed.nextStep)
@@ -86,6 +88,7 @@ test('Progress reads original optional text without changing statistics or curre
           occurredOn: '2026-08-10',
           durationMinutes: 5,
           outcome: 'partial',
+          summary: null,
           note: '修改后的原文\n仍保留换行',
           nextStep: null
         }),
@@ -131,6 +134,7 @@ test('Progress fetches text only on demand and isolates retry, collapse and refr
           occurredOn: `2026-08-0${day}`,
           durationMinutes: 5,
           outcome: 'partial',
+          summary: null,
           note: day === 2 ? '原始备注' : null,
           understanding: '已有理解不等待原文'
         })
@@ -163,6 +167,7 @@ test('Progress fetches text only on demand and isolates retry, collapse and refr
           value: {
             ...detail,
             id: state.mode === 'wrong' ? 'another-record' : detail.id,
+            summary: null,
             note: state.mode === 'empty' ? null : '新读取原文'
           }
         }

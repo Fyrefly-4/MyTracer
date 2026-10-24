@@ -47,6 +47,7 @@ function routine(
     durationMinutes,
     outcome,
     plannedForDate: false,
+    summary: null,
     note: null,
     createdAt: '2026-09-19T00:00:00Z'
   }

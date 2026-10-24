@@ -174,6 +174,19 @@ describe('data-control IPC boundary', () => {
   it('rejects extra fields, invalid dates, ids, outcomes, confirmation, and untrusted senders', () => {
     const { invokeAs, assertSender, service } = setup()
     for (const [channel, input] of [
+      ...[123, {}, 'x'.repeat(501)].map(
+        (summary) =>
+          [
+            DATA_CONTROL_CHANNELS.backfillActionRecord,
+            {
+              actionId,
+              occurredOn: '2026-10-24',
+              durationMinutes: null,
+              outcome: 'partial',
+              summary
+            }
+          ] as const
+      ),
       [
         DATA_CONTROL_CHANNELS.backfillActionRecord,
         {

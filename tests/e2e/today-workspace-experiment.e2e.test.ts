@@ -1,3 +1,4 @@
+import { openRecordNote } from '../support/ui-disclosure'
 import { join } from 'node:path'
 import { expect, test, type ElectronApplication } from '@playwright/test'
 import { _electron as electron } from 'playwright'
@@ -44,6 +45,8 @@ test('keeps Today feedback out of flow and record controls visible while preserv
     await panel.getByLabel('投入时长（分钟，可选）').fill('12')
     await panel.getByRole('button', { name: /添加理解/ }).click()
     await panel.getByLabel('我理解了（可选）').fill('把理解写成自己的话，比只标记完成更有意义。')
+    await panel.getByRole('textbox', { name: '简述（可选）', exact: true }).fill('行动摘要草稿')
+    await openRecordNote(panel.getByLabel('备注（可选）'))
     await panel.getByLabel('备注（可选）').fill('切换页面后继续填写，不应丢失。')
     await expect(panel.getByRole('button', { name: '保存记录', exact: true })).toBeInViewport()
     await expect(
@@ -112,6 +115,7 @@ test('Today notebook scrolls independently, collapses without losing drafts, and
               occurredOn: `2026-08-${day}`,
               durationMinutes: day,
               outcome: 'partial',
+              summary: null,
               note: `第 ${day} 天的完整记录\n保留多行原文。`
             })
             if (!record.ok) throw new Error('Cannot create notebook history')

@@ -31,6 +31,7 @@ export const START_HELP_MARKERS = Object.freeze({
   otherGoal: '__forbidden_other_goal__',
   otherAction: '__forbidden_other_action__',
   otherRecord: '__forbidden_other_record__',
+  recordSummary: '__forbidden_record_summary__',
   otherUnderstanding: '__forbidden_other_understanding__',
   otherConfusion: '__forbidden_other_confusion__',
   revokedUnderstanding: '__forbidden_revoked_understanding__',
@@ -47,6 +48,7 @@ export const START_HELP_FORBIDDEN_MARKERS = Object.freeze([
   START_HELP_MARKERS.otherGoal,
   START_HELP_MARKERS.otherAction,
   START_HELP_MARKERS.otherRecord,
+  START_HELP_MARKERS.recordSummary,
   START_HELP_MARKERS.otherUnderstanding,
   START_HELP_MARKERS.otherConfusion,
   START_HELP_MARKERS.revokedUnderstanding,
@@ -129,6 +131,7 @@ export function seedStartHelpIsolationFixture(
       durationMinutes: sequence,
       outcome: index % 2 === 0 ? 'partial' : 'completed',
       nextStep: index === 0 ? START_HELP_MARKERS.allowedNextStep : `related-next-${sequence}`,
+      summary: START_HELP_MARKERS.recordSummary,
       note: `__forbidden_related_note_${sequence}__`,
       createdAt: instant(31 - index, sequence),
       updatedAt: instant(31 - index, sequence)
@@ -205,6 +208,7 @@ export function seedStartHelpIsolationFixture(
     durationMinutes: 99,
     outcome: 'completed',
     nextStep: START_HELP_MARKERS.otherRecord,
+    summary: START_HELP_MARKERS.recordSummary,
     note: START_HELP_MARKERS.diagnostics,
     createdAt: instant(31, 52),
     updatedAt: instant(31, 52)
@@ -281,6 +285,7 @@ export function seedStartHelpIsolationFixture(
     plannedForDate: true,
     plannedForDateBasis: 'schedule_at_recording',
     durationMinutes: 5,
+    summary: START_HELP_MARKERS.recordSummary,
     note: START_HELP_MARKERS.routineRecord,
     createdAt: instant(31, 55),
     updatedAt: instant(31, 55)

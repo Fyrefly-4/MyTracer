@@ -129,6 +129,7 @@ function parseRecord(args: readonly unknown[]): RecordRoutineInputDto {
     'dateChoice',
     'outcome',
     'durationMinutes',
+    'summary',
     'note'
   ])
   if (
@@ -162,7 +163,8 @@ function parseRecord(args: readonly unknown[]): RecordRoutineInputDto {
       input.durationMinutes === undefined || input.durationMinutes === null
         ? input.durationMinutes
         : Number(input.durationMinutes),
-    note: optionalText(input.note)
+    summary: optionalSummary(input.summary),
+    note: optionalNote(input.note)
   }
 }
 
@@ -227,4 +229,17 @@ export function registerRoutineRecordIpc(options: RegisterRoutineRecordIpcOption
     (_event, input: GetRoutineDayStateInputDto) =>
       options.service.getRoutineDayState(input.routineId, input.localDate)
   )
+}
+
+function optionalNote(value: unknown): string | null | undefined {
+  if (value == null) return value
+  if (typeof value !== 'string') throw new RoutineRecordIpcValidationError('Expected note text.')
+  return value
+}
+
+function optionalSummary(value: unknown): string | null | undefined {
+  const text = optionalText(value)
+  if (text && Array.from(text).length > 500)
+    throw new RoutineRecordIpcValidationError('简述请保持在 500 字以内。')
+  return text
 }

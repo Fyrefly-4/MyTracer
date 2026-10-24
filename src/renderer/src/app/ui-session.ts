@@ -35,6 +35,7 @@ export interface ActionRecordingDraft {
   readonly understanding: string
   readonly confusion: string
   readonly nextStep: string
+  readonly summary: string
   readonly note: string
   readonly postExpanded: boolean
   readonly postAction: PostRecordActionChoice
@@ -51,6 +52,7 @@ export interface FirstActionRecordingDraft {
   readonly unknownDuration: boolean
   readonly outcome: ActionRecordOutcomeDto | ''
   readonly lifecycle: 'keep-pending' | 'complete' | ''
+  readonly summary: string
   readonly note: string
   // A transport failure must retry exactly the same request before editing/abandoning.
   readonly uncertainInput?: FirstActionRecordInputDto
@@ -74,6 +76,7 @@ export interface RoutineRecordingDraft {
   readonly context: BeginRoutineRecordingDto
   readonly outcome: RoutineRecordOutcomeDto
   readonly durationMinutes: string
+  readonly summary: string
   readonly note: string
 }
 
@@ -102,6 +105,7 @@ export interface ReviewWritingDraft {
 
 export class UiSession {
   // Reading state only, retained across navigation within this app session.
+  readonly expandedRecordNotes = new Set<string>()
   readonly expandedActionDescriptions = new Set<string>()
   readonly bookReading: { month: string | null; positions: Map<string, number> } = {
     month: null,

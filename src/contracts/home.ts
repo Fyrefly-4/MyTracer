@@ -6,7 +6,8 @@ export interface HomeRecordDto {
   readonly occurredOn: string
   readonly title: string
   readonly goalId: string | null
-  readonly note: string | null
+  readonly summary: string | null
+  readonly hasNote: boolean
   readonly outcome:
     'completed' | 'partial' | 'stopped' | 'target_met' | 'acted' | 'intentional_rest' | 'not_done'
   readonly durationMinutes: number | null

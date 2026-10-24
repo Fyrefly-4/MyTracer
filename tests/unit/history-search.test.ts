@@ -19,6 +19,7 @@ function fixture(): DataControlListDto {
       updatedAt: '2026-08-20',
       outcome: 'partial',
       durationMinutes: i === 0 ? null : i,
+      summary: null,
       note: i === 0 ? '靠窗 Needle %_*.[x] <script> 注释' : null,
       nextStep: i === 1 ? '排水孔 NEEDLE' : null
     })),
@@ -31,6 +32,7 @@ function fixture(): DataControlListDto {
         updatedAt: '2026-08-20',
         outcome: 'intentional_rest',
         durationMinutes: null,
+        summary: null,
         note: '节奏 🎵 needle',
         plannedForDate: false,
         plannedForDateBasis: 'user_confirmed_history'

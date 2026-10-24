@@ -1,10 +1,16 @@
+import { RecordNote } from '../../app/RecordText'
 import { type ReactNode, useEffect, useState } from 'react'
 import type { ProgressRecordFactDto } from '../../../../contracts/progress'
 
 type TextRead =
   | { readonly status: 'loading' }
   | { readonly status: 'error'; readonly message: string }
-  | { readonly status: 'ready'; readonly note: string | null; readonly nextStep: string | null }
+  | {
+      readonly status: 'ready'
+      readonly summary: string | null
+      readonly note: string | null
+      readonly nextStep: string | null
+    }
 
 // Mounted only while this row is expanded. Closing or replacing the row releases its text.
 function RecordedText({ record }: { readonly record: ProgressRecordFactDto }): ReactNode {
@@ -36,7 +42,12 @@ function RecordedText({ record }: { readonly record: ProgressRecordFactDto }): R
           setRead({ status: 'error', message: '记录内容已变化或不匹配，请重新查看记录列表。' })
           return
         }
-        setRead({ status: 'ready', note: detail.note, nextStep: detail.nextStep })
+        setRead({
+          status: 'ready',
+          summary: detail.summary,
+          note: detail.note,
+          nextStep: detail.nextStep
+        })
       },
       () => {
         if (active) setRead({ status: 'error', message: '原文暂时无法读取，不表示没有补充文字。' })
@@ -74,10 +85,16 @@ function RecordedText({ record }: { readonly record: ProgressRecordFactDto }): R
       ) : null}
       {read.status === 'ready' ? (
         <>
+          {read.summary ? (
+            <div className="progress-fact-group">
+              <h3>简述</h3>
+              <p className="record-summary">{read.summary}</p>
+            </div>
+          ) : null}
           {read.note ? (
             <div className="progress-fact-group">
               <h3>备注</h3>
-              <p>{read.note}</p>
+              <RecordNote text={read.note} />
             </div>
           ) : null}
           {read.nextStep ? (
@@ -87,7 +104,9 @@ function RecordedText({ record }: { readonly record: ProgressRecordFactDto }): R
               <small>这是当时写下的内容，不代表当前计划。</small>
             </div>
           ) : null}
-          {!read.note && !read.nextStep ? <p>当前没有补充文字；内容可能已被清空。</p> : null}
+          {!read.summary && !read.note && !read.nextStep ? (
+            <p>当前没有补充文字；内容可能已被清空。</p>
+          ) : null}
         </>
       ) : null}
     </div>

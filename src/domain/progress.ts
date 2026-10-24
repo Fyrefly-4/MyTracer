@@ -47,6 +47,7 @@ export interface RoutineProgressRecordFact {
   readonly outcome: 'target_met' | 'acted' | 'intentional_rest' | 'not_done'
   readonly plannedForDate: boolean
   readonly durationMinutes: number | null
+  readonly summary: string | null
   readonly note: string | null
   readonly createdAt: string
 }

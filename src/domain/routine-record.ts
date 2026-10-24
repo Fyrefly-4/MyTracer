@@ -1,3 +1,4 @@
+import { recordSummary } from './record-summary'
 import { createLocalDate, type LocalDate } from './local-date'
 
 export type RoutineRecordOutcome = 'target_met' | 'acted' | 'intentional_rest' | 'not_done'
@@ -12,6 +13,7 @@ export interface RoutineRecord {
   readonly plannedForDate: boolean
   readonly plannedForDateBasis: RoutinePlannedForDateBasis
   readonly durationMinutes: number | null
+  readonly summary: string | null
   readonly note: string | null
   readonly createdAt: string
   readonly updatedAt: string
@@ -33,12 +35,6 @@ function requiredText(value: string, field: string): string {
     throw new RoutineRecordDomainError('validation', `${field} must not be blank.`)
   }
   return normalized
-}
-
-function optionalText(value: string | null | undefined): string | null {
-  if (value === null || value === undefined) return null
-  const normalized = value.trim()
-  return normalized || null
 }
 
 function normalizeDuration(
@@ -72,6 +68,7 @@ export function createRoutineRecord(input: {
   readonly plannedForDate: boolean
   readonly plannedForDateBasis: RoutinePlannedForDateBasis
   readonly durationMinutes?: number | null
+  readonly summary?: string | null
   readonly note?: string | null
   readonly now: string
 }): RoutineRecord {
@@ -109,7 +106,11 @@ export function createRoutineRecord(input: {
     plannedForDate: input.plannedForDate,
     plannedForDateBasis: input.plannedForDateBasis,
     durationMinutes: normalizeDuration(input.outcome, input.durationMinutes),
-    note: optionalText(input.note),
+    summary: recordSummary(
+      input.summary,
+      (message) => new RoutineRecordDomainError('validation', message)
+    ),
+    note: input.note ?? null,
     createdAt: requiredText(input.now, 'Routine record created time'),
     updatedAt: requiredText(input.now, 'Routine record updated time')
   })
@@ -123,6 +124,7 @@ export function updateRoutineRecord(
     readonly plannedForDate: boolean
     readonly plannedForDateBasis: RoutinePlannedForDateBasis
     readonly durationMinutes?: number | null
+    readonly summary?: string | null
     readonly note?: string | null
     readonly now: string
   }

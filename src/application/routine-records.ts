@@ -48,6 +48,7 @@ export interface RoutineRecordView {
   readonly plannedForDate: boolean
   readonly plannedForDateBasis: RoutineRecordPersistenceRecord['plannedForDateBasis']
   readonly durationMinutes: number | null
+  readonly summary: string | null
   readonly note: string | null
   readonly createdAt: string
   readonly updatedAt: string
@@ -157,6 +158,7 @@ export class RoutineRecordService {
     readonly dateChoice?: RoutineRecordingDateChoice
     readonly outcome: RoutineRecordOutcome
     readonly durationMinutes?: number | null
+    readonly summary?: string | null
     readonly note?: string | null
   }): RecordRoutineResult {
     const snapshot = this.dependencies.clock.snapshot()
@@ -208,6 +210,7 @@ export class RoutineRecordService {
           ),
           plannedForDateBasis: 'schedule_at_recording',
           durationMinutes: input.durationMinutes,
+          summary: input.summary,
           note: input.note,
           now: snapshot.instant
         })

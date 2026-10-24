@@ -33,6 +33,7 @@ function memoryContext(seed?: {
       durationMinutes: 5,
       outcome: 'partial',
       nextStep: null,
+      summary: null,
       note: null,
       createdAt: instant,
       updatedAt: instant

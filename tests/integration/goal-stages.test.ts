@@ -51,6 +51,7 @@ async function setup() {
     occurredOn: '2026-10-01',
     durationMinutes: 4,
     outcome: 'partial',
+    summary: null,
     note: '旧事实'
   })
   goals.endGoal(old.id)
@@ -155,6 +156,7 @@ describe('independent linked goal stages', () => {
         occurredOn: '2026-10-24',
         durationMinutes: 2,
         outcome: 'partial',
+        summary: null,
         note: '后续自己的事实'
       })
       const childBefore = s.goals.getGoalDetail('child')
@@ -295,7 +297,7 @@ describe('independent linked goal stages', () => {
         asCompleteExportRepository(s.connection.repository).readCompleteCoreSnapshot(),
         s.dependencies.clock
       )
-      expect(document).toMatchObject({ exportVersion: 5, sourceDataVersion: 6 })
+      expect(document).toMatchObject({ exportVersion: 6, sourceDataVersion: 7 })
       expect(() => validateCompleteExport(JSON.parse(JSON.stringify(document)))).not.toThrow()
       for (const predecessorGoalId of ['missing', 'next', undefined, 123]) {
         const bad = structuredClone(document)
@@ -331,7 +333,15 @@ describe('independent linked goal stages', () => {
           ...document,
           exportVersion,
           sourceDataVersion: exportVersion + 1,
-          data: { ...document.data, goals }
+          data: {
+            ...document.data,
+            goals,
+            actionRecords: document.data.actionRecords.map(({ summary, ...record }) => {
+              expect(summary).toBeNull()
+              return record
+            }),
+            routineRecords: []
+          }
         }
         expect(() => validateCompleteExport(legacy)).not.toThrow()
         expect(() => validateCompleteExport({ ...legacy, data: document.data })).toThrow()
@@ -384,7 +394,11 @@ it('migrates v5 preserving every old field and fact, and rolls back a failed v6 
       } else {
         migrateToCurrentSchema(db)
         for (const name of tables.filter((name) => name !== 'metadata' && name !== 'goals'))
-          expect(db.prepare(`SELECT * FROM ${name}`).all()).toEqual(before[name])
+          expect(db.prepare(`SELECT * FROM ${name}`).all()).toEqual(
+            ['action_records', 'routine_records'].includes(name)
+              ? (before[name] as object[]).map((row) => ({ ...row, summary: null }))
+              : before[name]
+          )
         expect(db.prepare('SELECT * FROM goals').all()).toEqual(
           (before.goals as object[]).map((g) => ({ ...g, predecessor_goal_id: null }))
         )

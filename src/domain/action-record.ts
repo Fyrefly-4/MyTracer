@@ -1,3 +1,4 @@
+import { recordSummary } from './record-summary'
 import { createLocalDate } from './local-date'
 
 export type ActionRecordOutcome = 'completed' | 'partial' | 'stopped'
@@ -9,6 +10,7 @@ export interface ActionRecord {
   readonly durationMinutes: number | null
   readonly outcome: ActionRecordOutcome
   readonly nextStep: string | null
+  readonly summary: string | null
   readonly note: string | null
   readonly createdAt: string
   readonly updatedAt: string
@@ -78,6 +80,7 @@ export function createActionRecord(input: {
   readonly durationMinutes: number | null
   readonly outcome: ActionRecordOutcome
   readonly nextStep?: string | null
+  readonly summary?: string | null
   readonly note?: string | null
   readonly now: string
 }): ActionRecord {
@@ -108,7 +111,11 @@ export function createActionRecord(input: {
     durationMinutes: input.durationMinutes,
     outcome: input.outcome,
     nextStep: optionalText(input.nextStep),
-    note: optionalText(input.note),
+    summary: recordSummary(
+      input.summary,
+      (message) => new ActionRecordDomainError('validation', message)
+    ),
+    note: input.note ?? null,
     createdAt: input.now,
     updatedAt: input.now
   })
@@ -121,6 +128,7 @@ export function updateActionRecord(
     readonly durationMinutes: number | null
     readonly outcome: ActionRecordOutcome
     readonly nextStep?: string | null
+    readonly summary?: string | null
     readonly note?: string | null
     readonly now: string
   }

@@ -1,3 +1,4 @@
+import { openRecordNote } from '../support/ui-disclosure'
 import { join } from 'node:path'
 import { expect, test, type ElectronApplication, type Page } from '@playwright/test'
 import { _electron as electron } from 'playwright'
@@ -226,6 +227,7 @@ for (const kind of ['action', 'routine'] as const) {
       const picker = page.getByLabel(`补记${label}`, { exact: true })
       await picker.selectOption(ids[0])
       await page.getByLabel(`${label}补记日期`, { exact: true }).fill('2026-08-20')
+      await openRecordNote(page.getByLabel(`${label}补记备注`, { exact: true }))
       await page.getByLabel(`${label}补记备注`, { exact: true }).fill('只属于原对象的草稿')
       if (kind === 'action') {
         await page.getByLabel('行动补记分钟', { exact: true }).fill('-1')

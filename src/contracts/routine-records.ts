@@ -18,6 +18,7 @@ export interface RoutineRecordDto {
   readonly plannedForDate: boolean
   readonly plannedForDateBasis: RoutinePlannedForDateBasisDto
   readonly durationMinutes: number | null
+  readonly summary: string | null
   readonly note: string | null
   readonly createdAt: string
   readonly updatedAt: string
@@ -43,6 +44,7 @@ export interface RecordRoutineInputDto {
   readonly dateChoice?: RoutineRecordingDateChoiceDto
   readonly outcome: RoutineRecordOutcomeDto
   readonly durationMinutes?: number | null
+  readonly summary?: string | null
   readonly note?: string | null
 }
 

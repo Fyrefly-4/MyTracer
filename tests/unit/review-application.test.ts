@@ -157,6 +157,7 @@ describe('Review application query', () => {
           outcome: 'acted',
           plannedForDate: false,
           durationMinutes: 2,
+          summary: null,
           note: null,
           recordCreatedAt: '2026-08-12T09:00:00.000Z'
         }

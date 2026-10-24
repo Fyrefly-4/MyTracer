@@ -116,8 +116,12 @@ test('shows the current-week ReviewSummary from Progress facts without turning u
     await expect(page.getByLabel('有所行动 1 条')).toContainText('2026-08-11')
     await expect(page.getByLabel('主动休息 1 条')).toContainText('2026-08-12')
     await expect(page.getByLabel('未进行 1 条')).toContainText('2026-08-13')
-    await expect(page.getByText('状态更新会进入队列')).toBeVisible()
-    await expect(page.getByText('批处理何时结束')).toBeVisible()
+    await expect(
+      page.getByLabel('周期已确认理解').getByText('状态更新会进入队列', { exact: true })
+    ).toBeVisible()
+    await expect(
+      page.getByLabel('周期未解决困惑').getByText('批处理何时结束', { exact: true })
+    ).toBeVisible()
     await expect(page.getByLabel('周期复盘')).not.toContainText(
       /失败率|完成率|评分|掌握度|连续天数|人格|AI 周计划/
     )
@@ -150,19 +154,17 @@ test('shows the current-week ReviewSummary from Progress facts without turning u
       value: {
         totalDurationMinutes: progress.value.totalDurationMinutes,
         realActionCount: progress.value.realActionCount,
-        actionRecords: progress.value.records.map((record) => {
-          const { hasRecordedText, ...facts } = record
-          expect(hasRecordedText).toBe(false)
-          return facts
-        }),
+        actionRecords: progress.value.records,
         routineRecords: progress.value.routineRecords,
         routineOutcomeCounts: { targetMet: 1, acted: 1, intentionalRest: 1, notDone: 1 },
         unknownPolicy: 'absence-is-unknown-not-counted-as-not-done'
       }
     })
     if (!apiFacts.first.ok) throw Error('Expected Review summary')
+    expect(apiFacts.first.value.actionRecords).toEqual(progress.value.records)
     for (const record of apiFacts.first.value.actionRecords) {
-      expect(record).not.toHaveProperty('hasRecordedText')
+      expect(record.hasRecordedText).toBe(false)
+      expect(record).not.toHaveProperty('summary')
       expect(record).not.toHaveProperty('note')
       expect(record).not.toHaveProperty('nextStep')
     }

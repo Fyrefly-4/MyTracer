@@ -49,6 +49,7 @@ describe('explicit review references', () => {
           routineName: '散步',
           outcome: 'intentional_rest',
           durationMinutes: null,
+          summary: null,
           note: '今天选择休息'
         }
       ],
@@ -58,7 +59,7 @@ describe('explicit review references', () => {
     const facts = reviewReferences(summary)
     expect(facts.map((fact) => fact.key)).toEqual(['action:same', 'routine:same'])
     expect(facts[0].citation).toContain('本次完成一部分')
-    expect(facts[1].citation).toContain('主动休息\n今天选择休息')
+    expect(facts[1].citation).toContain('主动休息\n补充笔记：今天选择休息')
     expect(facts[1].citation).not.toContain('失败')
   })
 })

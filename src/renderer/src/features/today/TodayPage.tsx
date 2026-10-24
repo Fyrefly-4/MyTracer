@@ -1,3 +1,4 @@
+import { RecordSummaryInput, RecordNoteInput, RecordNote } from '../../app/RecordText'
 import { recordDuration } from '../../app/ui-text'
 import { chooseVisibleSelection } from '../../app/selection-preferences'
 import {
@@ -118,6 +119,7 @@ function ActionRecordingPanel(props: {
   const [understanding, setUnderstanding] = useState(restoredDraft?.understanding ?? '')
   const [confusion, setConfusion] = useState(restoredDraft?.confusion ?? '')
   const [nextStep, setNextStep] = useState(restoredDraft?.nextStep ?? '')
+  const [summary, setSummary] = useState(restoredDraft?.summary ?? '')
   const [note, setNote] = useState(restoredDraft?.note ?? '')
   const [postAction, setPostAction] = useState<PostRecordActionChoice>(
     restoredDraft?.postAction ?? 'keep-pending'
@@ -148,6 +150,7 @@ function ActionRecordingPanel(props: {
       understanding,
       confusion,
       nextStep,
+      summary,
       note,
       postExpanded,
       postAction,
@@ -163,6 +166,7 @@ function ActionRecordingPanel(props: {
     durationMinutes,
     nextMode,
     nextStep,
+    summary,
     note,
     outcome,
     postAction,
@@ -228,6 +232,7 @@ function ActionRecordingPanel(props: {
     setUnderstanding('')
     setConfusion('')
     setNextStep('')
+    setSummary('')
     setNote('')
     setPostExpanded(false)
     setPostAction('keep-pending')
@@ -264,6 +269,7 @@ function ActionRecordingPanel(props: {
       understanding,
       confusion,
       nextStep,
+      summary,
       note,
       postExpanded,
       postAction,
@@ -355,6 +361,7 @@ function ActionRecordingPanel(props: {
       understanding: understanding.trim() ? understanding : null,
       confusion: confusion.trim() ? confusion : null,
       nextStep: nextStep.trim() ? nextStep : null,
+      summary: summary.trim() ? summary : null,
       note: note.trim() ? note : null,
       postRecord: {
         action: postAction,
@@ -487,16 +494,17 @@ function ActionRecordingPanel(props: {
                 </select>
               </label>
             </div>
+            <RecordSummaryInput value={summary} onChange={setSummary} />
+            <RecordNoteInput value={note} onChange={setNote} />
             <button
               className="quiet-button deep-toggle"
               type="button"
               aria-expanded={deepExpanded}
               onClick={() => setDeepExpanded((value) => !value)}
             >
-              {deepExpanded ? '收起深入记录' : '添加理解、困惑、下一步或备注'}
+              {deepExpanded ? '收起深入记录' : '添加理解、困惑或下一步'}
             </button>
-            {!deepExpanded &&
-            [understanding, confusion, nextStep, note].some((value) => value.trim()) ? (
+            {!deepExpanded && [understanding, confusion, nextStep].some((value) => value.trim()) ? (
               <p className="empty-copy">已填写的补充内容会随记录保存，可展开修改。</p>
             ) : null}
             {deepExpanded ? (
@@ -529,14 +537,6 @@ function ActionRecordingPanel(props: {
                         if (nextMode === 'recorded-next') setNextMode('clear')
                       }
                     }}
-                  />
-                </label>
-                <label>
-                  备注（可选）
-                  <textarea
-                    rows={2}
-                    value={note}
-                    onChange={(event) => setNote(event.target.value)}
                   />
                 </label>
               </div>
@@ -739,7 +739,15 @@ function ActionRecordingPanel(props: {
             <span key={item.id}>尚未解决的困惑：{item.text}</span>
           ))}
           {recordDetail.nextStep ? <span>记录中的下一步：{recordDetail.nextStep}</span> : null}
-          {recordDetail.note ? <span>备注：{recordDetail.note}</span> : null}
+          {recordDetail.summary ? (
+            <p className="record-summary">简述：{recordDetail.summary}</p>
+          ) : null}
+          {recordDetail.note ? (
+            <div>
+              补充笔记
+              <RecordNote text={recordDetail.note} />
+            </div>
+          ) : null}
         </div>
       ) : null}
     </section>

@@ -61,6 +61,7 @@ test('shows factual dates, unlimited soft guidance and explicitly scoped weekly 
           occurredOn,
           durationMinutes,
           outcome,
+          summary: null,
           note: '可选备注'
         })
         if (!record.ok) throw new Error(JSON.stringify(record.error))
