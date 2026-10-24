@@ -143,11 +143,18 @@ for (const [delayedChannel, arrangementMode] of [
       await expect(routineRow).toHaveAttribute('aria-pressed', 'true')
       await expect(actionPanel).toHaveCount(0)
       const facts = await page.evaluate(() => window.myTracer.today.get({}))
-      expect(
-        facts.ok && facts.value.plannedRoutines.find((routine) => routine.id === routineId)
-      ).toMatchObject({
+      expect(facts.ok).toBe(true)
+      if (!facts.ok) throw new Error('Cannot read saved synthetic routine facts')
+      const weekly = arrangementMode === 'weekly'
+      const matching = weekly ? facts.value.plannedRoutines : facts.value.unscheduledRoutines
+      const excluded = weekly ? facts.value.unscheduledRoutines : facts.value.plannedRoutines
+      expect(excluded.some((routine) => routine.id === routineId)).toBe(false)
+      expect(matching.filter((routine) => routine.id === routineId)).toHaveLength(1)
+      expect(matching.find((routine) => routine.id === routineId)).toMatchObject({
+        id: routineId,
+        plannedForToday: weekly,
         recordState: 'acted',
-        record: { durationMinutes: 5 }
+        record: { durationMinutes: 5, plannedForDate: weekly }
       })
     } finally {
       await application?.close().catch(() => undefined)
