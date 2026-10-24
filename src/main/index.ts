@@ -1,3 +1,5 @@
+import { RecordBookService } from '../application/record-book-service'
+import { registerRecordBookIpc } from './record-book-ipc'
 import appIcon from '../../resources/brand/MyTracer-app-icon-256.png?asset'
 import { readWindowsTransparency, WindowsTransparencyPreference } from './windows-transparency'
 import { assertAppearanceSender, registerAppearanceIpc } from './appearance-ipc'
@@ -602,6 +604,14 @@ app.whenReady().then(async () => {
     clock,
     generateId: randomUUID
   })
+  const recordBookService = new RecordBookService({
+    repository: sqliteConnection.repository,
+    clock,
+    delivery: new SystemExportAdapter({
+      dialog: { showSaveDialog: (options) => dialog.showSaveDialog(options) },
+      generateToken: randomUUID
+    })
+  })
   const completeExportService = new CompleteExportService({
     repository: sqliteConnection.repository,
     clock,
@@ -727,6 +737,11 @@ app.whenReady().then(async () => {
   registerExportIpc({
     ipc: guardedIpc,
     service: completeExportService,
+    assertSender: (event) => assertTrustedSender(event, mainWindow, getRendererLocation())
+  })
+  registerRecordBookIpc({
+    ipc: guardedIpc,
+    service: recordBookService,
     assertSender: (event) => assertTrustedSender(event, mainWindow, getRendererLocation())
   })
   registerAiStartHelpIpc({

@@ -1,3 +1,4 @@
+import { RECORD_BOOK_CHANNELS, type RecordBookApi } from '../contracts/record-book'
 import {
   APPEARANCE_CHANNELS,
   type AppearanceSettings,
@@ -378,6 +379,10 @@ const api: MyTracerApi = Object.freeze({
     }): Promise<DataControlResult<{ readonly counts: DeleteImpactCountsDto }>> =>
       ipcRenderer.invoke(DATA_CONTROL_CHANNELS.confirmDelete, input)
   }),
+  recordBook: Object.freeze({
+    read: () => ipcRenderer.invoke(RECORD_BOOK_CHANNELS.read),
+    export: () => ipcRenderer.invoke(RECORD_BOOK_CHANNELS.export)
+  } satisfies RecordBookApi),
   exports: Object.freeze({
     generate: (): Promise<CompleteExportResult> => ipcRenderer.invoke(EXPORT_CHANNELS.generate)
   }),

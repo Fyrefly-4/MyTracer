@@ -101,6 +101,45 @@ export interface ReviewWritingDraft {
 }
 
 export class UiSession {
+  readonly bookReading: { month: string | null; positions: Map<string, number> } = {
+    month: null,
+    positions: new Map()
+  }
+
+  setBookMonth(month: string | null): void {
+    this.bookReading.month = month
+  }
+  setBookPosition(month: string, position: number): void {
+    this.bookReading.positions.set(month, position)
+  }
+  private visitingBookOriginal = false
+  /** Temporary explicit record visit. Restores the caller's complete Data reading context. */
+  visitBookOriginal(selection: DataRecordSelection): () => void {
+    this.visitingBookOriginal = true
+    const history = this.historyState
+    const selected = this.selectedDataRecord
+    const position = this.getPosition('data')
+    const panes = new Map(this.panePositions)
+    this.selectedDataRecord = selection
+    this.historyState = { kind: 'all', goalId: 'all', date: '', query: '', page: 1 }
+    this.navigationSelection.add('data')
+    this.positions.data = 0
+    this.setPanePosition('data', 'detail', 0)
+    this.setPanePosition('data', 'master', 0)
+    return () => {
+      this.visitingBookOriginal = false
+      this.historyState = history
+      this.selectedDataRecord = selected
+      if (selected) this.preferences.remember('data', selected)
+      this.positions.data = position
+      for (const key of this.panePositions.keys())
+        if (key.startsWith('data:')) this.panePositions.delete(key)
+      for (const [key, value] of panes)
+        if (key.startsWith('data:')) this.panePositions.set(key, value)
+      this.navigationSelection.delete('data')
+    }
+  }
+
   private historyState: {
     kind: 'all' | 'action-record' | 'routine-record'
     goalId: string
@@ -266,7 +305,7 @@ export class UiSession {
   }
   selectDataRecord(selection: DataRecordSelection | null): void {
     this.selectedDataRecord = selection
-    if (selection) this.preferences.remember('data', selection)
+    if (selection && !this.visitingBookOriginal) this.preferences.remember('data', selection)
   }
   setProgressDraftFilter(filter: ProgressFilterState): void {
     this.progressDraft = filter

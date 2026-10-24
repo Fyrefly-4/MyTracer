@@ -1,3 +1,4 @@
+import type { RecordBookApi } from './record-book'
 import type { AppearanceSettings, AppearanceState } from './appearance'
 import type { HomeApi } from './home'
 import type { GoalApi } from './goals'
@@ -43,6 +44,7 @@ export interface MyTracerApi {
   readonly review: ReviewApi
   readonly routines: RoutineApi
   readonly dataControl: DataControlApi
+  readonly recordBook: RecordBookApi
   readonly exports: CompleteExportApi
   readonly aiStartHelp: AiStartHelpApi
   readonly aiConfiguration: AiConfigurationApi

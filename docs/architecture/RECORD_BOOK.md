@@ -26,4 +26,4 @@
 - UI：入口、单月与跳转、来源返回/滚动、查看原记录、草稿、读取失败和过期异步响应；窄窗、缩放、键盘。
 - 运行适当 format/lint/typecheck/build/unit/integration。Windows 专属测试交给 CI；已知 Linux Electron SUID 沙箱限制不得通过关闭沙箱绕过，未执行 UI 断言明确记为未运行。
 
-批准参考：Library `libfile_540fa7d593f08191ac3a43e8d49ae8e3`，`MyTracer-record-book-approved-monthly-preview.html` v0（38,092 bytes），原型提交 `2d3add419f756a5ad44800e3d677d719e365ff8a`。当前执行环境使用支持的下载 helper 及一次有限重试均失败；未读取文件、未完成视觉实现或人工验收。
+批准参考：Library `libfile_540fa7d593f08191ac3a43e8d49ae8e3`，`MyTracer-record-book-approved-monthly-preview.html` v0（38,092 bytes），原型提交 `2d3add419f756a5ad44800e3d677d719e365ff8a`。Library 下载及一次有限重试失败；父线程随后直接交接了批准 HTML 全文，已检查 CSS、数据结构与交互。使用此直接源码作为设计参考，不声称 Library 下载成功或像素级人工验收。原型示例和臆测后续状态不进入产品资料。

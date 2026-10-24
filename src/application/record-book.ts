@@ -30,6 +30,12 @@ export function buildRecordBook(data: CorePersistenceSnapshot): RecordBook {
   const routines = new Map(data.routines.map((row) => [row.id, row]))
   const association = (id: string | null) =>
     field('关联目标（读取时）', id === null ? '无关联目标' : (goals.get(id)?.title ?? '目标不可用'))
+  const understandings = new Map<string, (typeof data.understandings)[number][]>()
+  const confusions = new Map<string, (typeof data.confusions)[number][]>()
+  for (const row of data.understandings)
+    understandings.set(row.actionRecordId, [...(understandings.get(row.actionRecordId) ?? []), row])
+  for (const row of data.confusions)
+    confusions.set(row.actionRecordId, [...(confusions.get(row.actionRecordId) ?? []), row])
   const entries: RecordBookEntry[] = data.actionRecords.map((record) => {
     const action = actions.get(record.actionId)
     return {
@@ -48,20 +54,13 @@ export function buildRecordBook(data: CorePersistenceSnapshot): RecordBook {
         association(action?.goalId ?? null),
         original('原备注', record.note),
         original('记录时写下的下一步', record.nextStep),
-        ...data.understandings
-          .filter((row) => row.actionRecordId === record.id)
-          .flatMap((row) => [
-            field(row.revokedAt === null ? '理解（当前有效）' : '理解（已撤销）', row.text)
-          ]),
-        ...data.confusions
-          .filter((row) => row.actionRecordId === record.id)
-          .flatMap((row) => [
-            field(
-              row.status === 'resolved' ? '困惑（当前已解决）' : '困惑（当前未解决）',
-              row.text
-            ),
-            original('解决说明', row.resolution)
-          ])
+        ...(understandings.get(record.id) ?? []).flatMap((row) => [
+          field(row.revokedAt === null ? '理解（当前有效）' : '理解（已撤销）', row.text)
+        ]),
+        ...(confusions.get(record.id) ?? []).flatMap((row) => [
+          field(row.status === 'resolved' ? '困惑（当前已解决）' : '困惑（当前未解决）', row.text),
+          original('解决说明', row.resolution)
+        ])
       ]
     }
   })
