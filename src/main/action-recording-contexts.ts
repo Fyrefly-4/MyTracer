@@ -1,4 +1,10 @@
+import type { RecordActionValueDto } from '../contracts/records'
+
+type SavedFirstResult = Extract<RecordActionValueDto, { readonly kind: 'saved' }>
+
 export interface ActionRecordingContext {
+  readonly savedFirstResult?: SavedFirstResult
+  readonly firstRecord?: boolean
   readonly id: string
   readonly senderId: number
   readonly actionId: string
@@ -17,13 +23,28 @@ export class ActionRecordingContextStore {
 
   public constructor(private readonly generateId: () => string) {}
 
-  public begin(senderId: number, actionId: string, capturedOn: string): ActionRecordingContext {
+  public begin(
+    senderId: number,
+    actionId: string,
+    capturedOn: string,
+    firstRecord = false
+  ): ActionRecordingContext {
     for (const [id, context] of this.contexts) {
-      if (context.senderId === senderId && context.actionId === actionId) {
+      if (
+        context.senderId === senderId &&
+        context.actionId === actionId &&
+        Boolean(context.firstRecord) === firstRecord
+      ) {
         this.contexts.delete(id)
       }
     }
-    const context = Object.freeze({ id: this.generateId(), senderId, actionId, capturedOn })
+    const context = Object.freeze({
+      id: this.generateId(),
+      senderId,
+      actionId,
+      capturedOn,
+      firstRecord
+    })
     this.contexts.set(context.id, context)
     return context
   }
@@ -34,6 +55,17 @@ export class ActionRecordingContextStore {
       throw new InvalidActionRecordingContextError()
     }
     return context
+  }
+
+  public rememberFirstResult(
+    senderId: number,
+    actionId: string,
+    contextId: string,
+    result: SavedFirstResult
+  ): void {
+    const context = this.require(senderId, actionId, contextId)
+    if (!context.firstRecord) throw new InvalidActionRecordingContextError()
+    this.contexts.set(contextId, Object.freeze({ ...context, savedFirstResult: result }))
   }
 
   public cancel(senderId: number, contextId: string): void {

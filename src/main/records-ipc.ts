@@ -5,6 +5,7 @@ import {
 } from '../application/action-records'
 import {
   RECORD_CHANNELS,
+  type FirstActionRecordInputDto,
   type ActionRecordIdInputDto,
   type BeginActionRecordingInputDto,
   type CancelActionRecordingInputDto,
@@ -202,6 +203,39 @@ function parseRecord(args: readonly unknown[]): RecordActionInputDto {
   }
 }
 
+function parseFirst(args: readonly unknown[]): FirstActionRecordInputDto {
+  const input = objectWithKeys(oneArgument(args), [
+    'actionId',
+    'recordingContextId',
+    'title',
+    'goalId',
+    'durationMinutes',
+    'outcome',
+    'lifecycle',
+    'note',
+    'dateChoice'
+  ])
+  if (input.lifecycle !== 'keep-pending' && input.lifecycle !== 'complete') {
+    throw new RecordIpcValidationError('Choose the Action lifecycle explicitly.')
+  }
+  const record = parseRecord([
+    {
+      actionId: input.actionId,
+      recordingContextId: input.recordingContextId,
+      durationMinutes: input.durationMinutes,
+      outcome: input.outcome,
+      note: input.note,
+      dateChoice: input.dateChoice
+    }
+  ])
+  return {
+    ...record,
+    title: requiredString(input.title),
+    goalId: input.goalId === null ? null : requiredId(input.goalId),
+    lifecycle: input.lifecycle
+  }
+}
+
 function parseActionList(args: readonly unknown[]): ListActionRecordsInputDto {
   const input = objectWithKeys(oneArgument(args), ['actionId'])
   return { actionId: requiredId(input.actionId) }
@@ -225,6 +259,42 @@ export function registerRecordIpc(options: RegisterRecordIpcOptions): void {
     })
   }
 
+  register(
+    RECORD_CHANNELS.beginFirst,
+    (args) => {
+      if (args.length) throw new RecordIpcValidationError('Expected no input.')
+      return undefined
+    },
+    (event) => {
+      const prepared = options.service.beginFirstActionRecording()
+      const context = options.contexts.begin(
+        event.sender.id,
+        prepared.actionId,
+        prepared.capturedOn,
+        true
+      )
+      return Object.freeze({ ...prepared, recordingContextId: context.id })
+    }
+  )
+  register(RECORD_CHANNELS.saveFirst, parseFirst, (event, input: FirstActionRecordInputDto) => {
+    const context = options.contexts.require(
+      event.sender.id,
+      input.actionId,
+      input.recordingContextId
+    )
+    if (!context.firstRecord) throw new InvalidActionRecordingContextError()
+    // Keep this session capability for a retry after a lost IPC response. The persisted
+    // record ID is the idempotency key; no separate receipt or schema is needed.
+    if (context.savedFirstResult) return context.savedFirstResult
+    const result = options.service.recordFirstAction({
+      ...input,
+      recordId: context.id,
+      capturedOn: context.capturedOn
+    })
+    if (result.kind === 'saved')
+      options.contexts.rememberFirstResult(event.sender.id, input.actionId, context.id, result)
+    return result
+  })
   register(RECORD_CHANNELS.begin, parseBegin, (event, input: BeginActionRecordingInputDto) => {
     const prepared = options.service.beginActionRecording(input.actionId)
     const context = options.contexts.begin(event.sender.id, input.actionId, prepared.capturedOn)
@@ -240,6 +310,7 @@ export function registerRecordIpc(options: RegisterRecordIpcOptions): void {
       input.actionId,
       input.recordingContextId
     )
+    if (context.firstRecord) throw new InvalidActionRecordingContextError()
     const result = options.service.recordAction({
       ...input,
       capturedOn: context.capturedOn

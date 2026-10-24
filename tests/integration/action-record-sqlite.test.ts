@@ -341,3 +341,207 @@ describe('ActionRecord SQLite integration', () => {
     connection.close()
   })
 })
+
+describe('first Action record atomic boundary (#125)', () => {
+  const input = {
+    actionId: 'first-action',
+    recordId: 'first-record',
+    capturedOn: '2026-08-12',
+    title: '修紧把手',
+    goalId: null,
+    durationMinutes: null,
+    outcome: 'partial' as const,
+    lifecycle: 'keep-pending' as const,
+    note: '还要继续'
+  }
+  it.each([null, 0, 8])(
+    'saves duration %s, explicit lifecycle and optional goal without Today/next mutations',
+    async (durationMinutes) => {
+      const { path, connection } = await openDatabase()
+      const clock = new FakeClock({
+        instant,
+        localDate: input.capturedOn,
+        timeZone: 'Asia/Shanghai'
+      })
+      const services = servicesFor(connection, clock, ['goal', 'next'])
+      services.goals.createGoal({
+        name: 'Synthetic goal',
+        initialNextAction: { title: 'Untouched next step' }
+      })
+      const before = connection.repository.readSnapshot()
+      for (const [index, lifecycle, outcome, goalId] of [
+        ['1', 'keep-pending', 'partial', null],
+        ['2', 'keep-pending', 'completed', 'goal'],
+        ['3', 'complete', 'partial', 'goal'],
+        ['4', 'complete', 'completed', null]
+      ] as const) {
+        const request = {
+          ...input,
+          actionId: `action-${index}`,
+          recordId: `record-${index}`,
+          lifecycle,
+          outcome,
+          goalId,
+          durationMinutes
+        }
+        const result = services.records.recordFirstAction(request)
+        expect(result).toMatchObject({
+          kind: 'saved',
+          action: {
+            status: lifecycle === 'complete' ? 'completed' : 'pending',
+            selectedForToday: false,
+            goalId
+          },
+          record: { durationMinutes, outcome },
+          appliedNextActionId: null
+        })
+        expect(services.records.recordFirstAction(request)).toEqual(result)
+      }
+      const after = connection.repository.readSnapshot()
+      expect(after.actions).toHaveLength(before.actions.length + 4)
+      expect(after.actionRecords).toHaveLength(4)
+      expect(after.goals).toEqual(before.goals)
+      expect(after.todaySelections).toEqual(before.todaySelections)
+      connection.close()
+      const reopened = SqliteConnection.open(path)
+      try {
+        expect(reopened.repository.readSnapshot()).toEqual(after)
+        const retry = servicesFor(reopened, clock, []).records.recordFirstAction({
+          ...input,
+          actionId: 'action-1',
+          recordId: 'record-1',
+          durationMinutes
+        })
+        expect(retry).toMatchObject({ kind: 'saved', record: { durationMinutes } })
+        expect(reopened.repository.readSnapshot()).toEqual(after)
+      } finally {
+        reopened.close()
+      }
+    }
+  )
+  it.each(['paused', 'ended'])('rejects a goal that became %s while drafting', async (status) => {
+    const { connection } = await openDatabase()
+    try {
+      const clock = new FakeClock({
+        instant,
+        localDate: input.capturedOn,
+        timeZone: 'Asia/Shanghai'
+      })
+      const services = servicesFor(connection, clock, ['goal', 'next'])
+      services.goals.createGoal({
+        name: 'Synthetic goal',
+        initialNextAction: { title: 'Keep next' }
+      })
+      if (status === 'paused') services.goals.pauseGoal('goal')
+      else services.goals.endGoal('goal')
+      const before = connection.repository.readSnapshot()
+      expect(() => services.records.recordFirstAction({ ...input, goalId: 'goal' })).toThrow(
+        'not active'
+      )
+      expect(connection.repository.readSnapshot()).toEqual(before)
+    } finally {
+      connection.close()
+    }
+  })
+  it.each(['saveAction', 'saveActionRecord', 'after-work'])(
+    'rolls back %s failure and safely retries',
+    async (failurePoint) => {
+      const { connection } = await openDatabase()
+      try {
+        const clock = new FakeClock({
+          instant,
+          localDate: input.capturedOn,
+          timeZone: 'Asia/Shanghai'
+        })
+        const before = connection.repository.readSnapshot()
+        const failing: UnitOfWorkPort = {
+          transaction: <T>(work: (repository: RepositoryPort) => T): T =>
+            connection.transaction((repository) => {
+              const result = work(
+                new Proxy(repository, {
+                  get(target, property, receiver) {
+                    if (property === failurePoint)
+                      return () => {
+                        throw Error('synthetic write failure')
+                      }
+                    const value = Reflect.get(target, property, receiver) as unknown
+                    return typeof value === 'function' ? value.bind(target) : value
+                  }
+                })
+              )
+              if (failurePoint === 'after-work') throw Error('synthetic commit-boundary failure')
+              return result
+            })
+        }
+        expect(() =>
+          servicesFor(connection, clock, [], failing).records.recordFirstAction(input)
+        ).toThrow('synthetic')
+        expect(connection.repository.readSnapshot()).toEqual(before)
+        const service = servicesFor(connection, clock, []).records
+        expect(service.recordFirstAction(input)).toMatchObject({ kind: 'saved' })
+        const after = connection.repository.readSnapshot()
+        expect(service.recordFirstAction(input)).toMatchObject({ kind: 'saved' })
+        expect(connection.repository.readSnapshot()).toEqual(after)
+      } finally {
+        connection.close()
+      }
+    }
+  )
+  it('begin creates no objects; midnight asks before writing, and committed retry survives midnight', async () => {
+    const { connection } = await openDatabase()
+    try {
+      const clock = new FakeClock({
+        instant,
+        localDate: input.capturedOn,
+        timeZone: 'Asia/Shanghai'
+      })
+      const service = servicesFor(connection, clock, []).records
+      const before = connection.repository.readSnapshot()
+      expect(service.beginFirstActionRecording()).toMatchObject({ capturedOn: input.capturedOn })
+      expect(connection.repository.readSnapshot()).toEqual(before)
+      clock.setState({
+        instant: '2026-08-13T00:00:00Z',
+        localDate: '2026-08-13',
+        timeZone: 'Asia/Shanghai'
+      })
+      expect(service.recordFirstAction(input)).toMatchObject({ kind: 'date-confirmation-required' })
+      expect(connection.repository.readSnapshot()).toEqual(before)
+      expect(service.recordFirstAction({ ...input, dateChoice: 'keep-captured-on' })).toMatchObject(
+        { kind: 'saved', record: { occurredOn: input.capturedOn } }
+      )
+      const saved = connection.repository.readSnapshot()
+      expect(
+        service.recordFirstAction({ ...input, title: 'changed retry', lifecycle: 'complete' })
+      ).toMatchObject({ kind: 'saved', action: { title: input.title, status: 'pending' } })
+      expect(connection.repository.readSnapshot()).toEqual(saved)
+    } finally {
+      connection.close()
+    }
+  })
+  it.each([
+    { title: ' ' },
+    { durationMinutes: -1 },
+    { durationMinutes: undefined },
+    { goalId: 'missing' },
+    { lifecycle: undefined }
+  ])('rejects invalid %j without objects', async (invalid) => {
+    const { connection } = await openDatabase()
+    try {
+      const clock = new FakeClock({
+        instant,
+        localDate: input.capturedOn,
+        timeZone: 'Asia/Shanghai'
+      })
+      const service = servicesFor(connection, clock, []).records
+      const before = connection.repository.readSnapshot()
+      expect(() =>
+        service.recordFirstAction({ ...input, ...invalid } as Parameters<
+          typeof service.recordFirstAction
+        >[0])
+      ).toThrow()
+      expect(connection.repository.readSnapshot()).toEqual(before)
+    } finally {
+      connection.close()
+    }
+  })
+})

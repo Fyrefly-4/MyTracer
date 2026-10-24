@@ -211,6 +211,107 @@ function toDateChoice(choice: RecordingDateChoice | undefined): OccurrenceDateCh
 export class ActionRecordService {
   public constructor(private readonly dependencies: ActionRecordServiceDependencies) {}
 
+  public beginFirstActionRecording(): BeginActionRecordingView {
+    return Object.freeze({
+      actionId: this.dependencies.generateId(),
+      capturedOn: String(this.dependencies.clock.snapshot().localDate)
+    })
+  }
+
+  public recordFirstAction(input: {
+    readonly actionId: string
+    readonly recordId: string
+    readonly capturedOn: string
+    readonly title: string
+    readonly goalId: string | null
+    readonly durationMinutes: number | null
+    readonly outcome: ActionRecordOutcome
+    readonly lifecycle: 'keep-pending' | 'complete'
+    readonly note?: string | null
+    readonly dateChoice?: RecordingDateChoice
+  }): RecordActionResult {
+    const snapshot = this.dependencies.clock.snapshot()
+    const currentLocalDate = String(snapshot.localDate)
+    try {
+      return this.dependencies.unitOfWork.transaction((baseRepository) => {
+        const repository = asActionRecordRepository(baseRepository)
+        // First committed submission wins, including retries after midnight or completion.
+        const saved = repository.findActionRecordById(input.recordId)
+        if (saved) {
+          if (saved.actionId !== input.actionId)
+            throw new ActionRecordApplicationError(
+              'invariant-violation',
+              'Record identity mismatch.'
+            )
+          return Object.freeze({
+            kind: 'saved' as const,
+            record: detail(repository, saved),
+            action: buildActionDetail(repository, saved.actionId, currentLocalDate),
+            appliedNextActionId: null
+          })
+        }
+        if (repository.findActionById(input.actionId))
+          throw new ActionRecordApplicationError(
+            'invariant-violation',
+            'Action identity is already in use.'
+          )
+        if (input.lifecycle !== 'keep-pending' && input.lifecycle !== 'complete')
+          throw new ActionRecordApplicationError('validation', 'Choose an Action lifecycle.')
+        if (input.capturedOn === currentLocalDate && input.dateChoice !== undefined)
+          throw new ActionRecordApplicationError(
+            'validation',
+            'Date choice requires a midnight boundary.'
+          )
+        const decision = decideOccurrenceDate(
+          input.capturedOn as Parameters<typeof decideOccurrenceDate>[0],
+          snapshot.localDate,
+          toDateChoice(input.dateChoice)
+        )
+        if (decision.kind === 'requires-confirmation')
+          return Object.freeze({
+            kind: 'date-confirmation-required' as const,
+            capturedOn: String(decision.capturedOn),
+            currentLocalDate: String(decision.currentLocalDate)
+          })
+        if (input.goalId) {
+          const goal = repository.findGoalById(input.goalId)
+          if (!goal) throw new ActionRecordApplicationError('not-found', 'Goal not found.')
+          if (goal.status !== 'active')
+            throw new ActionRecordApplicationError('invalid-transition', 'Goal is not active.')
+        }
+        const created = createAction({
+          id: input.actionId,
+          title: input.title,
+          goalId: input.goalId,
+          now: snapshot.instant
+        })
+        const action =
+          input.lifecycle === 'complete'
+            ? transitionAction(created, 'complete', snapshot.instant)
+            : created
+        const record = createActionRecord({
+          id: input.recordId,
+          actionId: action.id,
+          occurredOn: String(decision.occurredOn),
+          durationMinutes: input.durationMinutes,
+          outcome: input.outcome,
+          note: input.note,
+          now: snapshot.instant
+        })
+        repository.saveAction(action)
+        repository.saveActionRecord(record)
+        return Object.freeze({
+          kind: 'saved' as const,
+          record: detail(repository, record),
+          action: buildActionDetail(repository, action.id, currentLocalDate),
+          appliedNextActionId: null
+        })
+      })
+    } catch (error) {
+      mapDomainError(error)
+    }
+  }
+
   public beginActionRecording(actionId: string): BeginActionRecordingView {
     const snapshot = this.dependencies.clock.snapshot()
     assertRecordable(this.dependencies.repository, actionId)
