@@ -135,6 +135,8 @@ async function verifyPackagedApplication(
       'get'
     ])
     expect(await page.evaluate(() => Object.keys(window.myTracer.records))).toEqual([
+      'beginFirst',
+      'saveFirst',
       'begin',
       'cancel',
       'record',

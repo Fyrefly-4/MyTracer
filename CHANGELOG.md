@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.1](https://github.com/Fyrefly-4/MyTracer/compare/v1.8.0...v1.8.1) (2026-10-24)
+
+
+### Bug Fixes
+
+* align packaged smoke test with first-record API ([#141](https://github.com/Fyrefly-4/MyTracer/issues/141)) ([6c944f4](https://github.com/Fyrefly-4/MyTracer/commit/6c944f46d3deabbee5ea178b251a0ec6139ad5c3))
+
 ## [1.8.0](https://github.com/Fyrefly-4/MyTracer/compare/v1.7.0...v1.8.0) (2026-10-24)
 
 
