@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.7.0](https://github.com/Fyrefly-4/MyTracer/compare/v1.6.0...v1.7.0) (2026-10-23)
+
+
+### Features
+
+* integrate finalized C1 wordmark ([#116](https://github.com/Fyrefly-4/MyTracer/issues/116)) ([8a42ed6](https://github.com/Fyrefly-4/MyTracer/commit/8a42ed60145fdc5d075f2ba10ab2e11a859ce90b))
+* 品牌化 Windows 安装向导并保留可见更新 ([#120](https://github.com/Fyrefly-4/MyTracer/issues/120)) ([f35a903](https://github.com/Fyrefly-4/MyTracer/commit/f35a903012e5b17aabecce3ceec7add97d1ad7bb))
+
+
+### Bug Fixes
+
+* 数据页以历史阅读为主，补记与工具移入面板 ([#122](https://github.com/Fyrefly-4/MyTracer/issues/122)) ([acafa5c](https://github.com/Fyrefly-4/MyTracer/commit/acafa5cbd27273e5d7c71830eb4997f3cdedd822))
+
 ## [1.6.0](https://github.com/Fyrefly-4/MyTracer/compare/v1.5.0...v1.6.0) (2026-10-23)
 
 
