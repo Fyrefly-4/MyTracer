@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.1](https://github.com/Fyrefly-4/MyTracer/compare/v1.9.0...v1.9.1) (2026-10-24)
+
+
+### Bug Fixes
+
+* align Windows package smoke with record book API ([#147](https://github.com/Fyrefly-4/MyTracer/issues/147)) ([697467a](https://github.com/Fyrefly-4/MyTracer/commit/697467a478579e099c87325a11f1c56ccf914f5e))
+
 ## [1.9.0](https://github.com/Fyrefly-4/MyTracer/compare/v1.8.1...v1.9.0) (2026-10-24)
 
 
