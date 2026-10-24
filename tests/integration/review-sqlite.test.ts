@@ -184,6 +184,7 @@ describe('Review SQLite summary snapshot', () => {
     })
     expect(first.actionRecords).toEqual(progress.records)
     expect(first.actionRecords[0]).toHaveProperty('hasRecordedText', false)
+    expect(first.actionRecords[0]).not.toHaveProperty('summary')
     expect(first.actionRecords[0]).not.toHaveProperty('note')
     expect(first.actionRecords[0]).not.toHaveProperty('nextStep')
     expect(first.routineRecords).toEqual(progress.routineRecords)
@@ -201,12 +202,23 @@ describe('Review SQLite summary snapshot', () => {
       durationMinutes: 3,
       outcome: 'stopped',
       nextStep: null,
-      summary: null,
+      summary: 'Synthetic summary available only through explicit record reading',
       note: null,
       createdAt: at(14),
       updatedAt: at(14)
     })
     const changed = review.getReviewSummary(period)
+    expect(
+      changed.actionRecords.map((record) => [record.recordId, record.hasRecordedText])
+    ).toEqual([
+      ['action-record-2', true],
+      ['action-record-1', false]
+    ])
+    for (const record of changed.actionRecords) {
+      expect(record).not.toHaveProperty('summary')
+      expect(record).not.toHaveProperty('note')
+      expect(record).not.toHaveProperty('nextStep')
+    }
     expect(changed.totalDurationMinutes).toBe(first.totalDurationMinutes + 3)
     expect(changed.realActionCount).toBe(first.realActionCount + 1)
     expect(changed.routineOutcomeCounts.notDone).toBe(1)

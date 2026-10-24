@@ -154,19 +154,17 @@ test('shows the current-week ReviewSummary from Progress facts without turning u
       value: {
         totalDurationMinutes: progress.value.totalDurationMinutes,
         realActionCount: progress.value.realActionCount,
-        actionRecords: progress.value.records.map((record) => {
-          const { hasRecordedText, ...facts } = record
-          expect(hasRecordedText).toBe(false)
-          return facts
-        }),
+        actionRecords: progress.value.records,
         routineRecords: progress.value.routineRecords,
         routineOutcomeCounts: { targetMet: 1, acted: 1, intentionalRest: 1, notDone: 1 },
         unknownPolicy: 'absence-is-unknown-not-counted-as-not-done'
       }
     })
     if (!apiFacts.first.ok) throw Error('Expected Review summary')
+    expect(apiFacts.first.value.actionRecords).toEqual(progress.value.records)
     for (const record of apiFacts.first.value.actionRecords) {
-      expect(record).not.toHaveProperty('hasRecordedText')
+      expect(record.hasRecordedText).toBe(false)
+      expect(record).not.toHaveProperty('summary')
       expect(record).not.toHaveProperty('note')
       expect(record).not.toHaveProperty('nextStep')
     }
