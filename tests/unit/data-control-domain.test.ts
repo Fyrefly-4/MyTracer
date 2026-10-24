@@ -21,6 +21,7 @@ describe('data-control domain', () => {
       confusions: [],
       reviewResults: [],
       detachedRoutines: [],
+      detachedGoalStages: [],
       detachedReviewResults: [],
       clearedCurrentNext: ['goal-1']
     })

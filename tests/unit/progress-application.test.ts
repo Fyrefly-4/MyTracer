@@ -13,6 +13,7 @@ const goal: GoalPersistenceRecord = {
   title: 'Learn React',
   description: null,
   status: 'active',
+  predecessorGoalId: null,
   currentNextActionId: null,
   createdAt: '2026-08-10T08:00:00.000Z',
   updatedAt: '2026-08-10T08:00:00.000Z'

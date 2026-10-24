@@ -1,6 +1,7 @@
 import { recordDuration } from '../../app/ui-text'
 import { chooseVisibleSelection } from '../../app/selection-preferences'
 import '../forms-workspace.css'
+import './goal-stages.css'
 import '../object-workspace.css'
 import {
   type ReactNode,
@@ -179,6 +180,29 @@ function GoalWorkspace(): ReactNode {
   const [selectionLoaded, setSelectionLoaded] = useState(false)
   const [selectionError, setSelectionError] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
+  // Opening an ordinary draft is a newer intent, even before it has a Goal ID.
+  const ordinaryCreateIntent = useRef(0)
+  const openOrdinaryCreate = (): void => {
+    ++ordinaryCreateIntent.current
+    setCreating(true)
+  }
+  const [stageDraft, setStageDraft] = useState<{
+    goalId: string
+    predecessorGoalId: string
+    name: string
+    description: string
+  } | null>(null)
+  const stageSubmitting = useRef(false)
+  const stageTriggerRef = useRef<HTMLButtonElement | null>(null)
+  const [stageBusy, setStageBusy] = useState(false)
+  const [stageError, setStageError] = useState<string | null>(null)
+  useUnsavedContent('goal-stage', stageDraft !== null)
+  const dismissStage = (): void => {
+    if (stageSubmitting.current) return
+    setStageDraft(null)
+    setStageError(null)
+    requestAnimationFrame(() => stageTriggerRef.current?.focus({ preventScroll: true }))
+  }
   const detailRef = useRef<HTMLElement | null>(null)
   const managementRef = useRef<HTMLDetailsElement | null>(null)
   const nextActionTitleRef = useRef<HTMLInputElement | null>(null)
@@ -280,13 +304,14 @@ function GoalWorkspace(): ReactNode {
     }
   }
 
-  const selectGoal = async (goalId: string, reveal = true): Promise<void> => {
+  const selectGoal = async (goalId: string, reveal = true, linked = false): Promise<void> => {
     if (!activeRef.current) return
+    if (linked) setRouteGoalId(goalId)
     if (contentDraft.retained && contentDraft.snapshot?.goalId !== goalId) {
       setPendingContentGoal(goalId)
       return
     }
-    setRouteGoalId(null)
+    setRouteGoalId(linked ? goalId : null)
     const request = ++selectionRequest.current
     session.selectGoal(goalId)
     setBusy(true)
@@ -320,7 +345,7 @@ function GoalWorkspace(): ReactNode {
     if (!activeRef.current) return
     setRefreshVersion((version) => version + 1)
     if (shownGoalId.current !== goalId || request !== selectionRequest.current) return
-    await selectGoal(goalId, false)
+    await selectGoal(goalId, false, routeGoalId === goalId)
   }
 
   const refreshAfterRecoveryMutation = async (): Promise<void> => {
@@ -362,6 +387,7 @@ function GoalWorkspace(): ReactNode {
 
   const submitCreate = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault()
+    ++ordinaryCreateIntent.current
     setBusy(true)
     const result = await window.myTracer.goals.create({
       name: createName,
@@ -384,6 +410,40 @@ function GoalWorkspace(): ReactNode {
     } else {
       setError(goalErrorText[result.error.code])
     }
+  }
+
+  const submitStage = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
+    event.preventDefault()
+    if (!stageDraft || stageSubmitting.current) return
+    stageSubmitting.current = true
+    setStageBusy(true)
+    setStageError(null)
+    const request = selectionRequest.current
+    const createIntent = ordinaryCreateIntent.current
+    try {
+      const result = await window.myTracer.goals.createStage(stageDraft)
+      if (!activeRef.current) return
+      if (!result.ok) {
+        setStageError(goalErrorText[result.error.code])
+        return
+      }
+      setStageDraft(null)
+      setRefreshVersion((version) => version + 1)
+      if (request === selectionRequest.current && createIntent === ordinaryCreateIntent.current) {
+        setRouteGoalId(result.value.id)
+        showDetail(result.value)
+        requestAnimationFrame(() => revealStart(detailRef.current))
+      }
+    } catch {
+      if (activeRef.current) setStageError(goalErrorText['persistence-failed'])
+    } finally {
+      stageSubmitting.current = false
+      if (activeRef.current) setStageBusy(false)
+    }
+  }
+
+  const navigateStage = async (goalId: string): Promise<void> => {
+    await selectGoal(goalId, true, true)
   }
 
   const submitUpdate = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
@@ -499,6 +559,7 @@ function GoalWorkspace(): ReactNode {
   const selectionBlocked =
     activeUnsaved ||
     creating ||
+    stageDraft !== null ||
     busy ||
     Boolean(pendingGoalEnd) ||
     Boolean(createName || createDescription || createNextAction) ||
@@ -646,7 +707,7 @@ function GoalWorkspace(): ReactNode {
               const next = pendingContentGoal
               contentDraft.discard()
               setPendingContentGoal(null)
-              void selectGoal(next)
+              void selectGoal(next, true, routeGoalId === next)
             }}
           >
             {contentDraft.retained ? '放弃目标内容并切换' : '切换目标'}
@@ -725,7 +786,10 @@ function GoalWorkspace(): ReactNode {
                   type="button"
                   className="secondary-button"
                   aria-expanded={creating}
-                  onClick={() => setCreating(!creating)}
+                  onClick={() => {
+                    if (creating) setCreating(false)
+                    else openOrdinaryCreate()
+                  }}
                 >
                   新建目标
                 </button>
@@ -837,6 +901,59 @@ function GoalWorkspace(): ReactNode {
           data-scroll-key="detail"
           aria-label="目标工作区"
         >
+          {stageDraft ? (
+            <form
+              className="goal-card workspace-form"
+              aria-label="开始新阶段表单"
+              onSubmit={(event) => void submitStage(event)}
+              onKeyDown={(event) => {
+                if (event.key === 'Escape') {
+                  event.preventDefault()
+                  dismissStage()
+                }
+              }}
+            >
+              <h2>翻开新一页</h2>
+              <p>创建一个独立的新目标。旧目标保持结束；行动、记录、下一步和今日选择不会带入。</p>
+              <div className="workspace-form-fields">
+                <label>
+                  新阶段名称
+                  <input
+                    autoFocus
+                    required
+                    disabled={stageBusy}
+                    value={stageDraft.name}
+                    onChange={(event) => setStageDraft({ ...stageDraft, name: event.target.value })}
+                  />
+                </label>
+                <label className="form-field-wide">
+                  新阶段说明（可选）
+                  <textarea
+                    rows={3}
+                    disabled={stageBusy}
+                    value={stageDraft.description}
+                    onChange={(event) =>
+                      setStageDraft({ ...stageDraft, description: event.target.value })
+                    }
+                  />
+                </label>
+              </div>
+              <p>名称与说明仅供参考，可以修改或清空后重新填写。</p>
+              {stageError ? (
+                <p role="alert" className="form-error">
+                  {stageError}
+                </p>
+              ) : null}
+              <div className="workspace-form-actions">
+                <button type="submit" className="primary-button" disabled={stageBusy}>
+                  创建新阶段
+                </button>
+                <button type="button" disabled={stageBusy} onClick={dismissStage}>
+                  取消新阶段
+                </button>
+              </div>
+            </form>
+          ) : null}
           {creating ? (
             <form
               className="goal-card goal-create workspace-form"
@@ -911,6 +1028,49 @@ function GoalWorkspace(): ReactNode {
                     {goalStatusText[detail.status]}
                   </span>
                 </div>
+                {detail.previousStage ||
+                detail.subsequentStages.length > 0 ||
+                detail.status === 'ended' ? (
+                  <nav className="goal-stage-navigation" aria-label="阶段导航">
+                    {detail.previousStage ? (
+                      <button
+                        type="button"
+                        disabled={busy || stageBusy}
+                        onClick={() => void navigateStage(detail.previousStage!.id)}
+                      >
+                        上一阶段：{detail.previousStage.name}
+                      </button>
+                    ) : null}
+                    {detail.subsequentStages.map((stage) => (
+                      <button
+                        key={stage.id}
+                        type="button"
+                        disabled={busy || stageBusy}
+                        onClick={() => void navigateStage(stage.id)}
+                      >
+                        后续阶段：{stage.name}
+                      </button>
+                    ))}
+                    {detail.status === 'ended' ? (
+                      <button
+                        type="button"
+                        ref={stageTriggerRef}
+                        disabled={busy || stageDraft !== null || contentDraft.retained || creating}
+                        onClick={() => {
+                          setStageError(null)
+                          setStageDraft({
+                            goalId: crypto.randomUUID(),
+                            predecessorGoalId: detail.id,
+                            name: detail.name,
+                            description: detail.description ?? ''
+                          })
+                        }}
+                      >
+                        开始新阶段
+                      </button>
+                    ) : null}
+                  </nav>
+                ) : null}
                 {detail.description ? (
                   <p className="goal-description">{detail.description}</p>
                 ) : null}
@@ -1240,7 +1400,7 @@ function GoalWorkspace(): ReactNode {
                     清除筛选
                   </button>
                 ) : (
-                  <button type="button" onClick={() => setCreating(true)}>
+                  <button type="button" onClick={openOrdinaryCreate}>
                     创建第一个目标
                   </button>
                 )}

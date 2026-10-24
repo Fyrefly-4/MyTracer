@@ -61,7 +61,14 @@ export interface GoalRecordSummaryView {
   readonly createdAt: string
 }
 
+export interface GoalStageReferenceView {
+  readonly id: string
+  readonly name: string
+}
+
 export interface GoalDetailView extends GoalSummaryView {
+  readonly previousStage: GoalStageReferenceView | null
+  readonly subsequentStages: readonly GoalStageReferenceView[]
   readonly currentNextAction: GoalActionSummaryView | null
   readonly actions: readonly GoalActionSummaryView[]
   readonly records: readonly GoalRecordSummaryView[]
@@ -80,6 +87,7 @@ function toDomain(record: GoalPersistenceRecord): Goal {
     name: record.title,
     description: record.description,
     status: record.status,
+    predecessorGoalId: record.predecessorGoalId,
     currentNextActionId: record.currentNextActionId,
     createdAt: record.createdAt,
     updatedAt: record.updatedAt
@@ -92,6 +100,7 @@ function toPersistence(goal: Goal): GoalPersistenceRecord {
     title: goal.name,
     description: goal.description,
     status: goal.status,
+    predecessorGoalId: goal.predecessorGoalId,
     currentNextActionId: goal.currentNextActionId,
     createdAt: goal.createdAt,
     updatedAt: goal.updatedAt
@@ -108,6 +117,10 @@ function toSummary(record: GoalPersistenceRecord): GoalSummaryView {
     createdAt: record.createdAt,
     updatedAt: record.updatedAt
   })
+}
+
+function toStageReference(record: GoalPersistenceRecord): GoalStageReferenceView {
+  return Object.freeze({ id: record.id, name: record.title })
 }
 
 function loadGoal(repository: RepositoryPort, goalId: string): GoalPersistenceRecord {
@@ -166,6 +179,44 @@ export class GoalService {
     }
 
     return this.getGoalDetail(goalId)
+  }
+
+  public createStage(input: {
+    readonly goalId: string
+    readonly predecessorGoalId: string
+    readonly name: string
+    readonly description?: string | null
+  }): GoalDetailView {
+    try {
+      this.dependencies.unitOfWork.transaction((repository) => {
+        const existing = repository.findGoalById(input.goalId)
+        // A stable draft ID makes retries idempotent without copying any old content.
+        if (existing) {
+          if (existing.predecessorGoalId !== input.predecessorGoalId)
+            throw new GoalApplicationError(
+              'invariant-violation',
+              'Stage request conflicts with an existing Goal.'
+            )
+          return
+        }
+        const predecessor = loadGoal(repository, input.predecessorGoalId)
+        if (predecessor.status !== 'ended' || input.goalId === predecessor.id)
+          throw new GoalApplicationError(
+            'invalid-transition',
+            'Only an ended Goal can start a new stage.'
+          )
+        const goal = createGoal({
+          id: input.goalId,
+          name: input.name,
+          description: input.description,
+          now: this.dependencies.clock.nowInstant()
+        })
+        repository.saveGoal(toPersistence({ ...goal, predecessorGoalId: predecessor.id }))
+      })
+    } catch (error) {
+      mapDomainError(error)
+    }
+    return this.getGoalDetail(input.goalId)
   }
 
   public updateGoalDetails(input: {
@@ -288,6 +339,15 @@ export class GoalService {
 
     return Object.freeze({
       ...toSummary(goal),
+      previousStage: goal.predecessorGoalId
+        ? toStageReference(loadGoal(this.dependencies.repository, goal.predecessorGoalId))
+        : null,
+      subsequentStages: Object.freeze(
+        this.dependencies.repository
+          .listGoals()
+          .filter((item) => item.predecessorGoalId === goal.id)
+          .map(toStageReference)
+      ),
       currentNextAction,
       actions: Object.freeze(actions),
       records: Object.freeze(

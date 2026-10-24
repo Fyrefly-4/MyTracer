@@ -40,6 +40,7 @@ function seed(connection: SqliteConnection): void {
       title: 'React',
       description: null,
       status: 'active',
+      predecessorGoalId: null,
       currentNextActionId: null,
       createdAt: at(10),
       updatedAt: at(10)
@@ -49,6 +50,7 @@ function seed(connection: SqliteConnection): void {
       title: 'Exercise',
       description: null,
       status: 'active',
+      predecessorGoalId: null,
       currentNextActionId: null,
       createdAt: at(10, 1),
       updatedAt: at(10, 1)

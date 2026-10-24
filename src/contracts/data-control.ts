@@ -15,6 +15,7 @@ export type DeleteImpactCountsDto = Readonly<
     | 'understandings'
     | 'confusions'
     | 'reviewResults'
+    | 'detachedGoalStages'
     | 'detachedRoutines'
     | 'detachedReviewResults'
     | 'clearedCurrentNext',

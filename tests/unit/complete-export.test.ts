@@ -15,7 +15,7 @@ import { FakeClock } from '../support/fake-clock'
 
 const instant = '2026-08-20T08:00:00.000Z'
 const emptySnapshot: CompleteCorePersistenceSnapshot = {
-  sourceDataVersion: 5,
+  sourceDataVersion: 6,
   coreSnapshot: {
     goals: [],
     actions: [],
@@ -71,7 +71,7 @@ describe('complete export application', () => {
     expect(document).toMatchObject({
       format: COMPLETE_EXPORT_FORMAT,
       exportVersion: COMPLETE_EXPORT_VERSION,
-      sourceDataVersion: 5,
+      sourceDataVersion: 6,
       exportedAt: instant,
       localTimeZone: 'Asia/Shanghai',
       enumValues: COMPLETE_EXPORT_ENUM_VALUES
@@ -103,13 +103,14 @@ describe('complete export application', () => {
 
   it('accepts every persisted status and enum value without serializing unknown as a Routine record', () => {
     const snapshot: CompleteCorePersistenceSnapshot = {
-      sourceDataVersion: 5,
+      sourceDataVersion: 6,
       coreSnapshot: {
         goals: ['active', 'ended', 'paused'].map((status) => ({
           id: `goal-${status}`,
           title: status,
           description: null,
           status: status as 'active' | 'paused' | 'ended',
+          predecessorGoalId: null,
           currentNextActionId: status === 'active' ? 'action-pending' : null,
           createdAt: instant,
           updatedAt: instant

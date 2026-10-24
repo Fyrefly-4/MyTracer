@@ -466,7 +466,7 @@ test('continuous E2E-AC-02 proves isolation, every temporary branch, confirmatio
       dialog.showSaveDialog = async () => ({ canceled: false, filePath: target })
     }, destination)
     const exportResult = await page.evaluate(() => window.myTracer.exports.generate())
-    expect(exportResult).toMatchObject({ ok: true, value: { exportVersion: 4 } })
+    expect(exportResult).toMatchObject({ ok: true, value: { exportVersion: 5 } })
     const exported = JSON.parse(await readFile(destination, 'utf8'))
     expect(exported.data.actions).toEqual(
       expect.arrayContaining([

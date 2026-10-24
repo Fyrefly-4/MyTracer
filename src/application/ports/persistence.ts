@@ -9,6 +9,7 @@ export interface GoalPersistenceRecord {
   readonly title: string
   readonly description: string | null
   readonly status: GoalStatus
+  readonly predecessorGoalId: string | null
   readonly currentNextActionId: string | null
   readonly createdAt: string
   readonly updatedAt: string

@@ -44,6 +44,7 @@ function seed(connection: SqliteConnection): void {
     title: 'Learn React',
     description: null,
     status: 'active',
+    predecessorGoalId: null,
     currentNextActionId: null,
     createdAt: at(1),
     updatedAt: at(31)
@@ -221,6 +222,7 @@ describe('Recovery SQLite query', () => {
       title: 'Empty',
       description: null,
       status: 'active',
+      predecessorGoalId: null,
       currentNextActionId: null,
       createdAt: at(1),
       updatedAt: at(31)

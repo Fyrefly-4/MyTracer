@@ -16,6 +16,7 @@ import {
   GOAL_CHANNELS,
   type CreateAndSetGoalCurrentNextActionInputDto,
   type CreateGoalInputDto,
+  type CreateGoalStageInputDto,
   type GoalDetailDto,
   type GoalIdInputDto,
   type GoalResult,
@@ -190,6 +191,8 @@ const api: MyTracerApi = Object.freeze({
   goals: Object.freeze({
     create: (input: CreateGoalInputDto): Promise<GoalResult<GoalDetailDto>> =>
       ipcRenderer.invoke(GOAL_CHANNELS.create, input),
+    createStage: (input: CreateGoalStageInputDto) =>
+      ipcRenderer.invoke(GOAL_CHANNELS.createStage, input),
     updateDetails: (input: UpdateGoalDetailsInputDto): Promise<GoalResult<GoalSummaryDto>> =>
       ipcRenderer.invoke(GOAL_CHANNELS.updateDetails, input),
     pause: (input: GoalIdInputDto): Promise<GoalResult<GoalSummaryDto>> =>

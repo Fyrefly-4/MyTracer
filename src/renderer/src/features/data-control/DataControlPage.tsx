@@ -1344,6 +1344,7 @@ function DataControlWorkspace({
     understandings: '已确认的理解',
     confusions: '尚未解决或已处理的困惑',
     reviewResults: '复盘',
+    detachedGoalStages: '解除的阶段关联（其他阶段与数据保留）',
     detachedRoutines: '解除关联的例行',
     detachedReviewResults: '解除关联的复盘',
     clearedCurrentNext: '清空的当前下一步'

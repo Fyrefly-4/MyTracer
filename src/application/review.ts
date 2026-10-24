@@ -85,6 +85,7 @@ function goalFromPersistence(record: GoalPersistenceRecord): Goal {
     name: record.title,
     description: record.description,
     status: record.status,
+    predecessorGoalId: record.predecessorGoalId,
     currentNextActionId: record.currentNextActionId,
     createdAt: record.createdAt,
     updatedAt: record.updatedAt
@@ -97,6 +98,7 @@ function goalToPersistence(goal: Goal): GoalPersistenceRecord {
     title: goal.name,
     description: goal.description,
     status: goal.status,
+    predecessorGoalId: goal.predecessorGoalId,
     currentNextActionId: goal.currentNextActionId,
     createdAt: goal.createdAt,
     updatedAt: goal.updatedAt

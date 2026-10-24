@@ -245,7 +245,7 @@ test('E2E-AC-07 repeats the core data program when AI is unavailable or fails', 
       const exportResult = await page.evaluate(() => window.myTracer.exports.generate())
       expect(exportResult).toMatchObject({
         ok: true,
-        value: { kind: 'exported', exportVersion: 4 }
+        value: { kind: 'exported', exportVersion: 5 }
       })
       const exported = JSON.parse(await readFile(destination, 'utf8'))
       expect(JSON.stringify(exported)).not.toMatch(/credential|prompt|diagnostic|authentication/i)

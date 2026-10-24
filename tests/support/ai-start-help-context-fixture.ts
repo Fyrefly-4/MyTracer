@@ -78,6 +78,7 @@ export function seedStartHelpIsolationFixture(
     title: START_HELP_MARKERS.allowedGoalName,
     description: START_HELP_MARKERS.allowedGoalDescription,
     status: 'active',
+    predecessorGoalId: null,
     currentNextActionId: null,
     createdAt: instant(1),
     updatedAt: instant(20)
@@ -181,6 +182,7 @@ export function seedStartHelpIsolationFixture(
     title: START_HELP_MARKERS.otherGoal,
     description: START_HELP_MARKERS.fullSnapshotExtra,
     status: 'active',
+    predecessorGoalId: null,
     currentNextActionId: null,
     createdAt: instant(4),
     updatedAt: instant(4)

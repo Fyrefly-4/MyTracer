@@ -257,15 +257,19 @@ test('preserves one fixture through manual A to B and application-installed B to
     application = await launch(root, executable)
     expect(await application.evaluate(({ app }) => app.getVersion())).toBe(targetVersion)
     expect(await application.evaluate(({ app }) => app.getPath('userData'))).toBe(userData)
-    const after = await exportInstalledFacts(application, join(root.exports, 'after.json'), 4)
+    const after = await exportInstalledFacts(application, join(root.exports, 'after.json'), 5)
     expect(after.data).toEqual({
       ...(beforeInstall.data as object),
+      goals: (beforeInstall.data as { goals: object[] }).goals.map((goal) => ({
+        ...goal,
+        predecessorGoalId: null
+      })),
       routines: (beforeInstall.data as { routines: object[] }).routines.map((routine) => ({
         ...routine,
         arrangementMode: 'weekly'
       }))
     })
-    expect(after.sourceDataVersion).toBe(5)
+    expect(after.sourceDataVersion).toBe(6)
     expect(
       await (
         await application.firstWindow()
@@ -320,7 +324,7 @@ test('offline upgrade fixture covers lifecycle states and preserves facts throug
     ).toBeVisible()
     await test.step('create synthetic lifecycle facts', () => createInstalledUpdateFacts(page))
     const exported = await test.step('export synthetic baseline', () =>
-      exportInstalledFacts(application!, join(root.exports, 'offline.json'), 4))
+      exportInstalledFacts(application!, join(root.exports, 'offline.json'), 5))
     const data = exported.data as Record<string, Record<string, unknown>[]>
     expect(new Set(data.goals.map((v) => v.status))).toEqual(new Set(['active', 'paused', 'ended']))
     expect(new Set(data.actions.map((v) => v.status))).toEqual(
@@ -341,7 +345,7 @@ test('offline upgrade fixture covers lifecycle states and preserves facts throug
     await test.step('close baseline application', () => application!.close())
     application = await test.step('reopen isolated fixture application', open)
     const reopened = await test.step('export reopened facts', () =>
-      exportInstalledFacts(application!, join(root.exports, 'offline-reopened.json'), 4))
+      exportInstalledFacts(application!, join(root.exports, 'offline-reopened.json'), 5))
     expect(reopened.data).toEqual(exported.data)
   } finally {
     await application?.close().catch(() => undefined)

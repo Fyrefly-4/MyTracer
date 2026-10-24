@@ -1,0 +1,11 @@
+.goal-stage-navigation {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-block: 1rem;
+}
+.goal-stage-navigation button {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}

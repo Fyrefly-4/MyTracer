@@ -148,6 +148,11 @@ function assertDeleteResult(repository: DataControlRepositoryPort, impact: Delet
   const detachedReviewIds = impact.detachedReviewResults.map((relation) => relation.split('|')[0])
   const clearedGoalIds = impact.clearedCurrentNext.map((relation) => relation.split('|')[0])
   if (
+    snapshot.goals.some(
+      (item) =>
+        impact.detachedGoalStages.some((relation) => relation.split('|')[0] === item.id) &&
+        item.predecessorGoalId !== null
+    ) ||
     snapshot.routines.some(
       (item) => detachedRoutineIds.includes(item.id) && item.goalId !== null
     ) ||
@@ -200,6 +205,13 @@ function actualDeleteImpact(
     understandings: deletedIds(before.understandings, after.understandings),
     confusions: deletedIds(before.confusions, after.confusions),
     reviewResults: deletedIds(before.reviewResults, after.reviewResults),
+    detachedGoalStages: before.goals
+      .filter(
+        (item) =>
+          item.predecessorGoalId !== null &&
+          (!afterGoals.has(item.id) || afterGoals.get(item.id)?.predecessorGoalId === null)
+      )
+      .map((item) => `${item.id}|${item.predecessorGoalId}`),
     detachedRoutines: before.routines
       .filter((item) => item.goalId !== null && afterRoutines.get(item.id)?.goalId === null)
       .map((item) => `${item.id}|${item.goalId}`),

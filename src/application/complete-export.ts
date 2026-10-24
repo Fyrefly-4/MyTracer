@@ -14,7 +14,7 @@ import { createLocalDate } from '../domain/local-date'
 
 export const COMPLETE_EXPORT_FORMAT = 'mytracer-core-export' as const
 export const COMPLETE_EXPORT_VERSION_V1 = 1 as const
-export const COMPLETE_EXPORT_VERSION = 4 as const
+export const COMPLETE_EXPORT_VERSION = 5 as const
 
 export const COMPLETE_EXPORT_ENUM_VALUES = Object.freeze({
   goalStatus: Object.freeze(['active', 'paused', 'ended']),
@@ -39,7 +39,11 @@ interface ReviewResultExportV1 {
   readonly updatedAt: string
 }
 
-interface LegacySnapshot extends Omit<CorePersistenceSnapshot, 'routines'> {
+interface PreStageSnapshot extends Omit<CorePersistenceSnapshot, 'goals'> {
+  readonly goals: readonly Omit<CorePersistenceSnapshot['goals'][number], 'predecessorGoalId'>[]
+}
+
+interface LegacySnapshot extends Omit<PreStageSnapshot, 'routines'> {
   readonly routines: readonly Omit<CorePersistenceSnapshot['routines'][number], 'arrangementMode'>[]
 }
 
@@ -75,8 +79,14 @@ export interface MyTracerCoreExportV3 extends Omit<CompleteExportDocumentPort, '
   readonly data: LegacySnapshot
 }
 
-export interface MyTracerCoreExportV4 extends CompleteExportDocumentPort {
+export interface MyTracerCoreExportV4 extends Omit<CompleteExportDocumentPort, 'data'> {
   readonly exportVersion: 4
+  readonly enumValues: typeof COMPLETE_EXPORT_ENUM_VALUES
+  readonly data: PreStageSnapshot
+}
+
+export interface MyTracerCoreExportV5 extends CompleteExportDocumentPort {
+  readonly exportVersion: 5
   readonly enumValues: typeof COMPLETE_EXPORT_ENUM_VALUES
   readonly data: CorePersistenceSnapshot
 }
@@ -210,7 +220,7 @@ const byId = (left: Record<string, unknown>, right: Record<string, unknown>) =>
 const byOccurrence = (left: Record<string, unknown>, right: Record<string, unknown>) =>
   String(left.occurredOn).localeCompare(String(right.occurredOn)) || byId(left, right)
 
-function validateCompleteExportVersion(value: unknown, expectedVersion: 1 | 2 | 3 | 4): void {
+function validateCompleteExportVersion(value: unknown, expectedVersion: 1 | 2 | 3 | 4 | 5): void {
   const document = record(value, 'Export document')
   assertKeys(
     document,
@@ -232,6 +242,8 @@ function validateCompleteExportVersion(value: unknown, expectedVersion: 1 | 2 | 
     Number.isInteger(document.sourceDataVersion) && Number(document.sourceDataVersion) > 0,
     'Source data version is invalid.'
   )
+  if (expectedVersion === 5)
+    assert(document.sourceDataVersion === 6, 'Export v5 requires source data version 6.')
   assert(validInstant(document.exportedAt), 'Export timestamp is invalid.')
   assert(
     document.appVersion === undefined ||
@@ -330,13 +342,23 @@ function validateCompleteExportVersion(value: unknown, expectedVersion: 1 | 2 | 
   assertSorted(confusions, byId, 'Confusions')
 
   const goalIds = new Set(goals.map((item) => String(item.id)))
+  const byGoalId = new Map(goals.map((item) => [item.id, item]))
   const actionById = new Map(actions.map((item) => [String(item.id), item]))
   const routineIds = new Set(routines.map((item) => String(item.id)))
   const actionRecordIds = new Set(actionRecords.map((item) => String(item.id)))
   for (const goal of goals) {
     assertKeys(
       goal,
-      ['id', 'title', 'description', 'status', 'currentNextActionId', 'createdAt', 'updatedAt'],
+      [
+        'id',
+        'title',
+        'description',
+        'status',
+        'currentNextActionId',
+        'createdAt',
+        'updatedAt',
+        ...(expectedVersion === 5 ? ['predecessorGoalId'] : [])
+      ],
       'Goal'
     )
     assert(
@@ -345,6 +367,20 @@ function validateCompleteExportVersion(value: unknown, expectedVersion: 1 | 2 | 
         validInstant(goal.updatedAt),
       'Goal is invalid.'
     )
+    if (expectedVersion === 5 && goal.predecessorGoalId !== null) {
+      const visited = new Set([goal.id])
+      let current = goal
+      while (current.predecessorGoalId !== null) {
+        assert(typeof current.predecessorGoalId === 'string', 'Stage predecessor is invalid.')
+        const previous = byGoalId.get(current.predecessorGoalId)
+        assert(
+          previous && previous.status === 'ended' && !visited.has(previous.id),
+          'Stage relation is invalid.'
+        )
+        visited.add(previous.id)
+        current = previous
+      }
+    }
     if (goal.currentNextActionId !== null) {
       const action = actionById.get(String(goal.currentNextActionId))
       assert(
@@ -379,7 +415,7 @@ function validateCompleteExportVersion(value: unknown, expectedVersion: 1 | 2 | 
         'status',
         'createdAt',
         'updatedAt',
-        ...(expectedVersion === 4 ? ['arrangementMode'] : [])
+        ...(expectedVersion >= 4 ? ['arrangementMode'] : [])
       ],
       'Routine'
     )
@@ -391,7 +427,7 @@ function validateCompleteExportVersion(value: unknown, expectedVersion: 1 | 2 | 
       'Routine is invalid.'
     )
   }
-  if (expectedVersion === 4)
+  if (expectedVersion >= 4)
     for (const routine of routines) {
       const days = scheduleDays.filter((day) => day.routineId === routine.id)
       assert(
@@ -581,7 +617,11 @@ export function validateCompleteExportV1(value: unknown): asserts value is MyTra
 export function validateCompleteExport(
   value: unknown
 ): asserts value is
-  MyTracerCoreExportV1 | MyTracerCoreExportV2 | MyTracerCoreExportV3 | MyTracerCoreExportV4 {
+  | MyTracerCoreExportV1
+  | MyTracerCoreExportV2
+  | MyTracerCoreExportV3
+  | MyTracerCoreExportV4
+  | MyTracerCoreExportV5 {
   const document = record(value, 'Export document')
   if (document.exportVersion === COMPLETE_EXPORT_VERSION_V1) {
     validateCompleteExportV1(value)
@@ -595,6 +635,10 @@ export function validateCompleteExport(
     validateCompleteExportVersion(value, 3)
     return
   }
+  if (document.exportVersion === 4) {
+    validateCompleteExportVersion(value, 4)
+    return
+  }
   if (document.exportVersion === COMPLETE_EXPORT_VERSION) {
     validateCompleteExportVersion(value, COMPLETE_EXPORT_VERSION)
     return
@@ -605,9 +649,9 @@ export function validateCompleteExport(
 export function buildCompleteExport(
   snapshot: CompleteCorePersistenceSnapshot,
   clock: Pick<ClockPort, 'snapshot'>
-): MyTracerCoreExportV4 {
+): MyTracerCoreExportV5 {
   const now = clock.snapshot()
-  const document: MyTracerCoreExportV4 = Object.freeze({
+  const document: MyTracerCoreExportV5 = Object.freeze({
     format: COMPLETE_EXPORT_FORMAT,
     exportVersion: COMPLETE_EXPORT_VERSION,
     sourceDataVersion: snapshot.sourceDataVersion,
@@ -635,11 +679,11 @@ export class CompleteExportService {
         readonly kind: 'exported'
         readonly fileName: string
         readonly byteLength: number
-        readonly exportVersion: 4
+        readonly exportVersion: 5
         readonly exportedAt: string
       }
   > {
-    let document: MyTracerCoreExportV4
+    let document: MyTracerCoreExportV5
     const clockSnapshot = this.dependencies.clock.snapshot()
     try {
       document = buildCompleteExport(

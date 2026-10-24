@@ -23,3 +23,5 @@
 这些设计中的 Txxx、schema 版本和先前 revision 是来源上下文，不能当作当前任务或当前运行状态。仍有效的产品、安全和技术契约继续适用；已移出的执行依赖和阶段门只在[历史追溯](../implementation/archive/stage-execution/INDEX.md)或 owner 明确启用的阶段流程中查阅。
 
 - [无固定安排例行](UNSCHEDULED_ROUTINES.md)：#132 C 的模式、SQLite v5、JSON v4 与 Today UI 边界。
+
+- [关联的新目标阶段](LINKED_GOAL_STAGES.md)：#127 C 的独立目标、断链删除、SQLite v6 与 JSON v5。

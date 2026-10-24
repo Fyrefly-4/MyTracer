@@ -113,6 +113,7 @@ function setup() {
     title: 'Movement',
     description: null,
     status: 'paused',
+    predecessorGoalId: null,
     currentNextActionId: null,
     createdAt: instant,
     updatedAt: instant

@@ -31,6 +31,7 @@ it('queries isolated Goal dates and weekly facts without writes, recalculates co
         title: id,
         status,
         description: null,
+        predecessorGoalId: null,
         currentNextActionId: null,
         createdAt: timestamp,
         updatedAt: timestamp

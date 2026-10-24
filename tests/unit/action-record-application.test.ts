@@ -21,6 +21,7 @@ function goal(status: GoalPersistenceRecord['status'] = 'active'): GoalPersisten
     title: 'Learn React',
     description: null,
     status,
+    predecessorGoalId: null,
     currentNextActionId: 'action-1',
     createdAt: instant,
     updatedAt: instant

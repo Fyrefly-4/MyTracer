@@ -21,6 +21,7 @@ function atomicHarness() {
       title: 'Goal',
       description: null,
       status: 'active' as const,
+      predecessorGoalId: null,
       currentNextActionId: null as string | null,
       createdAt: '2026-08-24T08:00:00.000Z',
       updatedAt: '2026-08-24T08:00:00.000Z'

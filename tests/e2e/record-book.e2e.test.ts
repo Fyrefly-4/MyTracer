@@ -240,13 +240,47 @@ test('book preserves data drafts, exports the full offline book and retains keyb
       'undefined'
     )
     await offline.close()
-    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setSize(820, 900))
+    // Bind the application Page, not the ordering/lifetime of the extra export window.
+    const mainWindow = await app.browserWindow(page)
+    await mainWindow.evaluate((window) => window.setContentSize(820, 900))
+    await expect.poll(() => mainWindow.evaluate((window) => window.getContentSize()[0])).toBe(820)
     for (const zoom of [1, 1.25, 1.5]) {
-      await app.evaluate(
-        ({ BrowserWindow }, factor) =>
-          BrowserWindow.getAllWindows()[0].webContents.setZoomFactor(factor),
-        zoom
-      )
+      await mainWindow.evaluate((window, factor) => window.webContents.setZoomFactor(factor), zoom)
+      await expect
+        .poll(() => mainWindow.evaluate((window) => window.webContents.getZoomFactor()))
+        .toBe(zoom)
+      // Confirm the resize/zoom reached this renderer before testing the responsive contract.
+      const layout = () =>
+        page.evaluate(
+          (factor) => ({
+            viewportWidth: innerWidth,
+            contentWidth: document.querySelector('main.content')!.clientWidth,
+            matchesNarrow: matchMedia('(max-width:950px)').matches,
+            matchesRequestedWidth: Math.abs(innerWidth * factor - 820) <= factor,
+            tocDisplay: getComputedStyle(document.querySelector('.rb-toc')!).display
+          }),
+          zoom
+        )
+      try {
+        await expect
+          .poll(async () => {
+            const measured = await layout()
+            return {
+              matchesNarrow: measured.matchesNarrow,
+              matchesRequestedWidth: measured.matchesRequestedWidth
+            }
+          })
+          .toEqual({ matchesNarrow: true, matchesRequestedWidth: true })
+      } finally {
+        await test.info().attach(`record-book-layout-${zoom}`, {
+          body: JSON.stringify({
+            zoom,
+            bounds: await mainWindow.evaluate((window) => window.getBounds()),
+            ...(await layout())
+          }),
+          contentType: 'application/json'
+        })
+      }
       await expect(page.locator('.rb-toc')).toBeHidden()
       expect(
         await page

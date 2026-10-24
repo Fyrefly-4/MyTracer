@@ -101,6 +101,7 @@ function activeGoal(currentNextActionId: string | null = null): GoalPersistenceR
     title: 'Learn React',
     description: null,
     status: 'active',
+    predecessorGoalId: null,
     currentNextActionId,
     createdAt: instant,
     updatedAt: instant

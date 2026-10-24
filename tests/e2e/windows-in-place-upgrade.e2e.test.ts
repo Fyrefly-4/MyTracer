@@ -339,9 +339,13 @@ test('keeps all old-version facts and synthetic configuration through an in-plac
       newPage,
       join(root.exports, 'after-upgrade.json')
     )
-    expect(afterExport).toMatchObject({ exportVersion: 4, sourceDataVersion: 5 })
+    expect(afterExport).toMatchObject({ exportVersion: 5, sourceDataVersion: 6 })
     expect(afterExport.data).toEqual({
       ...(beforeExport.data as object),
+      goals: (beforeExport.data as { goals: object[] }).goals.map((goal) => ({
+        ...goal,
+        predecessorGoalId: null
+      })),
       routines: (beforeExport.data as { routines: object[] }).routines.map((routine) => ({
         ...routine,
         arrangementMode: 'weekly'
@@ -351,12 +355,16 @@ test('keeps all old-version facts and synthetic configuration through an in-plac
     application = undefined
     expect(snapshotDatabase(databasePath)).toEqual({
       ...beforeDatabase,
+      goals: beforeDatabase.goals.map((goal) => ({
+        ...(goal as object),
+        predecessor_goal_id: null
+      })),
       routines: beforeDatabase.routines.map((routine) => ({
         ...(routine as object),
         arrangement_mode: 'weekly'
       })),
       metadata: beforeDatabase.metadata.map((row) =>
-        (row as { key: string }).key === 'schemaVersion' ? { ...(row as object), value: '5' } : row
+        (row as { key: string }).key === 'schemaVersion' ? { ...(row as object), value: '6' } : row
       )
     })
 
@@ -486,6 +494,10 @@ test('observes a running old application during installation', async () => {
     )
     expect(afterExport.data).toEqual({
       ...(beforeExport.data as object),
+      goals: (beforeExport.data as { goals: object[] }).goals.map((goal) => ({
+        ...goal,
+        predecessorGoalId: null
+      })),
       routines: (beforeExport.data as { routines: object[] }).routines.map((routine) => ({
         ...routine,
         arrangementMode: 'weekly'
@@ -495,12 +507,16 @@ test('observes a running old application during installation', async () => {
     application = undefined
     expect(snapshotDatabase(databasePath)).toEqual({
       ...beforeDatabase,
+      goals: beforeDatabase.goals.map((goal) => ({
+        ...(goal as object),
+        predecessor_goal_id: null
+      })),
       routines: beforeDatabase.routines.map((routine) => ({
         ...(routine as object),
         arrangement_mode: 'weekly'
       })),
       metadata: beforeDatabase.metadata.map((row) =>
-        (row as { key: string }).key === 'schemaVersion' ? { ...(row as object), value: '5' } : row
+        (row as { key: string }).key === 'schemaVersion' ? { ...(row as object), value: '6' } : row
       )
     })
   } finally {
@@ -602,6 +618,10 @@ test('repairs a failed package launch without replacing old facts', async () => 
     )
     expect(afterExport.data).toEqual({
       ...(beforeExport.data as object),
+      goals: (beforeExport.data as { goals: object[] }).goals.map((goal) => ({
+        ...goal,
+        predecessorGoalId: null
+      })),
       routines: (beforeExport.data as { routines: object[] }).routines.map((routine) => ({
         ...routine,
         arrangementMode: 'weekly'
@@ -611,12 +631,16 @@ test('repairs a failed package launch without replacing old facts', async () => 
     application = undefined
     expect(snapshotDatabase(databasePath)).toEqual({
       ...beforeDatabase,
+      goals: beforeDatabase.goals.map((goal) => ({
+        ...(goal as object),
+        predecessor_goal_id: null
+      })),
       routines: beforeDatabase.routines.map((routine) => ({
         ...(routine as object),
         arrangement_mode: 'weekly'
       })),
       metadata: beforeDatabase.metadata.map((row) =>
-        (row as { key: string }).key === 'schemaVersion' ? { ...(row as object), value: '5' } : row
+        (row as { key: string }).key === 'schemaVersion' ? { ...(row as object), value: '6' } : row
       )
     })
 
