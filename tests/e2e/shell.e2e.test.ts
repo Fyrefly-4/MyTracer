@@ -87,10 +87,16 @@ test('runs the Electron shell with an isolated userData root', async () => {
       'review',
       'routines',
       'dataControl',
+      'recordBook',
       'exports',
       'aiStartHelp',
       'aiConfiguration'
     ])
+    expect(await page.evaluate(() => Object.keys(window.myTracer.recordBook))).toEqual([
+      'read',
+      'export'
+    ])
+    expect(await page.evaluate(() => Object.isFrozen(window.myTracer.recordBook))).toBe(true)
     expect(await page.evaluate(() => Object.keys(window.myTracer.home))).toEqual(['get', 'day'])
     expect(await page.evaluate(() => Object.isFrozen(window.myTracer.home))).toBe(true)
     expect(await page.evaluate(() => Object.keys(window.myTracer.shell))).toEqual([

@@ -22,7 +22,7 @@ type TimelineItem =
   | { readonly kind: 'action'; readonly record: ProgressRecordFactDto }
   | { readonly kind: 'routine'; readonly record: RoutineProgressRecordFactDto }
 
-function ProgressWorkspace(): ReactNode {
+function ProgressWorkspace({ onOpenBook }: { onOpenBook: () => void }): ReactNode {
   const session = useUiSession()
   const initialDraft = session.progressDraftFilter
   const initialApplied = session.progressAppliedFilter
@@ -167,6 +167,12 @@ function ProgressWorkspace(): ReactNode {
 
   return (
     <section className="progress-workspace" aria-label="进展记录">
+      <details className="progress-more">
+        <summary>更多</summary>
+        <button type="button" onClick={onOpenBook}>
+          阅读记录册
+        </button>
+      </details>
       <form
         className="progress-filters"
         onSubmit={(event) => {

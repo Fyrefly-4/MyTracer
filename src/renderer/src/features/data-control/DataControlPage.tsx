@@ -844,7 +844,13 @@ function DataPanel(props: {
   )
 }
 
-function DataControlWorkspace(): ReactNode {
+function DataControlWorkspace({
+  onOpenBook,
+  strictOriginal = false
+}: {
+  onOpenBook: () => void
+  strictOriginal?: boolean
+}): ReactNode {
   const session = useUiSession()
   const [data, setData] = useState<DataControlListDto | null>(null)
   const dataRef = useRef<DataControlListDto | null>(null)
@@ -1343,6 +1349,17 @@ function DataControlWorkspace(): ReactNode {
     clearedCurrentNext: '清空的当前下一步'
   }
 
+  if (
+    strictOriginal &&
+    data &&
+    routeRecord &&
+    !(routeRecord.type === 'action-record'
+      ? data.actionRecords.some((row) => row.id === routeRecord.id)
+      : data.routineRecords.some((row) => row.id === routeRecord.id))
+  ) {
+    return <p role="alert">这条原记录已不存在。请返回记录册读取最新资料。</p>
+  }
+
   return (
     <section className="data-workspace" aria-label="历史记录与数据控制">
       {error && !panel ? (
@@ -1374,6 +1391,21 @@ function DataControlWorkspace(): ReactNode {
             {exporting ? '正在准备导出…' : '导出完整数据'}
           </button>
           {exportMessage ? <p role="status">{exportMessage}</p> : null}
+          <hr />
+          <p>
+            记录册按月阅读保存的原文，可另存包含所有月份的离线
+            HTML；它不是备份或恢复证明，不能替代完整 JSON。
+          </p>
+          <button
+            type="button"
+            disabled={exporting}
+            onClick={() => {
+              setPanel(null)
+              onOpenBook()
+            }}
+          >
+            阅读记录册 / 保存 HTML
+          </button>
         </DataPanel>
       ) : null}
       {panel === 'backfill' ? (

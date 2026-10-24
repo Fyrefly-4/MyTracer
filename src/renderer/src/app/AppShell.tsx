@@ -1,3 +1,4 @@
+import { RecordBookPage } from '../features/record-book/RecordBookPage'
 import wordmark from '../../../../resources/brand/MyTracer-wordmark-green.svg'
 import type { AppearanceSettings, AppearanceState } from '../../../contracts/appearance'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
@@ -18,8 +19,16 @@ import { NavigationIcon } from './NavigationIcon'
 export function AppShell(): ReactNode {
   const [activeSection, setActiveSection] = useState<AppSectionId>('home')
   const mainRef = useRef<HTMLElement | null>(null)
+  const [bookMode, setBookMode] = useState<'reading' | 'original' | null>(null)
+  const restoreDataContext = useRef<(() => void) | null>(null)
+  const restoreData = () => {
+    restoreDataContext.current?.()
+    restoreDataContext.current = null
+  }
   const [session] = useState(() => new UiSession((section) => setActiveSection(section)))
-  const [pendingDataNavigation, setPendingDataNavigation] = useState<AppSectionId | null>(null)
+  const [pendingDataNavigation, setPendingDataNavigation] = useState<{ run: () => void } | null>(
+    null
+  )
   const dataNavigationDialog = useRef<HTMLDialogElement>(null)
   useEffect(() => {
     if (!pendingDataNavigation) return
@@ -31,15 +40,33 @@ export function AppShell(): ReactNode {
       if (trigger?.isConnected) trigger.focus()
     }
   }, [pendingDataNavigation])
-  const navigate = (section: AppSectionId): void => {
-    if (section === activeSection) return
-    if (activeSection === 'data' && session.hasDataUnsavedContent()) {
-      setPendingDataNavigation(section)
-      return
-    }
-    session.setPosition(activeSection, mainRef.current?.scrollTop ?? 0)
-    setActiveSection(section)
+  const guardedNavigation = (run: () => void): void => {
+    if (
+      (bookMode === 'original' || (!bookMode && activeSection === 'data')) &&
+      session.hasDataUnsavedContent()
+    ) {
+      setPendingDataNavigation({ run })
+    } else run()
   }
+  const navigate = (section: AppSectionId): void => {
+    if (section === activeSection && !bookMode) return
+    guardedNavigation(() => {
+      if (!bookMode) session.setPosition(activeSection, mainRef.current?.scrollTop ?? 0)
+      restoreData()
+      setBookMode(null)
+      setActiveSection(section)
+    })
+  }
+  const openBook = (): void =>
+    guardedNavigation(() => {
+      session.setPosition(activeSection, mainRef.current?.scrollTop ?? 0)
+      setBookMode('reading')
+    })
+  const returnToBook = (): void =>
+    guardedNavigation(() => {
+      restoreData()
+      setBookMode('reading')
+    })
   const [status, setStatus] = useState<ShellStatus | null>(null)
   const [statusError, setStatusError] = useState(false)
   const [updateOpen, setUpdateOpen] = useState(false)
@@ -175,8 +202,7 @@ export function AppShell(): ReactNode {
               <button
                 type="button"
                 onClick={() => {
-                  session.setPosition('data', mainRef.current?.scrollTop ?? 0)
-                  setActiveSection(pendingDataNavigation)
+                  pendingDataNavigation.run()
                   setPendingDataNavigation(null)
                 }}
               >
@@ -233,15 +259,23 @@ export function AppShell(): ReactNode {
           </nav>
 
           <main
-            className={`content content-${activeSection}`}
+            className={`content content-${bookMode === 'reading' ? 'book' : bookMode === 'original' ? 'data' : activeSection}`}
             ref={mainRef}
             onScrollCapture={(event) => {
               const target = event.target
-              if (target instanceof HTMLElement && target.dataset.scrollKey) {
-                session.setPanePosition(activeSection, target.dataset.scrollKey, target.scrollTop)
+              if (
+                bookMode !== 'reading' &&
+                target instanceof HTMLElement &&
+                target.dataset.scrollKey
+              ) {
+                session.setPanePosition(
+                  bookMode === 'original' ? 'data' : activeSection,
+                  target.dataset.scrollKey,
+                  target.scrollTop
+                )
               }
             }}
-            key={activeSection}
+            key={`${activeSection}:${bookMode ?? 'source'}`}
           >
             <div className="content-inner">
               {appearanceOpen && !updateOpen && !installPreparing && !restartRequired ? (
@@ -301,14 +335,29 @@ export function AppShell(): ReactNode {
                   </button>
                 </section>
               ) : null}
-              {!['home', 'today', 'goals', 'routines'].includes(activeSection) ? (
+              {!bookMode && !['home', 'today', 'goals', 'routines'].includes(activeSection) ? (
                 <section className="hero" aria-labelledby="section-title">
                   <h1 id="section-title">{selected.title}</h1>
                   <p className="lede">{selected.description}</p>
                 </section>
               ) : null}
 
-              {activeSection === 'home' ? (
+              {bookMode === 'reading' ? (
+                <RecordBookPage
+                  onBack={() => setBookMode(null)}
+                  onOriginal={(selection) => {
+                    restoreDataContext.current = session.visitBookOriginal(selection)
+                    setBookMode('original')
+                  }}
+                />
+              ) : bookMode === 'original' ? (
+                <>
+                  <button type="button" onClick={returnToBook}>
+                    返回记录册
+                  </button>
+                  <DataControlPage onOpenBook={returnToBook} strictOriginal />
+                </>
+              ) : activeSection === 'home' ? (
                 <HomePage />
               ) : activeSection === 'goals' ? (
                 <GoalsPage />
@@ -317,9 +366,9 @@ export function AppShell(): ReactNode {
               ) : activeSection === 'today' ? (
                 <TodayPage />
               ) : activeSection === 'progress' ? (
-                <ProgressPage />
+                <ProgressPage onOpenBook={openBook} />
               ) : activeSection === 'data' ? (
-                <DataControlPage />
+                <DataControlPage onOpenBook={openBook} />
               ) : (
                 <ReviewPage />
               )}

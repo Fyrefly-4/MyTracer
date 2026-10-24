@@ -1,3 +1,5 @@
+import type { RecordBookSnapshot } from '../../contracts/record-book'
+import { renderRecordBookHtml } from './record-book-html'
 import { open, readFile, rename, stat, unlink, type FileHandle } from 'node:fs/promises'
 import type { Stats } from 'node:fs'
 import { basename, dirname, join } from 'node:path'
@@ -101,10 +103,41 @@ export class SystemExportAdapter implements ExportPort {
     } catch {
       throw new ExportDeliveryError('export-validation-failed', 'The export document is invalid.')
     }
+    return this.deliverBytes(
+      Buffer.from(JSON.stringify(document, null, 2), 'utf8'),
+      suggestedName,
+      '导出 MyTracer 完整数据',
+      'json',
+      (bytes) => validateCompleteExport(JSON.parse(Buffer.from(bytes).toString('utf8')))
+    )
+  }
+
+  public async deliverRecordBook(snapshot: RecordBookSnapshot, suggestedName: string) {
+    const bytes = Buffer.from(renderRecordBookHtml(snapshot), 'utf8')
+    return this.deliverBytes(
+      bytes,
+      suggestedName,
+      '保存 MyTracer 全部记录册',
+      'html',
+      (readBack) => {
+        if (!bytes.equals(Buffer.from(readBack))) {
+          throw new ExportDeliveryError('export-validation-failed', 'The temporary book differs.')
+        }
+      }
+    )
+  }
+
+  private async deliverBytes(
+    bytes: Buffer,
+    suggestedName: string,
+    title: string,
+    extension: 'json' | 'html',
+    validate: (bytes: Uint8Array) => void
+  ) {
     const selection = await this.dependencies.dialog.showSaveDialog({
-      title: '导出 MyTracer 完整数据',
+      title,
       defaultPath: suggestedName,
-      filters: [{ name: 'JSON', extensions: ['json'] }]
+      filters: [{ name: extension.toUpperCase(), extensions: [extension] }]
     })
     if (selection.canceled) return Object.freeze({ kind: 'cancelled' as const })
     if (!selection.filePath)
@@ -116,7 +149,6 @@ export class SystemExportAdapter implements ExportPort {
       dirname(destination),
       `.${basename(destination)}.${this.dependencies.generateToken()}.tmp`
     )
-    const bytes = Buffer.from(JSON.stringify(document, null, 2), 'utf8')
     let temporaryOwned = false
     let handle: ExportFileHandle | null = null
     try {
@@ -126,11 +158,9 @@ export class SystemExportAdapter implements ExportPort {
       await handle.sync()
       await handle.close()
       handle = null
-      const reparsed = JSON.parse(
-        Buffer.from(await this.files.readFile(temporary)).toString('utf8')
-      )
+      const readBack = await this.files.readFile(temporary)
       try {
-        validateCompleteExport(reparsed)
+        validate(readBack)
       } catch {
         throw new ExportDeliveryError(
           'export-validation-failed',

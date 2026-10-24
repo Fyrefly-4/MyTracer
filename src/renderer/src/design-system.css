@@ -230,6 +230,17 @@ small {
 .content-data .content-inner {
   padding: 24px;
 }
+/* Continuous reading owns the main scrollport; do not clip it in the pane shell. */
+.content-book {
+  overflow-y: auto;
+}
+.content-book .content-inner {
+  display: block;
+  height: auto;
+  min-height: 100%;
+  overflow: visible;
+  padding: 24px 30px;
+}
 .content-review {
   overflow-y: auto;
 }
@@ -579,7 +590,8 @@ small {
   }
   .content-progress .content-inner,
   .content-data .content-inner,
-  .content-review .content-inner {
+  .content-review .content-inner,
+  .content-book .content-inner {
     padding: 14px;
   }
   .progress-summary,
