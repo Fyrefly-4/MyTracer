@@ -161,7 +161,8 @@ function parseBackfillAction(args: readonly unknown[]): BackfillActionRecordInpu
   return {
     actionId: id(input.actionId),
     occurredOn: localDate(input.occurredOn),
-    durationMinutes: nonNegativeInteger(input.durationMinutes),
+    durationMinutes:
+      input.durationMinutes === null ? null : nonNegativeInteger(input.durationMinutes),
     outcome: actionOutcome(input.outcome),
     nextStep: optionalText(input.nextStep),
     note: optionalText(input.note),
@@ -175,7 +176,8 @@ function parseUpdateAction(args: readonly unknown[]): UpdateActionRecordInputDto
   return {
     recordId: id(input.recordId),
     occurredOn: localDate(input.occurredOn),
-    durationMinutes: nonNegativeInteger(input.durationMinutes),
+    durationMinutes:
+      input.durationMinutes === null ? null : nonNegativeInteger(input.durationMinutes),
     outcome: actionOutcome(input.outcome),
     nextStep: optionalText(input.nextStep),
     note: optionalText(input.note)

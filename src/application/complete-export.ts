@@ -14,7 +14,7 @@ import { createLocalDate } from '../domain/local-date'
 
 export const COMPLETE_EXPORT_FORMAT = 'mytracer-core-export' as const
 export const COMPLETE_EXPORT_VERSION_V1 = 1 as const
-export const COMPLETE_EXPORT_VERSION = 2 as const
+export const COMPLETE_EXPORT_VERSION = 3 as const
 
 export const COMPLETE_EXPORT_ENUM_VALUES = Object.freeze({
   goalStatus: Object.freeze(['active', 'paused', 'ended']),
@@ -39,7 +39,14 @@ interface ReviewResultExportV1 {
   readonly updatedAt: string
 }
 
-interface CorePersistenceSnapshotV1 extends Omit<CorePersistenceSnapshot, 'reviewResults'> {
+interface NumericDurationSnapshot extends Omit<CorePersistenceSnapshot, 'actionRecords'> {
+  readonly actionRecords: readonly (Omit<
+    CorePersistenceSnapshot['actionRecords'][number],
+    'durationMinutes'
+  > & { readonly durationMinutes: number })[]
+}
+
+interface CorePersistenceSnapshotV1 extends Omit<NumericDurationSnapshot, 'reviewResults'> {
   readonly reviewResults: readonly ReviewResultExportV1[]
 }
 
@@ -54,6 +61,12 @@ export interface MyTracerCoreExportV1 extends Omit<
 
 export interface MyTracerCoreExportV2 extends CompleteExportDocumentPort {
   readonly exportVersion: 2
+  readonly enumValues: typeof COMPLETE_EXPORT_ENUM_VALUES
+  readonly data: NumericDurationSnapshot
+}
+
+export interface MyTracerCoreExportV3 extends CompleteExportDocumentPort {
+  readonly exportVersion: 3
   readonly enumValues: typeof COMPLETE_EXPORT_ENUM_VALUES
   readonly data: CorePersistenceSnapshot
 }
@@ -187,7 +200,7 @@ const byId = (left: Record<string, unknown>, right: Record<string, unknown>) =>
 const byOccurrence = (left: Record<string, unknown>, right: Record<string, unknown>) =>
   String(left.occurredOn).localeCompare(String(right.occurredOn)) || byId(left, right)
 
-function validateCompleteExportVersion(value: unknown, expectedVersion: 1 | 2): void {
+function validateCompleteExportVersion(value: unknown, expectedVersion: 1 | 2 | 3): void {
   const document = record(value, 'Export document')
   assertKeys(
     document,
@@ -276,13 +289,15 @@ function validateCompleteExportVersion(value: unknown, expectedVersion: 1 | 2): 
       scheduleDays.length,
     'Routine schedule days contain duplicates.'
   )
-  if (expectedVersion === 2) {
+  if (expectedVersion >= 2) {
     assert(
       new Set(reviews.map((item) => item.periodStartedOn)).size === reviews.length,
       'Review results contain duplicate periods.'
     )
     assert(Number(document.sourceDataVersion) >= 3, 'Export v2 requires source data version 3.')
   }
+  if (expectedVersion === 3)
+    assert(Number(document.sourceDataVersion) >= 4, 'Export v3 requires source data version 4.')
   assert(
     new Set(selections.map((item) => `${item.actionId}|${item.selectedFor}`)).size ===
       selections.length,
@@ -398,8 +413,9 @@ function validateCompleteExportVersion(value: unknown, expectedVersion: 1 | 2): 
     assert(
       actionById.has(String(actionRecord.actionId)) &&
         validLocalDate(actionRecord.occurredOn) &&
-        Number.isInteger(actionRecord.durationMinutes) &&
-        Number(actionRecord.durationMinutes) >= 0 &&
+        ((expectedVersion === 3 && actionRecord.durationMinutes === null) ||
+          (Number.isInteger(actionRecord.durationMinutes) &&
+            Number(actionRecord.durationMinutes) >= 0)) &&
         validEnum(actionRecord.outcome, COMPLETE_EXPORT_ENUM_VALUES.actionRecordOutcome) &&
         validInstant(actionRecord.createdAt) &&
         validInstant(actionRecord.updatedAt),
@@ -533,10 +549,14 @@ export function validateCompleteExportV1(value: unknown): asserts value is MyTra
 
 export function validateCompleteExport(
   value: unknown
-): asserts value is MyTracerCoreExportV1 | MyTracerCoreExportV2 {
+): asserts value is MyTracerCoreExportV1 | MyTracerCoreExportV2 | MyTracerCoreExportV3 {
   const document = record(value, 'Export document')
   if (document.exportVersion === COMPLETE_EXPORT_VERSION_V1) {
     validateCompleteExportV1(value)
+    return
+  }
+  if (document.exportVersion === 2) {
+    validateCompleteExportVersion(value, 2)
     return
   }
   if (document.exportVersion === COMPLETE_EXPORT_VERSION) {
@@ -549,9 +569,9 @@ export function validateCompleteExport(
 export function buildCompleteExport(
   snapshot: CompleteCorePersistenceSnapshot,
   clock: Pick<ClockPort, 'snapshot'>
-): MyTracerCoreExportV2 {
+): MyTracerCoreExportV3 {
   const now = clock.snapshot()
-  const document: MyTracerCoreExportV2 = Object.freeze({
+  const document: MyTracerCoreExportV3 = Object.freeze({
     format: COMPLETE_EXPORT_FORMAT,
     exportVersion: COMPLETE_EXPORT_VERSION,
     sourceDataVersion: snapshot.sourceDataVersion,
@@ -579,11 +599,11 @@ export class CompleteExportService {
         readonly kind: 'exported'
         readonly fileName: string
         readonly byteLength: number
-        readonly exportVersion: 2
+        readonly exportVersion: 3
         readonly exportedAt: string
       }
   > {
-    let document: MyTracerCoreExportV2
+    let document: MyTracerCoreExportV3
     const clockSnapshot = this.dependencies.clock.snapshot()
     try {
       document = buildCompleteExport(
@@ -597,7 +617,7 @@ export class CompleteExportService {
         'Could not read a complete export snapshot.'
       )
     }
-    const suggestedName = `mytracer-export-${String(clockSnapshot.localDate)}-v2.json`
+    const suggestedName = `mytracer-export-${String(clockSnapshot.localDate)}-v3.json`
     try {
       const result = await this.dependencies.exportPort.deliverCompleteExport(
         document,

@@ -238,7 +238,7 @@ export class DataControlService {
   public backfillActionRecord(input: {
     readonly actionId: string
     readonly occurredOn: string
-    readonly durationMinutes: number
+    readonly durationMinutes: number | null
     readonly outcome: ActionRecordOutcome
     readonly understanding?: string | null
     readonly confusion?: string | null
@@ -293,7 +293,7 @@ export class DataControlService {
   public updateActionRecord(input: {
     readonly recordId: string
     readonly occurredOn: string
-    readonly durationMinutes: number
+    readonly durationMinutes: number | null
     readonly outcome: ActionRecordOutcome
     readonly nextStep?: string | null
     readonly note?: string | null

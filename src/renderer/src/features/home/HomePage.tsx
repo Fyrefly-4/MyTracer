@@ -1,3 +1,4 @@
+import { recordDuration } from '../../app/ui-text'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { HomeOverviewDto, HomeRecordDto } from '../../../../contracts/home'
 import type { GoalSummaryDto } from '../../../../contracts/goals'
@@ -323,7 +324,9 @@ export function HomePage(): ReactNode {
                     >
                       <time dateTime={record.occurredOn}>
                         {record.occurredOn}
-                        {record.durationMinutes !== null ? ` · ${record.durationMinutes} 分钟` : ''}
+                        {record.durationMinutes !== null
+                          ? ` · ${recordDuration(record.durationMinutes)}`
+                          : ''}
                       </time>
                       <strong>{record.title}</strong>
                       <span>{record.note || record.outcomeText}</span>

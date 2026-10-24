@@ -98,6 +98,17 @@ function input(overrides: Partial<SelectAiContextInput> = {}): SelectAiContextIn
 }
 
 describe('AiContextSelector', () => {
+  it.each([null, 0, 12])(
+    'keeps duration %s in existing minimal provider context',
+    (durationMinutes) => {
+      const fact = { ...record('r', '2026-08-31', '2026-08-31T08:00:00.000Z'), durationMinutes }
+      const result = new AiContextSelector({ totalTextCharacters: 8_000 }).select(
+        input({ snapshot: snapshot({ records: [fact] }) })
+      )
+      expect(result.requestDto.recentRelevantRecords[0]?.durationMinutes).toBe(durationMinutes)
+    }
+  )
+
   it('selects the allowlisted DTO, sorts deterministically, caps at five, and keeps IDs in the manifest only', () => {
     const result = new AiContextSelector({ totalTextCharacters: 8_000 }).select(input())
 

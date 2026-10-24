@@ -110,8 +110,8 @@ test('shows factual dates, unlimited soft guidance and explicitly scoped weekly 
     await page.locator('.week-comparison > summary').click()
     const weekly = page.getByLabel('本周与上周事实比较')
     await expect(weekly).toContainText('本周尚未结束')
-    await expect(weekly.getByRole('row').filter({ hasText: '记录到的投入分钟' })).toHaveText(
-      /记录到的投入分钟8\s*20\s*-12/
+    await expect(weekly.getByRole('row').filter({ hasText: '已记录时长（分钟）' })).toHaveText(
+      /已记录时长（分钟）8\s*20\s*-12/
     )
     await expect(weekly.getByRole('row').filter({ hasText: '记录到的行动次数' })).toHaveText(
       /记录到的行动次数2\s*1\s*\+1/
@@ -126,7 +126,7 @@ test('shows factual dates, unlimited soft guidance and explicitly scoped weekly 
     await page.getByRole('button', { name: '查看记录', exact: true }).click()
     await expect(page.getByRole('heading', { name: '这个范围内还没有记录' })).toBeVisible()
     await expect(weekly).toContainText('不使用历史日期范围')
-    await expect(weekly.getByRole('row').filter({ hasText: '记录到的投入分钟' })).toContainText(
+    await expect(weekly.getByRole('row').filter({ hasText: '已记录时长（分钟）' })).toContainText(
       '-12'
     )
     const comparison = await page.evaluate(

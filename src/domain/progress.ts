@@ -23,7 +23,7 @@ export interface ProgressRecordFact {
   readonly actionTitle: string
   readonly hasRecordedText: boolean
   readonly occurredOn: string
-  readonly durationMinutes: number
+  readonly durationMinutes: number | null
   readonly outcome: 'completed' | 'partial' | 'stopped'
   readonly createdAt: string
   readonly understandings: readonly {
@@ -53,6 +53,7 @@ export interface RoutineProgressRecordFact {
 
 export interface ProgressView {
   readonly filter: ProgressFilter
+  readonly unknownDurationCount: number
   readonly totalDurationMinutes: number
   readonly realActionCount: number
   readonly targetMetCount: number
@@ -102,8 +103,11 @@ export function buildProgressView(
   return Object.freeze({
     filter,
     totalDurationMinutes:
-      records.reduce((total, record) => total + record.durationMinutes, 0) +
+      records.reduce((total, record) => total + (record.durationMinutes ?? 0), 0) +
       actedRoutineRecords.reduce((total, record) => total + (record.durationMinutes ?? 0), 0),
+    unknownDurationCount: [...records, ...actedRoutineRecords].filter(
+      (record) => record.durationMinutes === null
+    ).length,
     realActionCount: records.length + actedRoutineRecords.length,
     targetMetCount: targetMetRecords.length,
     plannedTargetMetCount: targetMetRecords.filter((record) => record.plannedForDate).length,

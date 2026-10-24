@@ -172,7 +172,10 @@ function parseRecord(args: readonly unknown[]): RecordActionInputDto {
     'note',
     'postRecord'
   ])
-  if (!Number.isInteger(input.durationMinutes) || Number(input.durationMinutes) < 0) {
+  if (
+    input.durationMinutes !== null &&
+    (!Number.isInteger(input.durationMinutes) || Number(input.durationMinutes) < 0)
+  ) {
     throw new RecordIpcValidationError('Expected non-negative integer minutes.')
   }
   if (input.outcome !== 'completed' && input.outcome !== 'partial' && input.outcome !== 'stopped') {
@@ -189,7 +192,7 @@ function parseRecord(args: readonly unknown[]): RecordActionInputDto {
     actionId: requiredId(input.actionId),
     recordingContextId: requiredId(input.recordingContextId),
     dateChoice: input.dateChoice as RecordActionInputDto['dateChoice'],
-    durationMinutes: Number(input.durationMinutes),
+    durationMinutes: input.durationMinutes === null ? null : Number(input.durationMinutes),
     outcome: input.outcome,
     understanding: optionalText(input.understanding),
     confusion: optionalText(input.confusion),

@@ -107,7 +107,7 @@ test('shows the current-week ReviewSummary from Progress facts without turning u
 
     await page.getByRole('button', { name: '复盘', exact: true }).click()
     await expect(page.getByRole('heading', { name: '2026-08-10 至 2026-08-16' })).toBeVisible()
-    await expect(page.getByLabel('周期汇总')).toContainText('投入时间18 分钟')
+    await expect(page.getByLabel('周期汇总')).toContainText('已记录时长合计18 分钟')
     await expect(page.getByLabel('周期汇总')).toContainText('真实行动次数3')
     await expect(page.getByLabel('周期汇总')).toContainText('已确认的理解1')
     await expect(page.getByLabel('周期汇总')).toContainText('尚未解决的困惑1')
@@ -191,7 +191,7 @@ test('shows the current-week ReviewSummary from Progress facts without turning u
     page = await application.firstWindow()
     await page.getByRole('button', { name: '复盘', exact: true }).click()
     await expect(page.getByRole('heading', { name: '2026-08-10 至 2026-08-16' })).toBeVisible()
-    await expect(page.getByLabel('周期汇总')).toContainText('投入时间18 分钟')
+    await expect(page.getByLabel('周期汇总')).toContainText('已记录时长合计18 分钟')
     await expect(page.getByLabel('未进行 1 条')).toBeVisible()
   } finally {
     await application?.close()

@@ -10,6 +10,28 @@ import {
 const now = '2026-08-12T08:00:00.000Z'
 
 describe('ActionRecord domain', () => {
+  it.each([null, 0, 12])('preserves explicit duration %s through edits', (durationMinutes) => {
+    const record = createActionRecord({
+      id: 'r',
+      actionId: 'a',
+      occurredOn: '2026-10-24',
+      durationMinutes,
+      outcome: 'partial',
+      now
+    })
+    expect(record.durationMinutes).toBe(durationMinutes)
+    for (const updated of [null, 0, 25]) {
+      expect(
+        updateActionRecord(record, {
+          occurredOn: record.occurredOn,
+          durationMinutes: updated,
+          outcome: record.outcome,
+          now
+        }).durationMinutes
+      ).toBe(updated)
+    }
+  })
+
   it('creates completed, partial, and stopped facts with only the quick fields', () => {
     for (const outcome of ['completed', 'partial', 'stopped'] as const) {
       expect(

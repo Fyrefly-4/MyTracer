@@ -54,7 +54,7 @@ export interface GoalRecordSummaryView {
   readonly actionId: string
   readonly actionTitle: string
   readonly occurredOn: string
-  readonly durationMinutes: number
+  readonly durationMinutes: number | null
   readonly outcome: 'completed' | 'partial' | 'stopped'
   readonly nextStep: string | null
   readonly note: string | null

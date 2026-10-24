@@ -1,3 +1,4 @@
+import { recordDuration } from '../../app/ui-text'
 import type { ReviewSummaryDto } from '../../../../contracts/review'
 import { recordOutcomeText } from '../../app/ui-text'
 
@@ -22,14 +23,14 @@ export function reviewReferences(summary: ReviewSummaryDto): ReviewReference[] {
       reference(
         `action:${record.recordId}`,
         `${record.occurredOn} · 行动 · ${record.actionTitle}`,
-        `${record.durationMinutes} 分钟 · ${recordOutcomeText[record.outcome]}`
+        `${recordDuration(record.durationMinutes)} · ${recordOutcomeText[record.outcome]}`
       )
     ),
     ...summary.routineRecords.map((record) =>
       reference(
         `routine:${record.recordId}`,
         `${record.occurredOn} · 例行 · ${record.routineName}`,
-        `${{ target_met: '达到目标', acted: '有所行动', intentional_rest: '主动休息', not_done: '未进行' }[record.outcome]}${record.durationMinutes === null ? '' : ` · ${record.durationMinutes} 分钟`}${record.note ? `\n${record.note}` : ''}`
+        `${{ target_met: '达到目标', acted: '有所行动', intentional_rest: '主动休息', not_done: '未进行' }[record.outcome]}${record.durationMinutes === null ? '' : ` · ${recordDuration(record.durationMinutes)}`}${record.note ? `\n${record.note}` : ''}`
       )
     ),
     ...summary.understandings.map((fact) =>

@@ -27,3 +27,7 @@ export const routineRecordOutcomeText: Record<RoutineRecordOutcomeDto | 'unknown
   unknown: '未记录'
 }
 export const factOutcomeText = { ...recordOutcomeText, ...routineRecordOutcomeText }
+
+export function recordDuration(value: number | null): string {
+  return value === null ? '时长未记录' : value === 0 ? '少于 1 分钟' : `${value} 分钟`
+}

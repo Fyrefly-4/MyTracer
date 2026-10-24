@@ -14,7 +14,7 @@ export type RecoveryLatestRealRecordDto =
       readonly subjectId: string
       readonly title: string
       readonly occurredOn: string
-      readonly durationMinutes: number
+      readonly durationMinutes: number | null
       readonly outcome: 'completed' | 'partial' | 'stopped'
       readonly createdAt: string
     }

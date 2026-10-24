@@ -55,7 +55,8 @@ export function validateManifest(manifest) {
   requireCondition(SHA.test(manifest.sourceRevision), 'source-revision')
   requireCondition(VERSION.test(manifest.version), 'stable-version')
   requireCondition(
-    manifest.dataVersion === 3 && manifest.exportVersion === 2 && manifest.signing === 'unsigned',
+    ((manifest.dataVersion === 3 && manifest.exportVersion === 2) ||
+      (manifest.dataVersion === 4 && manifest.exportVersion === 3)) && manifest.signing === 'unsigned',
     'compatibility-boundary'
   )
   keys(

@@ -73,7 +73,7 @@ test('saves quick and deep records without a Today prerequisite and preserves th
     await page.getByRole('button', { name: /阅读状态管理示例.*待行动/ }).click()
     const panel = page.getByLabel('阅读状态管理示例 行动记录')
     await panel.getByRole('button', { name: '开始记录' }).click()
-    await panel.getByLabel('投入时长（分钟，必填）').fill('0')
+    await panel.getByLabel('投入时长（分钟，可选）').fill('0')
     await panel.getByLabel('本次结果').selectOption('partial')
     await panel.getByRole('button', { name: '保存记录' }).click()
     await expect(
@@ -86,7 +86,7 @@ test('saves quick and deep records without a Today prerequisite and preserves th
     await expect(page.getByText('待行动', { exact: true }).first()).toBeVisible()
 
     await panel.getByRole('button', { name: '开始记录' }).click()
-    await panel.getByLabel('投入时长（分钟，必填）').fill('25')
+    await panel.getByLabel('投入时长（分钟，可选）').fill('25')
     await panel.getByLabel('本次结果').selectOption('stopped')
     await panel.getByRole('button', { name: /添加理解/ }).click()
     await panel.getByLabel('我理解了（可选）').fill('状态归属应保持单一')

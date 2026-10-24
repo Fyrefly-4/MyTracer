@@ -39,7 +39,7 @@
 | `routines` | UUID 主键；`goal_id` 可空；`status` CHECK；`minimum_action` 非空 | 级联 RoutineRecord、schedule days |
 | `routine_schedule_days` | `(routine_id, weekday)` 复合主键；weekday 取 1～7 | 随 Routine 级联 |
 | `today_selections` | `(action_id, selected_for)` 唯一；commitment CHECK | 随 Action 级联 |
-| `action_records` | UUID 主键；Action 外键；LocalDate；`duration_minutes >= 0`；outcome CHECK | 随 Action 级联 |
+| `action_records` | UUID 主键；Action 外键；LocalDate；`duration_minutes IS NULL OR duration_minutes >= 0`；outcome CHECK | 随 Action 级联 |
 | `routine_records` | UUID 主键；Routine 外键；LocalDate；outcome CHECK；`planned_for_date` 布尔 | 随 Routine 级联；同一 Routine/日期最多一条 |
 | `understandings` | UUID 主键；ActionRecord 外键；source CHECK；可空 `revoked_at` | 随 ActionRecord 级联 |
 | `confusions` | UUID 主键；ActionRecord 外键；status CHECK | 随 ActionRecord 级联 |
@@ -147,7 +147,7 @@ MyTracerExport
     reviewResults[]
 ```
 
-当前导出为 UTF-8 JSON，`exportVersion=2`、`sourceDataVersion=3`，默认文件名 `mytracer-export-YYYY-MM-DD-v2.json`，通过系统保存对话框由用户选择位置。S4/S5 已批准 schema v3/export v2；严格 export v1 验证只用于兼容契约，不是当前生成格式，也不提供自动导入恢复。当前可执行契约见 `src/application/complete-export.ts` 与 `src/application/ports/export.ts`，批准依据见 S4/S5 设计及 EV-T052-001。上方结构是逻辑概览，实际包括 `enumValues`、分开的 `actionRecords`/`routineRecords` 和十个 data 集合。
+当前导出为 UTF-8 JSON，`exportVersion=3`、`sourceDataVersion=4`，默认文件名 `mytracer-export-YYYY-MM-DD-v3.json`，通过系统保存对话框由用户选择位置。#129 已批准未知行动时长（[迁移与兼容计划](UNKNOWN_ACTION_DURATION.md)）；历史 S4/S5 的 schema v3/export v2 保留原含义。严格 export v1/v2 验证只用于兼容契约，不是当前生成格式，也不提供自动导入恢复。当前可执行契约见 `src/application/complete-export.ts` 与 `src/application/ports/export.ts`，批准依据见 S4/S5 设计及 EV-T052-001。上方结构是逻辑概览，实际包括 `enumValues`、分开的 `actionRecords`/`routineRecords` 和十个 data 集合。
 
 ### 9.2 包含和排除
 

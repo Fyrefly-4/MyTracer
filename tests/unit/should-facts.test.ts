@@ -95,8 +95,13 @@ describe('SHOULD factual projections', () => {
     )
     expect(buildWeekComparison('2026-09-19', facts)).toMatchObject({
       goalId: 'goal',
-      current: { totalDurationMinutes: 15, realActionCount: 4, hasRecordedFacts: true },
-      previous: { totalDurationMinutes: 25, realActionCount: 2 },
+      current: {
+        totalDurationMinutes: 15,
+        unknownDurationCount: 1,
+        realActionCount: 4,
+        hasRecordedFacts: true
+      },
+      previous: { totalDurationMinutes: 25, unknownDurationCount: 0, realActionCount: 2 },
       difference: { totalDurationMinutes: -10, realActionCount: 2 }
     })
   })

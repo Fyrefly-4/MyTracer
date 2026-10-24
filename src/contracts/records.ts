@@ -40,7 +40,7 @@ export interface RecordActionInputDto {
   readonly actionId: string
   readonly recordingContextId: string
   readonly dateChoice?: RecordingDateChoiceDto
-  readonly durationMinutes: number
+  readonly durationMinutes: number | null
   readonly outcome: ActionRecordOutcomeDto
   readonly understanding?: string | null
   readonly confusion?: string | null
@@ -61,7 +61,7 @@ export interface ActionRecordSummaryDto {
   readonly id: string
   readonly actionId: string
   readonly occurredOn: string
-  readonly durationMinutes: number
+  readonly durationMinutes: number | null
   readonly outcome: ActionRecordOutcomeDto
   readonly nextStep: string | null
   readonly note: string | null

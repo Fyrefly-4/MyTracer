@@ -95,6 +95,39 @@ function setup() {
 }
 
 describe('ActionRecord IPC boundary', () => {
+  it.each([null, 0, 12])(
+    'forwards explicit duration %s without coercing null',
+    (durationMinutes) => {
+      const { invoke, service } = setup()
+      invoke(RECORD_CHANNELS.begin, { actionId })
+      expect(
+        invoke(RECORD_CHANNELS.record, {
+          actionId,
+          recordingContextId: contextId,
+          durationMinutes,
+          outcome: 'partial'
+        })
+      ).toMatchObject({ ok: true })
+      expect(service.recordAction).toHaveBeenCalledWith(
+        expect.objectContaining({ durationMinutes })
+      )
+    }
+  )
+
+  it.each([undefined, '', '12', -1, 1.5])('rejects invalid duration %s', (durationMinutes) => {
+    const { invoke, service } = setup()
+    invoke(RECORD_CHANNELS.begin, { actionId })
+    expect(
+      invoke(RECORD_CHANNELS.record, {
+        actionId,
+        recordingContextId: contextId,
+        durationMinutes,
+        outcome: 'partial'
+      })
+    ).toMatchObject({ ok: false, error: { code: 'validation' } })
+    expect(service.recordAction).not.toHaveBeenCalled()
+  })
+
   it('registers five fixed channels and forwards valid narrow commands and queries', () => {
     const { assertSender, handlers, invoke, service } = setup()
     expect([...handlers.keys()].sort()).toEqual([...Object.values(RECORD_CHANNELS)].sort())

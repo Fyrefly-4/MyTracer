@@ -13,7 +13,7 @@ export interface StartHelpGoalDto {
 export interface StartHelpRelevantRecordDto {
   readonly occurredOn: string
   readonly outcome: StartHelpActionRecordOutcome
-  readonly durationMinutes: number
+  readonly durationMinutes: number | null
   readonly confirmedUnderstandings: readonly string[]
   readonly openConfusions: readonly string[]
   readonly nextStepCandidate?: string

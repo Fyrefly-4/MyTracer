@@ -65,7 +65,7 @@ for (const delayedChannel of ['actions:get-detail', 'records:list-for-action'] a
       await expect(panel).toHaveCount(0)
       const actionPanel = workspace.getByLabel('切换行动 行动记录', { exact: true })
       await actionPanel.getByRole('button', { name: '开始记录', exact: true }).click()
-      await actionPanel.getByLabel('投入时长（分钟，必填）').fill('3')
+      await actionPanel.getByLabel('投入时长（分钟，可选）').fill('3')
       await routineRow.click()
       await expect(panel.getByLabel('投入时长（分钟，可选）')).toHaveValue('8')
       await master.getByRole('button', { name: /另一条例行/ }).click()
@@ -92,7 +92,7 @@ for (const delayedChannel of ['actions:get-detail', 'records:list-for-action'] a
       await routineRow.click()
       await expect(panel.getByRole('button', { name: '保存例行记录', exact: true })).toHaveCount(0)
       await master.getByRole('button', { name: /切换行动.*待行动/ }).click()
-      await expect(actionPanel.getByLabel('投入时长（分钟，必填）')).toHaveValue('3')
+      await expect(actionPanel.getByLabel('投入时长（分钟，可选）')).toHaveValue('3')
       const actionSnapshot = await page.evaluate(async () => {
         const today = await window.myTracer.today.get({})
         if (!today.ok) throw new Error('Cannot read fixture action')

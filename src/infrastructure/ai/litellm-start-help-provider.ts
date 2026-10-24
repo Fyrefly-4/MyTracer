@@ -181,6 +181,7 @@ export class LiteLlmStartHelpProvider implements AiStartHelpProvider {
         {
           role: 'system',
           content:
+            'durationMinutes 为 null 表示时长未知，不是零投入；0 表示不足一分钟但确有行动。' +
             'Offer gentle, non-judgmental start help. Give one to three concrete small suggestions. Never claim the user completed or mastered anything, and never treat reasonable rest as procrastination. Return only the requested JSON.'
         },
         { role: 'user', content: JSON.stringify(request) }

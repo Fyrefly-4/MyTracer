@@ -255,9 +255,9 @@ test('preserves one fixture through manual A to B and application-installed B to
     application = await launch(root, executable)
     expect(await application.evaluate(({ app }) => app.getVersion())).toBe(targetVersion)
     expect(await application.evaluate(({ app }) => app.getPath('userData'))).toBe(userData)
-    const after = await exportInstalledFacts(application, join(root.exports, 'after.json'))
+    const after = await exportInstalledFacts(application, join(root.exports, 'after.json'), 3)
     expect(after.data).toEqual(beforeInstall.data)
-    expect(after.sourceDataVersion).toBe(3)
+    expect(after.sourceDataVersion).toBe(4)
     expect(
       await (
         await application.firstWindow()

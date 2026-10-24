@@ -39,7 +39,7 @@ test('completes AC-01 through factual Progress and recalculates after a real reo
     await detail.getByRole('button', { name: '选为今日重点' }).click()
     const panel = page.getByLabel('运行一个 React 状态更新示例 行动记录')
     await panel.getByRole('button', { name: '开始记录' }).click()
-    await panel.getByLabel('投入时长（分钟，必填）').fill('25')
+    await panel.getByLabel('投入时长（分钟，可选）').fill('25')
     await panel.getByLabel('本次结果').selectOption('partial')
     await panel.getByRole('button', { name: /添加理解/ }).click()
     await panel.getByLabel('我理解了（可选）').fill('状态更新会进入队列')
@@ -49,7 +49,7 @@ test('completes AC-01 through factual Progress and recalculates after a real reo
 
     await page.getByRole('button', { name: '进展', exact: true }).click()
     await expect(page.getByRole('heading', { name: '进展', exact: true })).toBeVisible()
-    await expect(page.getByLabel('进展汇总')).toContainText('累计行动分钟25')
+    await expect(page.getByLabel('进展汇总')).toContainText('已记录时长合计（分钟）25')
     await expect(page.getByLabel('进展汇总')).toContainText('记录到的行动次数1')
     await page.locator('.progress-record-notes > summary').first().click()
     await expect(page.getByText('状态更新会进入队列')).toBeVisible()
@@ -80,7 +80,7 @@ test('completes AC-01 through factual Progress and recalculates after a real reo
     application = await launchApplication(root)
     page = await application.firstWindow()
     await page.getByRole('button', { name: '进展', exact: true }).click()
-    await expect(page.getByLabel('进展汇总')).toContainText('累计行动分钟25')
+    await expect(page.getByLabel('进展汇总')).toContainText('已记录时长合计（分钟）25')
     await expect(page.getByLabel('进展汇总')).toContainText('记录到的行动次数1')
     expect(await page.evaluate(() => window.myTracer.progress.get({}))).toEqual(beforeReopen)
 
