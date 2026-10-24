@@ -180,6 +180,12 @@ function GoalWorkspace(): ReactNode {
   const [selectionLoaded, setSelectionLoaded] = useState(false)
   const [selectionError, setSelectionError] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
+  // Opening an ordinary draft is a newer intent, even before it has a Goal ID.
+  const ordinaryCreateIntent = useRef(0)
+  const openOrdinaryCreate = (): void => {
+    ++ordinaryCreateIntent.current
+    setCreating(true)
+  }
   const [stageDraft, setStageDraft] = useState<{
     goalId: string
     predecessorGoalId: string
@@ -339,7 +345,7 @@ function GoalWorkspace(): ReactNode {
     if (!activeRef.current) return
     setRefreshVersion((version) => version + 1)
     if (shownGoalId.current !== goalId || request !== selectionRequest.current) return
-    await selectGoal(goalId, false)
+    await selectGoal(goalId, false, routeGoalId === goalId)
   }
 
   const refreshAfterRecoveryMutation = async (): Promise<void> => {
@@ -381,6 +387,7 @@ function GoalWorkspace(): ReactNode {
 
   const submitCreate = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault()
+    ++ordinaryCreateIntent.current
     setBusy(true)
     const result = await window.myTracer.goals.create({
       name: createName,
@@ -412,6 +419,7 @@ function GoalWorkspace(): ReactNode {
     setStageBusy(true)
     setStageError(null)
     const request = selectionRequest.current
+    const createIntent = ordinaryCreateIntent.current
     try {
       const result = await window.myTracer.goals.createStage(stageDraft)
       if (!activeRef.current) return
@@ -421,7 +429,7 @@ function GoalWorkspace(): ReactNode {
       }
       setStageDraft(null)
       setRefreshVersion((version) => version + 1)
-      if (request === selectionRequest.current) {
+      if (request === selectionRequest.current && createIntent === ordinaryCreateIntent.current) {
         setRouteGoalId(result.value.id)
         showDetail(result.value)
         requestAnimationFrame(() => revealStart(detailRef.current))
@@ -778,7 +786,10 @@ function GoalWorkspace(): ReactNode {
                   type="button"
                   className="secondary-button"
                   aria-expanded={creating}
-                  onClick={() => setCreating(!creating)}
+                  onClick={() => {
+                    if (creating) setCreating(false)
+                    else openOrdinaryCreate()
+                  }}
                 >
                   新建目标
                 </button>
@@ -1389,7 +1400,7 @@ function GoalWorkspace(): ReactNode {
                     清除筛选
                   </button>
                 ) : (
-                  <button type="button" onClick={() => setCreating(true)}>
+                  <button type="button" onClick={openOrdinaryCreate}>
                     创建第一个目标
                   </button>
                 )}
