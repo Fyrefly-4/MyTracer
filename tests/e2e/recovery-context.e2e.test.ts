@@ -69,6 +69,7 @@ test('opens a Goal Recovery page explicitly and shows read-only recorded facts a
       })
       if (!record.ok) throw new Error('Record setup failed.')
       const routine = await window.myTracer.routines.create({
+        arrangementMode: 'weekly' as const,
         goalId: goal.value.id,
         name: '每日练习',
         minimumAction: '打开编辑器',

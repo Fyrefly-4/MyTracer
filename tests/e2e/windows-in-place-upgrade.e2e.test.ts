@@ -174,6 +174,9 @@ async function createOldVersionFacts(page: Page): Promise<string> {
   await expect(page.getByLabel('T081 upgrade goal 详情')).toBeVisible()
 
   const actionId = await page.evaluate(async () => {
+    const createLegacyRoutine = window.myTracer.routines.create as (
+      input: Omit<Parameters<typeof window.myTracer.routines.create>[0], 'arrangementMode'>
+    ) => ReturnType<typeof window.myTracer.routines.create>
     const goals = await window.myTracer.goals.list({ status: 'active' })
     if (!goals.ok || goals.value.length !== 1) throw new Error('Goal creation failed.')
     const goal = await window.myTracer.goals.getDetail({ goalId: goals.value[0].id })
@@ -185,7 +188,7 @@ async function createOldVersionFacts(page: Page): Promise<string> {
       { name: 'T081 not done', outcome: 'not_done', durationMinutes: null }
     ] as const
     for (const item of outcomes) {
-      const routine = await window.myTracer.routines.create({
+      const routine = await createLegacyRoutine({
         goalId: goal.value.id,
         name: item.name,
         minimumAction: 'One small action',
@@ -201,7 +204,7 @@ async function createOldVersionFacts(page: Page): Promise<string> {
       })
       if (!record.ok) throw new Error('Routine record creation failed.')
     }
-    const unknown = await window.myTracer.routines.create({
+    const unknown = await createLegacyRoutine({
       goalId: goal.value.id,
       name: 'T081 unknown',
       minimumAction: 'One small action',
@@ -336,11 +339,26 @@ test('keeps all old-version facts and synthetic configuration through an in-plac
       newPage,
       join(root.exports, 'after-upgrade.json')
     )
-    expect(afterExport).toMatchObject({ exportVersion: 3, sourceDataVersion: 4 })
-    expect(afterExport.data).toEqual(beforeExport.data)
+    expect(afterExport).toMatchObject({ exportVersion: 4, sourceDataVersion: 5 })
+    expect(afterExport.data).toEqual({
+      ...(beforeExport.data as object),
+      routines: (beforeExport.data as { routines: object[] }).routines.map((routine) => ({
+        ...routine,
+        arrangementMode: 'weekly'
+      }))
+    })
     await closeInstalled(application)
     application = undefined
-    expect(snapshotDatabase(databasePath)).toEqual(beforeDatabase)
+    expect(snapshotDatabase(databasePath)).toEqual({
+      ...beforeDatabase,
+      routines: beforeDatabase.routines.map((routine) => ({
+        ...(routine as object),
+        arrangement_mode: 'weekly'
+      })),
+      metadata: beforeDatabase.metadata.map((row) =>
+        (row as { key: string }).key === 'schemaVersion' ? { ...(row as object), value: '5' } : row
+      )
+    })
 
     application = await launchInstalled(root, executable, newVersion)
     await setMainDate(application)
@@ -466,10 +484,25 @@ test('observes a running old application during installation', async () => {
       newPage,
       join(root.exports, 'running-after-upgrade.json')
     )
-    expect(afterExport.data).toEqual(beforeExport.data)
+    expect(afterExport.data).toEqual({
+      ...(beforeExport.data as object),
+      routines: (beforeExport.data as { routines: object[] }).routines.map((routine) => ({
+        ...routine,
+        arrangementMode: 'weekly'
+      }))
+    })
     await closeInstalled(application)
     application = undefined
-    expect(snapshotDatabase(databasePath)).toEqual(beforeDatabase)
+    expect(snapshotDatabase(databasePath)).toEqual({
+      ...beforeDatabase,
+      routines: beforeDatabase.routines.map((routine) => ({
+        ...(routine as object),
+        arrangement_mode: 'weekly'
+      })),
+      metadata: beforeDatabase.metadata.map((row) =>
+        (row as { key: string }).key === 'schemaVersion' ? { ...(row as object), value: '5' } : row
+      )
+    })
   } finally {
     try {
       if (application && application.process().exitCode === null) await closeInstalled(application)
@@ -567,10 +600,25 @@ test('repairs a failed package launch without replacing old facts', async () => 
       newPage,
       join(root.exports, 'after-repair.json')
     )
-    expect(afterExport.data).toEqual(beforeExport.data)
+    expect(afterExport.data).toEqual({
+      ...(beforeExport.data as object),
+      routines: (beforeExport.data as { routines: object[] }).routines.map((routine) => ({
+        ...routine,
+        arrangementMode: 'weekly'
+      }))
+    })
     await closeInstalled(application)
     application = undefined
-    expect(snapshotDatabase(databasePath)).toEqual(beforeDatabase)
+    expect(snapshotDatabase(databasePath)).toEqual({
+      ...beforeDatabase,
+      routines: beforeDatabase.routines.map((routine) => ({
+        ...(routine as object),
+        arrangement_mode: 'weekly'
+      })),
+      metadata: beforeDatabase.metadata.map((row) =>
+        (row as { key: string }).key === 'schemaVersion' ? { ...(row as object), value: '5' } : row
+      )
+    })
 
     application = await launchInstalled(root, executable, newVersion)
     const added = await (

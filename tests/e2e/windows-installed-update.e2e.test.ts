@@ -154,7 +154,7 @@ test('preserves one fixture through manual A to B and application-installed B to
     const userData = await application.evaluate(({ app }) => app.getPath('userData'))
     const page = await application.firstWindow()
     await expect(page.getByRole('heading', { name: '今天', exact: true })).toBeVisible()
-    const actionId = await createInstalledUpdateFacts(page)
+    const actionId = await createInstalledUpdateFacts(page, true)
     expect(
       await page.evaluate(() => window.myTracer.aiConfiguration.importFromEnvironment())
     ).toMatchObject({ availability: 'configured-available' })
@@ -257,9 +257,15 @@ test('preserves one fixture through manual A to B and application-installed B to
     application = await launch(root, executable)
     expect(await application.evaluate(({ app }) => app.getVersion())).toBe(targetVersion)
     expect(await application.evaluate(({ app }) => app.getPath('userData'))).toBe(userData)
-    const after = await exportInstalledFacts(application, join(root.exports, 'after.json'), 3)
-    expect(after.data).toEqual(beforeInstall.data)
-    expect(after.sourceDataVersion).toBe(4)
+    const after = await exportInstalledFacts(application, join(root.exports, 'after.json'), 4)
+    expect(after.data).toEqual({
+      ...(beforeInstall.data as object),
+      routines: (beforeInstall.data as { routines: object[] }).routines.map((routine) => ({
+        ...routine,
+        arrangementMode: 'weekly'
+      }))
+    })
+    expect(after.sourceDataVersion).toBe(5)
     expect(
       await (
         await application.firstWindow()
@@ -314,7 +320,7 @@ test('offline upgrade fixture covers lifecycle states and preserves facts throug
     ).toBeVisible()
     await test.step('create synthetic lifecycle facts', () => createInstalledUpdateFacts(page))
     const exported = await test.step('export synthetic baseline', () =>
-      exportInstalledFacts(application!, join(root.exports, 'offline.json'), 3))
+      exportInstalledFacts(application!, join(root.exports, 'offline.json'), 4))
     const data = exported.data as Record<string, Record<string, unknown>[]>
     expect(new Set(data.goals.map((v) => v.status))).toEqual(new Set(['active', 'paused', 'ended']))
     expect(new Set(data.actions.map((v) => v.status))).toEqual(
@@ -335,7 +341,7 @@ test('offline upgrade fixture covers lifecycle states and preserves facts throug
     await test.step('close baseline application', () => application!.close())
     application = await test.step('reopen isolated fixture application', open)
     const reopened = await test.step('export reopened facts', () =>
-      exportInstalledFacts(application!, join(root.exports, 'offline-reopened.json'), 3))
+      exportInstalledFacts(application!, join(root.exports, 'offline-reopened.json'), 4))
     expect(reopened.data).toEqual(exported.data)
   } finally {
     await application?.close().catch(() => undefined)

@@ -51,6 +51,7 @@ async function seed(page: Page): Promise<void> {
       if (!result.ok) throw new Error(result.error.message)
     }
     const routine = await window.myTracer.routines.create({
+      arrangementMode: 'weekly' as const,
       name: 'Piano ピアノ',
       minimumAction: '一个音',
       weekdays: [1]

@@ -261,6 +261,7 @@ export function seedStartHelpIsolationFixture(
   })
 
   const routine: RoutinePersistenceRecord = {
+    arrangementMode: 'weekly' as const,
     id: START_HELP_IDS.routine,
     goalId: goal.id,
     name: 'Routine',

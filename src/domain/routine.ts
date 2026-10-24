@@ -10,6 +10,7 @@ export interface Routine {
   readonly description: string | null
   readonly minimumAction: string
   readonly status: RoutineStatus
+  readonly arrangementMode: 'weekly' | 'unscheduled'
   readonly weekdays: readonly IsoWeekday[]
   readonly createdAt: string
   readonly updatedAt: string
@@ -58,6 +59,16 @@ export function normalizeRoutineWeekdays(values: readonly number[]): readonly Is
   return Object.freeze([...unique].sort((left, right) => left - right) as IsoWeekday[])
 }
 
+export function normalizeRoutineArrangement(
+  mode: unknown,
+  values: readonly number[]
+): readonly IsoWeekday[] {
+  if (mode === 'weekly') return normalizeRoutineWeekdays(values)
+  if (mode === 'unscheduled' && Array.isArray(values) && values.length === 0)
+    return Object.freeze([])
+  throw new RoutineDomainError('validation', 'Invalid routine arrangement mode or weekdays.')
+}
+
 export function expandRoutineScheduleShortcut(
   shortcut: RoutineScheduleShortcut
 ): readonly IsoWeekday[] {
@@ -72,6 +83,7 @@ export function createRoutine(input: {
   readonly name: string
   readonly description?: string | null
   readonly minimumAction: string
+  readonly arrangementMode: 'weekly' | 'unscheduled'
   readonly weekdays: readonly number[]
   readonly now: string
 }): Routine {
@@ -82,7 +94,8 @@ export function createRoutine(input: {
     description: optionalText(input.description),
     minimumAction: requiredText(input.minimumAction, 'Routine minimum action'),
     status: 'active',
-    weekdays: normalizeRoutineWeekdays(input.weekdays),
+    arrangementMode: input.arrangementMode,
+    weekdays: normalizeRoutineArrangement(input.arrangementMode, input.weekdays),
     createdAt: input.now,
     updatedAt: input.now
   })
@@ -109,11 +122,13 @@ export function updateRoutineDetails(
 export function replaceRoutineSchedule(
   routine: Routine,
   weekdays: readonly number[],
-  now: string
+  now: string,
+  arrangementMode: 'weekly' | 'unscheduled'
 ): Routine {
   return Object.freeze({
     ...routine,
-    weekdays: normalizeRoutineWeekdays(weekdays),
+    arrangementMode,
+    weekdays: normalizeRoutineArrangement(arrangementMode, weekdays),
     updatedAt: now
   })
 }
@@ -141,5 +156,7 @@ export function transitionRoutine(
 }
 
 export function isRoutinePlannedOn(routine: Routine, localDate: LocalDate): boolean {
-  return routine.weekdays.includes(isoWeekday(localDate))
+  return normalizeRoutineArrangement(routine.arrangementMode, routine.weekdays).includes(
+    isoWeekday(localDate)
+  )
 }

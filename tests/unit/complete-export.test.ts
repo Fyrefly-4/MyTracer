@@ -15,7 +15,7 @@ import { FakeClock } from '../support/fake-clock'
 
 const instant = '2026-08-20T08:00:00.000Z'
 const emptySnapshot: CompleteCorePersistenceSnapshot = {
-  sourceDataVersion: 4,
+  sourceDataVersion: 5,
   coreSnapshot: {
     goals: [],
     actions: [],
@@ -71,7 +71,7 @@ describe('complete export application', () => {
     expect(document).toMatchObject({
       format: COMPLETE_EXPORT_FORMAT,
       exportVersion: COMPLETE_EXPORT_VERSION,
-      sourceDataVersion: 4,
+      sourceDataVersion: 5,
       exportedAt: instant,
       localTimeZone: 'Asia/Shanghai',
       enumValues: COMPLETE_EXPORT_ENUM_VALUES
@@ -103,7 +103,7 @@ describe('complete export application', () => {
 
   it('accepts every persisted status and enum value without serializing unknown as a Routine record', () => {
     const snapshot: CompleteCorePersistenceSnapshot = {
-      sourceDataVersion: 4,
+      sourceDataVersion: 5,
       coreSnapshot: {
         goals: ['active', 'ended', 'paused'].map((status) => ({
           id: `goal-${status}`,
@@ -124,6 +124,7 @@ describe('complete export application', () => {
           updatedAt: instant
         })),
         routines: ['active', 'ended', 'paused'].map((status) => ({
+          arrangementMode: 'weekly' as const,
           id: `routine-${status}`,
           goalId: status === 'active' ? 'goal-active' : null,
           name: status,
@@ -135,7 +136,9 @@ describe('complete export application', () => {
         })),
         routineScheduleDays: [
           { routineId: 'routine-active', weekday: 1 },
-          { routineId: 'routine-active', weekday: 2 }
+          { routineId: 'routine-active', weekday: 2 },
+          { routineId: 'routine-ended', weekday: 1 },
+          { routineId: 'routine-paused', weekday: 1 }
         ],
         todaySelections: [
           {
@@ -281,4 +284,51 @@ describe('complete export application', () => {
     })
     await expect(service.generateCompleteExport()).resolves.toEqual({ kind: 'cancelled' })
   })
+})
+
+it('discriminates v4 arrangement intent from legacy v1-v3 exports without reinterpreting corruption', () => {
+  const routine = {
+    id: 'r',
+    goalId: null,
+    name: '合成弹琴',
+    minimumAction: '一段',
+    description: null,
+    status: 'active' as const,
+    createdAt: instant,
+    updatedAt: instant,
+    arrangementMode: 'unscheduled' as const
+  }
+  const current = buildCompleteExport(
+    { ...emptySnapshot, coreSnapshot: { ...emptySnapshot.coreSnapshot, routines: [routine] } },
+    new FakeClock({ instant, localDate: '2026-08-20', timeZone: 'Asia/Shanghai' })
+  )
+  for (const arrangementMode of [undefined, null, '', 'daily', 'weekly']) {
+    expect(() =>
+      validateCompleteExport({
+        ...current,
+        data: { ...current.data, routines: [{ ...routine, arrangementMode }] }
+      })
+    ).toThrow()
+  }
+  expect(() => validateCompleteExport({ ...current, sourceDataVersion: 4 })).toThrow()
+  expect(() =>
+    validateCompleteExport({
+      ...current,
+      data: { ...current.data, routineScheduleDays: [{ routineId: 'r', weekday: 1 }] }
+    })
+  ).toThrow()
+  const { arrangementMode: mode, ...legacy } = routine
+  expect(mode).toBe('unscheduled')
+  for (const exportVersion of [1, 2, 3]) {
+    expect(() => validateCompleteExport({ ...current, exportVersion })).toThrow()
+    // Old validators historically allowed missing rows; they do not upgrade or restore them.
+    expect(() =>
+      validateCompleteExport({
+        ...current,
+        exportVersion,
+        sourceDataVersion: exportVersion + 1,
+        data: { ...current.data, routines: [legacy] }
+      })
+    ).not.toThrow()
+  }
 })

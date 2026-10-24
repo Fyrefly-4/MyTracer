@@ -39,6 +39,7 @@ test('goal and routine notebooks paginate, scroll independently, and preserve cr
           }
         }
         const routine = await window.myTracer.routines.create({
+          arrangementMode: 'weekly' as const,
           name: `笔记本例行${i}`,
           minimumAction: '读两页',
           weekdays: [1, 2, 3, 4, 5],

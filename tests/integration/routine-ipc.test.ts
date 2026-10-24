@@ -50,6 +50,7 @@ describe('Routine IPC boundary', () => {
     expect([...handlers.keys()].sort()).toEqual(Object.values(ROUTINE_CHANNELS).sort())
     expect(
       invoke(ROUTINE_CHANNELS.create, {
+        arrangementMode: 'weekly' as const,
         goalId,
         name: 'Routine',
         description: null,
@@ -58,6 +59,7 @@ describe('Routine IPC boundary', () => {
       })
     ).toEqual({ ok: true, value: { id: routineId } })
     expect(service.createRoutine).toHaveBeenCalledWith({
+      arrangementMode: 'weekly' as const,
       goalId,
       name: 'Routine',
       description: null,
@@ -73,16 +75,50 @@ describe('Routine IPC boundary', () => {
     const { invoke, service } = setup()
     const invalid: Array<[string, ...unknown[]]> = [
       [ROUTINE_CHANNELS.create],
-      [ROUTINE_CHANNELS.create, { name: ' ', minimumAction: 'Move', weekdays: [1] }],
-      [ROUTINE_CHANNELS.create, { name: 'Routine', minimumAction: ' ', weekdays: [1] }],
-      [ROUTINE_CHANNELS.create, { name: 'Routine', minimumAction: 'Move', weekdays: [] }],
-      [ROUTINE_CHANNELS.create, { name: 'Routine', minimumAction: 'Move', weekdays: [1, 1] }],
-      [ROUTINE_CHANNELS.create, { name: 'Routine', minimumAction: 'Move', weekdays: [0] }],
       [
         ROUTINE_CHANNELS.create,
-        { name: 'Routine', minimumAction: 'Move', weekdays: [1], today: '2026-08-14' }
+        { arrangementMode: 'weekly' as const, name: ' ', minimumAction: 'Move', weekdays: [1] }
       ],
-      [ROUTINE_CHANNELS.replaceSchedule, { routineId, weekdays: [8] }],
+      [
+        ROUTINE_CHANNELS.create,
+        { arrangementMode: 'weekly' as const, name: 'Routine', minimumAction: ' ', weekdays: [1] }
+      ],
+      [
+        ROUTINE_CHANNELS.create,
+        { arrangementMode: 'weekly' as const, name: 'Routine', minimumAction: 'Move', weekdays: [] }
+      ],
+      [
+        ROUTINE_CHANNELS.create,
+        {
+          arrangementMode: 'weekly' as const,
+          name: 'Routine',
+          minimumAction: 'Move',
+          weekdays: [1, 1]
+        }
+      ],
+      [
+        ROUTINE_CHANNELS.create,
+        {
+          arrangementMode: 'weekly' as const,
+          name: 'Routine',
+          minimumAction: 'Move',
+          weekdays: [0]
+        }
+      ],
+      [
+        ROUTINE_CHANNELS.create,
+        {
+          arrangementMode: 'weekly' as const,
+          name: 'Routine',
+          minimumAction: 'Move',
+          weekdays: [1],
+          today: '2026-08-14'
+        }
+      ],
+      [
+        ROUTINE_CHANNELS.replaceSchedule,
+        { arrangementMode: 'weekly' as const, routineId, weekdays: [8] }
+      ],
       [ROUTINE_CHANNELS.list, { status: 'failed' }],
       [ROUTINE_CHANNELS.getDetail, { routineId: 'not-a-uuid' }]
     ]
@@ -129,5 +165,34 @@ describe('Routine IPC boundary', () => {
     })
     expect(() => invoke(ROUTINE_CHANNELS.getDetail, { routineId })).toThrow(/untrusted renderer/)
     expect(service.getRoutineDetail).not.toHaveBeenCalled()
+  })
+})
+
+it('accepts only explicit weekly or unscheduled intent with a compatible weekday set', () => {
+  const { invoke, service } = setup()
+  for (const arrangementMode of [undefined, null, 'daily', '']) {
+    expect(
+      invoke(ROUTINE_CHANNELS.replaceSchedule, { routineId, arrangementMode, weekdays: [] })
+    ).toMatchObject({ ok: false, error: { code: 'validation' } })
+  }
+  expect(
+    invoke(ROUTINE_CHANNELS.replaceSchedule, {
+      routineId,
+      arrangementMode: 'unscheduled',
+      weekdays: [1]
+    })
+  ).toMatchObject({ ok: false })
+  expect(service.replaceRoutineSchedule).not.toHaveBeenCalled()
+  expect(
+    invoke(ROUTINE_CHANNELS.replaceSchedule, {
+      routineId,
+      arrangementMode: 'unscheduled',
+      weekdays: []
+    })
+  ).toMatchObject({ ok: true })
+  expect(service.replaceRoutineSchedule).toHaveBeenCalledWith({
+    routineId,
+    arrangementMode: 'unscheduled',
+    weekdays: []
   })
 })

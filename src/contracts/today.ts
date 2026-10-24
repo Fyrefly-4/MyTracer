@@ -23,6 +23,7 @@ export interface TodayViewDto {
   readonly intentions: readonly TodayActionItemDto[]
   readonly availableActions: readonly ActionDetailDto[]
   readonly plannedRoutines: readonly TodayPlannedRoutineDto[]
+  readonly unscheduledRoutines: readonly TodayPlannedRoutineDto[]
 }
 
 export interface TodayPlannedRoutineDto {
@@ -30,7 +31,7 @@ export interface TodayPlannedRoutineDto {
   readonly name: string
   readonly minimumAction: string
   readonly goal: RoutineGoalSummaryDto | null
-  readonly plannedForToday: true
+  readonly plannedForToday: boolean
   readonly canRecord: true
   readonly recordState: RoutineRecordStateDto
   readonly record: RoutineRecordDto | null

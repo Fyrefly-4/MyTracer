@@ -137,6 +137,7 @@ test('routine and confusion editors preserve keyboard focus through edit, cancel
     await page.evaluate(async () => {
       const action = await window.myTracer.actions.create({ title: '键盘检查行动' })
       const routine = await window.myTracer.routines.create({
+        arrangementMode: 'weekly' as const,
         name: '键盘检查例行',
         minimumAction: '走一小段',
         weekdays: [1, 2, 3, 4, 5, 6, 7]

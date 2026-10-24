@@ -55,7 +55,12 @@ describe('RoutineRecord SQLite integration', () => {
       timeZone: 'Asia/Shanghai'
     })
     const service = services(connection, clock)
-    service.routines.createRoutine({ name: 'Move', minimumAction: 'Stretch', weekdays: [1] })
+    service.routines.createRoutine({
+      arrangementMode: 'weekly' as const,
+      name: 'Move',
+      minimumAction: 'Stretch',
+      weekdays: [1]
+    })
 
     expect(service.records.getRoutineDayState(routineId, '2026-08-09').recordState).toBe('unknown')
     for (const [index, outcome] of (
@@ -96,7 +101,12 @@ describe('RoutineRecord SQLite integration', () => {
       timeZone: 'Asia/Shanghai'
     })
     const service = services(connection, clock)
-    service.routines.createRoutine({ name: 'Move', minimumAction: 'Stretch', weekdays: [1] })
+    service.routines.createRoutine({
+      arrangementMode: 'weekly' as const,
+      name: 'Move',
+      minimumAction: 'Stretch',
+      weekdays: [1]
+    })
     service.records.recordRoutine({
       routineId,
       capturedOn: '2026-08-10',
@@ -114,7 +124,11 @@ describe('RoutineRecord SQLite integration', () => {
       outcome: 'acted',
       durationMinutes: null
     })
-    service.routines.replaceRoutineSchedule({ routineId, weekdays: [2] })
+    service.routines.replaceRoutineSchedule({
+      arrangementMode: 'weekly' as const,
+      routineId,
+      weekdays: [2]
+    })
 
     expect(service.records.getRoutineDayState(routineId, '2026-08-10')).toMatchObject({
       plannedByCurrentSchedule: false,

@@ -91,7 +91,17 @@ function optionalId(value: unknown): string | null | undefined {
   return requiredId(value)
 }
 
-function weekdays(value: unknown): readonly number[] {
+function arrangementMode(value: unknown): 'weekly' | 'unscheduled' {
+  if (value !== 'weekly' && value !== 'unscheduled')
+    throw new RoutineIpcValidationError('Invalid arrangement mode.')
+  return value
+}
+function weekdays(value: unknown, mode: unknown): readonly number[] {
+  arrangementMode(mode)
+  if (mode === 'unscheduled') {
+    if (Array.isArray(value) && value.length === 0) return Object.freeze([])
+    throw new RoutineIpcValidationError('Unscheduled routines cannot have weekdays.')
+  }
   if (!Array.isArray(value) || value.length === 0) {
     throw new RoutineIpcValidationError('Expected a non-empty weekday array.')
   }
@@ -112,13 +122,21 @@ function weekdays(value: unknown): readonly number[] {
 }
 
 function parseCreate(args: readonly unknown[]): CreateRoutineInputDto {
-  const record = oneObject(args, ['goalId', 'name', 'description', 'minimumAction', 'weekdays'])
+  const record = oneObject(args, [
+    'goalId',
+    'name',
+    'description',
+    'minimumAction',
+    'weekdays',
+    'arrangementMode'
+  ])
   return {
     goalId: optionalId(record.goalId),
     name: requiredText(record.name),
     description: optionalText(record.description),
     minimumAction: requiredText(record.minimumAction),
-    weekdays: weekdays(record.weekdays)
+    arrangementMode: arrangementMode(record.arrangementMode),
+    weekdays: weekdays(record.weekdays, record.arrangementMode)
   }
 }
 
@@ -133,8 +151,12 @@ function parseUpdate(args: readonly unknown[]): UpdateRoutineDetailsInputDto {
 }
 
 function parseReplace(args: readonly unknown[]): ReplaceRoutineScheduleInputDto {
-  const record = oneObject(args, ['routineId', 'weekdays'])
-  return { routineId: requiredId(record.routineId), weekdays: weekdays(record.weekdays) }
+  const record = oneObject(args, ['routineId', 'weekdays', 'arrangementMode'])
+  return {
+    routineId: requiredId(record.routineId),
+    arrangementMode: arrangementMode(record.arrangementMode),
+    weekdays: weekdays(record.weekdays, record.arrangementMode)
+  }
 }
 
 function parseId(args: readonly unknown[]): RoutineIdInputDto {

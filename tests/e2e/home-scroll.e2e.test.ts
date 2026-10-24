@@ -36,6 +36,7 @@ test('Home wheel scrolling reaches recent records at a constrained size and rest
       }
       for (let i = 1; i <= 5; i++) {
         const routine = await window.myTracer.routines.create({
+          arrangementMode: 'weekly' as const,
           name: `滚动例行 ${i}`,
           minimumAction: '做一点',
           weekdays: [1, 2, 3, 4, 5, 6, 7]

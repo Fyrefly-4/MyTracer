@@ -208,6 +208,7 @@ for (const kind of ['action', 'routine'] as const) {
             kind === 'action'
               ? await window.myTracer.actions.create({ title })
               : await window.myTracer.routines.create({
+                  arrangementMode: 'weekly' as const,
                   name: title,
                   minimumAction: '做一点',
                   weekdays: [1, 2, 3, 4, 5, 6, 7]

@@ -70,10 +70,10 @@ export class SqliteRepository
   saveRoutine(record: RoutinePersistenceRecord): void {
     this.database
       .prepare(
-        `INSERT INTO routines (id, goal_id, name, minimum_action, description, status, created_at, updated_at)
-         VALUES (@id, @goalId, @name, @minimumAction, @description, @status, @createdAt, @updatedAt)
+        `INSERT INTO routines (id, goal_id, name, minimum_action, description, status, created_at, updated_at, arrangement_mode)
+         VALUES (@id, @goalId, @name, @minimumAction, @description, @status, @createdAt, @updatedAt, @arrangementMode)
          ON CONFLICT(id) DO UPDATE SET goal_id = excluded.goal_id, name = excluded.name,
-           minimum_action = excluded.minimum_action, description = excluded.description,
+           minimum_action = excluded.minimum_action, description = excluded.description, arrangement_mode = excluded.arrangement_mode,
            status = excluded.status, updated_at = excluded.updated_at`
       )
       .run(record)
@@ -1091,6 +1091,10 @@ export class SqliteRepository
       minimumAction: asString(row, 'minimum_action'),
       description: asNullableString(row, 'description'),
       status: asString(row, 'status') as RoutinePersistenceRecord['status'],
+      arrangementMode: asString(
+        row,
+        'arrangement_mode'
+      ) as RoutinePersistenceRecord['arrangementMode'],
       createdAt: asString(row, 'created_at'),
       updatedAt: asString(row, 'updated_at')
     }

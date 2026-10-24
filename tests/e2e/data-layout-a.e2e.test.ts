@@ -19,6 +19,7 @@ async function withData(
     await page.evaluate(async () => {
       const action = await window.myTracer.actions.create({ title: '合成布局行动' })
       const routine = await window.myTracer.routines.create({
+        arrangementMode: 'weekly' as const,
         name: '合成布局例行',
         minimumAction: '走一步',
         weekdays: [1]

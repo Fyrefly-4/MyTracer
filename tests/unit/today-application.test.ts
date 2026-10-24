@@ -51,6 +51,7 @@ function setup(goalStatus: GoalPersistenceRecord['status'] = 'active') {
   const selections = new Map<string, TodaySelectionPersistenceRecord>()
   const routines = [
     {
+      arrangementMode: 'weekly' as const,
       id: 'routine-1',
       goalId: 'goal-1',
       name: 'Sunday movement',
@@ -61,6 +62,7 @@ function setup(goalStatus: GoalPersistenceRecord['status'] = 'active') {
       updatedAt: instant
     },
     {
+      arrangementMode: 'weekly' as const,
       id: 'routine-paused',
       goalId: null,
       name: 'Paused routine',

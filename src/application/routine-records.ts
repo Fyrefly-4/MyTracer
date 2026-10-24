@@ -19,7 +19,7 @@ import {
   type RoutineRecordOutcome,
   type RoutineRecordState
 } from '../domain/routine-record'
-import { isRoutinePlannedOn, normalizeRoutineWeekdays, type Routine } from '../domain/routine'
+import { isRoutinePlannedOn, normalizeRoutineArrangement, type Routine } from '../domain/routine'
 
 export type RoutineRecordApplicationErrorCode =
   | 'validation'
@@ -110,7 +110,8 @@ function routineWithSchedule(
 ): Routine {
   return Object.freeze({
     ...record,
-    weekdays: normalizeRoutineWeekdays(
+    weekdays: normalizeRoutineArrangement(
+      record.arrangementMode,
       repository.listRoutineScheduleDays(record.id).map((item) => item.weekday)
     )
   })

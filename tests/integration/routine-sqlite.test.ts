@@ -57,6 +57,7 @@ describe('Routine SQLite integration', () => {
     })
     const current = services(connection)
     const created = current.routine.createRoutine({
+      arrangementMode: 'weekly' as const,
       goalId: '22222222-2222-4222-8222-222222222222',
       name: 'Light activity',
       description: 'Current description',
@@ -64,6 +65,7 @@ describe('Routine SQLite integration', () => {
       weekdays: [5, 1, 7]
     })
     expect(created).toMatchObject({
+      arrangementMode: 'weekly' as const,
       status: 'active',
       weekdays: [1, 5, 7],
       goal: { status: 'paused' }
@@ -95,7 +97,11 @@ describe('Routine SQLite integration', () => {
       description: null,
       minimumAction: 'Walk five minutes'
     })
-    current.routine.replaceRoutineSchedule({ routineId: created.id, weekdays: [2, 4] })
+    current.routine.replaceRoutineSchedule({
+      arrangementMode: 'weekly' as const,
+      routineId: created.id,
+      weekdays: [2, 4]
+    })
     expect(connection.repository.readSnapshot().routineRecords).toEqual(historyBefore)
     expect(current.today.getToday().plannedRoutines).toEqual([])
     expect(current.routine.pauseRoutine(created.id).status).toBe('paused')
@@ -109,6 +115,7 @@ describe('Routine SQLite integration', () => {
     try {
       const reopenedServices = services(reopened)
       expect(reopenedServices.routine.getRoutineDetail(created.id)).toMatchObject({
+        arrangementMode: 'weekly' as const,
         id: created.id,
         name: 'Renamed activity',
         minimumAction: 'Walk five minutes',
@@ -148,6 +155,7 @@ describe('Routine SQLite integration', () => {
     }
     expect(() =>
       services(connection, failingCreate).routine.createRoutine({
+        arrangementMode: 'weekly' as const,
         name: 'Rollback',
         minimumAction: 'Move',
         weekdays: [1, 2]
@@ -158,6 +166,7 @@ describe('Routine SQLite integration', () => {
 
     const normal = services(connection)
     const created = normal.routine.createRoutine({
+      arrangementMode: 'weekly' as const,
       name: 'Stable',
       minimumAction: 'Move',
       weekdays: [1, 2]
@@ -192,6 +201,7 @@ describe('Routine SQLite integration', () => {
     }
     expect(() =>
       services(connection, failingReplace).routine.replaceRoutineSchedule({
+        arrangementMode: 'weekly' as const,
         routineId: created.id,
         weekdays: [4, 5]
       })

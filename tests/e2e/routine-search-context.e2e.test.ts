@@ -51,6 +51,7 @@ test('empty database and unmatched search are distinct; clearing is keyboard acc
     await expect(list).toContainText('还没有例行。')
     await page.evaluate(async () => {
       const result = await window.myTracer.routines.create({
+        arrangementMode: 'weekly' as const,
         name: '合成例行',
         minimumAction: '读一行',
         weekdays: [1, 2, 3, 4, 5, 6, 7]
@@ -104,6 +105,7 @@ test('filtering and paging explain retained detail without switching or discardi
     await page.evaluate(async () => {
       for (let i = 1; i <= 8; i++) {
         const result = await window.myTracer.routines.create({
+          arrangementMode: 'weekly' as const,
           name: `例行${i}`,
           minimumAction: '读一行',
           weekdays: [1, 2, 3, 4, 5, 6, 7]
@@ -120,7 +122,7 @@ test('filtering and paging explain retained detail without switching or discardi
     await detail.getByRole('button', { name: '记录例行', exact: true }).click()
     const duration = detail.getByLabel('投入时长（分钟，可选）')
     await duration.fill('11')
-    await detail.getByText('编辑内容和每周安排', { exact: true }).click()
+    await detail.getByText('编辑内容和安排', { exact: true }).click()
     await detail.getByLabel('名称', { exact: true }).fill('尚未保存的名称')
     const search = page.getByLabel('搜索例行', { exact: true })
     await search.fill('例行2')

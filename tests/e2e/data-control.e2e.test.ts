@@ -33,6 +33,7 @@ test('edits, backfills, previews, deletes, and reopens T031 facts through the tr
       if (!goal.ok) throw new Error(goal.error.message)
       const actionId = goal.value.currentNextActionId!
       const routine = await window.myTracer.routines.create({
+        arrangementMode: 'weekly' as const,
         goalId: goal.value.id,
         name: 'T031 Routine',
         minimumAction: 'One minute',
@@ -190,7 +191,7 @@ test('edits, backfills, previews, deletes, and reopens T031 facts through the tr
     try {
       expect(
         inspected.prepare("SELECT value FROM metadata WHERE key = 'schemaVersion'").get()
-      ).toEqual({ value: '4' })
+      ).toEqual({ value: '5' })
       expect(inspected.prepare('PRAGMA foreign_key_check').all()).toEqual([])
     } finally {
       inspected.close()

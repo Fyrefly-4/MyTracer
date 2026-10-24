@@ -15,6 +15,7 @@ const now = '2026-08-14T08:00:00.000Z'
 
 function activeRoutine() {
   return createRoutine({
+    arrangementMode: 'weekly' as const,
     id: 'routine-1',
     goalId: null,
     name: ' Light activity ',
@@ -28,6 +29,7 @@ function activeRoutine() {
 describe('Routine domain', () => {
   it('normalizes text and a non-empty ISO weekday set', () => {
     expect(activeRoutine()).toMatchObject({
+      arrangementMode: 'weekly' as const,
       name: 'Light activity',
       description: 'Move gently',
       minimumAction: 'Walk for five minutes',
@@ -40,6 +42,7 @@ describe('Routine domain', () => {
     }
     expect(() =>
       createRoutine({
+        arrangementMode: 'weekly' as const,
         id: 'routine-1',
         name: ' ',
         minimumAction: 'Move',
@@ -77,13 +80,18 @@ describe('Routine domain', () => {
       now: '2026-08-14T09:00:00.000Z'
     })
     expect(details).toMatchObject({
+      arrangementMode: 'weekly' as const,
       id: routine.id,
       goalId: routine.goalId,
       description: null,
       weekdays: routine.weekdays
     })
-    const scheduled = replaceRoutineSchedule(details, [2, 4], '2026-08-14T10:00:00.000Z')
-    expect(scheduled).toMatchObject({ id: routine.id, weekdays: [2, 4] })
+    const scheduled = replaceRoutineSchedule(details, [2, 4], '2026-08-14T10:00:00.000Z', 'weekly')
+    expect(scheduled).toMatchObject({
+      arrangementMode: 'weekly' as const,
+      id: routine.id,
+      weekdays: [2, 4]
+    })
   })
 
   it('matches LocalDate through ISO weekday without creating facts', () => {
@@ -91,4 +99,21 @@ describe('Routine domain', () => {
     expect(isRoutinePlannedOn(routine, createLocalDate('2026-08-14'))).toBe(true)
     expect(isRoutinePlannedOn(routine, createLocalDate('2026-08-15'))).toBe(false)
   })
+})
+
+it('requires explicit intent and never treats missing or corrupt weekdays as unscheduled', () => {
+  const base = { id: 'r', name: '合成弹琴', minimumAction: '一小段', now }
+  for (const mode of [undefined, null, '', 'daily', 'unknown']) {
+    expect(() =>
+      createRoutine({ ...base, arrangementMode: mode as 'weekly', weekdays: [] })
+    ).toThrow()
+    expect(() =>
+      createRoutine({ ...base, arrangementMode: mode as 'weekly', weekdays: [1] })
+    ).toThrow()
+  }
+  expect(() => createRoutine({ ...base, arrangementMode: 'weekly', weekdays: [] })).toThrow()
+  expect(() => createRoutine({ ...base, arrangementMode: 'unscheduled', weekdays: [1] })).toThrow()
+  const routine = createRoutine({ ...base, arrangementMode: 'unscheduled', weekdays: [] })
+  for (let date = 10; date < 17; date++)
+    expect(isRoutinePlannedOn(routine, createLocalDate(`2026-08-${date}`))).toBe(false)
 })

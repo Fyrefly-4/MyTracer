@@ -771,8 +771,13 @@ function TodayWorkspace(): ReactNode {
   const [activityVersion, setActivityVersion] = useState(0)
   const [activeGoals, setActiveGoals] = useState<readonly GoalSummaryDto[]>([])
   const [detail, setDetail] = useState<ActionDetailDto | null>(null)
+  const [unscheduledOpen, setUnscheduledOpen] = useState(false)
   const [selectedRoutineId, setSelectedRoutineId] = useState<string | null>(null)
-  const selectedRoutine = today?.plannedRoutines.find((routine) => routine.id === selectedRoutineId)
+  const selectedRoutine =
+    today &&
+    [...today.plannedRoutines, ...today.unscheduledRoutines].find(
+      (routine) => routine.id === selectedRoutineId
+    )
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -877,6 +882,8 @@ function TodayWorkspace(): ReactNode {
     setRouteSelection(null)
     session.selectTodayRoutine(routineId)
     setSelectedRoutineId(routineId)
+    if (today?.unscheduledRoutines.some((routine) => routine.id === routineId))
+      setUnscheduledOpen(true)
     setDetail(null)
     setSelectionError(null)
     setPendingTransition(null)
@@ -904,7 +911,16 @@ function TodayWorkspace(): ReactNode {
       : [...availableCandidates, ...today.intentions]
     const entries = [
       ...actions.map((action) => ({ type: 'action' as const, id: action.id })),
-      ...today.plannedRoutines.map((routine) => ({ type: 'routine' as const, id: routine.id }))
+      ...[
+        ...today.plannedRoutines,
+        ...today.unscheduledRoutines.filter(
+          (routine) =>
+            routine.id === selectedRoutineId ||
+            (session.todaySelection?.type === 'routine' &&
+              routine.id === session.todaySelection.id) ||
+            (routeSelection?.type === 'routine' && routine.id === routeSelection.id)
+        )
+      ].map((routine) => ({ type: 'routine' as const, id: routine.id }))
     ]
     const key = (entry: { type: string; id: string }): string => `${entry.type}:${entry.id}`
     const current = detail
@@ -947,11 +963,21 @@ function TodayWorkspace(): ReactNode {
       next = entries[0] ?? null
     }
     const requestedRoutineId = next?.type === 'routine' ? next.id : null
-    if (requestedRoutineId && !today.plannedRoutines.some((item) => item.id === requestedRoutineId))
+    if (
+      requestedRoutineId &&
+      ![...today.plannedRoutines, ...today.unscheduledRoutines].some(
+        (item) => item.id === requestedRoutineId
+      )
+    )
       next = entries[0] ?? null
-    if (next?.type === 'routine' && today.plannedRoutines.some((item) => item.id === next.id)) {
+    if (
+      next?.type === 'routine' &&
+      [...today.plannedRoutines, ...today.unscheduledRoutines].some((item) => item.id === next.id)
+    ) {
       session.selectTodayRoutine(next.id)
       setSelectedRoutineId(next.id)
+      if (today.unscheduledRoutines.some((routine) => routine.id === next.id))
+        setUnscheduledOpen(true)
       setDetail(null)
     } else if (actions[0]) {
       showDetail(actions[0])
@@ -1510,6 +1536,34 @@ function TodayWorkspace(): ReactNode {
                   <p className="empty-copy">今天没有匹配的活跃例行。</p>
                 )}
               </div>
+              <details
+                open={unscheduledOpen}
+                onToggle={(event) => setUnscheduledOpen(event.currentTarget.open)}
+              >
+                <summary>随时可记</summary>
+                <p className="empty-copy">无固定安排，不计入今日计划。</p>
+                <div className="planned-routine-list">
+                  {today?.unscheduledRoutines.map((routine) => (
+                    <button
+                      key={routine.id}
+                      type="button"
+                      className="today-routine-row"
+                      aria-pressed={selectedRoutineId === routine.id}
+                      onClick={() => selectRoutine(routine.id)}
+                    >
+                      <strong>{routine.name}</strong>
+                      <span>最小行动：{routine.minimumAction}</span>
+                      <small>
+                        {routineRecordOutcomeText[routine.recordState]}
+                        {session.hasRoutineDraft(routine.id) ? ' · 有未保存草稿' : ''}
+                      </small>
+                    </button>
+                  ))}
+                  {!today?.unscheduledRoutines.length && (
+                    <p className="empty-copy">还没有活跃的无固定安排例行，可在例行页创建。</p>
+                  )}
+                </div>
+              </details>
             </section>
           </div>
           <footer className="today-master-footer" hidden={masterCollapsed}>
@@ -1551,7 +1605,7 @@ function TodayWorkspace(): ReactNode {
                 initialState={{
                   routineId: selectedRoutine.id,
                   localDate: today.localDate,
-                  plannedByCurrentSchedule: true,
+                  plannedByCurrentSchedule: selectedRoutine.plannedForToday,
                   recordState: selectedRoutine.recordState,
                   record: selectedRoutine.record
                 }}

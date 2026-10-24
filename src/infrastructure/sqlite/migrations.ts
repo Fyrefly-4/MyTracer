@@ -4,7 +4,9 @@ import routineRecordPlannedForDateBasis from './migrations/002_add_routine_recor
 import reviewResultsV3 from './migrations/003_review_results_v3.sql?raw'
 import unknownActionDuration from './migrations/004_unknown_action_duration.sql?raw'
 
-export const schemaVersion = 4
+import routineArrangement from './migrations/005_routine_arrangement.sql?raw'
+
+export const schemaVersion = 5
 
 interface Migration {
   readonly version: number
@@ -20,7 +22,8 @@ const migrations: readonly Migration[] = [
     sql: routineRecordPlannedForDateBasis
   },
   { version: 3, name: '003_review_results_v3', sql: reviewResultsV3 },
-  { version: 4, name: '004_unknown_action_duration', sql: unknownActionDuration }
+  { version: 4, name: '004_unknown_action_duration', sql: unknownActionDuration },
+  { version: 5, name: '005_routine_arrangement', sql: routineArrangement }
 ]
 
 function assertReviewResultsV2CanMigrate(database: Database.Database): void {
@@ -109,6 +112,15 @@ export function migrateToCurrentSchema(database: Database.Database): void {
 
     database.transaction(() => {
       if (migration.version === 3) assertReviewResultsV2CanMigrate(database)
+      if (
+        migration.version === 5 &&
+        database
+          .prepare(
+            'SELECT id FROM routines WHERE NOT EXISTS (SELECT 1 FROM routine_schedule_days WHERE routine_id = routines.id) LIMIT 1'
+          )
+          .get()
+      )
+        throw new Error('Routine arrangement migration stopped: legacy weekdays are missing.')
       database.exec(migration.sql)
       if (
         migration.version === 4 &&

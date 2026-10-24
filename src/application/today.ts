@@ -20,7 +20,7 @@ import {
   restoreRescheduledActionForToday
 } from '../domain/action'
 import { createLocalDate } from '../domain/local-date'
-import { isRoutinePlannedOn, normalizeRoutineWeekdays } from '../domain/routine'
+import { isRoutinePlannedOn, normalizeRoutineArrangement } from '../domain/routine'
 import { routineRecordView, type RoutineRecordView } from './routine-records'
 import type { RoutineRecordState } from '../domain/routine-record'
 import {
@@ -52,7 +52,7 @@ export interface TodayPlannedRoutineView {
   readonly name: string
   readonly minimumAction: string
   readonly goal: ReturnType<typeof buildRoutineDetail>['goal']
-  readonly plannedForToday: true
+  readonly plannedForToday: boolean
   readonly canRecord: true
   readonly recordState: RoutineRecordState
   readonly record: RoutineRecordView | null
@@ -64,6 +64,7 @@ export interface TodayView {
   readonly intentions: readonly TodayActionView[]
   readonly availableActions: readonly ActionDetailView[]
   readonly plannedRoutines: readonly TodayPlannedRoutineView[]
+  readonly unscheduledRoutines: readonly TodayPlannedRoutineView[]
 }
 
 export interface TodayServiceDependencies {
@@ -106,23 +107,28 @@ export function buildTodayView(repository: ActionRepositoryPort, localDate: stri
     .listActions()
     .map((action) => buildActionDetail(repository, action.id, localDate))
   const routineRepository = asRoutineRecordRepository(repository)
-  const plannedRoutines = routineRepository
+  const activeRoutines = routineRepository
     .listRoutines('active')
     .map((record) => buildRoutineDetail(routineRepository, record))
-    .filter((routine) =>
-      isRoutinePlannedOn(
-        Object.freeze({ ...routine, weekdays: normalizeRoutineWeekdays(routine.weekdays) }),
+    .map((routine) => ({
+      routine,
+      planned: isRoutinePlannedOn(
+        Object.freeze({
+          ...routine,
+          weekdays: normalizeRoutineArrangement(routine.arrangementMode, routine.weekdays)
+        }),
         createLocalDate(localDate)
       )
-    )
-    .map((routine) => {
+    }))
+    .filter(({ routine, planned }) => planned || routine.arrangementMode === 'unscheduled')
+    .map(({ routine, planned }) => {
       const record = routineRepository.findRoutineRecordByRoutineAndDate(routine.id, localDate)
       return Object.freeze<TodayPlannedRoutineView>({
         id: routine.id,
         name: routine.name,
         minimumAction: routine.minimumAction,
         goal: routine.goal,
-        plannedForToday: true,
+        plannedForToday: planned,
         canRecord: true,
         recordState: record?.outcome ?? 'unknown',
         record: record ? routineRecordView(record) : null
@@ -133,7 +139,8 @@ export function buildTodayView(repository: ActionRepositoryPort, localDate: stri
     focuses: Object.freeze(focuses),
     intentions: Object.freeze(intentions),
     availableActions: Object.freeze(availableActions),
-    plannedRoutines: Object.freeze(plannedRoutines)
+    plannedRoutines: Object.freeze(activeRoutines.filter((routine) => routine.plannedForToday)),
+    unscheduledRoutines: Object.freeze(activeRoutines.filter((routine) => !routine.plannedForToday))
   })
 }
 

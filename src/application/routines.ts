@@ -10,7 +10,7 @@ import {
 } from './ports/persistence'
 import {
   createRoutine,
-  normalizeRoutineWeekdays,
+  normalizeRoutineArrangement,
   replaceRoutineSchedule,
   RoutineDomainError,
   transitionRoutine,
@@ -44,6 +44,7 @@ export interface RoutineSummaryView {
   readonly description: string | null
   readonly minimumAction: string
   readonly status: RoutineStatus
+  readonly arrangementMode: 'weekly' | 'unscheduled'
   readonly weekdays: readonly number[]
   readonly createdAt: string
   readonly updatedAt: string
@@ -82,7 +83,8 @@ function routineFromPersistence(
 ): Routine {
   return Object.freeze({
     ...record,
-    weekdays: normalizeRoutineWeekdays(
+    weekdays: normalizeRoutineArrangement(
+      record.arrangementMode,
       repository.listRoutineScheduleDays(record.id).map((item) => item.weekday)
     )
   })
@@ -96,6 +98,7 @@ function routineToPersistence(routine: Routine): RoutinePersistenceRecord {
     description: routine.description,
     minimumAction: routine.minimumAction,
     status: routine.status,
+    arrangementMode: routine.arrangementMode,
     createdAt: routine.createdAt,
     updatedAt: routine.updatedAt
   })
@@ -107,7 +110,8 @@ function toSummary(
 ): RoutineSummaryView {
   return Object.freeze({
     ...record,
-    weekdays: Object.freeze(
+    weekdays: normalizeRoutineArrangement(
+      record.arrangementMode,
       repository.listRoutineScheduleDays(record.id).map((item) => item.weekday)
     )
   })
@@ -144,6 +148,7 @@ export class RoutineService {
     readonly name: string
     readonly description?: string | null
     readonly minimumAction: string
+    readonly arrangementMode: 'weekly' | 'unscheduled'
     readonly weekdays: readonly number[]
   }): RoutineDetailView {
     const snapshot = this.dependencies.clock.snapshot()
@@ -159,6 +164,7 @@ export class RoutineService {
           name: input.name,
           description: input.description,
           minimumAction: input.minimumAction,
+          arrangementMode: input.arrangementMode,
           weekdays: input.weekdays,
           now: snapshot.instant
         })
@@ -191,6 +197,7 @@ export class RoutineService {
 
   public replaceRoutineSchedule(input: {
     readonly routineId: string
+    readonly arrangementMode: 'weekly' | 'unscheduled'
     readonly weekdays: readonly number[]
   }): RoutineDetailView {
     const snapshot = this.dependencies.clock.snapshot()
@@ -198,7 +205,12 @@ export class RoutineService {
       return this.dependencies.unitOfWork.transaction((baseRepository) => {
         const repository = asRoutineRepository(baseRepository)
         const current = routineFromPersistence(repository, loadRoutine(repository, input.routineId))
-        const changed = replaceRoutineSchedule(current, input.weekdays, snapshot.instant)
+        const changed = replaceRoutineSchedule(
+          current,
+          input.weekdays,
+          snapshot.instant,
+          input.arrangementMode
+        )
         repository.replaceRoutineScheduleDays(
           changed.id,
           changed.weekdays.map((weekday) => ({ routineId: changed.id, weekday }))

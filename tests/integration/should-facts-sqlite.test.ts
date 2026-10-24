@@ -57,6 +57,7 @@ it('queries isolated Goal dates and weekly facts without writes, recalculates co
       updatedAt: timestamp
     })
     repo.saveRoutine({
+      arrangementMode: 'weekly' as const,
       id: 'r1',
       goalId: 'g2',
       name: 'R',
