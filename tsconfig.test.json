@@ -3,6 +3,7 @@
   "compilerOptions": {
     "composite": true,
     "noEmit": true,
+    "jsx": "react-jsx",
     "types": ["node", "electron"]
   },
   "include": [
@@ -19,6 +20,7 @@
     "src/infrastructure/**/*.ts",
     "src/renderer/src/env.d.ts",
     "src/renderer/src/app/ui-session.ts",
+    "src/renderer/src/features/today/TodayActionDescription.tsx",
     "src/renderer/src/app/routine-edit-session.ts",
     "src/renderer/src/app/selection-preferences.ts",
     "src/renderer/src/app/navigation.ts",

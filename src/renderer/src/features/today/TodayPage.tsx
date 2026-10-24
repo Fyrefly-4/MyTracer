@@ -35,6 +35,7 @@ import {
 import { RoutineRecordingPanel } from '../routines/RoutinesPage'
 import { AiStartHelpPanel } from './AiStartHelpPanel'
 import { TodayGoalContext } from './TodayGoalContext'
+import { TodayActionDescription } from './TodayActionDescription'
 import { FirstActionRecord } from './FirstActionRecord'
 import './today-workspace.css'
 
@@ -181,9 +182,12 @@ function ActionRecordingPanel(props: {
       }
       return
     }
+    // A restored draft is not a new recording gesture. Let page-position restoration
+    // retain the reading position instead of scrolling/focusing the form on remount.
+    if (context === restoredDraft?.context) return
     revealStart(panelRef.current)
     panelRef.current?.querySelector<HTMLInputElement>('input')?.focus({ preventScroll: true })
-  }, [context])
+  }, [context, restoredDraft?.context])
 
   const loadRecords = async (): Promise<void> => {
     const result = await window.myTracer.records.listForAction({ actionId: props.action.id })
@@ -1703,6 +1707,12 @@ function TodayWorkspace(): ReactNode {
                   </>
                 ) : null}
               </div>
+
+              <TodayActionDescription
+                key={`description-${detail.id}`}
+                actionId={detail.id}
+                description={detail.description}
+              />
 
               {detail.goal ? (
                 <TodayGoalContext
