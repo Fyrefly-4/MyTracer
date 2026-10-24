@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.10.0](https://github.com/Fyrefly-4/MyTracer/compare/v1.9.1...v1.10.0) (2026-10-24)
+
+
+### Features
+
+* 已结束目标可翻开关联的新阶段（[#127](https://github.com/Fyrefly-4/MyTracer/issues/127) C） ([#146](https://github.com/Fyrefly-4/MyTracer/issues/146)) ([eca4d07](https://github.com/Fyrefly-4/MyTracer/commit/eca4d07843e663358c221059b95fc8ae159de489))
+* 继续行动时直接阅读行动说明（[#128](https://github.com/Fyrefly-4/MyTracer/issues/128) A） ([#151](https://github.com/Fyrefly-4/MyTracer/issues/151)) ([a773311](https://github.com/Fyrefly-4/MyTracer/commit/a7733116a70b600a40e0235c10909f718f10a60a))
+* 记录简述与补充笔记分开保存，支持安全 Markdown 阅读（[#150](https://github.com/Fyrefly-4/MyTracer/issues/150)） ([#154](https://github.com/Fyrefly-4/MyTracer/issues/154)) ([1f1c7b3](https://github.com/Fyrefly-4/MyTracer/commit/1f1c7b39443c4a369050a7f968ed3636972aaa55))
+
 ## [1.9.1](https://github.com/Fyrefly-4/MyTracer/compare/v1.9.0...v1.9.1) (2026-10-24)
 
 
