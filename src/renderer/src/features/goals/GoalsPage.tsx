@@ -1,3 +1,4 @@
+import { recordDuration } from '../../app/ui-text'
 import { chooseVisibleSelection } from '../../app/selection-preferences'
 import '../forms-workspace.css'
 import '../object-workspace.css'
@@ -996,7 +997,7 @@ function GoalWorkspace(): ReactNode {
                                     {record.actionTitle}
                                     <small>{recordOutcomeText[record.outcome]}</small>
                                   </td>
-                                  <td>{record.durationMinutes} 分钟</td>
+                                  <td>{recordDuration(record.durationMinutes)}</td>
                                   <td>
                                     <button
                                       type="button"

@@ -54,6 +54,7 @@ export function buildWeekComparison(asOfLocalDate: string, progress: ProgressVie
       ...period,
       totalDurationMinutes: facts.totalDurationMinutes,
       realActionCount: facts.realActionCount,
+      unknownDurationCount: facts.unknownDurationCount,
       hasRecordedFacts: actions.length > 0 || routines.length > 0
     })
   }

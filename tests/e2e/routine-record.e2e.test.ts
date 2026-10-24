@@ -238,7 +238,7 @@ test('completes AC-03 with five distinct states, factual Progress, and stable re
     await expect(uiPanel.getByText('有所行动', { exact: true }).first()).toBeVisible()
 
     await page.getByRole('button', { name: '进展', exact: true }).click()
-    await expect(page.getByLabel('进展汇总')).toContainText('累计行动分钟22')
+    await expect(page.getByLabel('进展汇总')).toContainText('已记录时长合计（分钟）22')
     await expect(page.getByLabel('进展汇总')).toContainText('记录到的行动次数5')
     await expect(page.getByLabel('进展汇总')).toContainText('例行达标次数2')
     await expect(page.getByLabel('进展汇总')).toContainText('计划日达标次数1')
@@ -246,7 +246,7 @@ test('completes AC-03 with five distinct states, factual Progress, and stable re
     await page.getByLabel('进展记录分页').getByRole('button', { name: '下一页' }).click()
     await expect(page.locator('.progress-history-table tbody > tr')).toHaveCount(1)
     await expect(page.getByLabel('进展记录分页')).toContainText('第 2 / 2 页')
-    await expect(page.getByLabel('进展汇总')).toContainText('累计行动分钟22')
+    await expect(page.getByLabel('进展汇总')).toContainText('已记录时长合计（分钟）22')
     await page.getByLabel('进展记录分页').getByRole('button', { name: '上一页' }).click()
 
     const lifecycle = await page.evaluate(
@@ -365,61 +365,85 @@ test('completes AC-03 with five distinct states, factual Progress, and stable re
 })
 
 test('requires an explicit Routine date choice across midnight', async () => {
+  const testInfo = test.info()
   const root = await createTemporaryTestRoot()
   let application: ElectronApplication | undefined
   try {
-    application = await launchApplication(root)
-    const page = await application.firstWindow()
-    const localMidnight = new Date(2026, 7, 11, 0, 0, 0, 0).getTime()
-    await setMainProcessDate(application, new Date(localMidnight - 60_000).toISOString())
-    const context = await page.evaluate(async () => {
-      const routine = await window.myTracer.routines.create({
-        name: '跨午夜 Routine',
-        minimumAction: '一步',
-        weekdays: [1, 2, 3, 4, 5, 6, 7]
+    application = await test.step('launch isolated midnight application', () =>
+      launchApplication(root))
+    const page = await test.step('wait for the first renderer', () => application!.firstWindow())
+    // This isolated scenario previously timed out without identifying the operation.
+    // Keep the 30s budget and retain a synthetic trace, including IPC evaluate calls.
+    await page.context().tracing.start({ snapshots: true, screenshots: false })
+    try {
+      const localMidnight = new Date(2026, 7, 11, 0, 0, 0, 0).getTime()
+      await test.step('set the captured date before midnight', () =>
+        setMainProcessDate(application!, new Date(localMidnight - 60_000).toISOString()))
+      const context = await test.step('create routine and begin recording', () =>
+        page.evaluate(async () => {
+          const routine = await window.myTracer.routines.create({
+            name: '跨午夜 Routine',
+            minimumAction: '一步',
+            weekdays: [1, 2, 3, 4, 5, 6, 7]
+          })
+          if (!routine.ok) throw new Error(routine.error.message)
+          const begun = await window.myTracer.routines.beginRecording({
+            routineId: routine.value.id
+          })
+          if (!begun.ok) throw new Error(begun.error.message)
+          return begun.value
+        }))
+      expect(context.capturedOn).toBe('2026-08-10')
+      await test.step('advance the main clock across midnight', () =>
+        setMainProcessDate(application!, new Date(localMidnight + 60_000).toISOString()))
+      await test.step('require an explicit date choice without saving', async () => {
+        expect(
+          await page.evaluate(
+            (input) =>
+              window.myTracer.routines.record({
+                routineId: input.routineId,
+                recordingContextId: input.recordingContextId,
+                outcome: 'acted'
+              }),
+            context
+          )
+        ).toMatchObject({
+          ok: true,
+          value: {
+            kind: 'date-confirmation-required',
+            capturedOn: '2026-08-10',
+            currentLocalDate: '2026-08-11'
+          }
+        })
       })
-      if (!routine.ok) throw new Error(routine.error.message)
-      const begun = await window.myTracer.routines.beginRecording({ routineId: routine.value.id })
-      if (!begun.ok) throw new Error(begun.error.message)
-      return begun.value
-    })
-    expect(context.capturedOn).toBe('2026-08-10')
-    await setMainProcessDate(application, new Date(localMidnight + 60_000).toISOString())
-    expect(
-      await page.evaluate(
-        (input) =>
-          window.myTracer.routines.record({
-            routineId: input.routineId,
-            recordingContextId: input.recordingContextId,
-            outcome: 'acted'
-          }),
-        context
-      )
-    ).toMatchObject({
-      ok: true,
-      value: {
-        kind: 'date-confirmation-required',
-        capturedOn: '2026-08-10',
-        currentLocalDate: '2026-08-11'
-      }
-    })
-    expect(
-      await page.evaluate(
-        (input) =>
-          window.myTracer.routines.record({
-            routineId: input.routineId,
-            recordingContextId: input.recordingContextId,
-            dateChoice: 'use-current-on',
-            outcome: 'acted'
-          }),
-        context
-      )
-    ).toMatchObject({
-      ok: true,
-      value: { kind: 'saved', record: { occurredOn: '2026-08-11' } }
-    })
+      await test.step('save only after choosing the new date', async () => {
+        expect(
+          await page.evaluate(
+            (input) =>
+              window.myTracer.routines.record({
+                routineId: input.routineId,
+                recordingContextId: input.recordingContextId,
+                dateChoice: 'use-current-on',
+                outcome: 'acted'
+              }),
+            context
+          )
+        ).toMatchObject({
+          ok: true,
+          value: { kind: 'saved', record: { occurredOn: '2026-08-11' } }
+        })
+      })
+    } finally {
+      await test.step('save isolated midnight diagnostics', () =>
+        page.context().tracing.stop({ path: testInfo.outputPath('midnight-trace.zip') }))
+    }
   } finally {
-    await application?.close()
-    await removeTemporaryTestRoot(root)
+    try {
+      await test.step('close isolated midnight application', async () => {
+        await application?.close()
+      })
+    } finally {
+      await removeTemporaryTestRoot(root)
+    }
   }
 })

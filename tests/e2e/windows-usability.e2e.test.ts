@@ -145,7 +145,7 @@ test('supports keyboard Goal creation and optional quick recording at the minimu
     const panel = page.getByLabel('Keyboard Action 行动记录')
     await panel.getByRole('button', { name: '开始记录' }).focus()
     await page.keyboard.press('Enter')
-    await expect(panel.getByLabel('投入时长（分钟，必填）')).toBeFocused()
+    await expect(panel.getByLabel('投入时长（分钟，可选）')).toBeFocused()
     await page.keyboard.type('0')
     await panel.getByLabel('本次结果').selectOption('partial')
     await expect(panel.getByLabel('我理解了（可选）')).toHaveCount(0)

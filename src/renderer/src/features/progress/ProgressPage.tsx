@@ -223,8 +223,14 @@ function ProgressWorkspace(): ReactNode {
       {progress ? (
         <div className="progress-summary" aria-label="进展汇总">
           <article>
-            <span>累计行动分钟</span>
-            <strong>{progress.totalDurationMinutes}</strong>
+            <span>已记录时长合计（分钟）</span>
+            <strong>
+              {progress.unknownDurationCount === progress.realActionCount &&
+              progress.unknownDurationCount > 0
+                ? '时长未记录'
+                : progress.totalDurationMinutes}
+            </strong>
+            <small>{progress.unknownDurationCount} 条行动事实未记时长；合计不含未知时长。</small>
           </article>
           <article>
             <span>记录到的行动次数</span>
@@ -265,7 +271,9 @@ function ProgressWorkspace(): ReactNode {
             </p>
             <div className="week-comparison-scroll">
               <table>
-                <caption>已记录的事实；差值为本周减上周</caption>
+                <caption>
+                  已记录的事实；差值为本周减上周。时长覆盖可能不同，分钟差值不代表实际投入变化。
+                </caption>
                 <thead>
                   <tr>
                     <th scope="col">事实</th>
@@ -280,7 +288,17 @@ function ProgressWorkspace(): ReactNode {
                 </thead>
                 <tbody>
                   <tr>
-                    <th scope="row">记录到的投入分钟</th>
+                    <th scope="row">未记时长的行动事实</th>
+                    <td>
+                      {week.current.unknownDurationCount} / {week.current.realActionCount}
+                    </td>
+                    <td>
+                      {week.previous.unknownDurationCount} / {week.previous.realActionCount}
+                    </td>
+                    <td>—</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">已记录时长（分钟）</th>
                     <td>{week.current.totalDurationMinutes}</td>
                     <td>{week.previous.totalDurationMinutes}</td>
                     <td>{signed(week.difference.totalDurationMinutes)}</td>

@@ -336,7 +336,7 @@ test('keeps all old-version facts and synthetic configuration through an in-plac
       newPage,
       join(root.exports, 'after-upgrade.json')
     )
-    expect(afterExport).toMatchObject({ exportVersion: 2, sourceDataVersion: 3 })
+    expect(afterExport).toMatchObject({ exportVersion: 3, sourceDataVersion: 4 })
     expect(afterExport.data).toEqual(beforeExport.data)
     await closeInstalled(application)
     application = undefined

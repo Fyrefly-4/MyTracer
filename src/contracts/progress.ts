@@ -29,7 +29,7 @@ export interface ProgressRecordFactDto {
   readonly actionTitle: string
   readonly hasRecordedText: boolean
   readonly occurredOn: string
-  readonly durationMinutes: number
+  readonly durationMinutes: number | null
   readonly outcome: 'completed' | 'partial' | 'stopped'
   readonly createdAt: string
   readonly understandings: readonly ProgressChildFactDto[]
@@ -51,6 +51,7 @@ export interface RoutineProgressRecordFactDto {
 
 export interface ProgressViewDto {
   readonly filter: ProgressFilterDto
+  readonly unknownDurationCount: number
   readonly totalDurationMinutes: number
   readonly realActionCount: number
   readonly targetMetCount: number
@@ -90,6 +91,7 @@ export interface GoalActivityViewDto {
 export interface WeekFactDto {
   readonly from: string
   readonly through: string
+  readonly unknownDurationCount: number
   readonly totalDurationMinutes: number
   readonly realActionCount: number
   readonly hasRecordedFacts: boolean

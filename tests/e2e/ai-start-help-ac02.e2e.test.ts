@@ -465,7 +465,7 @@ test('continuous E2E-AC-02 proves isolation, every temporary branch, confirmatio
       dialog.showSaveDialog = async () => ({ canceled: false, filePath: target })
     }, destination)
     const exportResult = await page.evaluate(() => window.myTracer.exports.generate())
-    expect(exportResult).toMatchObject({ ok: true, value: { exportVersion: 2 } })
+    expect(exportResult).toMatchObject({ ok: true, value: { exportVersion: 3 } })
     const exported = JSON.parse(await readFile(destination, 'utf8'))
     expect(exported.data.actions).toEqual(
       expect.arrayContaining([
@@ -511,7 +511,7 @@ test('continuous E2E-AC-02 proves isolation, every temporary branch, confirmatio
     await page.getByRole('button', { name: /__ac02_final_edited_action__.*待行动/ }).click()
     const recordingPanel = page.getByLabel('__ac02_final_edited_action__ 行动记录')
     await recordingPanel.getByRole('button', { name: '开始记录' }).click()
-    await recordingPanel.getByLabel('投入时长（分钟，必填）').fill('2')
+    await recordingPanel.getByLabel('投入时长（分钟，可选）').fill('2')
     await recordingPanel.getByLabel('本次结果').selectOption('partial')
     await recordingPanel.getByRole('button', { name: '保存记录' }).click()
     await expect(recordingPanel).toContainText('记录已保存')

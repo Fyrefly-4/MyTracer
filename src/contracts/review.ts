@@ -65,6 +65,7 @@ export interface ReviewRoutineOutcomeFactsDto {
 export interface ReviewSummaryDto {
   readonly periodStartedOn: string
   readonly periodEndedOn: string
+  readonly unknownDurationCount: number
   readonly totalDurationMinutes: number
   readonly realActionCount: number
   readonly confirmedUnderstandingCount: number

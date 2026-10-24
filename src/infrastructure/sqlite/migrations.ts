@@ -2,8 +2,9 @@ import type Database from 'better-sqlite3'
 import initialSchema from './migrations/001_initial.sql?raw'
 import routineRecordPlannedForDateBasis from './migrations/002_add_routine_record_planned_for_date_basis.sql?raw'
 import reviewResultsV3 from './migrations/003_review_results_v3.sql?raw'
+import unknownActionDuration from './migrations/004_unknown_action_duration.sql?raw'
 
-export const schemaVersion = 3
+export const schemaVersion = 4
 
 interface Migration {
   readonly version: number
@@ -18,7 +19,8 @@ const migrations: readonly Migration[] = [
     name: '002_add_routine_record_planned_for_date_basis',
     sql: routineRecordPlannedForDateBasis
   },
-  { version: 3, name: '003_review_results_v3', sql: reviewResultsV3 }
+  { version: 3, name: '003_review_results_v3', sql: reviewResultsV3 },
+  { version: 4, name: '004_unknown_action_duration', sql: unknownActionDuration }
 ]
 
 function assertReviewResultsV2CanMigrate(database: Database.Database): void {
@@ -108,6 +110,12 @@ export function migrateToCurrentSchema(database: Database.Database): void {
     database.transaction(() => {
       if (migration.version === 3) assertReviewResultsV2CanMigrate(database)
       database.exec(migration.sql)
+      if (
+        migration.version === 4 &&
+        database.prepare('PRAGMA foreign_key_check').all().length > 0
+      ) {
+        throw new Error('Action duration migration failed foreign-key validation.')
+      }
       database
         .prepare(
           `INSERT INTO metadata (key, value) VALUES (?, ?)

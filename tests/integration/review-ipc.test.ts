@@ -42,6 +42,7 @@ const savedReview = {
 const summary: ReviewSummaryDto = {
   ...period,
   totalDurationMinutes: 12,
+  unknownDurationCount: 0,
   realActionCount: 2,
   confirmedUnderstandingCount: 0,
   openConfusionCount: 0,
@@ -123,6 +124,7 @@ describe('Review IPC boundary', () => {
       'periodStartedOn',
       'periodEndedOn',
       'totalDurationMinutes',
+      'unknownDurationCount',
       'realActionCount',
       'confirmedUnderstandingCount',
       'openConfusionCount',

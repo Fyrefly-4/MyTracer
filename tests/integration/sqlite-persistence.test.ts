@@ -381,7 +381,7 @@ describe('SQLite persistence', () => {
       expect(inspected.prepare('PRAGMA foreign_key_check').all()).toEqual([])
       expect(
         inspected.prepare("SELECT value FROM metadata WHERE key = 'schemaVersion'").get()
-      ).toEqual({ value: '3' })
+      ).toEqual({ value: '4' })
       expect(
         inspected
           .prepare(

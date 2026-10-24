@@ -52,7 +52,7 @@ export interface ActionRecordPersistenceRecord {
   readonly id: string
   readonly actionId: string
   readonly occurredOn: string
-  readonly durationMinutes: number
+  readonly durationMinutes: number | null
   readonly outcome: 'completed' | 'partial' | 'stopped'
   readonly nextStep: string | null
   readonly note: string | null
@@ -110,7 +110,7 @@ export interface GoalActionRecordSummaryPersistenceRecord {
   readonly actionId: string
   readonly actionTitle: string
   readonly occurredOn: string
-  readonly durationMinutes: number
+  readonly durationMinutes: number | null
   readonly outcome: ActionRecordPersistenceRecord['outcome']
   readonly nextStep: string | null
   readonly note: string | null
@@ -130,7 +130,7 @@ export interface ProgressQueryRowPersistenceRecord {
   readonly actionTitle: string
   readonly hasRecordedText: boolean
   readonly occurredOn: string
-  readonly durationMinutes: number
+  readonly durationMinutes: number | null
   readonly outcome: ActionRecordPersistenceRecord['outcome']
   readonly recordCreatedAt: string
   readonly understandingId: string | null
@@ -182,7 +182,7 @@ export interface StartHelpActionRecordFactPersistence {
   readonly actionId: string
   readonly actionTitle: string
   readonly occurredOn: string
-  readonly durationMinutes: number
+  readonly durationMinutes: number | null
   readonly outcome: ActionRecordPersistenceRecord['outcome']
   readonly nextStep: string | null
   readonly createdAt: string

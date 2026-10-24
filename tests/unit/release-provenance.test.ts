@@ -29,6 +29,23 @@ function run(expression: string) {
 }
 
 describe('release acceptance binds exact trusted artifacts before publication', () => {
+  test('accepts schema 4/export 3 and rejects mismatched compatibility pairs', () => {
+    expect(
+      run('manifest.dataVersion=4;manifest.exportVersion=3;validatePublication(context);').status
+    ).toBe(0)
+    for (const [dataVersion, exportVersion] of [
+      [4, 2],
+      [3, 3],
+      [5, 3]
+    ]) {
+      expect(
+        run(
+          `manifest.dataVersion=${dataVersion};manifest.exportVersion=${exportVersion};validatePublication(context);`
+        ).status
+      ).not.toBe(0)
+    }
+  })
+
   test('accepts 0.1.5 publication over stable 0.1.4 with matching compatibility and assets', () => {
     const result = run(`
       manifest.version='0.1.5';

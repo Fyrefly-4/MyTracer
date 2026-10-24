@@ -95,7 +95,7 @@ test('aggregate AC-05 to AC-06 keeps pre-recovery and post-recovery records in o
 
     await page.getByRole('button', { name: '复盘', exact: true }).click()
     await expect(page.getByRole('heading', { name: '2026-08-24 至 2026-08-30' })).toBeVisible()
-    await expect(page.getByLabel('周期汇总')).toContainText('投入时间10 分钟')
+    await expect(page.getByLabel('周期汇总')).toContainText('已记录时长合计10 分钟')
     await expect(page.getByLabel('周期汇总')).toContainText('真实行动次数2')
     await expect(page.getByText('恢复前事实')).toBeVisible()
     await expect(page.getByText('恢复后事实')).toBeVisible()

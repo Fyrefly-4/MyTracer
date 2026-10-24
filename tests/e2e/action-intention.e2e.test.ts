@@ -155,7 +155,7 @@ test('completes AC-04 with a generic intention, explicit conversion, and no sile
     await openManagement(reopenedDetail, '行动')
     await reopenedDetail.getByRole('button', { name: '加入今日意向' }).click()
     await reopenedDetail.getByRole('button', { name: '开始记录' }).click()
-    await reopenedDetail.getByLabel('投入时长（分钟，必填）').fill('5')
+    await reopenedDetail.getByLabel('投入时长（分钟，可选）').fill('5')
     await reopenedDetail.getByRole('button', { name: '保存记录' }).click()
     const recordList = reopenedDetail.getByLabel('行动记录列表')
     await expect(recordList.getByRole('button')).toHaveCount(1)

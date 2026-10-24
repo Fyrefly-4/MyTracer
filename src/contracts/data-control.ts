@@ -26,7 +26,7 @@ export interface ActionRecordDataDto {
   readonly id: string
   readonly actionId: string
   readonly occurredOn: string
-  readonly durationMinutes: number
+  readonly durationMinutes: number | null
   readonly outcome: 'completed' | 'partial' | 'stopped'
   readonly nextStep: string | null
   readonly note: string | null
@@ -118,7 +118,7 @@ export interface DeletePreviewDto {
 export interface BackfillActionRecordInputDto {
   readonly actionId: string
   readonly occurredOn: string
-  readonly durationMinutes: number
+  readonly durationMinutes: number | null
   readonly outcome: 'completed' | 'partial' | 'stopped'
   readonly understanding?: string | null
   readonly confusion?: string | null
@@ -129,7 +129,7 @@ export interface BackfillActionRecordInputDto {
 export interface UpdateActionRecordInputDto {
   readonly recordId: string
   readonly occurredOn: string
-  readonly durationMinutes: number
+  readonly durationMinutes: number | null
   readonly outcome: 'completed' | 'partial' | 'stopped'
   readonly nextStep?: string | null
   readonly note?: string | null

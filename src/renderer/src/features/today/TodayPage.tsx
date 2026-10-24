@@ -1,3 +1,4 @@
+import { recordDuration } from '../../app/ui-text'
 import { chooseVisibleSelection } from '../../app/selection-preferences'
 import {
   goalStatusText,
@@ -107,7 +108,7 @@ function ActionRecordingPanel(props: {
   const recordPageCount = Math.max(1, Math.ceil(records.length / 5))
   const visibleRecordPage = Math.min(recordPage, recordPageCount)
   const [recordDetail, setRecordDetail] = useState<ActionRecordDetailDto | null>(null)
-  const [durationMinutes, setDurationMinutes] = useState(restoredDraft?.durationMinutes ?? '0')
+  const [durationMinutes, setDurationMinutes] = useState(restoredDraft?.durationMinutes ?? '')
   const [outcome, setOutcome] = useState<ActionRecordOutcomeDto>(
     restoredDraft?.outcome ?? 'partial'
   )
@@ -216,7 +217,7 @@ function ActionRecordingPanel(props: {
     session.clearActionDraft(props.action.id)
     contextRef.current = null
     setContext(null)
-    setDurationMinutes('0')
+    setDurationMinutes('')
     setOutcome('partial')
     setDeepExpanded(false)
     setUnderstanding('')
@@ -314,8 +315,8 @@ function ActionRecordingPanel(props: {
 
   const save = async (dateChoice?: RecordingDateChoiceDto): Promise<void> => {
     if (!context) return
-    const minutes = Number(durationMinutes)
-    if (!Number.isInteger(minutes) || minutes < 0) {
+    const minutes = durationMinutes === '' ? null : Number(durationMinutes)
+    if (minutes !== null && (!Number.isInteger(minutes) || minutes < 0)) {
       setError('时长必须是非负整数分钟；0 表示不足一分钟但确有行动。')
       return
     }
@@ -383,7 +384,7 @@ function ActionRecordingPanel(props: {
       ? `仍保留为${saved.action.todayCommitment === 'focus' ? '今日重点' : '今日意向'}`
       : '没有自动加入今天'
     setSavedMessage(
-      `记录已保存：${saved.record.durationMinutes} 分钟 · ${recordOutcomeText[saved.record.outcome]}。${actionState}；${nextState}；${todayState}。`
+      `记录已保存：${recordDuration(saved.record.durationMinutes)} · ${recordOutcomeText[saved.record.outcome]}。${actionState}；${nextState}；${todayState}。`
     )
     requestAnimationFrame(() => revealStart(panelRef.current))
     setRecordDetail(saved.record)
@@ -459,16 +460,15 @@ function ActionRecordingPanel(props: {
             <p className="captured-date">记录日期：{context.capturedOn}</p>
             <div className="quick-record-grid">
               <label>
-                投入时长（分钟，必填）
+                投入时长（分钟，可选）
                 <input
-                  required
                   min="0"
                   step="1"
                   type="number"
                   value={durationMinutes}
                   onChange={(event) => setDurationMinutes(event.target.value)}
                 />
-                <small>0 表示不足 1 分钟但确有行动</small>
+                <small>留空表示时长未知；0 表示不足 1 分钟但确有行动</small>
               </label>
               <label>
                 本次结果
@@ -681,11 +681,7 @@ function ActionRecordingPanel(props: {
                       {props.action.title}
                       <small>{recordOutcomeText[record.outcome]}</small>
                     </td>
-                    <td>
-                      {record.durationMinutes === 0
-                        ? '少于 1 分钟'
-                        : `${record.durationMinutes} 分钟`}
-                    </td>
+                    <td>{recordDuration(record.durationMinutes)}</td>
                     <td>
                       <button
                         type="button"
@@ -730,11 +726,7 @@ function ActionRecordingPanel(props: {
           <p>
             {recordDetail.occurredOn} · {recordOutcomeText[recordDetail.outcome]}
           </p>
-          <strong>
-            {recordDetail.durationMinutes === 0
-              ? '少于 1 分钟'
-              : `${recordDetail.durationMinutes} 分钟`}
-          </strong>
+          <strong>{recordDuration(recordDetail.durationMinutes)}</strong>
           {recordDetail.understandings.map((item) => (
             <span key={item.id}>理解：{item.text}</span>
           ))}

@@ -6,7 +6,7 @@ export interface ActionRecord {
   readonly id: string
   readonly actionId: string
   readonly occurredOn: string
-  readonly durationMinutes: number
+  readonly durationMinutes: number | null
   readonly outcome: ActionRecordOutcome
   readonly nextStep: string | null
   readonly note: string | null
@@ -75,13 +75,16 @@ export function createActionRecord(input: {
   readonly id: string
   readonly actionId: string
   readonly occurredOn: string
-  readonly durationMinutes: number
+  readonly durationMinutes: number | null
   readonly outcome: ActionRecordOutcome
   readonly nextStep?: string | null
   readonly note?: string | null
   readonly now: string
 }): ActionRecord {
-  if (!Number.isInteger(input.durationMinutes) || input.durationMinutes < 0) {
+  if (
+    input.durationMinutes !== null &&
+    (!Number.isInteger(input.durationMinutes) || input.durationMinutes < 0)
+  ) {
     throw new ActionRecordDomainError(
       'validation',
       'Action duration must be a non-negative integer number of minutes.'
@@ -115,7 +118,7 @@ export function updateActionRecord(
   current: ActionRecord,
   changes: {
     readonly occurredOn: string
-    readonly durationMinutes: number
+    readonly durationMinutes: number | null
     readonly outcome: ActionRecordOutcome
     readonly nextStep?: string | null
     readonly note?: string | null

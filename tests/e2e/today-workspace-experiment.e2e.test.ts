@@ -41,7 +41,7 @@ test('keeps Today feedback out of flow and record controls visible while preserv
 
     const panel = page.getByLabel('阅读一段，留下一个自己的理解 行动记录', { exact: true })
     await panel.getByRole('button', { name: '开始记录', exact: true }).click()
-    await panel.getByLabel('投入时长（分钟，必填）').fill('12')
+    await panel.getByLabel('投入时长（分钟，可选）').fill('12')
     await panel.getByRole('button', { name: /添加理解/ }).click()
     await panel.getByLabel('我理解了（可选）').fill('把理解写成自己的话，比只标记完成更有意义。')
     await panel.getByLabel('备注（可选）').fill('切换页面后继续填写，不应丢失。')
@@ -58,7 +58,7 @@ test('keeps Today feedback out of flow and record controls visible while preserv
     await page.getByRole('navigation').getByRole('button', { name: '目标', exact: true }).click()
     await page.getByRole('navigation').getByRole('button', { name: '今天', exact: true }).click()
     await expect(panel.getByText('未保存的记录草稿已恢复', { exact: false })).toBeVisible()
-    await expect(panel.getByLabel('投入时长（分钟，必填）')).toHaveValue('12')
+    await expect(panel.getByLabel('投入时长（分钟，可选）')).toHaveValue('12')
     await expect(panel.getByLabel('我理解了（可选）')).toHaveValue(
       '把理解写成自己的话，比只标记完成更有意义。'
     )
@@ -148,13 +148,13 @@ test('Today notebook scrolls independently, collapses without losing drafts, and
     await expect(page.getByLabel('记录详情', { exact: true })).toContainText('第 11 天的完整记录')
     const panel = page.getByLabel('独立滚动行动 1 行动记录', { exact: true })
     await panel.getByRole('button', { name: '开始记录', exact: true }).click()
-    await panel.getByLabel('投入时长（分钟，必填）').fill('17')
+    await panel.getByLabel('投入时长（分钟，可选）').fill('17')
     await page.getByRole('button', { name: '收起今天列表' }).click()
     await expect(master).toBeHidden()
-    await expect(panel.getByLabel('投入时长（分钟，必填）')).toHaveValue('17')
+    await expect(panel.getByLabel('投入时长（分钟，可选）')).toHaveValue('17')
     await page.getByRole('button', { name: '展开今天列表' }).click()
     await expect(master).toBeVisible()
-    await expect(panel.getByLabel('投入时长（分钟，必填）')).toHaveValue('17')
+    await expect(panel.getByLabel('投入时长（分钟，可选）')).toHaveValue('17')
 
     const create = page.getByRole('button', { name: '新建行动', exact: true })
     await create.click()
@@ -173,7 +173,7 @@ test('Today notebook scrolls independently, collapses without losing drafts, and
       actions.ok &&
         actions.value.availableActions.some((action) => action.title === '尚未提交的新行动草稿')
     ).toBe(false)
-    await expect(panel.getByLabel('投入时长（分钟，必填）')).toHaveValue('17')
+    await expect(panel.getByLabel('投入时长（分钟，可选）')).toHaveValue('17')
   } finally {
     await application?.close().catch(() => undefined)
     await removeTemporaryTestRoot(root)

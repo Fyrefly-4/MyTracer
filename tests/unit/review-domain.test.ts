@@ -131,7 +131,13 @@ describe('Review period and pure summary builder', () => {
       expect.objectContaining({ id: 'c-1', actionRecordId: 'action-record-1' })
     ])
     expect(Object.values(summary.routineOutcomeFacts).flat()).toHaveLength(4)
-    expect(JSON.stringify(summary)).not.toMatch(/unknown.*record|failure|score|mastery|streak/i)
+    expect(summary.unknownDurationCount).toBe(1)
+    expect(
+      summary.routineRecords.every((record) =>
+        ['target_met', 'acted', 'intentional_rest', 'not_done'].includes(record.outcome)
+      )
+    ).toBe(true)
+    expect(JSON.stringify(summary)).not.toMatch(/failure|score|mastery|streak/i)
   })
 
   it('rejects facts from any different filter instead of creating a second truth', () => {

@@ -90,7 +90,8 @@ export async function createInstalledUpdateFacts(page: Page): Promise<string> {
 
 export async function exportInstalledFacts(
   application: ElectronApplication,
-  destination: string
+  destination: string,
+  exportVersion: 2 | 3
 ): Promise<Record<string, unknown>> {
   await application.evaluate(({ dialog }, path) => {
     dialog.showSaveDialog = async () => ({ canceled: false, filePath: path })
@@ -98,6 +99,11 @@ export async function exportInstalledFacts(
   const result = await (
     await application.firstWindow()
   ).evaluate(() => window.myTracer.exports.generate())
-  expect(result).toMatchObject({ ok: true, value: { kind: 'exported', exportVersion: 2 } })
-  return JSON.parse(await readFile(destination, 'utf8')) as Record<string, unknown>
+  expect(result).toMatchObject({ ok: true, value: { kind: 'exported', exportVersion } })
+  const document = JSON.parse(await readFile(destination, 'utf8')) as Record<string, unknown>
+  expect(document).toMatchObject({
+    exportVersion,
+    sourceDataVersion: exportVersion === 2 ? 3 : 4
+  })
+  return document
 }

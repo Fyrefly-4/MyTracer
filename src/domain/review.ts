@@ -105,6 +105,7 @@ export interface ReviewRoutineOutcomeFacts {
 export interface ReviewSummary {
   readonly periodStartedOn: LocalDate
   readonly periodEndedOn: LocalDate
+  readonly unknownDurationCount: number
   readonly totalDurationMinutes: number
   readonly realActionCount: number
   readonly confirmedUnderstandingCount: number
@@ -176,6 +177,7 @@ export function buildReviewSummary(period: LocalDateWeek, progress: ProgressView
     periodStartedOn: period.monday,
     periodEndedOn: period.sunday,
     totalDurationMinutes: progress.totalDurationMinutes,
+    unknownDurationCount: progress.unknownDurationCount,
     realActionCount: progress.realActionCount,
     confirmedUnderstandingCount: understandings.length,
     openConfusionCount: openConfusions.length,

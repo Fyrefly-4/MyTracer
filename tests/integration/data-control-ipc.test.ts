@@ -71,6 +71,29 @@ function setup() {
 }
 
 describe('data-control IPC boundary', () => {
+  it.each([null, 0, 12])(
+    'preserves explicit duration %s in backfill and edit commands',
+    (durationMinutes) => {
+      const { invokeAs } = setup()
+      for (const [channel, identity] of [
+        [DATA_CONTROL_CHANNELS.backfillActionRecord, { actionId }],
+        [DATA_CONTROL_CHANNELS.updateActionRecord, { recordId: actionId }]
+      ] as const) {
+        expect(
+          invokeAs(7, channel, {
+            ...identity,
+            occurredOn: '2026-10-24',
+            durationMinutes,
+            outcome: 'partial'
+          })
+        ).toMatchObject({ ok: true, value: { durationMinutes } })
+        expect(
+          invokeAs(7, channel, { ...identity, occurredOn: '2026-10-24', outcome: 'partial' })
+        ).toMatchObject({ ok: false, error: { code: 'validation' } })
+      }
+    }
+  )
+
   it('registers only fixed channels and exposes counts without the trusted fingerprint', () => {
     const { handlers, invokeAs } = setup()
     expect([...handlers.keys()].sort()).toEqual(Object.values(DATA_CONTROL_CHANNELS).sort())

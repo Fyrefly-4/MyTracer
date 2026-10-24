@@ -61,7 +61,7 @@ export interface ActionRecordSummaryView {
   readonly id: string
   readonly actionId: string
   readonly occurredOn: string
-  readonly durationMinutes: number
+  readonly durationMinutes: number | null
   readonly outcome: ActionRecordPersistenceRecord['outcome']
   readonly nextStep: string | null
   readonly note: string | null
@@ -221,7 +221,7 @@ export class ActionRecordService {
     readonly actionId: string
     readonly capturedOn: string
     readonly dateChoice?: RecordingDateChoice
-    readonly durationMinutes: number
+    readonly durationMinutes: number | null
     readonly outcome: ActionRecordOutcome
     readonly understanding?: string | null
     readonly confusion?: string | null

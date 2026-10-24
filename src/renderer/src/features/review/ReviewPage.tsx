@@ -1,3 +1,4 @@
+import { recordDuration } from '../../app/ui-text'
 import './review-reference.css'
 import {
   appendCitation,
@@ -508,8 +509,14 @@ export function ReviewPage(): ReactNode {
           </nav>
           <div className="review-summary" aria-label="周期汇总">
             <article>
-              <span>投入时间</span>
-              <strong>{summary.totalDurationMinutes} 分钟</strong>
+              <span>已记录时长合计</span>
+              <strong>
+                {summary.unknownDurationCount === summary.realActionCount &&
+                summary.unknownDurationCount > 0
+                  ? '时长未记录'
+                  : `${summary.totalDurationMinutes} 分钟`}
+              </strong>
+              <small>{summary.unknownDurationCount} 条行动事实未记时长；合计不含未知时长。</small>
             </article>
             <article>
               <span>真实行动次数</span>
@@ -756,7 +763,7 @@ export function ReviewPage(): ReactNode {
                             <div>
                               <h3>{record.actionTitle}</h3>
                               <p>
-                                {record.occurredOn} · {record.durationMinutes} 分钟
+                                {record.occurredOn} · {recordDuration(record.durationMinutes)}
                               </p>
                             </div>
                           </div>

@@ -29,6 +29,7 @@ function progress(overrides: Partial<ProgressView> = {}): ProgressView {
   return {
     filter: { goalId: goal.id, from: null, through: null },
     totalDurationMinutes: 0,
+    unknownDurationCount: 0,
     realActionCount: 0,
     targetMetCount: 0,
     plannedTargetMetCount: 0,

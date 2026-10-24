@@ -100,7 +100,7 @@ function ActionRecordEditor(props: {
   const [saving, setSaving] = useState(false)
   const { editButtonRef, firstFieldRef } = useEditorFocus<HTMLInputElement>(editing, saving)
   const [occurredOn, setOccurredOn] = useState(props.record.occurredOn)
-  const [duration, setDuration] = useState(String(props.record.durationMinutes))
+  const [duration, setDuration] = useState(String(props.record.durationMinutes ?? ''))
   const [outcome, setOutcome] = useState(props.record.outcome)
   const [nextStep, setNextStep] = useState(props.record.nextStep ?? '')
   const [note, setNote] = useState(props.record.note ?? '')
@@ -108,14 +108,14 @@ function ActionRecordEditor(props: {
   useDataDraft(
     `action-record-edit-${props.record.id}`,
     occurredOn !== props.record.occurredOn ||
-      duration !== String(props.record.durationMinutes) ||
+      duration !== String(props.record.durationMinutes ?? '') ||
       outcome !== props.record.outcome ||
       nextStep !== (props.record.nextStep ?? '') ||
       note !== (props.record.note ?? '')
   )
   const reset = (): void => {
     setOccurredOn(props.record.occurredOn)
-    setDuration(String(props.record.durationMinutes))
+    setDuration(String(props.record.durationMinutes ?? ''))
     setOutcome(props.record.outcome)
     setNextStep(props.record.nextStep ?? '')
     setNote(props.record.note ?? '')
@@ -128,7 +128,7 @@ function ActionRecordEditor(props: {
       const result = await window.myTracer.dataControl.updateActionRecord({
         recordId: props.record.id,
         occurredOn,
-        durationMinutes: Number(duration),
+        durationMinutes: duration === '' ? null : Number(duration),
         outcome,
         nextStep: nextStep || null,
         note: note || null
@@ -136,7 +136,7 @@ function ActionRecordEditor(props: {
       if (!result.ok) return setError(dataControlErrorText[result.error.code])
       setError(null)
       setOccurredOn(result.value.occurredOn)
-      setDuration(String(result.value.durationMinutes))
+      setDuration(String(result.value.durationMinutes ?? ''))
       setOutcome(result.value.outcome)
       setNextStep(result.value.nextStep ?? '')
       setNote(result.value.note ?? '')
@@ -207,7 +207,10 @@ function ActionRecordEditor(props: {
                 onChange={(event) => setOccurredOn(event.target.value)}
               />
             </Field>
-            <Field label="投入时长（分钟，必填）" hint="0 表示不足 1 分钟但确有行动。">
+            <Field
+              label="投入时长（分钟，可选）"
+              hint="留空表示时长未知；0 表示不足 1 分钟但确有行动。"
+            >
               <input
                 aria-label="行动分钟"
                 type="number"
@@ -253,7 +256,7 @@ function ActionRecordEditor(props: {
             <button
               className="primary-button"
               type="button"
-              disabled={!occurredOn || duration === ''}
+              disabled={!occurredOn}
               onClick={() => void submit()}
             >
               {saving ? '正在保存…' : '保存修改'}
@@ -888,7 +891,7 @@ function DataControlWorkspace(): ReactNode {
   const [actionId, setActionId] = useState('')
   const [routineId, setRoutineId] = useState('')
   const [actionDate, setActionDate] = useState('')
-  const [actionDuration, setActionDuration] = useState('0')
+  const [actionDuration, setActionDuration] = useState('')
   const [actionOutcome, setActionOutcome] = useState<ActionRecordDataDto['outcome']>('partial')
   const [actionUnderstanding, setActionUnderstanding] = useState('')
   const [actionConfusion, setActionConfusion] = useState('')
@@ -907,7 +910,7 @@ function DataControlWorkspace(): ReactNode {
     actionConfusion ||
     actionNextStep ||
     actionNote ||
-    actionDuration !== '0' ||
+    actionDuration !== '' ||
     actionOutcome !== 'partial'
   )
   const routineBackfillDirty = Boolean(
@@ -1231,7 +1234,7 @@ function DataControlWorkspace(): ReactNode {
       const result = await window.myTracer.dataControl.backfillActionRecord({
         actionId,
         occurredOn: actionDate,
-        durationMinutes: Number(actionDuration),
+        durationMinutes: actionDuration === '' ? null : Number(actionDuration),
         outcome: actionOutcome,
         understanding: actionUnderstanding || null,
         confusion: actionConfusion || null,
@@ -1244,7 +1247,7 @@ function DataControlWorkspace(): ReactNode {
         `已补记：${data?.actions.find((item) => item.id === actionId)?.title ?? '记录'} · ${actionDate}`
       )
       setActionDate('')
-      setActionDuration('0')
+      setActionDuration('')
       setActionOutcome('partial')
       setActionUnderstanding('')
       setActionConfusion('')
@@ -1424,7 +1427,7 @@ function DataControlWorkspace(): ReactNode {
                 onClick={() => {
                   if (backfillKind === 'action') {
                     setActionDate('')
-                    setActionDuration('0')
+                    setActionDuration('')
                     setActionOutcome('partial')
                     setActionUnderstanding('')
                     setActionConfusion('')
@@ -1487,7 +1490,10 @@ function DataControlWorkspace(): ReactNode {
                     onChange={(event) => setActionDate(event.target.value)}
                   />
                 </Field>
-                <Field label="投入时长（分钟，必填）" hint="0 表示不足 1 分钟但确有行动。">
+                <Field
+                  label="投入时长（分钟，可选）"
+                  hint="留空表示时长未知；0 表示不足 1 分钟但确有行动。"
+                >
                   <input
                     aria-label="行动补记分钟"
                     type="number"
@@ -1548,7 +1554,7 @@ function DataControlWorkspace(): ReactNode {
                 <button
                   className="primary-button"
                   type="button"
-                  disabled={savingBackfill || !actionId || !actionDate || actionDuration === ''}
+                  disabled={savingBackfill || !actionId || !actionDate}
                   onClick={() => void backfillAction()}
                 >
                   补记行动记录

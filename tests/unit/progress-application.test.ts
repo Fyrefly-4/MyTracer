@@ -156,6 +156,7 @@ describe('Progress application projection', () => {
     expect(Object.keys(result)).toEqual([
       'filter',
       'totalDurationMinutes',
+      'unknownDurationCount',
       'realActionCount',
       'targetMetCount',
       'plannedTargetMetCount',
