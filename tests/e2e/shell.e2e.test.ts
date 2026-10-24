@@ -209,7 +209,7 @@ test('runs the Electron shell with an isolated userData root', async () => {
           expect(
             database.prepare("SELECT value FROM metadata WHERE key = 'schemaVersion'").get()
           ).toEqual({
-            value: '5'
+            value: '6'
           })
         } finally {
           database.close()
