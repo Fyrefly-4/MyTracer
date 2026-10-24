@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.8.0](https://github.com/Fyrefly-4/MyTracer/compare/v1.7.0...v1.8.0) (2026-10-24)
+
+
+### Features
+
+* atomically save a new action and its first record ([#125](https://github.com/Fyrefly-4/MyTracer/issues/125)) ([26b1c45](https://github.com/Fyrefly-4/MyTracer/commit/26b1c45c37909d0dc09ca5995795035e34930a6c))
+* support explicitly unknown action duration end to end ([49dd51f](https://github.com/Fyrefly-4/MyTracer/commit/49dd51fe9a5db35f50862299e45434064ed4278c))
+* 支持行动未知时长并贯通统计与导出 ([#129](https://github.com/Fyrefly-4/MyTracer/issues/129)) ([e06b85c](https://github.com/Fyrefly-4/MyTracer/commit/e06b85c497bff85f22de13a32d016cd39c809006))
+* 新行动无论完成与否，都能直接记下第一笔 ([#125](https://github.com/Fyrefly-4/MyTracer/issues/125)) ([a3ff5f4](https://github.com/Fyrefly-4/MyTracer/commit/a3ff5f454cfef380611ad53b273a96920400f205))
+
+
+### Bug Fixes
+
+* label first-record selectors and align Windows IPC checks ([7895555](https://github.com/Fyrefly-4/MyTracer/commit/78955552ee9fa4d05b44c27de4abd8235957d1c8))
+* recover rejected first-record drafts and ignore stale begins ([d4969a1](https://github.com/Fyrefly-4/MyTracer/commit/d4969a157c263aa95afaee7c0a747adc814a10cb))
+
 ## [1.7.0](https://github.com/Fyrefly-4/MyTracer/compare/v1.6.0...v1.7.0) (2026-10-23)
 
 
