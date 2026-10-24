@@ -5,6 +5,7 @@ export interface Goal {
   readonly name: string
   readonly description: string | null
   readonly status: GoalStatus
+  readonly predecessorGoalId: string | null
   readonly currentNextActionId: string | null
   readonly createdAt: string
   readonly updatedAt: string
@@ -63,6 +64,7 @@ export function createGoal(input: {
     name: requiredText(input.name, 'Goal name'),
     description: optionalText(input.description),
     status: 'active',
+    predecessorGoalId: null,
     currentNextActionId: null,
     createdAt: input.now,
     updatedAt: input.now

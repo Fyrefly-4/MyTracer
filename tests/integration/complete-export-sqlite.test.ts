@@ -30,6 +30,7 @@ function populate(connection: SqliteConnection): void {
       title: 'Goal',
       description: null,
       status: 'paused',
+      predecessorGoalId: null,
       currentNextActionId: null,
       createdAt: instant,
       updatedAt: instant
@@ -124,7 +125,7 @@ describe('complete export SQLite snapshot', () => {
     const connection = await openConnection()
     populate(connection)
     const snapshot = asCompleteExportRepository(connection.repository).readCompleteCoreSnapshot()
-    expect(snapshot.sourceDataVersion).toBe(5)
+    expect(snapshot.sourceDataVersion).toBe(6)
     expect(Object.values(snapshot.coreSnapshot).map((rows) => rows.length)).toEqual([
       1, 1, 1, 1, 1, 1, 1, 1, 1, 1
     ])

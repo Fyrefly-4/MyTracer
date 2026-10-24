@@ -102,7 +102,7 @@ export async function createInstalledUpdateFacts(page: Page, legacy = false): Pr
 export async function exportInstalledFacts(
   application: ElectronApplication,
   destination: string,
-  exportVersion: 2 | 3 | 4
+  exportVersion: 2 | 3 | 4 | 5
 ): Promise<Record<string, unknown>> {
   await application.evaluate(({ dialog }, path) => {
     dialog.showSaveDialog = async () => ({ canceled: false, filePath: path })

@@ -1,5 +1,6 @@
 export const GOAL_CHANNELS = Object.freeze({
   create: 'goals:create',
+  createStage: 'goals:create-stage',
   updateDetails: 'goals:update-details',
   pause: 'goals:pause',
   resume: 'goals:resume',
@@ -44,7 +45,14 @@ export interface GoalRecordSummaryDto {
   readonly createdAt: string
 }
 
+export interface GoalStageReferenceDto {
+  readonly id: string
+  readonly name: string
+}
+
 export interface GoalDetailDto extends GoalSummaryDto {
+  readonly previousStage: GoalStageReferenceDto | null
+  readonly subsequentStages: readonly GoalStageReferenceDto[]
   readonly currentNextAction: GoalActionSummaryDto | null
   readonly actions: readonly GoalActionSummaryDto[]
   readonly records: readonly GoalRecordSummaryDto[]
@@ -57,6 +65,13 @@ export interface CreateGoalInputDto {
     readonly title: string
     readonly description?: string | null
   } | null
+}
+
+export interface CreateGoalStageInputDto {
+  readonly goalId: string
+  readonly predecessorGoalId: string
+  readonly name: string
+  readonly description?: string | null
 }
 
 export interface UpdateGoalDetailsInputDto {
@@ -95,6 +110,7 @@ export type GoalResult<T> =
     }
 
 export interface GoalApi {
+  readonly createStage: (input: CreateGoalStageInputDto) => Promise<GoalResult<GoalDetailDto>>
   readonly create: (input: CreateGoalInputDto) => Promise<GoalResult<GoalDetailDto>>
   readonly updateDetails: (input: UpdateGoalDetailsInputDto) => Promise<GoalResult<GoalSummaryDto>>
   readonly pause: (input: GoalIdInputDto) => Promise<GoalResult<GoalSummaryDto>>

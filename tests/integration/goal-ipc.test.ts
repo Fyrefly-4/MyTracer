@@ -35,6 +35,7 @@ function setup() {
     handle: vi.fn((channel: string, handler: Handler) => handlers.set(channel, handler))
   }
   const service = {
+    createStage: vi.fn(() => ({ id: 'stage' })),
     createGoal: vi.fn(() => ({ id: 'goal-1' })),
     updateGoalDetails: vi.fn(() => ({ id: 'goal-1' })),
     pauseGoal: vi.fn(() => ({ id: 'goal-1', status: 'paused' })),
@@ -84,6 +85,34 @@ describe('Goal IPC boundary', () => {
     expect(invoke(GOAL_CHANNELS.list, { status: 'paused' })).toEqual({ ok: true, value: [] })
     expect(service.listGoals).toHaveBeenCalledWith('paused')
     expect(assertSender).toHaveBeenCalledTimes(3)
+  })
+
+  it('validates the stage command separately and preserves sender checks', () => {
+    const { invoke, service, assertSender } = setup()
+    const input = {
+      goalId,
+      predecessorGoalId: '22222222-2222-4222-8222-222222222222',
+      name: '新阶段',
+      description: null
+    }
+    expect(invoke(GOAL_CHANNELS.createStage, input)).toEqual({ ok: true, value: { id: 'stage' } })
+    expect(service.createStage).toHaveBeenCalledWith(input)
+    for (const bad of [
+      { ...input, initialNextAction: { title: '旧行动' } },
+      { ...input, predecessorGoalId: '' },
+      { ...input, goalId: 1 },
+      { ...input, name: ' ' }
+    ])
+      expect(invoke(GOAL_CHANNELS.createStage, bad)).toMatchObject({
+        ok: false,
+        error: { code: 'validation' }
+      })
+    expect(service.createStage).toHaveBeenCalledTimes(1)
+    expect(assertSender).toHaveBeenCalledTimes(5)
+    expect(invoke(GOAL_CHANNELS.create, input)).toMatchObject({
+      ok: false,
+      error: { code: 'validation' }
+    })
   })
 
   it('rejects missing, blank, wrong-type, invalid-enum, and unknown fields without calling Application', () => {

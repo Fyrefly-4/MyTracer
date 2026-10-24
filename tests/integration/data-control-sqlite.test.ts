@@ -32,6 +32,7 @@ function populate(connection: SqliteConnection): void {
       title: 'Goal',
       description: null,
       status: 'active',
+      predecessorGoalId: null,
       currentNextActionId: null,
       createdAt: firstInstant,
       updatedAt: firstInstant
@@ -50,6 +51,7 @@ function populate(connection: SqliteConnection): void {
       title: 'Goal',
       description: null,
       status: 'active',
+      predecessorGoalId: null,
       currentNextActionId: 'action-1',
       createdAt: firstInstant,
       updatedAt: firstInstant
@@ -166,6 +168,7 @@ describe('data control SQLite integration', () => {
       routineRecords: [],
       reviewResults: [],
       detachedRoutines: ['routine-1|goal-1'],
+      detachedGoalStages: [],
       detachedReviewResults: ['review-1|goal-1'],
       clearedCurrentNext: []
     })

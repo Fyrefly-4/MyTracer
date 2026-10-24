@@ -4,6 +4,7 @@ import {
   GOAL_CHANNELS,
   type CreateAndSetGoalCurrentNextActionInputDto,
   type CreateGoalInputDto,
+  type CreateGoalStageInputDto,
   type GoalErrorCode,
   type GoalIdInputDto,
   type GoalResult,
@@ -115,6 +116,21 @@ function parseCreate(args: readonly unknown[]): CreateGoalInputDto {
   }
 }
 
+function parseCreateStage(args: readonly unknown[]): CreateGoalStageInputDto {
+  const record = objectWithKeys(oneArgument(args), [
+    'goalId',
+    'predecessorGoalId',
+    'name',
+    'description'
+  ])
+  return {
+    goalId: requiredId(record.goalId),
+    predecessorGoalId: requiredId(record.predecessorGoalId),
+    name: requiredString(record.name),
+    description: optionalString(record.description)
+  }
+}
+
 function parseUpdate(args: readonly unknown[]): UpdateGoalDetailsInputDto {
   const record = objectWithKeys(oneArgument(args), ['goalId', 'name', 'description'])
   return {
@@ -176,6 +192,9 @@ export function registerGoalIpc(options: RegisterGoalIpcOptions): void {
     })
   }
 
+  register(GOAL_CHANNELS.createStage, parseCreateStage, (input: CreateGoalStageInputDto) =>
+    options.service.createStage(input)
+  )
   register(GOAL_CHANNELS.create, parseCreate, (input: CreateGoalInputDto) =>
     options.service.createGoal(input)
   )

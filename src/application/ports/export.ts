@@ -2,7 +2,7 @@ import type { CorePersistenceSnapshot } from './persistence'
 
 export interface CompleteExportDocumentPort {
   readonly format: 'mytracer-core-export'
-  readonly exportVersion: 1 | 2 | 3 | 4
+  readonly exportVersion: 1 | 2 | 3 | 4 | 5
   readonly sourceDataVersion: number
   readonly appVersion?: string
   readonly exportedAt: string

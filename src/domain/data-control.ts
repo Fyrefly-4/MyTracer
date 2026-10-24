@@ -17,6 +17,7 @@ export interface DeleteImpact {
   readonly understandings: readonly string[]
   readonly confusions: readonly string[]
   readonly reviewResults: readonly string[]
+  readonly detachedGoalStages: readonly string[]
   readonly detachedRoutines: readonly string[]
   readonly detachedReviewResults: readonly string[]
   readonly clearedCurrentNext: readonly string[]
@@ -45,6 +46,7 @@ const impactKeys = [
   'understandings',
   'confusions',
   'reviewResults',
+  'detachedGoalStages',
   'detachedRoutines',
   'detachedReviewResults',
   'clearedCurrentNext'

@@ -17,7 +17,7 @@ export type CompleteExportResult =
         readonly kind: 'exported'
         readonly fileName: string
         readonly byteLength: number
-        readonly exportVersion: 4
+        readonly exportVersion: 5
         readonly exportedAt: string
       }
     }

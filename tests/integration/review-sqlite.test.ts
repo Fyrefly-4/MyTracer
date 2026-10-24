@@ -56,6 +56,7 @@ function seed(connection: SqliteConnection): void {
     title: 'Review facts',
     description: null,
     status: 'active',
+    predecessorGoalId: null,
     currentNextActionId: null,
     createdAt: at(10),
     updatedAt: at(10)

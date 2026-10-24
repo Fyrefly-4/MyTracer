@@ -47,8 +47,8 @@ export class SqliteRepository
   saveGoal(record: GoalPersistenceRecord): void {
     this.database
       .prepare(
-        `INSERT INTO goals (id, title, description, status, current_next_action_id, created_at, updated_at)
-         VALUES (@id, @title, @description, @status, @currentNextActionId, @createdAt, @updatedAt)
+        `INSERT INTO goals (id, title, description, status, current_next_action_id, created_at, updated_at, predecessor_goal_id)
+         VALUES (@id, @title, @description, @status, @currentNextActionId, @createdAt, @updatedAt, @predecessorGoalId)
          ON CONFLICT(id) DO UPDATE SET title = excluded.title, description = excluded.description,
            status = excluded.status, current_next_action_id = excluded.current_next_action_id,
            updated_at = excluded.updated_at`
@@ -459,7 +459,7 @@ export class SqliteRepository
              actions.updated_at AS action_updated_at,
              goals.id AS goal_id, goals.title AS goal_title,
              goals.description AS goal_description, goals.status AS goal_status,
-             goals.current_next_action_id, goals.created_at AS goal_created_at,
+             goals.current_next_action_id, goals.predecessor_goal_id, goals.created_at AS goal_created_at,
              goals.updated_at AS goal_updated_at,
              selections.selected_for, selections.kind AS selection_kind,
              selections.selected_by, selections.created_at AS selection_created_at
@@ -482,6 +482,7 @@ export class SqliteRepository
       }
 
       const goal: GoalPersistenceRecord = Object.freeze({
+        predecessorGoalId: asNullableString(contextRow, 'predecessor_goal_id'),
         id: asString(contextRow, 'goal_id'),
         title: asString(contextRow, 'goal_title'),
         description: asNullableString(contextRow, 'goal_description'),
@@ -896,6 +897,16 @@ export class SqliteRepository
       understandings,
       confusions,
       reviewResults: [],
+      detachedGoalStages:
+        target.type === 'goal'
+          ? (
+              this.database
+                .prepare(
+                  'SELECT id, predecessor_goal_id FROM goals WHERE predecessor_goal_id IS NOT NULL AND (id = ? OR predecessor_goal_id = ?)'
+                )
+                .all(target.id, target.id) as Row[]
+            ).map((row) => `${row.id}|${row.predecessor_goal_id}`)
+          : [],
       detachedRoutines,
       detachedReviewResults,
       clearedCurrentNext
@@ -1065,6 +1076,7 @@ export class SqliteRepository
       title: asString(row, 'title'),
       description: asNullableString(row, 'description'),
       status: asString(row, 'status') as GoalPersistenceRecord['status'],
+      predecessorGoalId: asNullableString(row, 'predecessor_goal_id'),
       currentNextActionId: asNullableString(row, 'current_next_action_id'),
       createdAt: asString(row, 'created_at'),
       updatedAt: asString(row, 'updated_at')

@@ -6,7 +6,9 @@ import unknownActionDuration from './migrations/004_unknown_action_duration.sql?
 
 import routineArrangement from './migrations/005_routine_arrangement.sql?raw'
 
-export const schemaVersion = 5
+import goalStages from './migrations/006_goal_stages.sql?raw'
+
+export const schemaVersion = 6
 
 interface Migration {
   readonly version: number
@@ -23,7 +25,8 @@ const migrations: readonly Migration[] = [
   },
   { version: 3, name: '003_review_results_v3', sql: reviewResultsV3 },
   { version: 4, name: '004_unknown_action_duration', sql: unknownActionDuration },
-  { version: 5, name: '005_routine_arrangement', sql: routineArrangement }
+  { version: 5, name: '005_routine_arrangement', sql: routineArrangement },
+  { version: 6, name: '006_goal_stages', sql: goalStages }
 ]
 
 function assertReviewResultsV2CanMigrate(database: Database.Database): void {
@@ -123,10 +126,10 @@ export function migrateToCurrentSchema(database: Database.Database): void {
         throw new Error('Routine arrangement migration stopped: legacy weekdays are missing.')
       database.exec(migration.sql)
       if (
-        migration.version === 4 &&
+        (migration.version === 4 || migration.version === 6) &&
         database.prepare('PRAGMA foreign_key_check').all().length > 0
       ) {
-        throw new Error('Action duration migration failed foreign-key validation.')
+        throw new Error(`SQLite migration ${migration.name} failed foreign-key validation.`)
       }
       database
         .prepare(

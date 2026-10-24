@@ -16,6 +16,7 @@ const goal: GoalPersistenceRecord = {
   title: ' Goal name\r\n ',
   description: ' Goal description ',
   status: 'active',
+  predecessorGoalId: '__private_previous_stage__',
   currentNextActionId: 'current-next-id',
   createdAt: '2026-08-01T00:00:00.000Z',
   updatedAt: 'goal-version'
@@ -112,6 +113,8 @@ describe('AiContextSelector', () => {
   it('selects the allowlisted DTO, sorts deterministically, caps at five, and keeps IDs in the manifest only', () => {
     const result = new AiContextSelector({ totalTextCharacters: 8_000 }).select(input())
 
+    expect(JSON.stringify(result.requestDto)).not.toContain('__private_previous_stage__')
+    expect(result.requestDto.goal).not.toHaveProperty('predecessorGoalId')
     expect(result.requestDto).toMatchObject({
       requestId: 'request-id',
       locale: 'zh-CN',

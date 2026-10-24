@@ -27,6 +27,7 @@ const counts = {
   confusions: 1,
   reviewResults: 0,
   detachedRoutines: 0,
+  detachedGoalStages: 0,
   detachedReviewResults: 0,
   clearedCurrentNext: 1
 }

@@ -132,6 +132,7 @@ describe('DataControlService', () => {
       confusions: [],
       reviewResults: [],
       detachedRoutines: [],
+      detachedGoalStages: [],
       detachedReviewResults: [],
       clearedCurrentNext: []
     })

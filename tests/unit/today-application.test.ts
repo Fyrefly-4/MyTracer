@@ -18,6 +18,7 @@ function setup(goalStatus: GoalPersistenceRecord['status'] = 'active') {
     title: 'Goal',
     description: null,
     status: goalStatus,
+    predecessorGoalId: null,
     currentNextActionId: 'action-1',
     createdAt: instant,
     updatedAt: instant
