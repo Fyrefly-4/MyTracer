@@ -163,7 +163,8 @@ test('book month navigation, original visit, source filters and scroll return wi
     await page.getByRole('button', { name: '阅读记录册', exact: true }).click()
     await expect(month).toHaveValue('2026-08')
     await month.selectOption('2025-01')
-    const before = await page.locator('.rb-chapter').innerText()
+    // Capture the same complete DOM text that toHaveText compares; innerText adds layout newlines.
+    const before = (await page.locator('.rb-chapter').textContent())!
     await page.evaluate(async () => {
       const result = await window.myTracer.goals.create({
         name: '稍后保存',
