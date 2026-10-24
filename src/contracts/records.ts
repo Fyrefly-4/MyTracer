@@ -1,6 +1,8 @@
 import type { ActionDetailDto } from './actions'
 
 export const RECORD_CHANNELS = Object.freeze({
+  beginFirst: 'records:begin-first-record',
+  saveFirst: 'records:save-first-record',
   begin: 'records:begin-action-recording',
   cancel: 'records:cancel-action-recording',
   record: 'records:record-action',
@@ -34,6 +36,18 @@ export interface BeginActionRecordingDto {
 
 export interface CancelActionRecordingInputDto {
   readonly recordingContextId: string
+}
+
+export interface FirstActionRecordInputDto {
+  readonly actionId: string
+  readonly recordingContextId: string
+  readonly title: string
+  readonly goalId: string | null
+  readonly durationMinutes: number | null
+  readonly outcome: ActionRecordOutcomeDto
+  readonly lifecycle: 'keep-pending' | 'complete'
+  readonly note?: string | null
+  readonly dateChoice?: RecordingDateChoiceDto
 }
 
 export interface RecordActionInputDto {
@@ -113,6 +127,10 @@ export type RecordResult<T> =
     }
 
 export interface RecordApi {
+  readonly beginFirst: () => Promise<RecordResult<BeginActionRecordingDto>>
+  readonly saveFirst: (
+    input: FirstActionRecordInputDto
+  ) => Promise<RecordResult<RecordActionValueDto>>
   readonly begin: (
     input: BeginActionRecordingInputDto
   ) => Promise<RecordResult<BeginActionRecordingDto>>

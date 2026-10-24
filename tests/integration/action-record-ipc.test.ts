@@ -61,13 +61,19 @@ const recordId = '33333333-3333-4333-8333-333333333333'
 const contextId = '44444444-4444-4444-8444-444444444444'
 const replacementId = '55555555-5555-4555-8555-555555555555'
 
-function setup() {
+function setup(contextIds: string[] = []) {
   const handlers = new Map<string, Handler>()
   const ipc: FakeIpcMain = {
     removeHandler: vi.fn((channel: string) => handlers.delete(channel)),
     handle: vi.fn((channel: string, handler: Handler) => handlers.set(channel, handler))
   }
   const service = {
+    beginFirstActionRecording: vi.fn(() => ({ actionId, capturedOn: '2026-08-12' })),
+    recordFirstAction: vi.fn(() => ({
+      kind: 'saved',
+      action: { id: actionId },
+      record: { id: contextId }
+    })),
     beginActionRecording: vi.fn(() => ({ actionId, capturedOn: '2026-08-12' })),
     recordAction: vi.fn<(input: unknown) => unknown>(() => ({
       kind: 'saved',
@@ -78,7 +84,7 @@ function setup() {
     listActionRecordsForAction: vi.fn(() => [{ id: recordId, actionId }]),
     getActionRecordDetail: vi.fn(() => ({ id: recordId, actionId }))
   }
-  const contexts = new ActionRecordingContextStore(() => contextId)
+  const contexts = new ActionRecordingContextStore(() => contextIds.shift() ?? contextId)
   const assertSender = vi.fn()
   registerRecordIpc({
     ipc,
@@ -128,7 +134,7 @@ describe('ActionRecord IPC boundary', () => {
     expect(service.recordAction).not.toHaveBeenCalled()
   })
 
-  it('registers five fixed channels and forwards valid narrow commands and queries', () => {
+  it('registers fixed channels and forwards valid narrow commands and queries', () => {
     const { assertSender, handlers, invoke, service } = setup()
     expect([...handlers.keys()].sort()).toEqual([...Object.values(RECORD_CHANNELS)].sort())
     expect(invoke(RECORD_CHANNELS.begin, { actionId })).toEqual({
@@ -341,5 +347,132 @@ describe('ActionRecord IPC boundary', () => {
       throw new Error('Rejected IPC request from an untrusted renderer.')
     })
     expect(() => invoke(RECORD_CHANNELS.listForAction, { actionId })).toThrow(/untrusted renderer/)
+  })
+})
+
+describe('first Action record IPC', () => {
+  const request = {
+    actionId,
+    recordingContextId: contextId,
+    title: '修理',
+    goalId: null,
+    durationMinutes: null,
+    outcome: 'partial',
+    lifecycle: 'keep-pending'
+  }
+  it('uses sender-bound first-record capability, retains retry identity and cancels drafts', () => {
+    const { invoke, invokeOther, service } = setup()
+    expect(invoke(RECORD_CHANNELS.beginFirst)).toMatchObject({
+      ok: true,
+      value: { actionId, recordingContextId: contextId }
+    })
+    expect(service.recordFirstAction).not.toHaveBeenCalled()
+    expect(invokeOther(RECORD_CHANNELS.saveFirst, request)).toMatchObject({
+      ok: false,
+      error: { code: 'invalid-recording-context' }
+    })
+    expect(
+      invoke(RECORD_CHANNELS.record, {
+        actionId,
+        recordingContextId: contextId,
+        durationMinutes: 2,
+        outcome: 'partial'
+      })
+    ).toMatchObject({ ok: false, error: { code: 'invalid-recording-context' } })
+    for (let i = 0; i < 2; i++)
+      expect(invoke(RECORD_CHANNELS.saveFirst, request)).toMatchObject({ ok: true })
+    expect(service.recordFirstAction).toHaveBeenCalledTimes(1)
+    expect(service.recordFirstAction).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        actionId,
+        recordId: contextId,
+        capturedOn: '2026-08-12',
+        durationMinutes: null,
+        lifecycle: 'keep-pending'
+      })
+    )
+    invoke(RECORD_CHANNELS.cancel, { recordingContextId: contextId })
+    expect(invoke(RECORD_CHANNELS.saveFirst, request)).toMatchObject({
+      ok: false,
+      error: { code: 'invalid-recording-context' }
+    })
+  })
+  it('replays its saved receipt after opening another record, without recreating edited/deleted facts', () => {
+    const { invoke, service } = setup([contextId, replacementId])
+    invoke(RECORD_CHANNELS.beginFirst)
+    const saved = invoke(RECORD_CHANNELS.saveFirst, request)
+    invoke(RECORD_CHANNELS.begin, { actionId })
+    service.recordFirstAction.mockImplementation(() => {
+      throw Error('must not write again')
+    })
+    expect(invoke(RECORD_CHANNELS.saveFirst, request)).toEqual(saved)
+    expect(service.recordFirstAction).toHaveBeenCalledTimes(1)
+  })
+  it.each(['not-found', 'invalid-transition'] as const)(
+    'only returns %s before commit; a saved receipt wins over later goal changes',
+    (code) => {
+      const { invoke, service } = setup()
+      invoke(RECORD_CHANNELS.beginFirst)
+      service.recordFirstAction.mockImplementationOnce(() => {
+        throw new ActionRecordApplicationError(code, 'goal changed before commit')
+      })
+      expect(invoke(RECORD_CHANNELS.saveFirst, request)).toMatchObject({
+        ok: false,
+        error: { code }
+      })
+      const saved = invoke(RECORD_CHANNELS.saveFirst, { ...request, goalId: null })
+      expect(saved).toMatchObject({ ok: true })
+      service.recordFirstAction.mockImplementation(() => {
+        throw new ActionRecordApplicationError(code, 'goal changed after commit')
+      })
+      expect(invoke(RECORD_CHANNELS.saveFirst, request)).toEqual(saved)
+      // Parsing precedes receipt lookup: validation is not proof of no prior commit.
+      expect(invoke(RECORD_CHANNELS.saveFirst, { ...request, durationMinutes: -1 })).toMatchObject({
+        ok: false,
+        error: { code: 'validation' }
+      })
+      expect(invoke(RECORD_CHANNELS.saveFirst, request)).toEqual(saved)
+      expect(service.recordFirstAction).toHaveBeenCalledTimes(2)
+    }
+  )
+  it('cannot use an existing-action context to create a new action', () => {
+    const { invoke, service } = setup()
+    invoke(RECORD_CHANNELS.begin, { actionId })
+    expect(invoke(RECORD_CHANNELS.saveFirst, request)).toMatchObject({
+      ok: false,
+      error: { code: 'invalid-recording-context' }
+    })
+    expect(service.recordFirstAction).not.toHaveBeenCalled()
+  })
+  it.each([
+    { lifecycle: undefined },
+    { lifecycle: 'cancel' },
+    { goalId: 'wrong' },
+    { durationMinutes: undefined },
+    { durationMinutes: '0' },
+    { durationMinutes: -1 },
+    { outcome: 'unknown' },
+    { capturedOn: '2020-01-01' },
+    { postRecord: { applyRecordedNextStep: true } }
+  ])('rejects invalid or wider authority %j', (invalid) => {
+    const { invoke, service } = setup()
+    invoke(RECORD_CHANNELS.beginFirst)
+    expect(invoke(RECORD_CHANNELS.saveFirst, { ...request, ...invalid })).toMatchObject({
+      ok: false,
+      error: { code: 'validation' }
+    })
+    expect(service.recordFirstAction).not.toHaveBeenCalled()
+  })
+  it('retains the draft capability after a persistence failure', () => {
+    const { invoke, service } = setup()
+    invoke(RECORD_CHANNELS.beginFirst)
+    service.recordFirstAction.mockImplementationOnce(() => {
+      throw Error('synthetic persistence failure')
+    })
+    expect(invoke(RECORD_CHANNELS.saveFirst, request)).toMatchObject({
+      ok: false,
+      error: { code: 'persistence-failed' }
+    })
+    expect(invoke(RECORD_CHANNELS.saveFirst, request)).toMatchObject({ ok: true })
   })
 })

@@ -41,6 +41,7 @@ import {
 } from '../contracts/today'
 import {
   RECORD_CHANNELS,
+  type FirstActionRecordInputDto,
   type ActionRecordDetailDto,
   type ActionRecordIdInputDto,
   type ActionRecordSummaryDto,
@@ -240,6 +241,10 @@ const api: MyTracerApi = Object.freeze({
       ipcRenderer.invoke(TODAY_CHANNELS.get, input)
   }),
   records: Object.freeze({
+    beginFirst: (): Promise<RecordResult<BeginActionRecordingDto>> =>
+      ipcRenderer.invoke(RECORD_CHANNELS.beginFirst),
+    saveFirst: (input: FirstActionRecordInputDto): Promise<RecordResult<RecordActionValueDto>> =>
+      ipcRenderer.invoke(RECORD_CHANNELS.saveFirst, input),
     begin: (input: BeginActionRecordingInputDto): Promise<RecordResult<BeginActionRecordingDto>> =>
       ipcRenderer.invoke(RECORD_CHANNELS.begin, input),
     cancel: (

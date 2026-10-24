@@ -35,6 +35,7 @@ import {
 import { RoutineRecordingPanel } from '../routines/RoutinesPage'
 import { AiStartHelpPanel } from './AiStartHelpPanel'
 import { TodayGoalContext } from './TodayGoalContext'
+import { FirstActionRecord } from './FirstActionRecord'
 import './today-workspace.css'
 
 const goalErrorText: Record<GoalErrorCode, string> = {
@@ -1363,6 +1364,18 @@ function TodayWorkspace(): ReactNode {
                 <div className="today-date-label">
                   <strong>{today?.localDate ?? '读取中'}</strong>
                 </div>
+                <FirstActionRecord
+                  goals={activeGoals}
+                  actions={today?.availableActions ?? []}
+                  ready={today !== null}
+                  onExisting={selectAction}
+                  onSaved={async (action) => {
+                    setNotice(
+                      `第一笔已保存；行动${action.status === 'completed' ? '已完成' : '继续保留'}。未自动加入今天，未改变目标下一步。`
+                    )
+                    await refresh(action.id)
+                  }}
+                />
                 <button
                   ref={createTriggerRef}
                   type="button"

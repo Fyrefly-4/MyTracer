@@ -12,7 +12,12 @@ import {
   type RefObject
 } from 'react'
 import type { GoalStatusDto } from '../../../contracts/goals'
-import type { BeginActionRecordingDto, ActionRecordOutcomeDto } from '../../../contracts/records'
+import type {
+  BeginActionRecordingDto,
+  ActionRecordOutcomeDto,
+  FirstActionRecordInputDto,
+  RecordErrorCode
+} from '../../../contracts/records'
 import type {
   BeginRoutineRecordingDto,
   RoutineRecordOutcomeDto
@@ -36,6 +41,33 @@ export interface ActionRecordingDraft {
   readonly nextMode: RecordedNextMode
   readonly replacementActionId: string
   readonly applyRecordedNextStep: boolean
+}
+
+export interface FirstActionRecordingDraft {
+  readonly context: BeginActionRecordingDto
+  readonly title: string
+  readonly goalId: string
+  readonly durationMinutes: string
+  readonly unknownDuration: boolean
+  readonly outcome: ActionRecordOutcomeDto | ''
+  readonly lifecycle: 'keep-pending' | 'complete' | ''
+  readonly note: string
+  // A transport failure must retry exactly the same request before editing/abandoning.
+  readonly uncertainInput?: FirstActionRecordInputDto
+}
+
+export function firstRecordDraftAfterFailure(
+  draft: FirstActionRecordingDraft,
+  code: RecordErrorCode
+): FirstActionRecordingDraft {
+  // These service errors occur only before the first commit. A saved session
+  // receipt is replayed before consulting the goal, even after pause/deletion.
+  // Validation runs before receipt lookup; invalid context and storage errors
+  // also cannot settle a previous lost reply, so retain those submission locks.
+  if (code === 'not-found' || code === 'invalid-transition') {
+    return { ...draft, uncertainInput: undefined }
+  }
+  return draft
 }
 
 export interface RoutineRecordingDraft {
@@ -69,6 +101,22 @@ export interface ReviewWritingDraft {
 }
 
 export class UiSession {
+  private firstActionDraft: FirstActionRecordingDraft | null = null
+  private firstActionBeginGeneration = 0
+  beginFirstActionDraftRequest(): number {
+    return ++this.firstActionBeginGeneration
+  }
+  ownsFirstActionDraftRequest(generation: number): boolean {
+    return generation === this.firstActionBeginGeneration
+  }
+  getFirstActionDraft(): FirstActionRecordingDraft | null {
+    return this.firstActionDraft
+  }
+  setFirstActionDraft(draft: FirstActionRecordingDraft | null): void {
+    this.firstActionBeginGeneration++
+    this.firstActionDraft = draft
+    for (const listener of this.unsavedListeners) listener()
+  }
   private pendingReviewSave: Promise<void> | null = null
   getPendingReviewSave(): Promise<void> | null {
     return this.pendingReviewSave
@@ -252,6 +300,7 @@ export class UiSession {
   }
   hasUnsavedContent(): boolean {
     return (
+      this.firstActionDraft !== null ||
       this.routineEditor.hasDraft() ||
       this.unsavedContent.size > 0 ||
       this.reviewWritingDraft !== null ||

@@ -141,6 +141,8 @@ test('runs the Electron shell with an isolated userData root', async () => {
       'get'
     ])
     expect(await page.evaluate(() => Object.keys(window.myTracer.records))).toEqual([
+      'beginFirst',
+      'saveFirst',
       'begin',
       'cancel',
       'record',
