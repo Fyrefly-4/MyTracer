@@ -15,7 +15,8 @@ import type { GoalStatusDto } from '../../../contracts/goals'
 import type {
   BeginActionRecordingDto,
   ActionRecordOutcomeDto,
-  FirstActionRecordInputDto
+  FirstActionRecordInputDto,
+  RecordErrorCode
 } from '../../../contracts/records'
 import type {
   BeginRoutineRecordingDto,
@@ -55,6 +56,20 @@ export interface FirstActionRecordingDraft {
   readonly uncertainInput?: FirstActionRecordInputDto
 }
 
+export function firstRecordDraftAfterFailure(
+  draft: FirstActionRecordingDraft,
+  code: RecordErrorCode
+): FirstActionRecordingDraft {
+  // These service errors occur only before the first commit. A saved session
+  // receipt is replayed before consulting the goal, even after pause/deletion.
+  // Validation runs before receipt lookup; invalid context and storage errors
+  // also cannot settle a previous lost reply, so retain those submission locks.
+  if (code === 'not-found' || code === 'invalid-transition') {
+    return { ...draft, uncertainInput: undefined }
+  }
+  return draft
+}
+
 export interface RoutineRecordingDraft {
   readonly context: BeginRoutineRecordingDto
   readonly outcome: RoutineRecordOutcomeDto
@@ -87,10 +102,18 @@ export interface ReviewWritingDraft {
 
 export class UiSession {
   private firstActionDraft: FirstActionRecordingDraft | null = null
+  private firstActionBeginGeneration = 0
+  beginFirstActionDraftRequest(): number {
+    return ++this.firstActionBeginGeneration
+  }
+  ownsFirstActionDraftRequest(generation: number): boolean {
+    return generation === this.firstActionBeginGeneration
+  }
   getFirstActionDraft(): FirstActionRecordingDraft | null {
     return this.firstActionDraft
   }
   setFirstActionDraft(draft: FirstActionRecordingDraft | null): void {
+    this.firstActionBeginGeneration++
     this.firstActionDraft = draft
     for (const listener of this.unsavedListeners) listener()
   }

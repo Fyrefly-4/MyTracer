@@ -25,3 +25,15 @@ describe('first record session draft', () => {
     expect(session.getPanePosition('today', 'master')).toBe(200)
   })
 })
+
+describe('first record request ownership', () => {
+  it('invalidates old begin responses on a newer request or draft change', () => {
+    const session = new UiSession(() => undefined)
+    const first = session.beginFirstActionDraftRequest()
+    const second = session.beginFirstActionDraftRequest()
+    expect(session.ownsFirstActionDraftRequest(first)).toBe(false)
+    expect(session.ownsFirstActionDraftRequest(second)).toBe(true)
+    session.setFirstActionDraft(null)
+    expect(session.ownsFirstActionDraftRequest(second)).toBe(false)
+  })
+})

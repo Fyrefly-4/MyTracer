@@ -408,6 +408,33 @@ describe('first Action record IPC', () => {
     expect(invoke(RECORD_CHANNELS.saveFirst, request)).toEqual(saved)
     expect(service.recordFirstAction).toHaveBeenCalledTimes(1)
   })
+  it.each(['not-found', 'invalid-transition'] as const)(
+    'only returns %s before commit; a saved receipt wins over later goal changes',
+    (code) => {
+      const { invoke, service } = setup()
+      invoke(RECORD_CHANNELS.beginFirst)
+      service.recordFirstAction.mockImplementationOnce(() => {
+        throw new ActionRecordApplicationError(code, 'goal changed before commit')
+      })
+      expect(invoke(RECORD_CHANNELS.saveFirst, request)).toMatchObject({
+        ok: false,
+        error: { code }
+      })
+      const saved = invoke(RECORD_CHANNELS.saveFirst, { ...request, goalId: null })
+      expect(saved).toMatchObject({ ok: true })
+      service.recordFirstAction.mockImplementation(() => {
+        throw new ActionRecordApplicationError(code, 'goal changed after commit')
+      })
+      expect(invoke(RECORD_CHANNELS.saveFirst, request)).toEqual(saved)
+      // Parsing precedes receipt lookup: validation is not proof of no prior commit.
+      expect(invoke(RECORD_CHANNELS.saveFirst, { ...request, durationMinutes: -1 })).toMatchObject({
+        ok: false,
+        error: { code: 'validation' }
+      })
+      expect(invoke(RECORD_CHANNELS.saveFirst, request)).toEqual(saved)
+      expect(service.recordFirstAction).toHaveBeenCalledTimes(2)
+    }
+  )
   it('cannot use an existing-action context to create a new action', () => {
     const { invoke, service } = setup()
     invoke(RECORD_CHANNELS.begin, { actionId })

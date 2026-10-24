@@ -7,7 +7,9 @@ import type {
   RecordingDateChoiceDto
 } from '../../../../contracts/records'
 import {
+  firstRecordDraftAfterFailure,
   useUiSession,
+  useUiLifetime,
   useUnsavedContent,
   type FirstActionRecordingDraft
 } from '../../app/ui-session'
@@ -21,6 +23,7 @@ export function FirstActionRecord(props: {
   readonly onSaved: (action: ActionDetailDto) => Promise<void>
 }): ReactNode {
   const session = useUiSession()
+  const active = useUiLifetime()
   const [draft, setDraft] = useState(() => session.getFirstActionDraft())
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -55,11 +58,20 @@ export function FirstActionRecord(props: {
       setOpen(true)
       return
     }
+    const generation = session.beginFirstActionDraftRequest()
     busyRef.current = true
     setBusy(true)
     setError('')
     try {
       const result = await window.myTracer.records.beginFirst()
+      if (!active.current || !session.ownsFirstActionDraftRequest(generation)) {
+        if (result.ok) {
+          await window.myTracer.records
+            .cancel({ recordingContextId: result.value.recordingContextId })
+            .catch(() => undefined)
+        }
+        return
+      }
       if (!result.ok) {
         setError('暂时无法打开记录，请重试。')
         return
@@ -78,7 +90,8 @@ export function FirstActionRecord(props: {
       setDiscarding(false)
       setOpen(true)
     } catch {
-      setError('暂时无法打开记录，请重试。')
+      if (active.current && session.ownsFirstActionDraftRequest(generation))
+        setError('暂时无法打开记录，请重试。')
     } finally {
       busyRef.current = false
       setBusy(false)
@@ -139,11 +152,14 @@ export function FirstActionRecord(props: {
     try {
       const result = await window.myTracer.records.saveFirst(request)
       if (!result.ok) {
-        change({ ...draft, uncertainInput: draft.uncertainInput })
+        const recovered = firstRecordDraftAfterFailure(draft, result.error.code)
+        change(recovered)
         setError(
-          result.error.code === 'persistence-failed'
-            ? '未能确认保存。草稿已保留，请重试同一笔。'
-            : '请检查输入和关联目标的状态后重试。草稿已保留。'
+          recovered.uncertainInput
+            ? '保存结果仍未确认。请重试同一笔；确认前不能修改或放弃。'
+            : result.error.code === 'persistence-failed'
+              ? '未能确认保存。草稿已保留，请重试同一笔。'
+              : '本次未保存。请检查输入和关联目标的状态，修改后重试或放弃草稿。'
         )
       } else if (result.value.kind === 'date-confirmation-required') {
         change({ ...draft, uncertainInput: undefined })
