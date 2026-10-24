@@ -271,8 +271,9 @@ export function FirstActionRecord(props: {
               <fieldset disabled={busy || Boolean(draft.uncertainInput)}>
                 <legend>已有行动？复用原来的记录路径</legend>
                 <label>
-                  选择已有行动
+                  <span id="first-record-existing-label">选择已有行动</span>
                   <select
+                    aria-labelledby="first-record-existing-label"
                     value={existingId}
                     onChange={(event) => setExistingId(event.target.value)}
                   >
@@ -339,8 +340,9 @@ export function FirstActionRecord(props: {
                 </label>
                 <p className="empty-copy">0 表示不足一分钟但确有行动；不知道时长请明确勾选。</p>
                 <label>
-                  本次结果
+                  <span id="first-record-outcome-label">本次结果</span>
                   <select
+                    aria-labelledby="first-record-outcome-label"
                     required
                     value={draft.outcome}
                     onChange={(event) =>
@@ -357,8 +359,9 @@ export function FirstActionRecord(props: {
                   </select>
                 </label>
                 <label>
-                  保存后，整个行动
+                  <span id="first-record-lifecycle-label">保存后，整个行动</span>
                   <select
+                    aria-labelledby="first-record-lifecycle-label"
                     required
                     value={draft.lifecycle}
                     onChange={(event) =>
@@ -385,8 +388,9 @@ export function FirstActionRecord(props: {
                   />
                 </label>
                 <label>
-                  关联目标（可选）
+                  <span id="first-record-goal-label">关联目标（可选）</span>
                   <select
+                    aria-labelledby="first-record-goal-label"
                     value={draft.goalId}
                     onChange={(event) => change({ ...draft, goalId: event.target.value })}
                   >

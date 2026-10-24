@@ -1,5 +1,5 @@
 import { join } from 'node:path'
-import { expect, test, type ElectronApplication } from '@playwright/test'
+import { expect, test, type Page, type ElectronApplication } from '@playwright/test'
 import { _electron as electron } from 'playwright'
 import { minimalElectronEnvironment } from '../support/electron-environment'
 import { createTemporaryTestRoot, removeTemporaryTestRoot } from '../support/temporary-test-root'
@@ -147,68 +147,85 @@ test('first record preserves drafts, explicit choices, retry identity and modal 
 test('late begin cannot replace a newer draft; an authoritative rejection releases an uncertain save', async () => {
   const root = await createTemporaryTestRoot()
   let app: ElectronApplication | undefined
+  let diagnosticPage: Page | undefined
   try {
-    app = await electron.launch({
-      chromiumSandbox: true,
-      cwd: root.root,
-      args: [
-        join(process.cwd(), 'out/main/index.js'),
-        `--user-data-dir=${root.electronUserData}`,
-        ...(process.platform === 'linux' ? ['--headless'] : [])
-      ],
-      env: minimalElectronEnvironment(root)
-    })
-    const page = await app.firstWindow()
-    const goalId = await page.evaluate(async () => {
-      const goal = await window.myTracer.goals.create({ name: '合成目标：随后暂停' })
-      if (!goal.ok) throw Error('fixture failed')
-      return goal.value.id
-    })
+    app = await test.step('launch isolated first-record application', () =>
+      electron.launch({
+        chromiumSandbox: true,
+        cwd: root.root,
+        args: [
+          join(process.cwd(), 'out/main/index.js'),
+          `--user-data-dir=${root.electronUserData}`,
+          ...(process.platform === 'linux' ? ['--headless'] : [])
+        ],
+        env: minimalElectronEnvironment(root)
+      }))
+    const page = await test.step('wait for first renderer', () => app!.firstWindow())
+    diagnosticPage = page
+    await page.context().tracing.start({ snapshots: true, screenshots: false })
+    const goalId = await test.step('create synthetic goal', () =>
+      page.evaluate(async () => {
+        const goal = await window.myTracer.goals.create({ name: '合成目标：随后暂停' })
+        if (!goal.ok) throw Error('fixture failed')
+        return goal.value.id
+      }))
     const navigate = (name: string) =>
-      page.getByRole('navigation').getByRole('button', { name, exact: true }).click()
+      test.step(`navigate to ${name}`, () =>
+        page.getByRole('navigation').getByRole('button', { name, exact: true }).click())
     await navigate('今天')
-    await app.evaluate(({ ipcMain }) => {
-      const handlers = Reflect.get(ipcMain, '_invokeHandlers') as Map<
-        string,
-        (...args: unknown[]) => unknown
-      >
-      const original = handlers.get('records:begin-first-record')!
-      const cancel = handlers.get('records:cancel-action-recording')!
-      Reflect.set(globalThis, 'syntheticBeginCancelCount', 0)
-      ipcMain.removeHandler('records:cancel-action-recording')
-      ipcMain.handle('records:cancel-action-recording', (...args) => {
-        const result = cancel(...args)
-        Reflect.set(globalThis, 'syntheticBeginCancelCount', 1)
-        return result
-      })
-      let first = true
-      ipcMain.removeHandler('records:begin-first-record')
-      ipcMain.handle('records:begin-first-record', (...args) => {
-        const result = original(...args)
-        if (!first) return result
-        first = false
-        return new Promise((resolve) => {
-          Reflect.set(globalThis, 'releaseSyntheticFirstBegin', () => resolve(result))
+    await test.step('install synthetic IPC interceptor', () =>
+      app!.evaluate(({ ipcMain }) => {
+        const handlers = Reflect.get(ipcMain, '_invokeHandlers') as Map<
+          string,
+          (...args: unknown[]) => unknown
+        >
+        const original = handlers.get('records:begin-first-record')!
+        const cancel = handlers.get('records:cancel-action-recording')!
+        Reflect.set(globalThis, 'syntheticBeginCancelCount', 0)
+        ipcMain.removeHandler('records:cancel-action-recording')
+        ipcMain.handle('records:cancel-action-recording', (...args) => {
+          const result = cancel(...args)
+          Reflect.set(globalThis, 'syntheticBeginCancelCount', 1)
+          return result
         })
-      })
+        let first = true
+        ipcMain.removeHandler('records:begin-first-record')
+        ipcMain.handle('records:begin-first-record', (...args) => {
+          const result = original(...args)
+          if (!first) return result
+          first = false
+          return new Promise((resolve) => {
+            Reflect.set(globalThis, 'releaseSyntheticFirstBegin', () => resolve(result))
+          })
+        })
+      }))
+    await test.step('open first-record entry', () =>
+      page.getByRole('button', { name: '记一笔', exact: true }).click())
+    await test.step('confirm begin A is held before navigation', async () => {
+      await expect
+        .poll(() =>
+          app!.evaluate(() => typeof Reflect.get(globalThis, 'releaseSyntheticFirstBegin'))
+        )
+        .toBe('function')
     })
-    await page.getByRole('button', { name: '记一笔', exact: true }).click()
-    await expect
-      .poll(() => app!.evaluate(() => typeof Reflect.get(globalThis, 'releaseSyntheticFirstBegin')))
-      .toBe('function')
     await navigate('首页')
     await navigate('今天')
-    await page.getByRole('button', { name: '记一笔', exact: true }).click()
+    await test.step('open first-record entry', () =>
+      page.getByRole('button', { name: '记一笔', exact: true }).click())
     const dialog = page.getByRole('dialog', { name: '记一笔', exact: true })
-    await dialog.getByLabel('刚才做了什么', { exact: true }).fill('新草稿 B：不要覆盖')
-    await app.evaluate(() => {
-      const release = Reflect.get(globalThis, 'releaseSyntheticFirstBegin') as () => void
-      release()
-      Reflect.deleteProperty(globalThis, 'releaseSyntheticFirstBegin')
+    await test.step('type newer draft B after remount', () =>
+      dialog.getByLabel('刚才做了什么', { exact: true }).fill('新草稿 B：不要覆盖'))
+    await test.step('release old begin A after B was typed', () =>
+      app!.evaluate(() => {
+        const release = Reflect.get(globalThis, 'releaseSyntheticFirstBegin') as () => void
+        release()
+        Reflect.deleteProperty(globalThis, 'releaseSyntheticFirstBegin')
+      }))
+    await test.step('require stale A context cancellation', async () => {
+      await expect
+        .poll(() => app!.evaluate(() => Reflect.get(globalThis, 'syntheticBeginCancelCount')))
+        .toBe(1)
     })
-    await expect
-      .poll(() => app!.evaluate(() => Reflect.get(globalThis, 'syntheticBeginCancelCount')))
-      .toBe(1)
     await dialog.getByRole('button', { name: '收起并返回' }).click()
     await navigate('首页')
     await navigate('今天')
@@ -217,31 +234,39 @@ test('late begin cannot replace a newer draft; an authoritative rejection releas
       '新草稿 B：不要覆盖'
     )
     await dialog.getByLabel('真实投入（分钟）').fill('4')
-    await dialog.getByLabel('本次结果', { exact: true }).selectOption('partial')
+    await test.step('choose explicit outcome for restored draft B', async () => {
+      await expect(dialog.getByLabel('本次结果', { exact: true })).toHaveValue('')
+      await dialog.getByLabel('本次结果', { exact: true }).selectOption('partial')
+    })
     await dialog.getByLabel('保存后，整个行动').selectOption('keep-pending')
     await dialog.getByLabel('关联目标（可选）', { exact: true }).selectOption(goalId)
-    await app.evaluate(({ ipcMain }) => {
-      const handlers = Reflect.get(ipcMain, '_invokeHandlers') as Map<
-        string,
-        (...args: unknown[]) => unknown
-      >
-      const original = handlers.get('records:save-first-record')!
-      let first = true
-      ipcMain.removeHandler('records:save-first-record')
-      ipcMain.handle('records:save-first-record', (...args) => {
-        if (first) {
-          first = false
-          throw Error('synthetic transport rejection before commit')
-        }
-        return original(...args)
-      })
-    })
-    await dialog.getByRole('button', { name: '保存行动和第一笔' }).click()
+    await test.step('install synthetic IPC interceptor', () =>
+      app!.evaluate(({ ipcMain }) => {
+        const handlers = Reflect.get(ipcMain, '_invokeHandlers') as Map<
+          string,
+          (...args: unknown[]) => unknown
+        >
+        const original = handlers.get('records:save-first-record')!
+        let first = true
+        ipcMain.removeHandler('records:save-first-record')
+        ipcMain.handle('records:save-first-record', (...args) => {
+          if (first) {
+            first = false
+            throw Error('synthetic transport rejection before commit')
+          }
+          return original(...args)
+        })
+      }))
+    await test.step('submit first-record draft', () =>
+      dialog.getByRole('button', { name: '保存行动和第一笔' }).click())
     await expect(dialog.getByRole('alert')).toContainText('保存结果暂未确认')
     expect(
       await page.evaluate((id) => window.myTracer.goals.pause({ goalId: id }), goalId)
     ).toMatchObject({ ok: true })
-    await dialog.getByRole('button', { name: '重试确认同一笔' }).click()
+    await test.step('retry after goal pause and require authoritative rejection', async () => {
+      await dialog.getByRole('button', { name: '重试确认同一笔' }).click()
+      await expect(dialog.getByRole('alert')).toContainText('本次未保存')
+    })
     await expect(dialog.getByRole('alert')).toContainText('本次未保存')
     await expect(dialog.getByLabel('关联目标（可选）', { exact: true })).toBeEnabled()
     await expect(dialog.getByRole('button', { name: '放弃这份草稿' })).toBeEnabled()
@@ -250,13 +275,20 @@ test('late begin cannot replace a newer draft; an authoritative rejection releas
       value: { actions: [], actionRecords: [] }
     })
     await dialog.getByLabel('关联目标（可选）', { exact: true }).selectOption('')
-    await dialog.getByRole('button', { name: '保存行动和第一笔' }).click()
+    await test.step('submit first-record draft', () =>
+      dialog.getByRole('button', { name: '保存行动和第一笔' }).click())
     await expect(dialog).not.toBeVisible()
     const facts = await page.evaluate(() => window.myTracer.dataControl.list())
     expect(facts.ok && facts.value.actions).toHaveLength(1)
     expect(facts.ok && facts.value.actionRecords).toHaveLength(1)
   } finally {
-    await app?.close().catch(() => undefined)
+    await diagnosticPage
+      ?.context()
+      .tracing.stop({ path: test.info().outputPath('first-record-race-trace.zip') })
+      .catch(() => undefined)
+    await test.step('close isolated first-record application', async () => {
+      await app?.close().catch(() => undefined)
+    })
     await removeTemporaryTestRoot(root)
   }
 })
