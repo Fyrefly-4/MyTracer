@@ -38,6 +38,7 @@ import {
 } from '../../app/ui-session'
 import type { CompleteExportErrorCode } from '../../../../contracts/exports'
 import './data-workspace.css'
+import { searchHistory } from './history-search'
 
 const dataControlErrorText: Record<DataControlErrorCode, string> = {
   validation: '请检查日期、时长和必填内容。',
@@ -843,17 +844,6 @@ function DataPanel(props: {
   )
 }
 
-interface DataHistoryRow {
-  readonly type: 'action-record' | 'routine-record'
-  readonly id: string
-  readonly objectName: string
-  readonly goalId: string | null
-  readonly occurredOn: string
-  readonly createdAt: string
-  readonly outcome: string
-  readonly durationMinutes: number | null
-}
-
 function DataControlWorkspace(): ReactNode {
   const session = useUiSession()
   const [data, setData] = useState<DataControlListDto | null>(null)
@@ -863,7 +853,9 @@ function DataControlWorkspace(): ReactNode {
   const [readError, setReadError] = useState('')
   const [error, setError] = useState<string | null>(null)
   usePagePosition('data', data !== null)
-  const [panel, setPanel] = useState<'backfill' | 'export' | 'more' | 'filters' | null>(null)
+  const [panel, setPanel] = useState<
+    'backfill' | 'export' | 'more' | 'filters' | 'search-scope' | null
+  >(null)
   const [discardBackfill, setDiscardBackfill] = useState(false)
   const [backfillKind, setBackfillKind] = useState<'action' | 'routine'>('action')
   const [backfillMessage, setBackfillMessage] = useState('')
@@ -879,10 +871,33 @@ function DataControlWorkspace(): ReactNode {
     session.takeNavigationSelection('data') ? session.dataRecord : null
   )
   const [selectedRecord, setSelectedRecord] = useState<typeof session.dataRecord>(null)
-  const [recordKind, setRecordKind] = useState<'all' | 'action-record' | 'routine-record'>('all')
-  const [recordGoalId, setRecordGoalId] = useState('all')
-  const [recordDate, setRecordDate] = useState('')
-  const [historyPage, setHistoryPage] = useState(1)
+  const [recordKind, setRecordKind] = useState(session.dataHistory.kind)
+  const [recordGoalId, setRecordGoalId] = useState(session.dataHistory.goalId)
+  const [recordDate, setRecordDate] = useState(session.dataHistory.date)
+  const [historyPage, setHistoryPage] = useState(session.dataHistory.page)
+  const [searchInput, setSearchInput] = useState(session.dataHistory.query)
+  const [searchQuery, setSearchQuery] = useState(session.dataHistory.query)
+  const composingSearch = useRef(false)
+  const searchRef = useRef<HTMLInputElement>(null)
+  useLayoutEffect(() => {
+    session.setDataHistory({
+      kind: recordKind,
+      goalId: recordGoalId,
+      date: recordDate,
+      query: searchQuery,
+      page: historyPage
+    })
+  }, [session, recordKind, recordGoalId, recordDate, searchQuery, historyPage])
+  const applySearch = (value: string): void => {
+    setSearchQuery(value)
+    setHistoryPage(1)
+    setRouteRecord(null)
+  }
+  const clearSearch = (): void => {
+    setSearchInput('')
+    applySearch('')
+    searchRef.current?.focus()
+  }
   const [recordDrafts] = useState(() => new Map<string, boolean>())
   const [pendingSelection, setPendingSelection] = useState<typeof selectedRecord>(null)
   const [deleteType, setDeleteType] = useState<'goal' | 'action' | 'routine'>('goal')
@@ -925,50 +940,18 @@ function DataControlWorkspace(): ReactNode {
   }, [actionBackfillDirty, actionId, routineBackfillDirty, routineId])
   useUnsavedContent('data-backfill', actionBackfillDirty || routineBackfillDirty)
 
-  const history = useMemo<readonly DataHistoryRow[]>(() => {
-    if (!data) return []
-    const rows: DataHistoryRow[] = [
-      ...data.actionRecords.map((record) => {
-        const action = data.actions.find((item) => item.id === record.actionId)
-        return {
-          type: 'action-record' as const,
-          id: record.id,
-          objectName: action?.title ?? '已删除的行动',
-          goalId: action?.goalId ?? null,
-          occurredOn: record.occurredOn,
-          createdAt: record.createdAt,
-          outcome: record.outcome,
-          durationMinutes: record.durationMinutes
-        }
-      }),
-      ...data.routineRecords.map((record) => {
-        const routine = data.routines.find((item) => item.id === record.routineId)
-        return {
-          type: 'routine-record' as const,
-          id: record.id,
-          objectName: routine?.name ?? '已删除的例行',
-          goalId: routine?.goalId ?? null,
-          occurredOn: record.occurredOn,
-          createdAt: record.createdAt,
-          outcome: record.outcome,
-          durationMinutes: record.durationMinutes
-        }
-      })
-    ]
-    return rows
-      .filter((row) => recordKind === 'all' || row.type === recordKind)
-      .filter(
-        (row) =>
-          recordGoalId === 'all' ||
-          (recordGoalId === 'none' ? row.goalId === null : row.goalId === recordGoalId)
-      )
-      .filter((row) => !recordDate || row.occurredOn === recordDate)
-      .sort(
-        (left, right) =>
-          right.occurredOn.localeCompare(left.occurredOn) ||
-          right.createdAt.localeCompare(left.createdAt)
-      )
-  }, [data, recordDate, recordGoalId, recordKind])
+  const history = useMemo(
+    () =>
+      data
+        ? searchHistory(data, {
+            query: searchQuery,
+            kind: recordKind,
+            goalId: recordGoalId,
+            date: recordDate
+          })
+        : [],
+    [data, searchQuery, recordKind, recordGoalId, recordDate]
+  )
 
   const pageCount = Math.max(1, Math.ceil(history.length / 8))
   const currentPage = Math.min(historyPage, pageCount)
@@ -996,6 +979,7 @@ function DataControlWorkspace(): ReactNode {
       recordKind === 'all' &&
       recordGoalId === 'all' &&
       !recordDate &&
+      !searchQuery.trim() &&
       historyPage === 1
     if (
       selectedRecord &&
@@ -1033,6 +1017,7 @@ function DataControlWorkspace(): ReactNode {
     recordKind,
     recordGoalId,
     recordDate,
+    searchQuery,
     historyPage
   ])
 
@@ -1740,6 +1725,61 @@ function DataControlWorkspace(): ReactNode {
               </p>
             ) : null}
           </div>
+          <div className="data-history-search">
+            <label htmlFor="history-keyword">查找保存的文字</label>
+            <input
+              id="history-keyword"
+              ref={searchRef}
+              type="search"
+              value={searchInput}
+              aria-describedby="history-search-scope"
+              onCompositionStart={() => {
+                composingSearch.current = true
+              }}
+              onCompositionEnd={(event) => {
+                composingSearch.current = false
+                applySearch(event.currentTarget.value)
+              }}
+              onChange={(event) => {
+                setSearchInput(event.target.value)
+                if (!composingSearch.current) applySearch(event.target.value)
+              }}
+            />
+            <div className="data-fact-actions">
+              <button
+                type="button"
+                className="quiet-button"
+                onClick={() => setPanel('search-scope')}
+              >
+                搜索范围
+              </button>
+              <button type="button" className="quiet-button" onClick={clearSearch}>
+                清除搜索
+              </button>
+              <button
+                type="button"
+                className="quiet-button"
+                onClick={() => {
+                  clearSearch()
+                  setRecordKind('all')
+                  setRecordGoalId('all')
+                  setRecordDate('')
+                }}
+              >
+                重置全部条件
+              </button>
+            </div>
+            <p id="history-search-scope">搜索全部已保存记录，与日期、类型、目标筛选共同生效。</p>
+            {panel === 'search-scope' ? (
+              <DataPanel title="搜索范围" onClose={() => setPanel(null)}>
+                <p>按原文片段查找，忽略大小写；不使用通配符。</p>
+                <p>
+                  包含行动标题、例行名称、备注、行动记录下一步、关联理解、困惑与解决说明（含已撤销/已解决）。
+                </p>
+                <p>标题、文字与状态均以当前保存内容为准，不还原旧版本或已删除文字。</p>
+              </DataPanel>
+            ) : null}
+          </div>
           <button className="data-filter-entry" type="button" onClick={() => setPanel('filters')}>
             筛选记录 ·{' '}
             {
@@ -1821,7 +1861,7 @@ function DataControlWorkspace(): ReactNode {
           <div
             className="data-history-list"
             data-scroll-key="master"
-            key={`${currentPage}-${recordKind}-${recordGoalId}-${recordDate}`}
+            key={`${currentPage}-${recordKind}-${recordGoalId}-${recordDate}-${searchQuery.trim()}`}
           >
             {history.length ? (
               <table className="data-history-table">
@@ -1875,6 +1915,11 @@ function DataControlWorkspace(): ReactNode {
                                 ? '少于 1 分钟'
                                 : `${row.durationMinutes} 分钟`}
                           </small>
+                          {row.matches.map((match, index) => (
+                            <small className="data-search-match" key={index}>
+                              <b>{match.label}</b>：{match.snippet}
+                            </small>
+                          ))}
                           <span className="data-row-open">查看记录 ›</span>
                         </button>
                       </td>
@@ -1883,7 +1928,13 @@ function DataControlWorkspace(): ReactNode {
                 </tbody>
               </table>
             ) : readState === 'ready' ? (
-              <p className="empty-copy">当前筛选下没有记录。</p>
+              <p className="empty-copy">
+                {data && !data.actionRecords.length && !data.routineRecords.length
+                  ? '还没有保存的记录，可以先记一笔或补记。'
+                  : searchQuery.trim()
+                    ? '当前条件下没有匹配文字。试试其他关键词，或重置全部条件。'
+                    : '当前筛选下没有记录。'}
+              </p>
             ) : data ? (
               <p className="empty-copy">上次读取时没有匹配记录，当前结果尚未确认。</p>
             ) : null}

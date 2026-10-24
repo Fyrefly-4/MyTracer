@@ -109,7 +109,9 @@ test('failed reads stay distinct from loading and empty results, and keyboard re
     await retry.focus()
     await page.keyboard.press('Enter')
     await expect(page.getByRole('alert')).toHaveCount(0)
-    await expect(page.getByText('当前筛选下没有记录。', { exact: true })).toBeVisible()
+    await expect(
+      page.getByText('还没有保存的记录，可以先记一笔或补记。', { exact: true })
+    ).toBeVisible()
     await expect(page.locator('.data-history-count')).toHaveText('0 条 · 每页 8 条')
     await expect(retry).toBeFocused()
   })

@@ -101,6 +101,26 @@ export interface ReviewWritingDraft {
 }
 
 export class UiSession {
+  private historyState: {
+    kind: 'all' | 'action-record' | 'routine-record'
+    goalId: string
+    date: string
+    query: string
+    page: number
+  } = {
+    kind: 'all',
+    goalId: 'all',
+    date: '',
+    query: '',
+    page: 1
+  }
+
+  get dataHistory() {
+    return this.historyState
+  }
+  setDataHistory(state: typeof this.historyState): void {
+    this.historyState = state
+  }
   private firstActionDraft: FirstActionRecordingDraft | null = null
   private firstActionBeginGeneration = 0
   beginFirstActionDraftRequest(): number {
@@ -372,6 +392,7 @@ export class UiSession {
   ): void {
     this.selectedDataRecord = selection
     if (selection) this.preferences.remember('data', selection)
+    this.historyState = { kind: 'all', goalId: 'all', date: '', query: '', page: 1 }
     this.navigationSelection.add('data')
     this.positions[source] = document.querySelector('main')?.scrollTop ?? 0
     this.positions.data = 0
