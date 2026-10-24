@@ -35,6 +35,7 @@ import {
 import { RoutineRecordingPanel } from '../routines/RoutinesPage'
 import { AiStartHelpPanel } from './AiStartHelpPanel'
 import { TodayGoalContext } from './TodayGoalContext'
+import { TodayActionDescription } from './TodayActionDescription'
 import { FirstActionRecord } from './FirstActionRecord'
 import './today-workspace.css'
 
@@ -1703,6 +1704,12 @@ function TodayWorkspace(): ReactNode {
                   </>
                 ) : null}
               </div>
+
+              <TodayActionDescription
+                key={`description-${detail.id}`}
+                actionId={detail.id}
+                description={detail.description}
+              />
 
               {detail.goal ? (
                 <TodayGoalContext

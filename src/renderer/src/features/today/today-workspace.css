@@ -1,4 +1,28 @@
 /* A focused editor keeps the current action and commit controls together. */
+.today-action-description {
+  margin: 16px 0;
+  min-width: 0;
+}
+
+.today-action-description h3,
+.today-action-description summary {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.today-action-description summary {
+  cursor: pointer;
+  padding: 6px 0;
+}
+
+/* The existing detail pane owns scrolling and padding, including narrow/zoom layouts. */
+.today-action-description-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 8px 0;
+  line-height: 1.7;
+}
+
 .today-experiment .today-date-row {
   padding: 0 0 18px;
   margin-bottom: 20px;

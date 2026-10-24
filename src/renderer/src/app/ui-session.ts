@@ -101,6 +101,8 @@ export interface ReviewWritingDraft {
 }
 
 export class UiSession {
+  // Reading state only, retained across navigation within this app session.
+  readonly expandedActionDescriptions = new Set<string>()
   readonly bookReading: { month: string | null; positions: Map<string, number> } = {
     month: null,
     positions: new Map()
