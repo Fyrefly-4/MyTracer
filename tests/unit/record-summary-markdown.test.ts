@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { createActionRecord } from '../../src/domain/action-record'
 import { createRoutineRecord } from '../../src/domain/routine-record'
+import { renderBookMonth } from '../../src/presentation/record-book'
+import { renderRecordBookHtml } from '../../src/infrastructure/export/record-book-html'
 import { renderRecordNote } from '../../src/presentation/record-note'
 import { searchHistory } from '../../src/renderer/src/features/data-control/history-search'
 
@@ -70,6 +72,48 @@ describe('closed Markdown rendering vocabulary', () => {
       '<pre><code>&lt;script&gt;code&lt;/script&gt;</code></pre>'
     ])
       expect(html).toContain(part)
+  })
+  it.each([0, 3, 999999999])(
+    'preserves ordered-list start %s in shared app and offline rendering',
+    (start) => {
+      const source = `${start}. first\n${start}. second`
+      const expected = `<ol start="${start}"><li>first</li><li>second</li></ol>`
+      const month = {
+        key: '2026-10',
+        days: [
+          {
+            date: '2026-10-24',
+            entries: [
+              {
+                id: 'record',
+                kind: 'action-record' as const,
+                date: '2026-10-24',
+                title: 'Synthetic record',
+                fields: [{ label: '原备注', text: source }]
+              }
+            ]
+          }
+        ]
+      }
+      expect(renderRecordNote(source)).toBe(expected)
+      expect(renderBookMonth(month)).toContain(expected)
+      expect(
+        renderRecordBookHtml({ book: { months: [month], exclusions: [] }, readAt: base.now })
+      ).toContain(expected)
+      expect(month.days[0].entries[0].fields[0].text).toBe(source)
+    }
+  )
+  it('does not promote raw HTML or malformed list markers into list attributes', () => {
+    const source =
+      '3. <img src="https://example.invalid" onerror="bad()">\n\n<ol start="3" onclick="bad()"><li>raw</li></ol>\n\n3" onclick="bad(). item\n\n9999999999. not a Markdown list'
+    const html = renderRecordNote(source)
+    expect(html).toContain('<ol start="3">')
+    expect(html).toContain('&lt;ol start=&quot;3&quot; onclick=&quot;bad()&quot;&gt;')
+    expect(html).toContain('9999999999. not a Markdown list')
+    expect(html).not.toMatch(/<[^>]*\b(?:onclick|onerror|src)=/i)
+    expect(html.match(/<ol[^>]*>/g)).toEqual(['<ol start="3">'])
+    expect(renderRecordNote('1. first')).toBe('<ol><li>first</li></ol>')
+    expect(renderRecordNote('- first')).toBe('<ul><li>first</li></ul>')
   })
   it.each([
     'https://example.invalid/pixel',

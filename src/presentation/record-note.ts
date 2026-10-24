@@ -34,7 +34,15 @@ function render(tokens: readonly Token[]): string {
           return `<blockquote>${render(token.tokens ?? [])}</blockquote>`
         case 'list': {
           const tag = token.ordered ? 'ol' : 'ul'
-          return `<${tag}>${token.items.map((item: { tokens: Token[] }) => `<li>${render(item.tokens)}</li>`).join('')}</${tag}>`
+          const start =
+            token.ordered &&
+            typeof token.start === 'number' &&
+            Number.isSafeInteger(token.start) &&
+            token.start >= 0 &&
+            token.start !== 1
+              ? ` start="${token.start}"`
+              : ''
+          return `<${tag}${start}>${token.items.map((item: { tokens: Token[] }) => `<li>${render(item.tokens)}</li>`).join('')}</${tag}>`
         }
         case 'br':
           return '<br>'
