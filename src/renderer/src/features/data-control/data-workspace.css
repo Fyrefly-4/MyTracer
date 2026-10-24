@@ -605,3 +605,28 @@
     overflow: visible;
   }
 }
+
+/* Search shares the history surface/padding; it never owns a scroll region. */
+.data-workspace .data-history-search {
+  display: grid;
+  gap: 6px;
+  padding-bottom: 12px;
+  min-width: 0;
+  flex-shrink: 0;
+  font-size: 12px;
+}
+.data-workspace .data-history-search input {
+  width: 100%;
+  min-width: 0;
+}
+.data-workspace .data-history-search p {
+  margin: 0;
+  color: var(--color-muted);
+  overflow-wrap: anywhere;
+  line-height: 1.6;
+}
+.data-workspace .data-history-row .data-search-match {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  text-align: left;
+}
