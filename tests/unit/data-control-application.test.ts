@@ -13,6 +13,7 @@ function setup() {
     plannedForDate: false,
     plannedForDateBasis: 'schedule_at_recording' as const,
     durationMinutes: 2,
+    summary: null,
     note: null,
     createdAt: 'created',
     updatedAt: 'created'

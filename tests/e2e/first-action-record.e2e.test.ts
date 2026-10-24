@@ -1,3 +1,4 @@
+import { openRecordNote } from '../support/ui-disclosure'
 import { join } from 'node:path'
 import { expect, test, type Page, type ElectronApplication } from '@playwright/test'
 import { _electron as electron } from 'playwright'
@@ -31,6 +32,10 @@ test('first record preserves drafts, explicit choices, retry identity and modal 
     await expect(dialog).toContainText('当前没有可开始的行动')
     await dialog.getByLabel('刚才做了什么', { exact: true }).fill('合成事实：整理了一部分')
     await dialog
+      .getByRole('textbox', { name: '简述（可选）', exact: true })
+      .fill('合成简述\n第二行')
+    await openRecordNote(dialog.getByRole('textbox', { name: '备注（可选）', exact: true }))
+    await dialog
       .getByLabel('备注（可选）', { exact: true })
       .fill('合成长文字，保留事实而不自动完成。'.repeat(80))
     // An IME composition Enter must not submit a valid-looking form.
@@ -50,6 +55,9 @@ test('first record preserves drafts, explicit choices, retry identity and modal 
     await page.getByRole('button', { name: '继续记一笔', exact: true }).click()
     await expect(dialog.getByLabel('刚才做了什么', { exact: true })).toHaveValue(
       '合成事实：整理了一部分'
+    )
+    await expect(dialog.getByRole('textbox', { name: '简述（可选）', exact: true })).toHaveValue(
+      '合成简述\n第二行'
     )
     for (const factor of [1, 1.25, 1.5]) {
       await app.evaluate(({ BrowserWindow }, zoom) => {
@@ -103,7 +111,9 @@ test('first record preserves drafts, explicit choices, retry identity and modal 
       ok: true,
       value: {
         actions: [{ status: 'pending', goalId: null }],
-        actionRecords: [{ durationMinutes: null, outcome: 'completed' }]
+        actionRecords: [
+          { durationMinutes: null, outcome: 'completed', summary: '合成简述\n第二行' }
+        ]
       }
     })
     expect(saved.ok && saved.value.actions).toHaveLength(1)

@@ -154,7 +154,14 @@ function target(value: unknown): DeleteTarget {
   return { type: input.type, id: id(input.id) }
 }
 
-const actionFields = ['occurredOn', 'durationMinutes', 'outcome', 'nextStep', 'note'] as const
+const actionFields = [
+  'occurredOn',
+  'durationMinutes',
+  'outcome',
+  'nextStep',
+  'summary',
+  'note'
+] as const
 
 function parseBackfillAction(args: readonly unknown[]): BackfillActionRecordInputDto {
   const input = oneObject(args, ['actionId', ...actionFields, 'understanding', 'confusion'])
@@ -165,7 +172,8 @@ function parseBackfillAction(args: readonly unknown[]): BackfillActionRecordInpu
       input.durationMinutes === null ? null : nonNegativeInteger(input.durationMinutes),
     outcome: actionOutcome(input.outcome),
     nextStep: optionalText(input.nextStep),
-    note: optionalText(input.note),
+    summary: optionalSummary(input.summary),
+    note: optionalNote(input.note),
     understanding: optionalText(input.understanding),
     confusion: optionalText(input.confusion)
   }
@@ -180,7 +188,8 @@ function parseUpdateAction(args: readonly unknown[]): UpdateActionRecordInputDto
       input.durationMinutes === null ? null : nonNegativeInteger(input.durationMinutes),
     outcome: actionOutcome(input.outcome),
     nextStep: optionalText(input.nextStep),
-    note: optionalText(input.note)
+    summary: optionalSummary(input.summary),
+    note: optionalNote(input.note)
   }
 }
 
@@ -189,6 +198,7 @@ const routineFields = [
   'outcome',
   'plannedForDate',
   'durationMinutes',
+  'summary',
   'note'
 ] as const
 
@@ -201,7 +211,8 @@ function parseBackfillRoutine(args: readonly unknown[]): BackfillRoutineRecordIn
     outcome: routineOutcome(input.outcome),
     plannedForDate: input.plannedForDate,
     durationMinutes: optionalMinutes(input.durationMinutes),
-    note: optionalText(input.note)
+    summary: optionalSummary(input.summary),
+    note: optionalNote(input.note)
   }
 }
 
@@ -216,7 +227,8 @@ function parseUpdateRoutine(args: readonly unknown[]): UpdateRoutineRecordInputD
     outcome: routineOutcome(input.outcome),
     plannedForDate: input.plannedForDate as boolean | undefined,
     durationMinutes: optionalMinutes(input.durationMinutes),
-    note: optionalText(input.note)
+    summary: optionalSummary(input.summary),
+    note: optionalNote(input.note)
   }
 }
 
@@ -351,4 +363,17 @@ export function registerDataControlIpc(options: RegisterDataControlIpcOptions): 
       })
     }
   )
+}
+
+function optionalNote(value: unknown): string | null | undefined {
+  if (value == null) return value
+  if (typeof value !== 'string') throw new DataControlIpcValidationError('Expected note text.')
+  return value
+}
+
+function optionalSummary(value: unknown): string | null | undefined {
+  const text = optionalText(value)
+  if (text && Array.from(text).length > 500)
+    throw new DataControlIpcValidationError('简述请保持在 500 字以内。')
+  return text
 }

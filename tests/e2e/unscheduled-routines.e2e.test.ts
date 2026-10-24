@@ -1,3 +1,4 @@
+import { openRecordNote } from '../support/ui-disclosure'
 import { join } from 'node:path'
 import { expect, test, type ElectronApplication } from '@playwright/test'
 import { _electron as electron } from 'playwright'
@@ -34,6 +35,7 @@ test('explicit unscheduled creation, discoverable manual recording and both arra
     await chooser.getByRole('button', { name: /合成随时弹琴/ }).click()
     const panel = page.getByLabel('合成随时弹琴 例行记录', { exact: true })
     await panel.getByRole('button', { name: '记录例行', exact: true }).click()
+    await openRecordNote(panel.getByLabel('备注（可选）'))
     await panel.getByLabel('备注（可选）').fill('合成未保存草稿')
     await navigate('目标')
     await navigate('今天')

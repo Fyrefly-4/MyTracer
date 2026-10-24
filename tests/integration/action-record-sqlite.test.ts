@@ -176,6 +176,7 @@ describe('ActionRecord SQLite integration', () => {
         understanding: 'State setters enqueue updates',
         confusion: 'When does batching stop?',
         nextStep: 'Run the functional update version',
+        summary: '独立行动简述\n第二行',
         note: 'Stopped after reproducing batching',
         postRecord: {
           action: 'reschedule',
@@ -192,6 +193,7 @@ describe('ActionRecord SQLite integration', () => {
     expect(detail).toMatchObject({
       durationMinutes: 25,
       outcome: 'stopped',
+      summary: '独立行动简述\n第二行',
       understandings: [{ text: 'State setters enqueue updates', source: 'manual' }],
       confusions: [{ text: 'When does batching stop?', status: 'open' }]
     })
@@ -352,6 +354,7 @@ describe('first Action record atomic boundary (#125)', () => {
     durationMinutes: null,
     outcome: 'partial' as const,
     lifecycle: 'keep-pending' as const,
+    summary: '第一笔简述',
     note: '还要继续'
   }
   it.each([null, 0, 8])(
@@ -392,7 +395,7 @@ describe('first Action record atomic boundary (#125)', () => {
             selectedForToday: false,
             goalId
           },
-          record: { durationMinutes, outcome },
+          record: { durationMinutes, outcome, summary: '第一笔简述', note: '还要继续' },
           appliedNextActionId: null
         })
         expect(services.records.recordFirstAction(request)).toEqual(result)

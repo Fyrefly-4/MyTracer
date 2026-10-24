@@ -150,6 +150,7 @@ describe('ActionRecord IPC boundary', () => {
         understanding: 'State updates are queued',
         confusion: 'Why batching?',
         nextStep: 'Try a functional update',
+        summary: null,
         note: 'Short action',
         postRecord: {
           action: 'complete',
@@ -213,6 +214,16 @@ describe('ActionRecord IPC boundary', () => {
   it('rejects malformed fields, Renderer dates, and illegal post-record choices', () => {
     const { invoke, service } = setup()
     const invalid: Array<[string, ...unknown[]]> = [
+      ...[123, {}, 'x'.repeat(501)].map((summary): [string, unknown] => [
+        RECORD_CHANNELS.record,
+        {
+          actionId,
+          recordingContextId: contextId,
+          durationMinutes: null,
+          outcome: 'partial',
+          summary
+        }
+      ]),
       [RECORD_CHANNELS.begin],
       [RECORD_CHANNELS.begin, { actionId: 'bad' }],
       [RECORD_CHANNELS.cancel, { recordingContextId: 'bad' }],

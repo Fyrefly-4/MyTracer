@@ -147,6 +147,7 @@ describe('ActionRecord application', () => {
       understanding: 'State updates are queued',
       confusion: 'Why are updates batched?',
       nextStep: 'Run a functional update example',
+      summary: null,
       note: 'Stopped after reproducing the behavior'
     })
 
@@ -291,6 +292,7 @@ describe('ActionRecord application', () => {
       durationMinutes: 5,
       outcome: 'partial',
       nextStep: null,
+      summary: null,
       note: null,
       createdAt: instant,
       updatedAt: instant
@@ -323,6 +325,7 @@ describe('ActionRecord application', () => {
       durationMinutes: 5,
       outcome: 'partial',
       nextStep: null,
+      summary: null,
       note: null,
       createdAt: instant,
       updatedAt: instant

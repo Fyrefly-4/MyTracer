@@ -82,6 +82,7 @@ function populate(connection: SqliteConnection): void {
       durationMinutes: 10,
       outcome: 'partial',
       nextStep: null,
+      summary: null,
       note: null,
       createdAt: firstInstant,
       updatedAt: firstInstant
@@ -113,6 +114,7 @@ function populate(connection: SqliteConnection): void {
       plannedForDate: true,
       plannedForDateBasis: 'schedule_at_recording',
       durationMinutes: 5,
+      summary: null,
       note: null,
       createdAt: firstInstant,
       updatedAt: firstInstant
@@ -203,6 +205,7 @@ describe('data control SQLite integration', () => {
       durationMinutes: 20,
       outcome: 'stopped',
       nextStep: 'Retry',
+      summary: null,
       note: 'Edited'
     })
     const actionBackfill = data.backfillActionRecord({
@@ -382,6 +385,7 @@ describe('data control SQLite integration', () => {
       durationMinutes: 1,
       outcome: 'partial',
       nextStep: null,
+      summary: null,
       note: null,
       createdAt: firstInstant,
       updatedAt: firstInstant

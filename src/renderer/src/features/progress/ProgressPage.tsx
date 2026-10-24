@@ -1,3 +1,4 @@
+import { RecordNote } from '../../app/RecordText'
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import './progress-workspace.css'
 import { ProgressActionNotes } from './ProgressActionNotes'
@@ -380,10 +381,18 @@ function ProgressWorkspace({ onOpenBook }: { onOpenBook: () => void }): ReactNod
                                 key={`${record.recordId}:${detailRevision}`}
                                 record={item.record}
                               />
-                            ) : item.record.note ? (
+                            ) : item.record.note || item.record.summary ? (
                               <details className="progress-record-notes">
                                 <summary>展开理解与记录</summary>
-                                <p>{item.record.note}</p>
+                                {item.record.summary ? (
+                                  <p className="record-summary">简述：{item.record.summary}</p>
+                                ) : null}
+                                {item.record.note ? (
+                                  <div>
+                                    <h3>补充笔记</h3>
+                                    <RecordNote text={item.record.note} />
+                                  </div>
+                                ) : null}
                               </details>
                             ) : null}
                           </td>

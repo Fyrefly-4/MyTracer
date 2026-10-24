@@ -87,7 +87,10 @@ it('migrates v3 numeric/zero rows and linked history exactly, retaining indexes,
   connection.close()
   const check = new Database(path)
   try {
-    expect(rows(check)).toEqual(before)
+    expect(rows(check)).toEqual([
+      before[0].map((r) => ({ ...(r as object), summary: null })),
+      ...before.slice(1)
+    ])
     expect(check.prepare('PRAGMA foreign_key_check').all()).toEqual([])
     expect(
       check
@@ -188,8 +191,10 @@ it('preserves null across creation, backfill, edits, queries, mixed/all-unknown 
     ).toMatchObject({ unknownDurationCount: 1, realActionCount: 3 })
     const snapshot = asCompleteExportRepository(connection.repository).readCompleteCoreSnapshot()
     const exported = JSON.parse(JSON.stringify(buildCompleteExport(snapshot, clock)))
-    expect(exported).toMatchObject({ exportVersion: 5, sourceDataVersion: 6 })
+    expect(exported).toMatchObject({ exportVersion: 6, sourceDataVersion: 7 })
     expect(() => validateCompleteExport(exported)).not.toThrow()
+    for (const record of exported.data.actionRecords) delete record.summary
+    for (const record of exported.data.routineRecords) delete record.summary
     for (const exportVersion of [1, 2]) {
       expect(() => validateCompleteExport({ ...exported, exportVersion })).toThrow(
         'Action record is invalid'

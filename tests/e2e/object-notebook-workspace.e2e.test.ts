@@ -33,6 +33,7 @@ test('goal and routine notebooks paginate, scroll independently, and preserve cr
               occurredOn: `2026-08-${day}`,
               durationMinutes: 15,
               outcome: 'partial',
+              summary: null,
               note: `目标记录 ${day}，完整内容不会因分页丢失。`
             })
             if (!record.ok) throw new Error('Cannot seed goal records')

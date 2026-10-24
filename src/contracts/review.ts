@@ -71,7 +71,7 @@ export interface ReviewSummaryDto {
   readonly confirmedUnderstandingCount: number
   readonly openConfusionCount: number
   readonly hasRecordedFacts: boolean
-  readonly actionRecords: readonly Omit<ProgressRecordFactDto, 'hasRecordedText'>[]
+  readonly actionRecords: readonly ProgressRecordFactDto[]
   readonly routineRecords: readonly RoutineProgressRecordFactDto[]
   readonly understandings: readonly ReviewChildFactDto[]
   readonly openConfusions: readonly ReviewChildFactDto[]

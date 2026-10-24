@@ -141,13 +141,14 @@
   overflow-wrap: anywhere;
 }
 .home-goal-note {
+  white-space: pre-wrap;
   font-size: 12px;
   line-height: 1.7;
   color: var(--color-muted);
   margin: 0 0 14px;
   min-height: 41px;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   overflow-wrap: anywhere;
@@ -270,6 +271,7 @@
   overflow-wrap: anywhere;
 }
 .home-recent span {
+  white-space: pre-wrap;
   font-size: 12px;
   color: var(--color-muted);
   display: -webkit-box;

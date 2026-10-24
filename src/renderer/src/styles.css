@@ -3307,3 +3307,5 @@ small {
 button {
   font-size: 15px;
 }
+
+.record-summary { white-space: pre-wrap; overflow-wrap: anywhere; }

@@ -1,3 +1,4 @@
+import { RecordSummaryInput, RecordNoteInput } from '../../app/RecordText'
 import '../forms-workspace.css'
 import '../object-workspace.css'
 import './routine-search-context.css'
@@ -148,6 +149,7 @@ export function RoutineRecordingPanel(props: {
   const [dayState, setDayState] = useState<RoutineDayStateDto | null>(props.initialState ?? null)
   const [outcome, setOutcome] = useState<RoutineRecordOutcomeDto>(restoredDraft?.outcome ?? 'acted')
   const [durationMinutes, setDurationMinutes] = useState(restoredDraft?.durationMinutes ?? '')
+  const [summary, setSummary] = useState(restoredDraft?.summary ?? '')
   const [note, setNote] = useState(restoredDraft?.note ?? '')
   const [dateConfirmation, setDateConfirmation] = useState<{
     readonly capturedOn: string
@@ -160,8 +162,8 @@ export function RoutineRecordingPanel(props: {
 
   useEffect(() => {
     if (!context) return
-    session.setRoutineDraft(props.routineId, { context, outcome, durationMinutes, note })
-  }, [context, durationMinutes, note, outcome, props.routineId, session])
+    session.setRoutineDraft(props.routineId, { context, outcome, durationMinutes, summary, note })
+  }, [context, durationMinutes, summary, note, outcome, props.routineId, session])
 
   // A previous instance can finish saving after this panel restores its draft.
   // Refresh exposes the committed fact; only discard the consumed context,
@@ -221,6 +223,7 @@ export function RoutineRecordingPanel(props: {
       context: result.value,
       outcome,
       durationMinutes,
+      summary,
       note
     })
     setInvalidContext(false)
@@ -273,6 +276,7 @@ export function RoutineRecordingPanel(props: {
     setDateConfirmation(null)
     setOutcome('acted')
     setDurationMinutes('')
+    setSummary('')
     setNote('')
     setError(null)
   }
@@ -312,7 +316,8 @@ export function RoutineRecordingPanel(props: {
       dateChoice,
       outcome,
       durationMinutes: actionOutcome ? parsedDuration : null,
-      note: note.trim() || null
+      summary: summary.trim() ? summary : null,
+      note: note.trim() ? note : null
     })
     // Persistence belongs to the submitted operation, not the panel lifetime.
     // Selection can unmount this panel while Main is committing the record.
@@ -436,10 +441,8 @@ export function RoutineRecordingPanel(props: {
                 <small>留空表示未记录时长；0 表示不足 1 分钟但确有行动。</small>
               </label>
             ) : null}
-            <label>
-              备注（可选）
-              <textarea rows={2} value={note} onChange={(event) => setNote(event.target.value)} />
-            </label>
+            <RecordSummaryInput value={summary} onChange={setSummary} />
+            <RecordNoteInput value={note} onChange={setNote} />
             {dateConfirmation ? (
               <div className="date-confirmation" role="alertdialog" aria-label="确认例行记录发生日">
                 <p>

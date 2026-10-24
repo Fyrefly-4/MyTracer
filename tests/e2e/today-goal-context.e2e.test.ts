@@ -67,6 +67,7 @@ async function fixtures(
         outcome: 'partial',
         understanding: `理解 ${day}：状态需要单一来源`,
         confusion: `困惑 ${day}：如何处理晚到的结果？`,
+        summary: null,
         note: '上次读到这里。'
       })
       if (!saved.ok) throw new Error('Record fixture failed')

@@ -1,3 +1,4 @@
+import { openRecordNote } from '../support/ui-disclosure'
 import { join } from 'node:path'
 import { expect, test, type ElectronApplication, type Page } from '@playwright/test'
 import { _electron as electron } from 'playwright'
@@ -62,6 +63,7 @@ async function seed(page: Page): Promise<void> {
       occurredOn: '2026-08-01',
       outcome: 'intentional_rest',
       plannedForDate: false,
+      summary: null,
       note: 'Needle 节奏'
     })
     if (!record.ok) throw new Error(record.error.message)
@@ -142,6 +144,7 @@ test('literal saved-text retrieval covers older pages, fields, filters and curre
     await query.fill('%_*.[x]')
     await rows.click()
     await page.getByRole('button', { name: '编辑记录', exact: true }).click()
+    await openRecordNote(page.getByLabel('行动备注', { exact: true }))
     await page.getByLabel('行动备注', { exact: true }).fill('修改后的 SavedOnly')
     await page.getByRole('button', { name: '保存修改', exact: true }).click()
     await expect(rows).toHaveCount(0)
@@ -220,6 +223,7 @@ test('query/filter/page/scroll return, IME and unsaved editors retain existing n
     await query.fill('NextOnly')
     await rows.click()
     await page.getByRole('button', { name: '编辑记录', exact: true }).click()
+    await openRecordNote(page.getByLabel('行动备注'))
     await page.getByLabel('行动备注').fill('未保存草稿')
     await query.fill('InsightOnly')
     await expect(page.getByLabel('行动备注')).toHaveValue('未保存草稿')

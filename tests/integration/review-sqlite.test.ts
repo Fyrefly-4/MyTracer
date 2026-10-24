@@ -77,6 +77,7 @@ function seed(connection: SqliteConnection): void {
     durationMinutes: 12,
     outcome: 'partial',
     nextStep: null,
+    summary: null,
     note: null,
     createdAt: at(10, 1),
     updatedAt: at(10, 1)
@@ -139,6 +140,7 @@ function seed(connection: SqliteConnection): void {
     plannedForDate: true,
     plannedForDateBasis: 'user_confirmed_history',
     durationMinutes: outcome === 'target_met' ? 5 : outcome === 'acted' ? 2 : null,
+    summary: null,
     note: null,
     createdAt: at(index + 10),
     updatedAt: at(index + 10)
@@ -180,14 +182,8 @@ describe('Review SQLite summary snapshot', () => {
       routineOutcomeCounts: { targetMet: 1, acted: 1, intentionalRest: 1, notDone: 1 },
       unknownPolicy: 'absence-is-unknown-not-counted-as-not-done'
     })
-    expect(first.actionRecords).toEqual(
-      progress.records.map((record) => {
-        const { hasRecordedText, ...facts } = record
-        expect(hasRecordedText).toBe(false)
-        return facts
-      })
-    )
-    expect(first.actionRecords[0]).not.toHaveProperty('hasRecordedText')
+    expect(first.actionRecords).toEqual(progress.records)
+    expect(first.actionRecords[0]).toHaveProperty('hasRecordedText', false)
     expect(first.actionRecords[0]).not.toHaveProperty('note')
     expect(first.actionRecords[0]).not.toHaveProperty('nextStep')
     expect(first.routineRecords).toEqual(progress.routineRecords)
@@ -205,6 +201,7 @@ describe('Review SQLite summary snapshot', () => {
       durationMinutes: 3,
       outcome: 'stopped',
       nextStep: null,
+      summary: null,
       note: null,
       createdAt: at(14),
       updatedAt: at(14)

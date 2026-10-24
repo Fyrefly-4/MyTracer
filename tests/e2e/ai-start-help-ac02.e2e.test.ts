@@ -129,6 +129,7 @@ test('continuous E2E-AC-02 proves isolation, every temporary branch, confirmatio
             sequence === 6 ? '__ac02_excluded_record_6__' : `__ac02_allowed_record_${sequence}__`,
           confusion: `__ac02_allowed_confusion_${sequence}__`,
           nextStep: `__ac02_allowed_next_${sequence}__`,
+          summary: null,
           note: `__ac02_forbidden_note_${sequence}__`
         })
         if (!record.ok) throw new Error(record.error.message)
@@ -161,6 +162,7 @@ test('continuous E2E-AC-02 proves isolation, every temporary branch, confirmatio
         outcome: 'acted',
         plannedForDate: false,
         durationMinutes: 2,
+        summary: null,
         note: '__ac02_forbidden_routine_record__'
       })
       if (!routineRecord.ok) throw new Error(routineRecord.error.message)
@@ -466,7 +468,7 @@ test('continuous E2E-AC-02 proves isolation, every temporary branch, confirmatio
       dialog.showSaveDialog = async () => ({ canceled: false, filePath: target })
     }, destination)
     const exportResult = await page.evaluate(() => window.myTracer.exports.generate())
-    expect(exportResult).toMatchObject({ ok: true, value: { exportVersion: 5 } })
+    expect(exportResult).toMatchObject({ ok: true, value: { exportVersion: 6 } })
     const exported = JSON.parse(await readFile(destination, 'utf8'))
     expect(exported.data.actions).toEqual(
       expect.arrayContaining([

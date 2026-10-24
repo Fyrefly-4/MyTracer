@@ -64,6 +64,7 @@ export interface ActionRecordSummaryView {
   readonly durationMinutes: number | null
   readonly outcome: ActionRecordPersistenceRecord['outcome']
   readonly nextStep: string | null
+  readonly summary: string | null
   readonly note: string | null
   readonly createdAt: string
 }
@@ -154,6 +155,7 @@ function summary(record: ActionRecordPersistenceRecord): ActionRecordSummaryView
     durationMinutes: record.durationMinutes,
     outcome: record.outcome,
     nextStep: record.nextStep,
+    summary: record.summary,
     note: record.note,
     createdAt: record.createdAt
   })
@@ -227,6 +229,7 @@ export class ActionRecordService {
     readonly durationMinutes: number | null
     readonly outcome: ActionRecordOutcome
     readonly lifecycle: 'keep-pending' | 'complete'
+    readonly summary?: string | null
     readonly note?: string | null
     readonly dateChoice?: RecordingDateChoice
   }): RecordActionResult {
@@ -295,6 +298,7 @@ export class ActionRecordService {
           occurredOn: String(decision.occurredOn),
           durationMinutes: input.durationMinutes,
           outcome: input.outcome,
+          summary: input.summary,
           note: input.note,
           now: snapshot.instant
         })
@@ -327,6 +331,7 @@ export class ActionRecordService {
     readonly understanding?: string | null
     readonly confusion?: string | null
     readonly nextStep?: string | null
+    readonly summary?: string | null
     readonly note?: string | null
     readonly postRecord?: PostRecordChoice
   }): RecordActionResult {
@@ -362,6 +367,7 @@ export class ActionRecordService {
           durationMinutes: input.durationMinutes,
           outcome: input.outcome,
           nextStep: input.nextStep,
+          summary: input.summary,
           note: input.note,
           now: snapshot.instant
         })

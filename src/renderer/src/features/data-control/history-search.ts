@@ -78,6 +78,7 @@ export function searchHistory(data: DataControlListDto, filter: HistoryFilter): 
         goalId: action?.goalId ?? null,
         matches: matches([
           ['行动标题（当前）', action?.title],
+          ['简述', record.summary],
           ['备注', record.note],
           ['记录下一步', record.nextStep],
           ...(facts.get(record.id) ?? [])
@@ -93,6 +94,7 @@ export function searchHistory(data: DataControlListDto, filter: HistoryFilter): 
         goalId: routine?.goalId ?? null,
         matches: matches([
           ['例行名称（当前）', routine?.name],
+          ['简述', record.summary],
           ['备注', record.note]
         ])
       }

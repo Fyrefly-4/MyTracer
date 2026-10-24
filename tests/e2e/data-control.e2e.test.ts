@@ -65,6 +65,7 @@ test('edits, backfills, previews, deletes, and reopens T031 facts through the tr
         occurredOn: '2026-08-11',
         durationMinutes: 9,
         outcome: 'stopped',
+        summary: null,
         note: 'Edited history'
       })
       const movedRoutine = await window.myTracer.dataControl.updateRoutineRecord({

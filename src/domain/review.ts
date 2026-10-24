@@ -111,7 +111,7 @@ export interface ReviewSummary {
   readonly confirmedUnderstandingCount: number
   readonly openConfusionCount: number
   readonly hasRecordedFacts: boolean
-  readonly actionRecords: readonly Omit<ProgressRecordFact, 'hasRecordedText'>[]
+  readonly actionRecords: readonly ProgressRecordFact[]
   readonly routineRecords: readonly RoutineProgressRecordFact[]
   readonly understandings: readonly ReviewUnderstandingFact[]
   readonly openConfusions: readonly ReviewConfusionFact[]
@@ -140,6 +140,7 @@ function childFacts(
           id: fact.id,
           actionRecordId: record.recordId,
           actionTitle: record.actionTitle,
+          hasRecordedText: record.hasRecordedText,
           occurredOn: record.occurredOn,
           text: fact.text,
           createdAt: fact.createdAt
@@ -189,6 +190,7 @@ export function buildReviewSummary(period: LocalDateWeek, progress: ProgressView
           actionId: record.actionId,
           goalId: record.goalId,
           actionTitle: record.actionTitle,
+          hasRecordedText: record.hasRecordedText,
           occurredOn: record.occurredOn,
           durationMinutes: record.durationMinutes,
           outcome: record.outcome,

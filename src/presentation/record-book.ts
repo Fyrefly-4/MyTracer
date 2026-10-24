@@ -1,3 +1,4 @@
+import { renderRecordNote, recordNoteCss } from './record-note'
 import type { RecordBook, RecordBookMonth } from '../contracts/record-book'
 
 /** Every dynamic string, including attributes, must cross this boundary. No user script/HTML. */
@@ -19,8 +20,11 @@ function renderEntry(
   const isCurrent = (label: string) => label.includes('读取时')
   const fields = entry.fields.filter((row) => row.label !== '名称说明')
   const ordered = [
+    ...fields.filter((row) => row.label === '简述'),
     ...fields.filter((row) => row.label === '原备注'),
-    ...fields.filter((row) => row.label !== '原备注' && !isCurrent(row.label)),
+    ...fields.filter(
+      (row) => row.label !== '原备注' && row.label !== '简述' && !isCurrent(row.label)
+    ),
     ...fields.filter((row) => isCurrent(row.label))
   ]
   const description = entry.fields.find((row) => row.label === '名称说明')?.text
@@ -34,7 +38,7 @@ function renderEntry(
             : isCurrent(row.label)
               ? 'rb-current'
               : 'rb-fact'
-      return `<div class="${style}"><dt>${e(row.label)}</dt><dd>${e(row.text)}</dd></div>`
+      return `<div class="${style}"><dt>${e(row.label)}</dt><dd class="${row.label === '原备注' ? 'record-note' : ''}">${row.label === '原备注' ? renderRecordNote(row.text) : e(row.text)}</dd></div>`
     })
     .join(
       ''
@@ -63,7 +67,9 @@ export function renderBookCoverage(book: RecordBook): string {
 }
 
 // Shared by the app reading view and the self-contained exported file. All selectors are scoped.
-export const recordBookCss = `
+export const recordBookCss =
+  recordNoteCss +
+  `
 .record-book{--rb-paper:#faf8f2;--rb-ground:#eeeee6;--rb-ink:#343b32;--rb-muted:#62695d;--rb-line:#dedfd3;--rb-sage:#657b60;--rb-wash:#edf0e6;color:var(--rb-ink);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;font-size:15px;line-height:1.85;overflow-wrap:anywhere}
 .record-book *{box-sizing:border-box}.record-book [hidden]{display:none!important}.record-book button,.record-book select{font:inherit;color:inherit}.record-book a{color:var(--rb-sage)}.record-book :is(button,a,select,summary){outline-offset:4px}.record-book button{cursor:pointer;border:1px solid #c6cdbb;border-radius:4px;padding:6px 12px;background:transparent;font-size:13px;min-height:36px}.record-book button:hover{background:var(--rb-wash)}.record-book button:disabled{opacity:.5;cursor:default}
 .record-book .rb-layout{max-width:1190px;margin:20px auto 45px;display:grid;grid-template-columns:145px minmax(0,1fr);gap:28px}.record-book .rb-toc{align-self:start;position:sticky;top:20px;font-size:14px;max-height:75vh;overflow:auto}.record-book .rb-toc p{font-size:12px;color:var(--rb-muted);letter-spacing:.1em}.record-book .rb-toc button,.record-book .rb-toc a{display:block;border:0;border-left:1px solid var(--rb-line);border-radius:0;width:100%;text-align:left;padding:6px 16px;font-size:14px;text-decoration:none}.record-book .rb-toc [aria-current=page]{border-left:2px solid var(--rb-sage);background:#e5e9de}.record-book .rb-paper{min-width:0;background:var(--rb-paper);border:1px solid #e1e1d6;box-shadow:0 3px 5px #303f2810,0 18px 65px #35432d06}.record-book .rb-cover{padding:40px 50px 28px}.record-book .rb-brand{display:block;width:150px;height:auto}.record-book h1{font-family:"Songti SC",SimSun,serif;font-size:36px;font-weight:600;letter-spacing:.08em;margin:15px 0 12px;line-height:1.5}.record-book .rb-intro{max-width:36em;font-size:15px;color:var(--rb-muted);margin:0}.record-book .rb-edition{font-size:12px;color:var(--rb-muted);border-top:1px solid var(--rb-line);margin-top:25px;padding-top:14px}

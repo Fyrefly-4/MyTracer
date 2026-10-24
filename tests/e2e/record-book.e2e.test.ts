@@ -1,3 +1,4 @@
+import { openRecordNote } from '../support/ui-disclosure'
 import { join } from 'node:path'
 import { readFile } from 'node:fs/promises'
 import { expect, test, type ElectronApplication, type Page } from '@playwright/test'
@@ -176,6 +177,7 @@ test('book month navigation, original visit, source filters and scroll return wi
         occurredOn: '2025-01-02',
         durationMinutes: 0,
         outcome: 'partial',
+        summary: null,
         note: '新保存原文'
       })
       if (!record.ok) throw new Error(record.error.message)
@@ -195,6 +197,7 @@ test('book preserves data drafts, exports the full offline book and retains keyb
     await navigate(page, '数据')
     await page.locator('.data-history-row').first().click()
     await page.getByRole('button', { name: '编辑记录', exact: true }).click()
+    await openRecordNote(page.getByLabel('行动备注', { exact: true }))
     await page.getByLabel('行动备注', { exact: true }).fill('尚未保存的合成草稿')
     await openBook(page)
     const guard = page.getByRole('dialog', { name: '离开数据页' })

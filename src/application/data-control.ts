@@ -255,6 +255,7 @@ export class DataControlService {
     readonly understanding?: string | null
     readonly confusion?: string | null
     readonly nextStep?: string | null
+    readonly summary?: string | null
     readonly note?: string | null
   }): ActionRecordPersistenceRecord {
     const now = this.dependencies.clock.snapshot().instant
@@ -308,6 +309,7 @@ export class DataControlService {
     readonly durationMinutes: number | null
     readonly outcome: ActionRecordOutcome
     readonly nextStep?: string | null
+    readonly summary?: string | null
     readonly note?: string | null
   }): ActionRecordPersistenceRecord {
     const now = this.dependencies.clock.snapshot().instant
@@ -318,7 +320,12 @@ export class DataControlService {
         if (!current) {
           throw new DataControlApplicationError('not-found', 'Action record was not found.')
         }
-        const updated = updateActionRecord(current, { ...input, now })
+        const updated = updateActionRecord(current, {
+          ...input,
+          summary: input.summary === undefined ? current.summary : input.summary,
+          note: input.note === undefined ? current.note : input.note,
+          now
+        })
         assertUpdated(repository.updateActionRecord(updated), 'Action record')
         return actionRecordView(updated)
       })
@@ -333,6 +340,7 @@ export class DataControlService {
     readonly outcome: RoutineRecordOutcome
     readonly plannedForDate: boolean
     readonly durationMinutes?: number | null
+    readonly summary?: string | null
     readonly note?: string | null
   }): RoutineRecordPersistenceRecord {
     const now = this.dependencies.clock.snapshot().instant
@@ -374,6 +382,7 @@ export class DataControlService {
     readonly outcome: RoutineRecordOutcome
     readonly plannedForDate?: boolean
     readonly durationMinutes?: number | null
+    readonly summary?: string | null
     readonly note?: string | null
   }): RoutineRecordPersistenceRecord {
     const now = this.dependencies.clock.snapshot().instant
@@ -415,6 +424,7 @@ export class DataControlService {
                 : input.durationMinutes === undefined
                   ? current.durationMinutes
                   : input.durationMinutes,
+            summary: input.summary === undefined ? current.summary : input.summary,
             note: input.note === undefined ? current.note : input.note,
             now
           }

@@ -1,3 +1,4 @@
+import { openRecordNote } from '../support/ui-disclosure'
 import { join } from 'node:path'
 import { expect, test, type ElectronApplication, type Page } from '@playwright/test'
 import { _electron as electron } from 'playwright'
@@ -31,6 +32,7 @@ async function withData(
           occurredOn: `2026-08-${day}`,
           durationMinutes: 5,
           outcome: 'partial',
+          summary: null,
           note: Array.from({ length: 50 }, (_, i) => `合成笔记第 ${i} 行`).join('\n')
         })
         if (!record.ok) throw Error('record fixture failed')
@@ -56,9 +58,11 @@ test('backfill drawer retains both drafts across close routes, traps focus and g
     }
     await open()
     await expect(page.getByLabel('例行补记日期')).toHaveCount(0)
+    await openRecordNote(page.getByLabel('行动补记备注'))
     await page.getByLabel('行动补记备注').fill('行动草稿')
     await page.getByLabel('补记类型', { exact: true }).selectOption('routine')
     await expect(page.getByLabel('行动补记备注')).toHaveCount(0)
+    await openRecordNote(page.getByLabel('例行补记备注'))
     await page.getByLabel('例行补记备注').fill('例行草稿')
     await page.getByRole('button', { name: '取消例行补记' }).click()
     await expect(drawer).toHaveCount(0)

@@ -105,13 +105,14 @@ describe('Review period and pure summary builder', () => {
         outcome,
         plannedForDate: true,
         durationMinutes: outcome === 'target_met' ? 3 : null,
+        summary: null,
         note: null,
         createdAt: `2026-08-${String(index + 11).padStart(2, '0')}T08:00:00.000Z`
       }))
     )
 
     const summary = buildReviewSummary(period, progress)
-    expect(summary.actionRecords[0]).not.toHaveProperty('hasRecordedText')
+    expect(summary.actionRecords[0].hasRecordedText).toBe(progress.records[0].hasRecordedText)
     expect(summary.actionRecords[0]).not.toHaveProperty('nextStep')
     expect(summary).toMatchObject({
       periodStartedOn: '2026-08-10',

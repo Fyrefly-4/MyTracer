@@ -269,7 +269,7 @@ test('preserves one fixture through manual A to B and application-installed B to
         arrangementMode: 'weekly'
       }))
     })
-    expect(after.sourceDataVersion).toBe(6)
+    expect(after.sourceDataVersion).toBe(7)
     expect(
       await (
         await application.firstWindow()

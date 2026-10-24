@@ -85,6 +85,7 @@ describe('Goal SQLite integration', () => {
       durationMinutes: 25,
       outcome: 'partial',
       nextStep: 'Try another example',
+      summary: null,
       note: null,
       createdAt: instant,
       updatedAt: instant
@@ -97,6 +98,7 @@ describe('Goal SQLite integration', () => {
       plannedForDate: true,
       plannedForDateBasis: 'schedule_at_recording',
       durationMinutes: 10,
+      summary: null,
       note: null,
       createdAt: instant,
       updatedAt: instant

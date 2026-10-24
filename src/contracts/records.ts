@@ -46,6 +46,7 @@ export interface FirstActionRecordInputDto {
   readonly durationMinutes: number | null
   readonly outcome: ActionRecordOutcomeDto
   readonly lifecycle: 'keep-pending' | 'complete'
+  readonly summary?: string | null
   readonly note?: string | null
   readonly dateChoice?: RecordingDateChoiceDto
 }
@@ -59,6 +60,7 @@ export interface RecordActionInputDto {
   readonly understanding?: string | null
   readonly confusion?: string | null
   readonly nextStep?: string | null
+  readonly summary?: string | null
   readonly note?: string | null
   readonly postRecord?: PostRecordChoiceDto
 }
@@ -78,6 +80,7 @@ export interface ActionRecordSummaryDto {
   readonly durationMinutes: number | null
   readonly outcome: ActionRecordOutcomeDto
   readonly nextStep: string | null
+  readonly summary: string | null
   readonly note: string | null
   readonly createdAt: string
 }

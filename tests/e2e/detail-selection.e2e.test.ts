@@ -30,6 +30,7 @@ test('visible selection restores per page, survives restart, and respects filter
           occurredOn: `2026-08-${10 + index}`,
           durationMinutes: index,
           outcome: 'partial',
+          summary: null,
           note: `选择记录${index}`
         })
         if (!record.ok) throw Error('seed record')
@@ -171,6 +172,7 @@ test('deleted remembered items fall back safely, and empty pages offer an action
           occurredOn: '2026-08-18',
           durationMinutes: 5,
           outcome: 'partial',
+          summary: null,
           note: `${name}记录`
         })
         if (!record.ok) throw Error('seed record')

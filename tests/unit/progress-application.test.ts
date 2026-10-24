@@ -177,6 +177,7 @@ describe('Progress application projection', () => {
         outcome: 'target_met',
         plannedForDate: true,
         durationMinutes: 10,
+        summary: null,
         note: null,
         recordCreatedAt: '2026-08-12T10:00:00.000Z'
       },
@@ -189,6 +190,7 @@ describe('Progress application projection', () => {
         outcome: 'acted',
         plannedForDate: false,
         durationMinutes: null,
+        summary: null,
         note: 'Unplanned walk',
         recordCreatedAt: '2026-08-11T10:00:00.000Z'
       },
@@ -201,6 +203,7 @@ describe('Progress application projection', () => {
         outcome: 'not_done',
         plannedForDate: true,
         durationMinutes: null,
+        summary: null,
         note: null,
         recordCreatedAt: '2026-08-10T10:00:00.000Z'
       }

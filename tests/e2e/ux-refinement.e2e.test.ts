@@ -1,3 +1,4 @@
+import { openRecordNote } from '../support/ui-disclosure'
 import { join } from 'node:path'
 import { expect, test, type ElectronApplication, type Page } from '@playwright/test'
 import { _electron as electron } from 'playwright'
@@ -297,6 +298,7 @@ test('keeps existing work reachable, restores selection, and records without imp
     await panel.getByRole('button', { name: '开始记录' }).click()
     await panel.getByLabel('投入时长（分钟，可选）').fill('7')
     await panel.getByRole('button', { name: /添加理解/ }).click()
+    await openRecordNote(panel.getByLabel('备注（可选）'))
     await panel.getByLabel('备注（可选）').fill('页面切换后仍应保留')
     await navigate(page, '目标')
     await navigate(page, '今天')

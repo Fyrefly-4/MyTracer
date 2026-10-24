@@ -31,6 +31,7 @@ const record = {
   durationMinutes: null,
   outcome: 'partial' as const,
   nextStep: '当时下一步',
+  summary: null,
   note: '</script><img src=x onerror=alert(1)>',
   createdAt: instant,
   updatedAt: instant
@@ -127,6 +128,7 @@ describe('record book read model', () => {
           plannedForDate: false,
           plannedForDateBasis: 'user_confirmed_history',
           durationMinutes: null,
+          summary: null,
           note: null,
           createdAt: instant,
           updatedAt: instant

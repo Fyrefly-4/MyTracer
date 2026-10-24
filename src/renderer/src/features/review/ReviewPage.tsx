@@ -1,3 +1,5 @@
+import { ProgressActionNotes } from '../progress/ProgressActionNotes'
+import { RecordNote } from '../../app/RecordText'
 import { recordDuration } from '../../app/ui-text'
 import './review-reference.css'
 import {
@@ -767,6 +769,7 @@ export function ReviewPage(): ReactNode {
                               </p>
                             </div>
                           </div>
+                          <ProgressActionNotes record={record} />
                           {referenceButton(`action:${record.recordId}`)}
                           <button
                             className="quiet-button record-open-button"
@@ -821,6 +824,15 @@ export function ReviewPage(): ReactNode {
                                       ? ''
                                       : ` · ${fact.durationMinutes} 分钟`}
                                   </span>
+                                  {fact.summary ? (
+                                    <p className="record-summary">简述：{fact.summary}</p>
+                                  ) : null}
+                                  {fact.note ? (
+                                    <div>
+                                      补充笔记
+                                      <RecordNote text={fact.note} />
+                                    </div>
+                                  ) : null}
                                   {referenceButton(`routine:${fact.recordId}`)}
                                 </li>
                               ))}

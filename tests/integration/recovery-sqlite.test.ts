@@ -79,6 +79,7 @@ function seed(connection: SqliteConnection): void {
     durationMinutes: 0,
     outcome: 'partial',
     nextStep: null,
+    summary: null,
     note: null,
     createdAt: at(30),
     updatedAt: at(30)
@@ -124,6 +125,7 @@ function seed(connection: SqliteConnection): void {
       plannedForDate: false,
       plannedForDateBasis: 'schedule_at_recording',
       durationMinutes: 0,
+      summary: null,
       note: null,
       createdAt: at(31),
       updatedAt: at(31)
@@ -136,6 +138,7 @@ function seed(connection: SqliteConnection): void {
       plannedForDate: true,
       plannedForDateBasis: 'schedule_at_recording',
       durationMinutes: null,
+      summary: null,
       note: null,
       createdAt: '2026-09-01T00:01:00.000Z',
       updatedAt: '2026-09-01T00:01:00.000Z'
@@ -148,6 +151,7 @@ function seed(connection: SqliteConnection): void {
       plannedForDate: true,
       plannedForDateBasis: 'schedule_at_recording',
       durationMinutes: null,
+      summary: null,
       note: null,
       createdAt: at(29),
       updatedAt: at(29)
@@ -160,6 +164,7 @@ function seed(connection: SqliteConnection): void {
       plannedForDate: true,
       plannedForDateBasis: 'schedule_at_recording',
       durationMinutes: null,
+      summary: null,
       note: null,
       createdAt: at(28),
       updatedAt: at(28)

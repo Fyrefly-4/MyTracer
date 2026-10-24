@@ -11,6 +11,7 @@ const draft: FirstActionRecordingDraft = {
   unknownDuration: false,
   outcome: 'partial',
   lifecycle: 'keep-pending',
+  summary: '',
   note: '保留输入',
   uncertainInput: {
     actionId: 'action',

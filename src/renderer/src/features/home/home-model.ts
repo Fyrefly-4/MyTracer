@@ -8,7 +8,8 @@ export interface HomeRecord {
   readonly occurredOn: string
   readonly title: string
   readonly goalId: string | null
-  readonly note: string | null
+  readonly summary: string | null
+  readonly hasNote: boolean
   readonly outcomeText: string
   readonly durationMinutes: number | null
 }
@@ -18,11 +19,6 @@ export interface HomeRecord {
 export function homeRecords(data: DataControlListDto, today: string): readonly HomeRecord[] {
   const actions = new Map(data.actions.map((action) => [action.id, action]))
   const routines = new Map(data.routines.map((routine) => [routine.id, routine]))
-  const understanding = new Map<string, string>()
-  for (const fact of data.understandings) {
-    if (!fact.revokedAt && !understanding.has(fact.actionRecordId))
-      understanding.set(fact.actionRecordId, fact.text)
-  }
   return [
     ...data.actionRecords.map((record): HomeRecord => ({
       id: record.id,
@@ -30,7 +26,8 @@ export function homeRecords(data: DataControlListDto, today: string): readonly H
       occurredOn: record.occurredOn,
       title: actions.get(record.actionId)?.title ?? '历史行动',
       goalId: actions.get(record.actionId)?.goalId ?? null,
-      note: record.note || understanding.get(record.id) || null,
+      summary: record.summary,
+      hasNote: Boolean(record.note),
       outcomeText: factOutcomeText[record.outcome],
       durationMinutes: record.durationMinutes
     })),
@@ -40,7 +37,8 @@ export function homeRecords(data: DataControlListDto, today: string): readonly H
       occurredOn: record.occurredOn,
       title: routines.get(record.routineId)?.name ?? '历史例行',
       goalId: routines.get(record.routineId)?.goalId ?? null,
-      note: record.note,
+      summary: record.summary,
+      hasNote: Boolean(record.note),
       outcomeText: factOutcomeText[record.outcome],
       durationMinutes: record.durationMinutes
     }))

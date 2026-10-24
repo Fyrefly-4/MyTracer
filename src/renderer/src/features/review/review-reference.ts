@@ -30,7 +30,7 @@ export function reviewReferences(summary: ReviewSummaryDto): ReviewReference[] {
       reference(
         `routine:${record.recordId}`,
         `${record.occurredOn} · 例行 · ${record.routineName}`,
-        `${{ target_met: '达到目标', acted: '有所行动', intentional_rest: '主动休息', not_done: '未进行' }[record.outcome]}${record.durationMinutes === null ? '' : ` · ${recordDuration(record.durationMinutes)}`}${record.note ? `\n${record.note}` : ''}`
+        `${{ target_met: '达到目标', acted: '有所行动', intentional_rest: '主动休息', not_done: '未进行' }[record.outcome]}${record.durationMinutes === null ? '' : ` · ${recordDuration(record.durationMinutes)}`}${record.summary ? `\n简述：${record.summary}` : ''}${record.note ? `\n补充笔记：${record.note}` : ''}`
       )
     ),
     ...summary.understandings.map((fact) =>

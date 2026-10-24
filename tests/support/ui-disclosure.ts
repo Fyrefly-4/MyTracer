@@ -16,3 +16,9 @@ export async function openActionCreate(page: Page): Promise<void> {
   const trigger = page.getByRole('button', { name: '新建行动', exact: true })
   if ((await trigger.getAttribute('aria-expanded')) === 'false') await trigger.click()
 }
+
+export async function openRecordNote(field: Locator): Promise<void> {
+  const details = field.locator('xpath=ancestor::details[1]')
+  if ((await details.getAttribute('open')) === null)
+    await details.locator(':scope > summary').click()
+}

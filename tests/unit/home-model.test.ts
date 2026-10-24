@@ -45,6 +45,7 @@ describe('home read models', () => {
             outcome: 'partial',
             durationMinutes: 0,
             nextStep: null,
+            summary: null,
             note: '真实备注'
           },
           {
@@ -56,6 +57,7 @@ describe('home read models', () => {
             outcome: 'partial',
             durationMinutes: 1,
             nextStep: null,
+            summary: null,
             note: null
           }
         ],
@@ -67,6 +69,7 @@ describe('home read models', () => {
           updatedAt: '2026-10-21',
           outcome: outcome as 'intentional_rest' | 'not_done',
           durationMinutes: null,
+          summary: null,
           note: null,
           plannedForDate: true,
           plannedForDateBasis: 'schedule_at_recording'
@@ -80,10 +83,11 @@ describe('home read models', () => {
       '未进行',
       '本次完成一部分'
     ])
-    expect(records[2].note).toBe('真实备注')
+    expect(records[2].summary).toBeNull()
+    expect(records[2].hasNote).toBe(true)
     expect(records[2].durationMinutes).toBe(0)
   })
-  it('uses only unrevoked actual understanding as action snippet and tolerates detached parents', () => {
+  it('does not use understanding as a summary and tolerates detached parents', () => {
     const records = homeRecords(
       {
         ...data(),
@@ -98,6 +102,7 @@ describe('home read models', () => {
             outcome: 'stopped',
             durationMinutes: 1,
             nextStep: null,
+            summary: null,
             note: null
           }
         ],
@@ -124,7 +129,12 @@ describe('home read models', () => {
       },
       '2026-10-22'
     )
-    expect(records[0]).toMatchObject({ goalId: null, title: '历史行动', note: '真实理解' })
+    expect(records[0]).toMatchObject({
+      goalId: null,
+      title: '历史行动',
+      summary: null,
+      hasNote: false
+    })
   })
   it('bounds active goal cards and orders by factual recency, updated time then stable ID', () => {
     const records = [
@@ -134,7 +144,9 @@ describe('home read models', () => {
         occurredOn: '2026-10-20',
         title: 'x',
         goalId: 'a',
+        summary: null,
         note: null,
+        hasNote: false,
         outcomeText: 'x',
         durationMinutes: 1
       }

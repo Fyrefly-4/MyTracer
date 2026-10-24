@@ -93,6 +93,7 @@ async function seed(page: Page) {
         occurredOn: '2026-10-20',
         durationMinutes: 5,
         outcome: 'partial',
+        summary: null,
         note: '历史记录备注',
         nextStep: '历史下一步不是当前说明'
       })

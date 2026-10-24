@@ -232,6 +232,7 @@ function populate(repository: RepositoryPort): void {
     durationMinutes: 0,
     outcome: 'partial',
     nextStep: null,
+    summary: null,
     note: null,
     createdAt: timestamp,
     updatedAt: timestamp
@@ -244,6 +245,7 @@ function populate(repository: RepositoryPort): void {
     plannedForDate: true,
     plannedForDateBasis: 'schedule_at_recording',
     durationMinutes: null,
+    summary: null,
     note: null,
     createdAt: timestamp,
     updatedAt: timestamp
@@ -368,6 +370,7 @@ describe('SQLite persistence', () => {
       const legacyReview = factsBefore.reviewResults[0] as Record<string, unknown>
       expect(readLegacyFacts(inspected)).toEqual({
         ...factsBefore,
+        actionRecords: factsBefore.actionRecords.map((r) => ({ ...(r as object), summary: null })),
         goals: factsBefore.goals.map((g) => ({ ...(g as object), predecessor_goal_id: null })),
         routines: factsBefore.routines.map((r) => ({
           ...(r as object),
@@ -389,7 +392,7 @@ describe('SQLite persistence', () => {
       expect(inspected.prepare('PRAGMA foreign_key_check').all()).toEqual([])
       expect(
         inspected.prepare("SELECT value FROM metadata WHERE key = 'schemaVersion'").get()
-      ).toEqual({ value: '6' })
+      ).toEqual({ value: '7' })
       expect(
         inspected
           .prepare(
@@ -446,6 +449,7 @@ describe('SQLite persistence', () => {
     try {
       expect(readLegacyFacts(inspected)).toEqual({
         ...factsBefore,
+        actionRecords: factsBefore.actionRecords.map((r) => ({ ...(r as object), summary: null })),
         goals: factsBefore.goals.map((g) => ({ ...(g as object), predecessor_goal_id: null }))
       })
     } finally {
@@ -555,6 +559,7 @@ describe('SQLite persistence', () => {
         durationMinutes: -1,
         outcome: 'stopped',
         nextStep: null,
+        summary: null,
         note: null,
         createdAt: timestamp,
         updatedAt: timestamp

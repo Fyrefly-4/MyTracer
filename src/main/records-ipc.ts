@@ -170,6 +170,7 @@ function parseRecord(args: readonly unknown[]): RecordActionInputDto {
     'understanding',
     'confusion',
     'nextStep',
+    'summary',
     'note',
     'postRecord'
   ])
@@ -198,7 +199,8 @@ function parseRecord(args: readonly unknown[]): RecordActionInputDto {
     understanding: optionalText(input.understanding),
     confusion: optionalText(input.confusion),
     nextStep: optionalText(input.nextStep),
-    note: optionalText(input.note),
+    summary: optionalSummary(input.summary),
+    note: optionalNote(input.note),
     postRecord: parsePostRecord(input.postRecord)
   }
 }
@@ -212,6 +214,7 @@ function parseFirst(args: readonly unknown[]): FirstActionRecordInputDto {
     'durationMinutes',
     'outcome',
     'lifecycle',
+    'summary',
     'note',
     'dateChoice'
   ])
@@ -224,6 +227,7 @@ function parseFirst(args: readonly unknown[]): FirstActionRecordInputDto {
       recordingContextId: input.recordingContextId,
       durationMinutes: input.durationMinutes,
       outcome: input.outcome,
+      summary: input.summary,
       note: input.note,
       dateChoice: input.dateChoice
     }
@@ -329,4 +333,17 @@ export function registerRecordIpc(options: RegisterRecordIpcOptions): void {
   register(RECORD_CHANNELS.getDetail, parseRecordId, (_event, input: ActionRecordIdInputDto) =>
     options.service.getActionRecordDetail(input.recordId)
   )
+}
+
+function optionalNote(value: unknown): string | null | undefined {
+  if (value == null) return value
+  if (typeof value !== 'string') throw new RecordIpcValidationError('Expected note text.')
+  return value
+}
+
+function optionalSummary(value: unknown): string | null | undefined {
+  const text = optionalText(value)
+  if (text && Array.from(text).length > 500)
+    throw new RecordIpcValidationError('简述请保持在 500 字以内。')
+  return text
 }
