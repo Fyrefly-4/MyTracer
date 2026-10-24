@@ -51,6 +51,7 @@ describe('Goal SQLite integration', () => {
     })
 
     connection.repository.saveRoutine({
+      arrangementMode: 'weekly' as const,
       id: 'routine-1',
       goalId: created.id,
       name: 'Weekday learning',

@@ -24,6 +24,7 @@ export interface RoutineSummaryDto {
   readonly description: string | null
   readonly minimumAction: string
   readonly status: RoutineStatusDto
+  readonly arrangementMode: 'weekly' | 'unscheduled'
   readonly weekdays: readonly number[]
   readonly createdAt: string
   readonly updatedAt: string
@@ -38,6 +39,7 @@ export interface CreateRoutineInputDto {
   readonly name: string
   readonly description?: string | null
   readonly minimumAction: string
+  readonly arrangementMode: 'weekly' | 'unscheduled'
   readonly weekdays: readonly number[]
 }
 
@@ -50,6 +52,7 @@ export interface UpdateRoutineDetailsInputDto {
 
 export interface ReplaceRoutineScheduleInputDto {
   readonly routineId: string
+  readonly arrangementMode: 'weekly' | 'unscheduled'
   readonly weekdays: readonly number[]
 }
 

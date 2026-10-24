@@ -100,6 +100,7 @@ async function runMatrix(state: AiDataCapabilityState) {
   today.selectActionAsIntentionForToday(intention.id)
 
   const routine = routines.createRoutine({
+    arrangementMode: 'weekly' as const,
     goalId: goal.id,
     name: 'T033 Routine',
     minimumAction: 'One minute',
@@ -110,7 +111,11 @@ async function runMatrix(state: AiDataCapabilityState) {
     name: 'T033 Routine updated',
     minimumAction: 'Two minutes'
   })
-  routines.replaceRoutineSchedule({ routineId: routine.id, weekdays: [2, 5] })
+  routines.replaceRoutineSchedule({
+    arrangementMode: 'weekly' as const,
+    routineId: routine.id,
+    weekdays: [2, 5]
+  })
   routines.pauseRoutine(routine.id)
   routines.resumeRoutine(routine.id)
 

@@ -39,6 +39,7 @@ test('home reads real records, routes without mutations and remembers both calen
         note: '真实记录片段，不是生成的摘要'
       })
       const routine = await window.myTracer.routines.create({
+        arrangementMode: 'weekly' as const,
         name: '首页例行',
         minimumAction: '做一点',
         weekdays: [1, 2, 3, 4, 5, 6, 7]

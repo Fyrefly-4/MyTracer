@@ -32,6 +32,7 @@ test('exports complete retained facts through the UI without exposing a destinat
       })
       if (!goal.ok) throw new Error(goal.error.message)
       const routine = await window.myTracer.routines.create({
+        arrangementMode: 'weekly' as const,
         goalId: goal.value.id,
         name: 'Export routine',
         minimumAction: 'One minute',
@@ -66,8 +67,8 @@ test('exports complete retained facts through the UI without exposing a destinat
     const exported = JSON.parse(await readFile(destination, 'utf8'))
     expect(exported).toMatchObject({
       format: 'mytracer-core-export',
-      exportVersion: 3,
-      sourceDataVersion: 4
+      exportVersion: 4,
+      sourceDataVersion: 5
     })
     expect(exported.data).toMatchObject({
       goals: [{ title: 'Export goal' }],

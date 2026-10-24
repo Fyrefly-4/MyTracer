@@ -85,6 +85,7 @@ test('E2E-AC-07 repeats the core data program when AI is unavailable or fails', 
         }
 
         const routine = await window.myTracer.routines.create({
+          arrangementMode: 'weekly' as const,
           goalId,
           name: 'T033 Routine',
           minimumAction: 'One minute',
@@ -97,6 +98,7 @@ test('E2E-AC-07 repeats the core data program when AI is unavailable or fails', 
           minimumAction: 'Two minutes'
         })
         const scheduledRoutine = await window.myTracer.routines.replaceSchedule({
+          arrangementMode: 'weekly' as const,
           routineId: routine.value.id,
           weekdays: [2, 5]
         })
@@ -243,7 +245,7 @@ test('E2E-AC-07 repeats the core data program when AI is unavailable or fails', 
       const exportResult = await page.evaluate(() => window.myTracer.exports.generate())
       expect(exportResult).toMatchObject({
         ok: true,
-        value: { kind: 'exported', exportVersion: 3 }
+        value: { kind: 'exported', exportVersion: 4 }
       })
       const exported = JSON.parse(await readFile(destination, 'utf8'))
       expect(JSON.stringify(exported)).not.toMatch(/credential|prompt|diagnostic|authentication/i)

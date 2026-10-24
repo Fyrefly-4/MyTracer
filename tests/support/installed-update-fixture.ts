@@ -1,9 +1,17 @@
 import { expect, type ElectronApplication, type Page } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 
-export async function createInstalledUpdateFacts(page: Page): Promise<string> {
-  return page.evaluate(async () => {
+export async function createInstalledUpdateFacts(page: Page, legacy = false): Promise<string> {
+  return page.evaluate(async (legacy) => {
     const api = window.myTracer
+    // The explicitly selected old installer has the pre-v5 IPC contract.
+    const createRoutine = (input: Parameters<typeof api.routines.create>[0]) => {
+      if (!legacy) return api.routines.create(input)
+      const { arrangementMode, ...oldInput } = input
+      if (arrangementMode !== 'weekly')
+        throw new Error('Old installer only supports weekly routines')
+      return api.routines.create(oldInput as typeof input)
+    }
     const requireOk = <T>(result: { ok: true; value: T } | { ok: false }): T => {
       if (!result.ok) throw new Error('Synthetic fixture command failed')
       return result.value
@@ -37,7 +45,8 @@ export async function createInstalledUpdateFacts(page: Page): Promise<string> {
     )
     for (const outcome of ['target_met', 'acted', 'intentional_rest', 'not_done'] as const) {
       const routine = requireOk(
-        await api.routines.create({
+        await createRoutine({
+          arrangementMode: 'weekly' as const,
           goalId: goal.id,
           name: `T084 ${outcome}`,
           minimumAction: 'One step',
@@ -55,7 +64,8 @@ export async function createInstalledUpdateFacts(page: Page): Promise<string> {
       )
     }
     requireOk(
-      await api.routines.create({
+      await createRoutine({
+        arrangementMode: 'weekly' as const,
         name: 'T084 unknown',
         minimumAction: 'One step',
         weekdays: [1, 2, 3, 4, 5, 6, 7]
@@ -65,7 +75,8 @@ export async function createInstalledUpdateFacts(page: Page): Promise<string> {
       const otherGoal = requireOk(await api.goals.create({ name: `T084 goal ${transition}` }))
       requireOk(await api.goals[transition]({ goalId: otherGoal.id }))
       const otherRoutine = requireOk(
-        await api.routines.create({
+        await createRoutine({
+          arrangementMode: 'weekly' as const,
           name: `T084 routine ${transition}`,
           minimumAction: 'One step',
           weekdays: [1]
@@ -85,13 +96,13 @@ export async function createInstalledUpdateFacts(page: Page): Promise<string> {
       })
     )
     return actionId
-  })
+  }, legacy)
 }
 
 export async function exportInstalledFacts(
   application: ElectronApplication,
   destination: string,
-  exportVersion: 2 | 3
+  exportVersion: 2 | 3 | 4
 ): Promise<Record<string, unknown>> {
   await application.evaluate(({ dialog }, path) => {
     dialog.showSaveDialog = async () => ({ canceled: false, filePath: path })
@@ -103,7 +114,7 @@ export async function exportInstalledFacts(
   const document = JSON.parse(await readFile(destination, 'utf8')) as Record<string, unknown>
   expect(document).toMatchObject({
     exportVersion,
-    sourceDataVersion: exportVersion === 2 ? 3 : 4
+    sourceDataVersion: exportVersion + 1
   })
   return document
 }

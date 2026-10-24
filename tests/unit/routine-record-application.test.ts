@@ -13,6 +13,7 @@ const instant = '2026-08-10T08:00:00.000Z'
 
 function setup(status: RoutinePersistenceRecord['status'] = 'active') {
   const routine: RoutinePersistenceRecord = {
+    arrangementMode: 'weekly' as const,
     id: 'routine-1',
     goalId: null,
     name: 'Move',

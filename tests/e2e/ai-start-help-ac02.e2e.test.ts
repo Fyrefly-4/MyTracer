@@ -148,6 +148,7 @@ test('continuous E2E-AC-02 proves isolation, every temporary branch, confirmatio
         understanding: '__ac02_forbidden_other_record__'
       })
       const routine = await window.myTracer.routines.create({
+        arrangementMode: 'weekly' as const,
         goalId: other.value.id,
         name: '__ac02_forbidden_routine__',
         minimumAction: '__ac02_forbidden_routine_minimum__',
@@ -465,7 +466,7 @@ test('continuous E2E-AC-02 proves isolation, every temporary branch, confirmatio
       dialog.showSaveDialog = async () => ({ canceled: false, filePath: target })
     }, destination)
     const exportResult = await page.evaluate(() => window.myTracer.exports.generate())
-    expect(exportResult).toMatchObject({ ok: true, value: { exportVersion: 3 } })
+    expect(exportResult).toMatchObject({ ok: true, value: { exportVersion: 4 } })
     const exported = JSON.parse(await readFile(destination, 'utf8'))
     expect(exported.data.actions).toEqual(
       expect.arrayContaining([

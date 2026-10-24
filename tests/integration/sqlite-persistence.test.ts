@@ -205,6 +205,7 @@ function populate(repository: RepositoryPort): void {
     updatedAt: timestamp
   })
   repository.saveRoutine({
+    arrangementMode: 'weekly' as const,
     id: 'routine-1',
     goalId: 'goal-1',
     name: 'Routine',
@@ -365,6 +366,10 @@ describe('SQLite persistence', () => {
       const legacyReview = factsBefore.reviewResults[0] as Record<string, unknown>
       expect(readLegacyFacts(inspected)).toEqual({
         ...factsBefore,
+        routines: factsBefore.routines.map((r) => ({
+          ...(r as object),
+          arrangement_mode: 'weekly'
+        })),
         reviewResults: [
           {
             id: legacyReview.id,
@@ -381,7 +386,7 @@ describe('SQLite persistence', () => {
       expect(inspected.prepare('PRAGMA foreign_key_check').all()).toEqual([])
       expect(
         inspected.prepare("SELECT value FROM metadata WHERE key = 'schemaVersion'").get()
-      ).toEqual({ value: '4' })
+      ).toEqual({ value: '5' })
       expect(
         inspected
           .prepare(

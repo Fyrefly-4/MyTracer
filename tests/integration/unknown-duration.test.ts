@@ -188,7 +188,7 @@ it('preserves null across creation, backfill, edits, queries, mixed/all-unknown 
     ).toMatchObject({ unknownDurationCount: 1, realActionCount: 3 })
     const snapshot = asCompleteExportRepository(connection.repository).readCompleteCoreSnapshot()
     const exported = JSON.parse(JSON.stringify(buildCompleteExport(snapshot, clock)))
-    expect(exported).toMatchObject({ exportVersion: 3, sourceDataVersion: 4 })
+    expect(exported).toMatchObject({ exportVersion: 4, sourceDataVersion: 5 })
     expect(() => validateCompleteExport(exported)).not.toThrow()
     for (const exportVersion of [1, 2]) {
       expect(() => validateCompleteExport({ ...exported, exportVersion })).toThrow(

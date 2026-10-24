@@ -14,7 +14,7 @@ import { createLocalDate } from '../domain/local-date'
 
 export const COMPLETE_EXPORT_FORMAT = 'mytracer-core-export' as const
 export const COMPLETE_EXPORT_VERSION_V1 = 1 as const
-export const COMPLETE_EXPORT_VERSION = 3 as const
+export const COMPLETE_EXPORT_VERSION = 4 as const
 
 export const COMPLETE_EXPORT_ENUM_VALUES = Object.freeze({
   goalStatus: Object.freeze(['active', 'paused', 'ended']),
@@ -39,7 +39,11 @@ interface ReviewResultExportV1 {
   readonly updatedAt: string
 }
 
-interface NumericDurationSnapshot extends Omit<CorePersistenceSnapshot, 'actionRecords'> {
+interface LegacySnapshot extends Omit<CorePersistenceSnapshot, 'routines'> {
+  readonly routines: readonly Omit<CorePersistenceSnapshot['routines'][number], 'arrangementMode'>[]
+}
+
+interface NumericDurationSnapshot extends Omit<LegacySnapshot, 'actionRecords'> {
   readonly actionRecords: readonly (Omit<
     CorePersistenceSnapshot['actionRecords'][number],
     'durationMinutes'
@@ -59,14 +63,20 @@ export interface MyTracerCoreExportV1 extends Omit<
   readonly data: CorePersistenceSnapshotV1
 }
 
-export interface MyTracerCoreExportV2 extends CompleteExportDocumentPort {
+export interface MyTracerCoreExportV2 extends Omit<CompleteExportDocumentPort, 'data'> {
   readonly exportVersion: 2
   readonly enumValues: typeof COMPLETE_EXPORT_ENUM_VALUES
   readonly data: NumericDurationSnapshot
 }
 
-export interface MyTracerCoreExportV3 extends CompleteExportDocumentPort {
+export interface MyTracerCoreExportV3 extends Omit<CompleteExportDocumentPort, 'data'> {
   readonly exportVersion: 3
+  readonly enumValues: typeof COMPLETE_EXPORT_ENUM_VALUES
+  readonly data: LegacySnapshot
+}
+
+export interface MyTracerCoreExportV4 extends CompleteExportDocumentPort {
+  readonly exportVersion: 4
   readonly enumValues: typeof COMPLETE_EXPORT_ENUM_VALUES
   readonly data: CorePersistenceSnapshot
 }
@@ -200,7 +210,7 @@ const byId = (left: Record<string, unknown>, right: Record<string, unknown>) =>
 const byOccurrence = (left: Record<string, unknown>, right: Record<string, unknown>) =>
   String(left.occurredOn).localeCompare(String(right.occurredOn)) || byId(left, right)
 
-function validateCompleteExportVersion(value: unknown, expectedVersion: 1 | 2 | 3): void {
+function validateCompleteExportVersion(value: unknown, expectedVersion: 1 | 2 | 3 | 4): void {
   const document = record(value, 'Export document')
   assertKeys(
     document,
@@ -296,7 +306,7 @@ function validateCompleteExportVersion(value: unknown, expectedVersion: 1 | 2 | 
     )
     assert(Number(document.sourceDataVersion) >= 3, 'Export v2 requires source data version 3.')
   }
-  if (expectedVersion === 3)
+  if (expectedVersion >= 3)
     assert(Number(document.sourceDataVersion) >= 4, 'Export v3 requires source data version 4.')
   assert(
     new Set(selections.map((item) => `${item.actionId}|${item.selectedFor}`)).size ===
@@ -311,6 +321,8 @@ function validateCompleteExportVersion(value: unknown, expectedVersion: 1 | 2 | 
 
   assertSorted(goals, byId, 'Goals')
   assertSorted(actions, byId, 'Actions')
+  if (expectedVersion === 4)
+    assert(document.sourceDataVersion === 5, 'Export v4 requires source data version 5.')
   assertSorted(routines, byId, 'Routines')
   assertSorted(actionRecords, byOccurrence, 'Action records')
   assertSorted(routineRecords, byOccurrence, 'Routine records')
@@ -358,7 +370,17 @@ function validateCompleteExportVersion(value: unknown, expectedVersion: 1 | 2 | 
   for (const routine of routines) {
     assertKeys(
       routine,
-      ['id', 'goalId', 'name', 'minimumAction', 'description', 'status', 'createdAt', 'updatedAt'],
+      [
+        'id',
+        'goalId',
+        'name',
+        'minimumAction',
+        'description',
+        'status',
+        'createdAt',
+        'updatedAt',
+        ...(expectedVersion === 4 ? ['arrangementMode'] : [])
+      ],
       'Routine'
     )
     assert(
@@ -369,6 +391,15 @@ function validateCompleteExportVersion(value: unknown, expectedVersion: 1 | 2 | 
       'Routine is invalid.'
     )
   }
+  if (expectedVersion === 4)
+    for (const routine of routines) {
+      const days = scheduleDays.filter((day) => day.routineId === routine.id)
+      assert(
+        (routine.arrangementMode === 'weekly' && days.length > 0) ||
+          (routine.arrangementMode === 'unscheduled' && days.length === 0),
+        'Routine arrangement is invalid.'
+      )
+    }
   for (const schedule of scheduleDays) {
     assertKeys(schedule, ['routineId', 'weekday'], 'Routine schedule day')
     assert(
@@ -413,7 +444,7 @@ function validateCompleteExportVersion(value: unknown, expectedVersion: 1 | 2 | 
     assert(
       actionById.has(String(actionRecord.actionId)) &&
         validLocalDate(actionRecord.occurredOn) &&
-        ((expectedVersion === 3 && actionRecord.durationMinutes === null) ||
+        ((expectedVersion >= 3 && actionRecord.durationMinutes === null) ||
           (Number.isInteger(actionRecord.durationMinutes) &&
             Number(actionRecord.durationMinutes) >= 0)) &&
         validEnum(actionRecord.outcome, COMPLETE_EXPORT_ENUM_VALUES.actionRecordOutcome) &&
@@ -549,7 +580,8 @@ export function validateCompleteExportV1(value: unknown): asserts value is MyTra
 
 export function validateCompleteExport(
   value: unknown
-): asserts value is MyTracerCoreExportV1 | MyTracerCoreExportV2 | MyTracerCoreExportV3 {
+): asserts value is
+  MyTracerCoreExportV1 | MyTracerCoreExportV2 | MyTracerCoreExportV3 | MyTracerCoreExportV4 {
   const document = record(value, 'Export document')
   if (document.exportVersion === COMPLETE_EXPORT_VERSION_V1) {
     validateCompleteExportV1(value)
@@ -557,6 +589,10 @@ export function validateCompleteExport(
   }
   if (document.exportVersion === 2) {
     validateCompleteExportVersion(value, 2)
+    return
+  }
+  if (document.exportVersion === 3) {
+    validateCompleteExportVersion(value, 3)
     return
   }
   if (document.exportVersion === COMPLETE_EXPORT_VERSION) {
@@ -569,9 +605,9 @@ export function validateCompleteExport(
 export function buildCompleteExport(
   snapshot: CompleteCorePersistenceSnapshot,
   clock: Pick<ClockPort, 'snapshot'>
-): MyTracerCoreExportV3 {
+): MyTracerCoreExportV4 {
   const now = clock.snapshot()
-  const document: MyTracerCoreExportV3 = Object.freeze({
+  const document: MyTracerCoreExportV4 = Object.freeze({
     format: COMPLETE_EXPORT_FORMAT,
     exportVersion: COMPLETE_EXPORT_VERSION,
     sourceDataVersion: snapshot.sourceDataVersion,
@@ -599,11 +635,11 @@ export class CompleteExportService {
         readonly kind: 'exported'
         readonly fileName: string
         readonly byteLength: number
-        readonly exportVersion: 3
+        readonly exportVersion: 4
         readonly exportedAt: string
       }
   > {
-    let document: MyTracerCoreExportV3
+    let document: MyTracerCoreExportV4
     const clockSnapshot = this.dependencies.clock.snapshot()
     try {
       document = buildCompleteExport(

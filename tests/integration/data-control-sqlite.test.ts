@@ -55,6 +55,7 @@ function populate(connection: SqliteConnection): void {
       updatedAt: firstInstant
     })
     repository.saveRoutine({
+      arrangementMode: 'weekly' as const,
       id: 'routine-1',
       goalId: 'goal-1',
       name: 'Routine',

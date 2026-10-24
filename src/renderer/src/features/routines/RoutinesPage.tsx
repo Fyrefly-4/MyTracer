@@ -56,6 +56,25 @@ const routineRecordErrorText: Record<RoutineRecordErrorCode, string> = {
   'persistence-failed': '本地例行记录暂时无法保存或读取。'
 }
 
+function ArrangementPicker(props: {
+  value: 'weekly' | 'unscheduled'
+  disabled?: boolean
+  onChange: (mode: 'weekly' | 'unscheduled') => void
+}) {
+  return (
+    <label>
+      安排方式
+      <select
+        value={props.value}
+        disabled={props.disabled}
+        onChange={(event) => props.onChange(event.target.value as 'weekly' | 'unscheduled')}
+      >
+        <option value="weekly">按星期安排</option>
+        <option value="unscheduled">无固定安排</option>
+      </select>
+    </label>
+  )
+}
 const weekdayOptions = [
   { value: 1, label: '一' },
   { value: 2, label: '二' },
@@ -514,6 +533,7 @@ function RoutineWorkspace(): ReactNode {
   const [createDescription, setCreateDescription] = useState('')
   const [createMinimumAction, setCreateMinimumAction] = useState('')
   const [createGoalId, setCreateGoalId] = useState('')
+  const [createMode, setCreateMode] = useState<'weekly' | 'unscheduled'>('weekly')
   const [createWeekdays, setCreateWeekdays] = useState<readonly number[]>([1, 2, 3, 4, 5])
   const [confirmEnd, setConfirmEnd] = useState(false)
   const [creating, setCreating] = useState<boolean | null>(null)
@@ -525,12 +545,14 @@ function RoutineWorkspace(): ReactNode {
       createDescription ||
       createMinimumAction ||
       createGoalId ||
+      createMode !== 'weekly' ||
       createWeekdays.join(',') !== '1,2,3,4,5'
     ) ||
       (detail !== null &&
         (editName !== detail.name ||
           editDescription !== (detail.description ?? '') ||
           editMinimumAction !== detail.minimumAction ||
+          edit?.arrangementMode !== detail.arrangementMode ||
           editWeekdays.join(',') !== detail.weekdays.join(',')))
   )
 
@@ -636,7 +658,8 @@ function RoutineWorkspace(): ReactNode {
       name: createName,
       description: createDescription || null,
       minimumAction: createMinimumAction,
-      weekdays: createWeekdays
+      arrangementMode: createMode,
+      weekdays: createMode === 'unscheduled' ? [] : createWeekdays
     })
     if (!activeRef.current) return
     setBusy(false)
@@ -651,6 +674,7 @@ function RoutineWorkspace(): ReactNode {
       setCreateDescription('')
       setCreateMinimumAction('')
       setCreateGoalId('')
+      setCreateMode('weekly')
       setCreateWeekdays([1, 2, 3, 4, 5])
       setCreating(false)
     }
@@ -682,7 +706,8 @@ function RoutineWorkspace(): ReactNode {
           : part === 'schedule'
             ? await window.myTracer.routines.replaceSchedule({
                 routineId: value.detail.id,
-                weekdays: value.weekdays
+                arrangementMode: value.arrangementMode,
+                weekdays: value.arrangementMode === 'unscheduled' ? [] : value.weekdays
               })
             : await window.myTracer.routines[status!]({ routineId: value.detail.id })
       editor.finishSave(
@@ -871,7 +896,10 @@ function RoutineWorkspace(): ReactNode {
                     >
                       <span>{routine.name}</span>
                       <small>
-                        {routineStatusText[routine.status]} · 周{routine.weekdays.join('、')}
+                        {routineStatusText[routine.status]} ·{' '}
+                        {routine.arrangementMode === 'unscheduled'
+                          ? '无固定安排'
+                          : `周${routine.weekdays.join('、')}`}
                         {session.hasRoutineDraft(routine.id) ? ' · 有未保存草稿' : ''}
                       </small>
                     </button>
@@ -975,15 +1003,27 @@ function RoutineWorkspace(): ReactNode {
                   </select>
                 </label>
                 <div className="form-field-wide">
-                  <RoutineWeekdayPicker
-                    label="每周安排"
-                    value={createWeekdays}
-                    onChange={(weekdays) => {
-                      createRevision.current += 1
-                      setCreateWeekdays(weekdays)
-                    }}
+                  <ArrangementPicker
+                    value={createMode}
                     disabled={busy}
+                    onChange={(mode) => {
+                      createRevision.current += 1
+                      setCreateMode(mode)
+                    }}
                   />
+                  {createMode === 'weekly' ? (
+                    <RoutineWeekdayPicker
+                      label="每周安排"
+                      value={createWeekdays}
+                      onChange={(weekdays) => {
+                        createRevision.current += 1
+                        setCreateWeekdays(weekdays)
+                      }}
+                      disabled={busy}
+                    />
+                  ) : (
+                    <p className="form-section-note">随时可记，不会自动成为每天的计划。</p>
+                  )}
                 </div>
               </div>
               <div className="workspace-form-actions">
@@ -1028,11 +1068,13 @@ function RoutineWorkspace(): ReactNode {
                     <p>{detail.minimumAction}</p>
                   </div>
                   <div>
-                    <span>每周安排</span>
+                    <span>安排</span>
                     <p>
-                      {detail.weekdays.length === 7
-                        ? '每天'
-                        : `周${detail.weekdays.map((day) => weekdayOptions.find((option) => option.value === day)?.label).join('、')}`}
+                      {detail.arrangementMode === 'unscheduled'
+                        ? '无固定安排'
+                        : detail.weekdays.length === 7
+                          ? '每天'
+                          : `周${detail.weekdays.map((day) => weekdayOptions.find((option) => option.value === day)?.label).join('、')}`}
                     </p>
                   </div>
                   {detail.description ? (
@@ -1077,7 +1119,7 @@ function RoutineWorkspace(): ReactNode {
                   </div>
                 ) : null}
                 <details className="disclosure">
-                  <summary ref={editTriggerRef}>编辑内容和每周安排</summary>
+                  <summary ref={editTriggerRef}>编辑内容和安排</summary>
                   <form className="detail-form" onSubmit={(event) => void submitDetails(event)}>
                     <label>
                       名称
@@ -1118,21 +1160,34 @@ function RoutineWorkspace(): ReactNode {
 
                   <div className="schedule-editor">
                     <p className="form-section-note">
-                      星期安排与内容分别保存，另一处未保存的修改会保留；已有记录不受影响。
+                      安排与内容分别保存，另一处未保存的修改会保留；已有记录不受影响。
                     </p>
-                    <RoutineWeekdayPicker
-                      label="每周安排"
-                      value={editWeekdays}
-                      onChange={(days) => editor.editSchedule(days)}
+                    <ArrangementPicker
+                      value={edit?.arrangementMode ?? detail.arrangementMode}
                       disabled={!editable}
+                      onChange={(mode) =>
+                        editor.editSchedule(mode === 'unscheduled' ? [] : editWeekdays, mode)
+                      }
                     />
+                    {edit?.arrangementMode === 'weekly' ? (
+                      <RoutineWeekdayPicker
+                        label="每周安排"
+                        value={editWeekdays}
+                        onChange={(days) => editor.editSchedule(days)}
+                        disabled={!editable}
+                      />
+                    ) : (
+                      <p className="form-section-note">
+                        随时可记，不产生每日计划；已有记录的计划日依据保留。
+                      </p>
+                    )}
                     <button
                       className="secondary-button"
                       type="button"
                       disabled={busy || blocked}
                       onClick={() => void replaceSchedule()}
                     >
-                      保存星期安排
+                      保存安排
                     </button>
                   </div>
                 </details>

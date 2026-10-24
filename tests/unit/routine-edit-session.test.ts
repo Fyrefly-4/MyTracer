@@ -4,6 +4,7 @@ import { RoutineEditSession } from '../../src/renderer/src/app/routine-edit-sess
 import type { RoutineDetailDto } from '../../src/contracts/routines'
 
 const routine = (id = 'a'): RoutineDetailDto => ({
+  arrangementMode: 'weekly' as const,
   id,
   goalId: null,
   name: id,
@@ -39,6 +40,7 @@ describe('one session-local routine content editor', () => {
     expect(editor.acceptRead(editor.beginRead(), routine('b'))).toBe(false)
     editor.acceptRead(editor.beginRead(), { ...routine(), status: 'paused' })
     expect(editor.getSnapshot()).toMatchObject({
+      arrangementMode: 'weekly' as const,
       name: '输入',
       weekdays: [2],
       detail: { status: 'paused' }
@@ -59,6 +61,7 @@ describe('one session-local routine content editor', () => {
     editor.editContent({ description: '另一个输入' })
     editor.finishSave(schedule, { ...routine(), minimumAction: '两步', weekdays: [2] })
     expect(editor.getSnapshot()).toMatchObject({
+      arrangementMode: 'weekly' as const,
       minimumAction: '两步',
       description: '另一个输入',
       weekdays: [2]
@@ -125,9 +128,15 @@ describe('one session-local routine content editor', () => {
     editor.editContent({ name: '不丢' })
     editor.editSchedule([6])
     editor.finishSave(editor.beginSave('content')!)
-    expect(editor.getSnapshot()).toMatchObject({ name: '不丢', weekdays: [6], pending: false })
+    expect(editor.getSnapshot()).toMatchObject({
+      arrangementMode: 'weekly' as const,
+      name: '不丢',
+      weekdays: [6],
+      pending: false
+    })
     editor.finishSave(editor.beginSave('status')!, { ...routine(), status: 'ended' })
     expect(editor.getSnapshot()).toMatchObject({
+      arrangementMode: 'weekly' as const,
       name: '不丢',
       weekdays: [6],
       detail: { status: 'ended' }
@@ -145,4 +154,22 @@ describe('one session-local routine content editor', () => {
     expect(editor.acceptRead(creation, routine('new'))).toBe(false)
     expect(editor.getSnapshot()?.detail.id).toBe('b')
   })
+})
+
+it('preserves a newer arrangement draft across a delayed save and read', () => {
+  const editor = new RoutineEditSession()
+  const original = routine('r')
+  editor.acceptRead(editor.beginRead(), original)
+  editor.editSchedule([], 'unscheduled')
+  const token = editor.beginSave('schedule')!
+  editor.editSchedule([2], 'weekly')
+  editor.finishSave(token, { ...original, arrangementMode: 'unscheduled', weekdays: [] })
+  expect(editor.getSnapshot()).toMatchObject({ arrangementMode: 'weekly', weekdays: [2] })
+  expect(editor.hasDraft()).toBe(true)
+  editor.acceptRead(editor.beginRead(), {
+    ...original,
+    arrangementMode: 'unscheduled',
+    weekdays: []
+  })
+  expect(editor.getSnapshot()).toMatchObject({ arrangementMode: 'weekly', weekdays: [2] })
 })

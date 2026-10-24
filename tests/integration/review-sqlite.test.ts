@@ -118,6 +118,7 @@ function seed(connection: SqliteConnection): void {
     updatedAt: at(11)
   }
   const routine: RoutinePersistenceRecord = {
+    arrangementMode: 'weekly' as const,
     id: 'routine-1',
     goalId: goal.id,
     name: 'Daily practice',

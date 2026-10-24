@@ -130,12 +130,14 @@ describe('Routine application service', () => {
   it('atomically creates a Routine with a complete schedule and paused Goal summary', () => {
     const { persistence, service } = setup()
     const detail = service.createRoutine({
+      arrangementMode: 'weekly' as const,
       goalId: 'goal-1',
       name: 'Movement',
       minimumAction: 'Stretch once',
       weekdays: [5, 1]
     })
     expect(detail).toMatchObject({
+      arrangementMode: 'weekly' as const,
       id: 'routine-1',
       status: 'active',
       weekdays: [1, 5],
@@ -152,17 +154,31 @@ describe('Routine application service', () => {
     const { persistence, service } = setup()
     persistence.failOnScheduleSaveAt = 2
     expect(() =>
-      service.createRoutine({ name: 'Routine', minimumAction: 'Move', weekdays: [1, 2] })
+      service.createRoutine({
+        arrangementMode: 'weekly' as const,
+        name: 'Routine',
+        minimumAction: 'Move',
+        weekdays: [1, 2]
+      })
     ).toThrow(/injected failure/)
     expect(persistence.routines).toEqual([])
     expect(persistence.scheduleDays).toEqual([])
 
     persistence.failOnScheduleSaveAt = null
-    service.createRoutine({ name: 'Routine', minimumAction: 'Move', weekdays: [1, 2] })
+    service.createRoutine({
+      arrangementMode: 'weekly' as const,
+      name: 'Routine',
+      minimumAction: 'Move',
+      weekdays: [1, 2]
+    })
     const before = structuredClone(persistence.readSnapshot())
     persistence.failOnScheduleSaveAt = 2
     expect(() =>
-      service.replaceRoutineSchedule({ routineId: 'routine-1', weekdays: [3, 4] })
+      service.replaceRoutineSchedule({
+        arrangementMode: 'weekly' as const,
+        routineId: 'routine-1',
+        weekdays: [3, 4]
+      })
     ).toThrow(/injected failure/)
     expect(persistence.readSnapshot()).toEqual(before)
   })
@@ -170,6 +186,7 @@ describe('Routine application service', () => {
   it('updates current configuration, preserves goalId, and enforces ended terminal', () => {
     const { service } = setup()
     service.createRoutine({
+      arrangementMode: 'weekly' as const,
       goalId: 'goal-1',
       name: 'Routine',
       minimumAction: 'Move',
@@ -182,7 +199,12 @@ describe('Routine application service', () => {
         description: 'Current details',
         minimumAction: 'Stretch'
       })
-    ).toMatchObject({ goalId: 'goal-1', name: 'Renamed', minimumAction: 'Stretch' })
+    ).toMatchObject({
+      arrangementMode: 'weekly' as const,
+      goalId: 'goal-1',
+      name: 'Renamed',
+      minimumAction: 'Stretch'
+    })
     expect(service.pauseRoutine('routine-1').status).toBe('paused')
     expect(service.resumeRoutine('routine-1').status).toBe('active')
     expect(service.endRoutine('routine-1').status).toBe('ended')
@@ -195,6 +217,7 @@ describe('Routine application service', () => {
     const { service } = setup()
     expect(() =>
       service.createRoutine({
+        arrangementMode: 'weekly' as const,
         goalId: 'missing',
         name: 'Routine',
         minimumAction: 'Move',

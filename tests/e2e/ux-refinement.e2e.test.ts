@@ -162,6 +162,7 @@ test('keeps existing work reachable, restores selection, and records without imp
       const goals = await window.myTracer.goals.list({ status: null })
       if (!goals.ok) throw new Error('Cannot read goal')
       const routine = await window.myTracer.routines.create({
+        arrangementMode: 'weekly' as const,
         name: '散步',
         minimumAction: '走一小段',
         weekdays: [1, 2, 3, 4, 5, 6, 7]
@@ -412,6 +413,7 @@ test('labels historical facts and falls back to a visible routine after deleting
         initialNextAction: { title: '历史行动' }
       })
       const routine = await window.myTracer.routines.create({
+        arrangementMode: 'weekly' as const,
         name: '历史散步',
         minimumAction: '走一段',
         weekdays: [1]

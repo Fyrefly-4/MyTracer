@@ -33,6 +33,7 @@ test('edits, backfills, previews, deletes, and reopens T031 facts through the tr
       if (!goal.ok) throw new Error(goal.error.message)
       const actionId = goal.value.currentNextActionId!
       const routine = await window.myTracer.routines.create({
+        arrangementMode: 'weekly' as const,
         goalId: goal.value.id,
         name: 'T031 Routine',
         minimumAction: 'One minute',

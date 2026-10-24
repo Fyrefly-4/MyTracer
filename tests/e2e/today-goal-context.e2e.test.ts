@@ -250,6 +250,7 @@ test('the latest goal-linked routine record opens its exact data record', async 
     const data = await fixtures(page)
     await page.evaluate(async (goalId) => {
       const routine = await window.myTracer.routines.create({
+        arrangementMode: 'weekly' as const,
         goalId,
         name: '练习状态模型',
         minimumAction: '写一个例子',

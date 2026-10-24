@@ -51,7 +51,7 @@ test('gives goal and routine creation a full workspace and preserves a collapsed
     await expect(routineDetail.getByLabel('例行安排')).toContainText('读两页')
     await expect(routineDetail.getByLabel('例行安排')).toContainText('每天')
     // Content and schedule are separate saves: neither may discard the other's draft.
-    await routineDetail.getByText('编辑内容和每周安排', { exact: true }).click()
+    await routineDetail.getByText('编辑内容和安排', { exact: true }).click()
     await routineDetail.getByLabel('最小行动', { exact: true }).fill('读三页')
     await routineDetail.getByRole('checkbox', { name: '周日', exact: true }).uncheck()
     await routineDetail.getByRole('button', { name: '保存内容修改', exact: true }).click()
@@ -63,7 +63,7 @@ test('gives goal and routine creation a full workspace and preserves a collapsed
 
     await routineDetail.getByLabel('最小行动', { exact: true }).fill('读四页，尚未保存')
     await routineDetail.getByLabel('说明（可选）', { exact: true }).fill('保留这段内容草稿')
-    await routineDetail.getByRole('button', { name: '保存星期安排', exact: true }).click()
+    await routineDetail.getByRole('button', { name: '保存安排', exact: true }).click()
     await expect(routineDetail.getByLabel('例行安排')).toContainText('周一、二、三、四、五、六')
     await expect(routineDetail.getByLabel('例行安排')).toContainText('读三页')
     await expect(routineDetail.getByLabel('最小行动', { exact: true })).toHaveValue(

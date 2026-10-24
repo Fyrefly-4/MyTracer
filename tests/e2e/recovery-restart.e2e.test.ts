@@ -79,6 +79,7 @@ test('AC-05 keeps history intact while a user confirms cleanup, chooses a new Ac
       })
       if (!record.ok) throw new Error('Action record setup failed.')
       const routine = await window.myTracer.routines.create({
+        arrangementMode: 'weekly' as const,
         goalId: goal.value.id,
         name: '每日旧练习',
         minimumAction: '打开旧示例',

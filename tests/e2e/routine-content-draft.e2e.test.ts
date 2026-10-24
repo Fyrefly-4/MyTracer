@@ -26,6 +26,7 @@ async function fixture(
       const ids: string[] = []
       for (let i = 1; i <= 8; i++) {
         const result = await window.myTracer.routines.create({
+          arrangementMode: 'weekly' as const,
           name: `草稿例行${i}`,
           minimumAction: '做一步',
           weekdays: [1, 3]
@@ -57,7 +58,7 @@ const detail = (page: Page) => page.locator('.routine-workspace .goal-detail')
 async function openEditor(page: Page): Promise<void> {
   const disclosure = detail(page)
     .locator('details')
-    .filter({ has: page.getByText('编辑内容和每周安排', { exact: true }) })
+    .filter({ has: page.getByText('编辑内容和安排', { exact: true }) })
   await expect(disclosure).toBeVisible()
   if (!(await disclosure.evaluate((element) => (element as HTMLDetailsElement).open)))
     await disclosure.locator('summary').click()
@@ -131,6 +132,7 @@ test('content and schedule drafts survive selection, sidebar return and lifecycl
     await expect(panel.getByLabel('例行安排')).toContainText('未保存最小行动')
     const afterContent = await readStored()
     expect(afterContent).toMatchObject({
+      arrangementMode: 'weekly' as const,
       name: '未保存名称',
       minimumAction: '未保存最小行动',
       description: original.description,
@@ -138,9 +140,10 @@ test('content and schedule drafts survive selection, sidebar return and lifecycl
     })
     await expect(panel.getByRole('checkbox', { name: '周日', exact: true })).toBeChecked()
     await panel.getByLabel('说明（可选）', { exact: true }).fill('另一部分的草稿')
-    await panel.getByRole('button', { name: '保存星期安排', exact: true }).click()
+    await panel.getByRole('button', { name: '保存安排', exact: true }).click()
     await expect(panel.getByLabel('例行安排')).toContainText('周一、三、日')
     expect(await readStored()).toMatchObject({
+      arrangementMode: 'weekly' as const,
       name: afterContent.name,
       minimumAction: afterContent.minimumAction,
       description: afterContent.description,
@@ -226,7 +229,7 @@ test('deleted routines retain copyable input without an invalid save or recreati
     await navigate(page, '例行')
     const panel = detail(page)
     await expect(panel).toContainText('例行已不存在')
-    await panel.getByText('编辑内容和每周安排', { exact: true }).click()
+    await panel.getByText('编辑内容和安排', { exact: true }).click()
     const name = panel.getByLabel('名称', { exact: true })
     await expect(name).toHaveValue('删除后仍可复制')
     await expect(name).toHaveAttribute('readonly', '')
@@ -236,7 +239,7 @@ test('deleted routines retain copyable input without an invalid save or recreati
       '删除后仍可复制'.length
     )
     await expect(panel.getByRole('button', { name: '保存内容修改', exact: true })).toBeDisabled()
-    await expect(panel.getByRole('button', { name: '保存星期安排', exact: true })).toBeDisabled()
+    await expect(panel.getByRole('button', { name: '保存安排', exact: true })).toBeDisabled()
     await panel.getByRole('button', { name: '放弃未保存修改', exact: true }).click()
     const warning = page.getByRole('alert', { name: '未保存的例行修改' })
     await expect(warning).toContainText(
@@ -284,7 +287,7 @@ test('failed revalidation keeps a retry after discard, and late reads cannot cha
     await expect(panel.getByRole('button', { name: '重新读取例行', exact: true })).toBeVisible()
     await panel.getByRole('button', { name: '放弃未保存修改', exact: true }).click()
     await page.getByRole('button', { name: '放弃修改', exact: true }).click()
-    await expect(panel.getByText('编辑内容和每周安排', { exact: true })).toBeFocused()
+    await expect(panel.getByText('编辑内容和安排', { exact: true })).toBeFocused()
     await panel.getByRole('button', { name: '重新读取例行', exact: true }).click()
     await openEditor(page)
     await expect(panel.getByLabel('名称', { exact: true })).toHaveValue('草稿例行1')

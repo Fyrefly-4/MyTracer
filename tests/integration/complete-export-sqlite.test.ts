@@ -44,6 +44,7 @@ function populate(connection: SqliteConnection): void {
       updatedAt: instant
     })
     repository.saveRoutine({
+      arrangementMode: 'weekly' as const,
       id: 'routine',
       goalId: 'goal',
       name: 'Routine',
@@ -123,7 +124,7 @@ describe('complete export SQLite snapshot', () => {
     const connection = await openConnection()
     populate(connection)
     const snapshot = asCompleteExportRepository(connection.repository).readCompleteCoreSnapshot()
-    expect(snapshot.sourceDataVersion).toBe(4)
+    expect(snapshot.sourceDataVersion).toBe(5)
     expect(Object.values(snapshot.coreSnapshot).map((rows) => rows.length)).toEqual([
       1, 1, 1, 1, 1, 1, 1, 1, 1, 1
     ])

@@ -72,6 +72,7 @@ test('shows the current-week ReviewSummary from Progress facts without turning u
         confusion: '批处理何时结束'
       })
       const routine = await window.myTracer.routines.create({
+        arrangementMode: 'weekly' as const,
         goalId: goal.value.id,
         name: '工作日练习',
         minimumAction: '打开编辑器',

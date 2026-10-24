@@ -6,6 +6,7 @@ export interface RoutineEditState {
   readonly name: string
   readonly description: string
   readonly minimumAction: string
+  readonly arrangementMode: 'weekly' | 'unscheduled'
   readonly weekdays: readonly number[]
   readonly identity: number
   readonly contentRevision: number
@@ -23,6 +24,7 @@ export const contentChanged = (state: RoutineEditState): boolean =>
   state.description !== (state.detail.description ?? '') ||
   state.minimumAction !== state.detail.minimumAction
 export const scheduleChanged = (state: RoutineEditState): boolean =>
+  state.arrangementMode !== state.detail.arrangementMode ||
   state.weekdays.join(',') !== state.detail.weekdays.join(',')
 
 /** One in-memory editor, separate from routine recording contexts. */
@@ -58,10 +60,11 @@ export class RoutineEditSession {
     if (!this.state || this.state.availability === 'missing') return
     this.publish({ ...this.state, ...patch, contentRevision: this.state.contentRevision + 1 })
   }
-  editSchedule(weekdays: readonly number[]): void {
+  editSchedule(weekdays: readonly number[], arrangementMode = this.state?.arrangementMode): void {
     if (!this.state || this.state.availability === 'missing') return
     this.publish({
       ...this.state,
+      arrangementMode: arrangementMode ?? 'weekly',
       weekdays: [...weekdays],
       scheduleRevision: this.state.scheduleRevision + 1
     })
@@ -110,6 +113,7 @@ export class RoutineEditSession {
       name: keepContent ? previous.name : detail.name,
       description: keepContent ? previous.description : (detail.description ?? ''),
       minimumAction: keepContent ? previous.minimumAction : detail.minimumAction,
+      arrangementMode: keepSchedule ? previous.arrangementMode : detail.arrangementMode,
       weekdays: keepSchedule ? previous.weekdays : detail.weekdays,
       identity: previous?.identity ?? ++this.identity,
       contentRevision: previous?.contentRevision ?? 0,

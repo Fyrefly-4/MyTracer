@@ -25,6 +25,7 @@ export interface ActionPersistenceRecord {
 }
 
 export interface RoutinePersistenceRecord {
+  readonly arrangementMode: 'weekly' | 'unscheduled'
   readonly id: string
   readonly goalId: string | null
   readonly name: string

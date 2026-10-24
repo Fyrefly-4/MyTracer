@@ -4,8 +4,13 @@ import { _electron as electron } from 'playwright'
 import { minimalElectronEnvironment } from '../support/electron-environment'
 import { createTemporaryTestRoot, removeTemporaryTestRoot } from '../support/temporary-test-root'
 
-for (const delayedChannel of ['actions:get-detail', 'records:list-for-action'] as const) {
-  test(`Today keeps routine drafts and selection when ${delayedChannel} finishes late`, async () => {
+for (const [delayedChannel, arrangementMode] of [
+  ['actions:get-detail', 'weekly'],
+  ['records:list-for-action', 'weekly'],
+  ['actions:get-detail', 'unscheduled'],
+  ['records:list-for-action', 'unscheduled']
+] as const) {
+  test(`Today keeps ${arrangementMode} routine drafts and selection when ${delayedChannel} finishes late`, async () => {
     test.slow()
     const root = await createTemporaryTestRoot()
     let application: ElectronApplication | undefined
@@ -22,14 +27,16 @@ for (const delayedChannel of ['actions:get-detail', 'records:list-for-action'] a
       await application.evaluate(({ BrowserWindow }) => {
         BrowserWindow.getAllWindows()[0].setContentSize(1280, 800)
       })
-      const routineId = await page.evaluate(async () => {
+      const routineId = await page.evaluate(async (arrangementMode) => {
         const action = await window.myTracer.actions.create({ title: '切换行动' })
         const routine = await window.myTracer.routines.create({
+          arrangementMode,
           name: '右侧例行记录',
           minimumAction: '活动一下',
-          weekdays: [1, 2, 3, 4, 5, 6, 7]
+          weekdays: arrangementMode === 'weekly' ? [1, 2, 3, 4, 5, 6, 7] : []
         })
         const second = await window.myTracer.routines.create({
+          arrangementMode: 'weekly' as const,
           name: '另一条例行',
           minimumAction: '喝一口水',
           weekdays: [1, 2, 3, 4, 5, 6, 7]
@@ -37,12 +44,14 @@ for (const delayedChannel of ['actions:get-detail', 'records:list-for-action'] a
         if (!action.ok || !routine.ok || !second.ok)
           throw new Error('Cannot create isolated fixtures')
         return routine.value.id
-      })
+      }, arrangementMode)
       await page.reload()
       // Explicit navigation supports both the original shell and the Home landing page.
       await page.getByRole('navigation').getByRole('button', { name: '今天', exact: true }).click()
       const master = page.locator('.today-master')
       const workspace = page.locator('.today-detail-pane')
+      if (arrangementMode === 'unscheduled')
+        await master.getByText('随时可记', { exact: true }).click()
       const routineRow = master.getByRole('button', { name: /右侧例行记录/ })
       await routineRow.click()
       await expect(routineRow).toHaveAttribute('aria-pressed', 'true')
@@ -164,6 +173,7 @@ for (const remountSubmittedRoutine of [false, true]) {
       await page.evaluate(async () => {
         for (const name of ['延迟保存例行', '继续编辑例行']) {
           const result = await window.myTracer.routines.create({
+            arrangementMode: 'weekly' as const,
             name,
             minimumAction: '活动一下',
             weekdays: [1, 2, 3, 4, 5, 6, 7]

@@ -57,6 +57,7 @@ test('completes AC-03 with five distinct states, factual Progress, and stable re
     const facts = await page.evaluate(async () => {
       const create = async (name: string, weekdays: readonly number[]) => {
         const result = await window.myTracer.routines.create({
+          arrangementMode: 'weekly' as const,
           name,
           minimumAction: '做一个最小动作',
           weekdays
@@ -122,6 +123,7 @@ test('completes AC-03 with five distinct states, factual Progress, and stable re
       const unplanned = [unplannedTarget, unplannedActed, unplannedRest, unplannedNotDone]
       for (const routine of unplanned) {
         const replaced = await window.myTracer.routines.replaceSchedule({
+          arrangementMode: 'weekly' as const,
           routineId: routine.id,
           weekdays: [1]
         })
@@ -138,6 +140,7 @@ test('completes AC-03 with five distinct states, factual Progress, and stable re
       }
 
       const excludePlanned = await window.myTracer.routines.replaceSchedule({
+        arrangementMode: 'weekly' as const,
         routineId: plannedTarget.id,
         weekdays: [2]
       })
@@ -148,6 +151,7 @@ test('completes AC-03 with five distinct states, factual Progress, and stable re
       })
       if (!excludedState.ok) throw new Error(excludedState.error.message)
       const reincludePlanned = await window.myTracer.routines.replaceSchedule({
+        arrangementMode: 'weekly' as const,
         routineId: plannedTarget.id,
         weekdays: [1]
       })
@@ -382,6 +386,7 @@ test('requires an explicit Routine date choice across midnight', async () => {
       const context = await test.step('create routine and begin recording', () =>
         page.evaluate(async () => {
           const routine = await window.myTracer.routines.create({
+            arrangementMode: 'weekly' as const,
             name: '跨午夜 Routine',
             minimumAction: '一步',
             weekdays: [1, 2, 3, 4, 5, 6, 7]
