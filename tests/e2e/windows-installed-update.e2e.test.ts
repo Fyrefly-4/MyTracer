@@ -158,12 +158,12 @@ test('preserves one fixture through manual A to B and application-installed B to
     expect(
       await page.evaluate(() => window.myTracer.aiConfiguration.importFromEnvironment())
     ).toMatchObject({ availability: 'configured-available' })
-    const before = await exportInstalledFacts(application, join(root.exports, 'before.json'))
+    const before = await exportInstalledFacts(application, join(root.exports, 'before.json'), 2)
     await application.close()
     application = await launch(root, executable)
     let current = await application.firstWindow()
     expect(await application.evaluate(({ app }) => app.getPath('userData'))).toBe(userData)
-    const reopened = await exportInstalledFacts(application, join(root.exports, 'reopened.json'))
+    const reopened = await exportInstalledFacts(application, join(root.exports, 'reopened.json'), 2)
     expect(reopened.data).toEqual(before.data)
     expect(await current.evaluate(() => window.myTracer.aiConfiguration.status())).toMatchObject({
       availability: 'configured-available'
@@ -178,7 +178,7 @@ test('preserves one fixture through manual A to B and application-installed B to
     application = await launch(root, executable)
     expect(await application.evaluate(({ app }) => app.getVersion())).toBe('0.1.4')
     expect(await application.evaluate(({ app }) => app.getPath('userData'))).toBe(userData)
-    const bridge = await exportInstalledFacts(application, join(root.exports, 'bridge.json'))
+    const bridge = await exportInstalledFacts(application, join(root.exports, 'bridge.json'), 2)
     expect(bridge.data).toEqual(before.data)
     expect(bridge.sourceDataVersion).toBe(3)
     expect(
@@ -190,7 +190,8 @@ test('preserves one fixture through manual A to B and application-installed B to
     application = await launch(root, executable)
     const bridgeReopened = await exportInstalledFacts(
       application,
-      join(root.exports, 'bridge-reopened.json')
+      join(root.exports, 'bridge-reopened.json'),
+      2
     )
     expect(bridgeReopened.data).toEqual(before.data)
     current = await application.firstWindow()
@@ -219,7 +220,8 @@ test('preserves one fixture through manual A to B and application-installed B to
     await current.getByRole('button', { name: '创建目标', exact: true }).click()
     const beforeInstall = await exportInstalledFacts(
       application,
-      join(root.exports, 'before-install.json')
+      join(root.exports, 'before-install.json'),
+      2
     )
     await current.getByRole('button', { name: '关于与更新' }).click()
     const exited = new Promise<void>((resolve) =>
@@ -312,7 +314,7 @@ test('offline upgrade fixture covers lifecycle states and preserves facts throug
     ).toBeVisible()
     await test.step('create synthetic lifecycle facts', () => createInstalledUpdateFacts(page))
     const exported = await test.step('export synthetic baseline', () =>
-      exportInstalledFacts(application!, join(root.exports, 'offline.json')))
+      exportInstalledFacts(application!, join(root.exports, 'offline.json'), 3))
     const data = exported.data as Record<string, Record<string, unknown>[]>
     expect(new Set(data.goals.map((v) => v.status))).toEqual(new Set(['active', 'paused', 'ended']))
     expect(new Set(data.actions.map((v) => v.status))).toEqual(
@@ -333,7 +335,7 @@ test('offline upgrade fixture covers lifecycle states and preserves facts throug
     await test.step('close baseline application', () => application!.close())
     application = await test.step('reopen isolated fixture application', open)
     const reopened = await test.step('export reopened facts', () =>
-      exportInstalledFacts(application!, join(root.exports, 'offline-reopened.json')))
+      exportInstalledFacts(application!, join(root.exports, 'offline-reopened.json'), 3))
     expect(reopened.data).toEqual(exported.data)
   } finally {
     await application?.close().catch(() => undefined)
