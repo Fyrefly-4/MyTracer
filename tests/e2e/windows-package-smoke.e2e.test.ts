@@ -59,6 +59,7 @@ async function verifyPackagedApplication(
       'review',
       'routines',
       'dataControl',
+      'recordBook',
       'exports',
       'aiStartHelp',
       'aiConfiguration'
@@ -157,6 +158,10 @@ async function verifyPackagedApplication(
       'complete',
       'cancel'
     ])
+    expect(await page.evaluate(() => Object.keys(window.myTracer.recordBook))).toEqual([
+      'read',
+      'export'
+    ])
     expect(await page.evaluate(() => Object.keys(window.myTracer.exports))).toEqual(['generate'])
     expect(await page.evaluate(() => Object.keys(window.myTracer.aiStartHelp))).toEqual([
       'status',
@@ -189,6 +194,7 @@ async function verifyPackagedApplication(
           window.myTracer.recovery,
           window.myTracer.review,
           window.myTracer.dataControl,
+          window.myTracer.recordBook,
           window.myTracer.exports,
           window.myTracer.aiStartHelp,
           window.myTracer.aiConfiguration
