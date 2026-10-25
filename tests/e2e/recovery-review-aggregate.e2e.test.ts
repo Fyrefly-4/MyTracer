@@ -137,7 +137,7 @@ test('aggregate AC-05 to AC-06 keeps pre-recovery and post-recovery records in o
       await page.getByLabel('一个真实进展').fill('完成恢复并继续行动')
       await page.getByLabel('一个主要阻力').fill('重新进入上下文需要时间')
       await page.getByLabel('下一周期的一个调整').fill('保留一个更小的下一步')
-      await page.getByRole('button', { name: '保存复盘' }).click()
+      await page.getByRole('button', { name: '保存复盘', exact: true }).click()
       await expect(page.getByText('本周期复盘已保存。')).toBeVisible()
     })
   } finally {

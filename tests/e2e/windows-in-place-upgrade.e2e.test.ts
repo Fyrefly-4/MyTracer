@@ -227,7 +227,7 @@ async function createOldVersionFacts(page: Page): Promise<string> {
   await page.getByLabel('一个真实进展').fill('Old-version progress')
   await page.getByLabel('一个主要阻力').fill('Old-version obstacle')
   await page.getByLabel('下一周期的一个调整').fill('Old-version adjustment')
-  await page.getByRole('button', { name: '保存复盘' }).click()
+  await page.getByRole('button', { name: '保存复盘', exact: true }).click()
   await expect(page.getByText('本周期复盘已保存。')).toBeVisible()
 
   expect(
