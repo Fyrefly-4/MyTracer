@@ -1,3 +1,4 @@
+import { PendingCloseRequest } from './pending-close-request'
 import { DRAFT_CHANNELS, type RecordDraftApi } from '../contracts/record-drafts'
 import { RECORD_BOOK_CHANNELS, type RecordBookApi } from '../contracts/record-book'
 import {
@@ -143,6 +144,11 @@ import {
   type UpdateStatusDto
 } from '../contracts/updates'
 
+const closeRequests = new PendingCloseRequest()
+ipcRenderer.on(DRAFT_CHANNELS.closeRequest, (_event, requestId: string) =>
+  closeRequests.receive(requestId)
+)
+
 const api: MyTracerApi = Object.freeze({
   recordDrafts: {
     load: () => ipcRenderer.invoke(DRAFT_CHANNELS.load),
@@ -152,11 +158,7 @@ const api: MyTracerApi = Object.freeze({
       ipcRenderer.invoke(DRAFT_CHANNELS.review, input),
     reconcile: (input: Parameters<RecordDraftApi['reconcile']>[0]) =>
       ipcRenderer.invoke(DRAFT_CHANNELS.reconcile, input),
-    subscribeClose: (listener: (requestId: string) => void) => {
-      const handler = (_event: Electron.IpcRendererEvent, requestId: string) => listener(requestId)
-      ipcRenderer.on(DRAFT_CHANNELS.closeRequest, handler)
-      return () => ipcRenderer.removeListener(DRAFT_CHANNELS.closeRequest, handler)
-    },
+    subscribeClose: (listener: (requestId: string) => void) => closeRequests.subscribe(listener),
     replyClose: (input: Parameters<RecordDraftApi['replyClose']>[0]) =>
       ipcRenderer.invoke(DRAFT_CHANNELS.closeReply, input)
   },

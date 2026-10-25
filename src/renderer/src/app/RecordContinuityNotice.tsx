@@ -1,3 +1,4 @@
+import { retainedRecordText } from './retained-record-text'
 import { useState, useSyncExternalStore } from 'react'
 import { useUiSession, useRecordOperation } from './ui-session'
 import type { RecordDraft, RecordReconciliation } from '../../../contracts/record-drafts'
@@ -105,19 +106,7 @@ export function UnavailableRecordInputs({ kind }: { kind: 'action' | 'routine' }
           <summary>有一笔未完成输入的原对象已不存在</summary>
           <p>输入仍在本机，不会自动创建或替换记录。可选取文字，或放弃这次输入。</p>
           <p>记录日期：{value.draft.context.capturedOn}</p>
-          <pre style={{ whiteSpace: 'pre-wrap' }}>
-            {[
-              value.draft.summary,
-              value.draft.note,
-              value.kind === 'action'
-                ? [value.draft.understanding, value.draft.confusion, value.draft.nextStep]
-                    .filter(Boolean)
-                    .join('\n')
-                : ''
-            ]
-              .filter(Boolean)
-              .join('\n')}
-          </pre>
+          <pre style={{ whiteSpace: 'pre-wrap' }}>{retainedRecordText(value)}</pre>
           <button type="button" onClick={() => void discard(value)}>
             放弃这次输入
           </button>

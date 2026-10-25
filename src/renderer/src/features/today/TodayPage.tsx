@@ -208,7 +208,7 @@ function ActionRecordingPanel(props: {
 
   useEffect(() => {
     if (!context) {
-      if (restoreBeginFocus.current) {
+      if (!busy && restoreBeginFocus.current) {
         restoreBeginFocus.current = false
         revealStart(panelRef.current)
         beginRef.current?.focus({ preventScroll: true })
@@ -220,7 +220,7 @@ function ActionRecordingPanel(props: {
     if (context === restoredDraft?.context) return
     revealStart(panelRef.current)
     panelRef.current?.querySelector<HTMLInputElement>('input')?.focus({ preventScroll: true })
-  }, [context, restoredDraft?.context])
+  }, [busy, context, restoredDraft?.context])
 
   const loadRecords = async (): Promise<void> => {
     const result = await window.myTracer.records.listForAction({ actionId: props.action.id })

@@ -14,6 +14,29 @@ const empty: FirstActionRecordingDraft = {
 }
 afterEach(() => vi.unstubAllGlobals())
 describe('record input retention lifetime', () => {
+  it('drains initial restore before answering a close request', async () => {
+    let loaded!: (value: []) => void
+    vi.stubGlobal('window', {
+      myTracer: {
+        recordDrafts: {
+          load: () =>
+            new Promise<[]>((resolve) => {
+              loaded = resolve
+            })
+        }
+      }
+    })
+    const session = new UiSession(() => undefined)
+    let answered = false
+    const close = session.flushRecordInputs().then((value) => {
+      answered = true
+      return value
+    })
+    await Promise.resolve()
+    expect(answered).toBe(false)
+    loaded([])
+    expect(await close).toBe(true)
+  })
   it('does not treat opening or reverting the first form as unsaved content', () => {
     const session = new UiSession(() => undefined)
     session.setFirstActionDraft(empty)

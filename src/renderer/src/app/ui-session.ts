@@ -38,7 +38,7 @@ export function firstRecordDraftAfterFailure(
   // receipt is replayed before consulting the goal, even after pause/deletion.
   // Validation runs before receipt lookup; invalid context and storage errors
   // also cannot settle a previous lost reply, so retain those submission locks.
-  if (code === 'not-found' || code === 'invalid-transition') {
+  if (code === 'not-found' || code === 'invalid-transition' || code === 'context-changed') {
     return { ...draft, uncertainInput: undefined }
   }
   return draft
@@ -200,6 +200,7 @@ export class UiSession {
     this.retaining.add(pending)
   }
   async flushRecordInputs(): Promise<boolean> {
+    await this.restoreRecordInputs()
     while (this.retaining.size) await Promise.all([...this.retaining])
     if (this.recordSubmissions.size)
       await new Promise<void>((resolve) => {

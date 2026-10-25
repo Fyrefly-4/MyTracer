@@ -204,7 +204,7 @@ export function RoutineRecordingPanel(props: {
   useEffect(() => {
     if (!context) {
       contextRef.current = null
-      if (restoreBeginFocus.current) {
+      if (!busy && restoreBeginFocus.current) {
         restoreBeginFocus.current = false
         revealStart(panelRef.current)
         beginRef.current?.focus({ preventScroll: true })
@@ -213,7 +213,7 @@ export function RoutineRecordingPanel(props: {
     }
     revealStart(panelRef.current)
     panelRef.current?.querySelector<HTMLSelectElement>('select')?.focus({ preventScroll: true })
-  }, [context])
+  }, [busy, context])
 
   useEffect(() => {
     return () => {

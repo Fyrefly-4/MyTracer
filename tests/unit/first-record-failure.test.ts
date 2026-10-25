@@ -24,7 +24,7 @@ const draft: FirstActionRecordingDraft = {
   }
 }
 describe('first record transport uncertainty', () => {
-  it.each(['not-found', 'invalid-transition'] as const)(
+  it.each(['not-found', 'invalid-transition', 'context-changed'] as const)(
     'unlocks editing and abandonment after authoritative %s',
     (code) => {
       expect(firstRecordDraftAfterFailure(draft, code)).toEqual({

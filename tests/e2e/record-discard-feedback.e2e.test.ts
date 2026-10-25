@@ -4,7 +4,7 @@ import { _electron as electron } from 'playwright'
 import { minimalElectronEnvironment } from '../support/electron-environment'
 import { createTemporaryTestRoot, removeTemporaryTestRoot } from '../support/temporary-test-root'
 
-test('discard acknowledges both active and expired drafts without changing saved records', async () => {
+test('discard acknowledges active drafts and retains expired drafts until fresh recovery without changing saved records', async () => {
   const root = await createTemporaryTestRoot()
   const application = await electron.launch({
     cwd: root.root,
@@ -64,6 +64,18 @@ test('discard acknowledges both active and expired drafts without changing saved
         }
       }
       await panel.getByRole('button', { name: '放弃草稿', exact: true }).click()
+      if (expired) {
+        await expect(
+          panel.getByText('这次记录连接已失效；草稿内容仍在，可以重新开始后继续保存。')
+        ).toBeVisible()
+        await expect(panel.getByLabel('投入时长（分钟，可选）')).toHaveValue('12')
+        await expect(panel.getByRole('status')).toHaveCount(0)
+        await page.reload()
+        await navigate('今天')
+        await page.getByRole('button', { name: /读两页书.*待行动/ }).click()
+        await expect(panel.getByLabel('投入时长（分钟，可选）')).toHaveValue('12')
+        await panel.getByRole('button', { name: '放弃草稿', exact: true }).click()
+      }
       await expect(panel.getByRole('status')).toHaveText('已放弃未保存草稿，已有记录保持不变。')
       await expect(begin).toBeFocused()
       expect(

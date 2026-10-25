@@ -73,6 +73,7 @@ test('three recording entrypoints quietly retain inputs across normal window clo
     app = await launch(root)
     page = await app.firstWindow()
     await navigate(page, '今天')
+    await page.getByRole('button', { name: /合成续写行动.*待行动/ }).click()
     action = page.getByLabel('合成续写行动 行动记录')
     await expect(action.getByLabel('投入时长（分钟，可选）')).toHaveValue('7')
     await expect(page.getByText(/草稿已恢复|本机已保存/)).toHaveCount(0)
@@ -140,6 +141,25 @@ test('three recording entrypoints quietly retain inputs across normal window clo
     await expect(
       page.getByLabel('合成续写例行 例行记录').getByRole('button', { name: '记录例行' })
     ).toHaveCount(0)
+  } finally {
+    await app?.close()
+    await removeTemporaryTestRoot(root)
+  }
+})
+
+test('normal close during renderer startup waits for restore without an unsafe-exit prompt', async () => {
+  const root = await createTemporaryTestRoot()
+  let app: ElectronApplication | undefined
+  try {
+    app = await launch(root)
+    await app.firstWindow()
+    await app.evaluate(({ dialog }) => {
+      dialog.showMessageBox = async () => {
+        throw Error('Unexpected unsafe-exit prompt during clean startup')
+      }
+    })
+    await normalClose(app)
+    app = undefined
   } finally {
     await app?.close()
     await removeTemporaryTestRoot(root)
