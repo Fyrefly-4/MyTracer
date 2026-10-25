@@ -1021,7 +1021,7 @@ function RoutineWorkspace(): ReactNode {
             >
               <div className="card-heading">
                 <p className="eyebrow">新例行</p>
-                <h2>定义一个最小行动和每周安排</h2>
+                <h2>留下一件想重复做的小事</h2>
               </div>
               <div className="workspace-form-fields">
                 <label>

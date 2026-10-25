@@ -38,7 +38,9 @@ test('Home offers an optional goal-free route and preserves a recording draft on
     await expect(entry).toBeVisible()
     await expect(page.getByRole('button', { name: '＋ 留下一个目标', exact: true })).toBeVisible()
     await expect(
-      page.getByText('也可以不建目标。在“今天”新建一个行动，之后记录做过的一点。')
+      page.getByText(
+        '也可以不建目标。去“今天”，用“记一笔”留下做过的一点；已有行动就继续记在原行动下，还没开始则用“新建行动”。'
+      )
     ).toBeVisible()
     const before = await page.evaluate(() => window.myTracer.dataControl.list())
     await entry.focus()
@@ -56,6 +58,12 @@ test('Home offers an optional goal-free route and preserves a recording draft on
     await expect(dialog.getByLabel('关联目标（可选）')).toHaveValue('')
     await dialog.getByRole('button', { name: '创建行动', exact: true }).click()
     const panel = page.getByLabel('独立的一小步 行动记录', { exact: true })
+    await expect(panel).toBeVisible()
+    const planned = await page.evaluate(() => window.myTracer.dataControl.list())
+    expect(planned).toMatchObject({
+      ok: true,
+      value: { actions: [{ title: '独立的一小步', status: 'pending' }], actionRecords: [] }
+    })
     await panel.getByRole('button', { name: '开始记录', exact: true }).click()
     await panel.getByLabel('投入时长（分钟，可选）').fill('7')
     await navigate(page, '首页')
@@ -102,5 +110,50 @@ test('Home does not offer zero-goal guidance for paused goals or failed reads', 
     await navigate(page, '首页')
     await expect(page.getByText('目标概览暂时不可用。', { exact: true })).toBeVisible()
     await expect(page.getByRole('button', { name: '去今天', exact: true })).toHaveCount(0)
+  })
+})
+
+test('Home record route continues yesterday’s action without creating another action', async () => {
+  await withApplication(async (page) => {
+    const fixture = await page.evaluate(async () => {
+      const today = await window.myTracer.today.get({})
+      const action = await window.myTracer.actions.create({ title: '合成：整理储物架' })
+      if (!today.ok || !action.ok) throw new Error('Fixture failed')
+      const date = new Date(`${today.value.localDate}T12:00:00Z`)
+      date.setUTCDate(date.getUTCDate() - 1)
+      const yesterday = date.toISOString().slice(0, 10)
+      const record = await window.myTracer.dataControl.backfillActionRecord({
+        actionId: action.value.id,
+        occurredOn: yesterday,
+        durationMinutes: null,
+        outcome: 'partial',
+        summary: null,
+        note: null
+      })
+      if (!record.ok) throw new Error('Yesterday fixture failed')
+      return { actionId: action.value.id, yesterday, today: today.value.localDate }
+    })
+    await page.getByRole('button', { name: '去今天', exact: true }).click()
+    await page.getByRole('button', { name: '记一笔', exact: true }).click()
+    const dialog = page.getByRole('dialog', { name: '记一笔', exact: true })
+    await dialog.getByLabel('选择已有行动').selectOption(fixture.actionId)
+    await dialog.getByRole('button', { name: '打开已有行动记录' }).click()
+    const panel = page.getByLabel('合成：整理储物架 行动记录', { exact: true })
+    await panel.getByRole('button', { name: '开始记录', exact: true }).click()
+    await panel.getByLabel('投入时长（分钟，可选）').fill('3')
+    await panel.getByRole('button', { name: '保存记录', exact: true }).click()
+    await expect(panel.getByRole('status')).toContainText('记录已保存')
+    const snapshot = await page.evaluate(() => window.myTracer.dataControl.list())
+    if (!snapshot.ok) throw new Error('Snapshot failed')
+    expect(snapshot.value.goals).toEqual([])
+    expect(snapshot.value.actions).toHaveLength(1)
+    expect(snapshot.value.actions[0].id).toBe(fixture.actionId)
+    expect(snapshot.value.actionRecords).toHaveLength(2)
+    expect(snapshot.value.actionRecords).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ actionId: fixture.actionId, occurredOn: fixture.yesterday }),
+        expect.objectContaining({ actionId: fixture.actionId, occurredOn: fixture.today })
+      ])
+    )
   })
 })
