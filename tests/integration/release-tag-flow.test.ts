@@ -46,7 +46,7 @@ beforeAll(async () => {
           '-Archive',
           zip
         ],
-        { windowsHide: true }
+        { windowsHide: true, timeout: 60000 }
       )
       archiveBase64 = (await readFile(zip)).toString('base64')
     } finally {
