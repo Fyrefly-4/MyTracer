@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "scope": "Two bounded successful historical samples at different heads; not a speed or flakiness comparison.",
+  "scope": "Three bounded successful historical samples at different heads; not a speed or flakiness comparison.",
   "samples": [
     {
       "pr": 151,
@@ -37,6 +37,32 @@
       "e2eReportedMinutes": 4.6,
       "phaseMeasurement": "Test-runner reported wall durations; E2E rounded by runner. Other phase timing unavailable as direct measurements in old aggregate.",
       "failureCategory": null
+    },
+    {
+      "pr": 158,
+      "run": 40147942580,
+      "job": 121033207547,
+      "attempt": null,
+      "attemptNote": "Attempt not exposed in retrieved job metadata/log; new phase records will also be emitted to logs.",
+      "head": "f56cd3f062f56b24d9ab2265a999e113f084d66c",
+      "base": "926636a4baa8c6fdc4ffb5221244747654c52437",
+      "testMerge": "54463f3dc4af72ecc0bf92d2826d00f9b40ae25d",
+      "cache": "hit",
+      "unitSeconds": 15.68,
+      "integrationSeconds": 45.53,
+      "focusedDataReportedSeconds": 16.0,
+      "e2eReportedMinutes": 5.3,
+      "phaseMeasurement": "Vitest/Playwright reported wall durations, not differences between workflow step timestamps. Exact phase JSON was uploaded but not downloaded through the restricted artifact connector.",
+      "failureCategory": null,
+      "results": {
+        "unitPassed": 593,
+        "integrationPassed": 277,
+        "integrationSkipped": 1,
+        "focusedDataPassed": 3,
+        "e2ePassed": 131,
+        "e2eSkipped": 5,
+        "diagnosticNegativeControl": "passed"
+      }
     }
   ]
 }
