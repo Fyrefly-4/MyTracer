@@ -19,7 +19,7 @@ afterEach(() => {
   vi.useRealTimers()
 })
 const key = 'synthetic-test-secret'
-function store(available = true) {
+function store(available = true, syntheticCredential = key) {
   const root = mkdtempSync(join(tmpdir(), 'assistant-config-'))
   roots.push(root)
   // Test double deliberately avoids writing any reversible plaintext credential.
@@ -31,7 +31,7 @@ function store(available = true) {
     },
     unprotect: () => {
       if (!available) throw Error(key)
-      return key
+      return syntheticCredential
     }
   }
   return {
@@ -196,6 +196,93 @@ describe('assistant mock protocol', () => {
     const { api } = provider(vi.fn(async () => new Response(encoded)))
     await expect(api.complete(request())).rejects.toThrow('protocol')
   })
+  it.each([String.fromCharCode(34), String.fromCharCode(92)])(
+    'rejects decoded credential echoes with JSON-special characters (%s)',
+    async (special) => {
+      const credential = `synthetic${special}credential`
+      const { config } = store(true, credential)
+      config.saveConfiguration({ ...settings, apiKey: credential })
+      const unicode = Array.from(credential)
+        .map((c) => String.fromCharCode(92) + 'u' + c.charCodeAt(0).toString(16).padStart(4, '0'))
+        .join('')
+      const payloads = [
+        { role: 'assistant', content: credential },
+        { role: 'assistant', content: JSON.stringify({ value: credential }) },
+        {
+          role: 'assistant',
+          content: null,
+          tool_calls: [
+            {
+              id: 'call-1',
+              type: 'function',
+              function: {
+                name: 'findRecords',
+                arguments: JSON.stringify({ nested: [{ value: credential }] })
+              }
+            }
+          ]
+        },
+        {
+          role: 'assistant',
+          content: null,
+          tool_calls: [
+            {
+              id: 'call-1',
+              type: 'function',
+              function: { name: 'findRecords', arguments: `{"query":"${unicode}"}` }
+            }
+          ]
+        },
+        {
+          role: 'assistant',
+          content: null,
+          tool_calls: [
+            {
+              id: 'call-1',
+              type: 'function',
+              function: {
+                name: 'findRecords',
+                arguments: JSON.stringify({ encoded: JSON.stringify({ value: credential }) })
+              }
+            }
+          ]
+        }
+      ]
+      for (const message of payloads) {
+        const api = new OpenAiAssistantProvider(
+          config,
+          vi.fn(async () => reply(message, message.tool_calls ? 'tool_calls' : 'stop'))
+        )
+        await expect(api.complete(request())).rejects.toThrow(/^protocol$/)
+      }
+      const raw = `{"choices":[{"message":{"role":"assistant","content":"${unicode}"},"finish_reason":"stop"}]}`
+      await expect(
+        new OpenAiAssistantProvider(
+          config,
+          vi.fn(async () => new Response(raw))
+        ).complete(request())
+      ).rejects.toThrow(/^protocol$/)
+    }
+  )
+  it.each([401, 500])(
+    'cancels unread endless HTTP %s bodies and aborts transport',
+    async (status) => {
+      const cancel = vi.fn()
+      const stream = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(new Uint8Array([1]))
+        },
+        cancel
+      })
+      const fetcher = vi.fn<typeof fetch>(async () => new Response(stream, { status }))
+      const { api } = provider(fetcher)
+      await expect(api.complete(request())).rejects.toThrow(
+        status === 401 ? /^authentication$/ : /^network$/
+      )
+      expect(cancel).toHaveBeenCalledTimes(1)
+      expect(fetcher.mock.calls[0][1]!.signal!.aborted).toBe(true)
+    }
+  )
   it('returns explicit tool proposals without executing them', async () => {
     const { api } = provider(
       vi.fn(async () =>

@@ -59,6 +59,30 @@ function parse(v: unknown, requestId: string): AssistantProviderResponse {
     finishReason: choice.finish_reason as AssistantProviderResponse['finishReason']
   }
 }
+/** Inspect decoded strings, including embedded JSON tool arguments, without re-escaping them. */
+function rejectCredentialEcho(value: unknown, credential: string, depth = 0): void {
+  if (depth > 32) throw new AssistantServiceError('protocol')
+  if (typeof value === 'string') {
+    if (value.includes(credential)) throw new AssistantServiceError('protocol')
+    // Tool arguments (or nested encoded arguments) are JSON inside a response string.
+    if (['[', '{', '"'].includes(value.trimStart()[0])) {
+      let decoded: unknown
+      try {
+        decoded = JSON.parse(value)
+      } catch {
+        return
+      }
+      rejectCredentialEcho(decoded, credential, depth + 1)
+    }
+  } else if (Array.isArray(value)) {
+    for (const item of value) rejectCredentialEcho(item, credential, depth + 1)
+  } else if (value !== null && typeof value === 'object') {
+    for (const [key, item] of Object.entries(value)) {
+      rejectCredentialEcho(key, credential, depth + 1)
+      rejectCredentialEcho(item, credential, depth + 1)
+    }
+  }
+}
 /** No SDK, redirects, repository access, or raw service errors escape this boundary. */
 export class OpenAiAssistantProvider implements AssistantProviderPort {
   constructor(
@@ -125,10 +149,15 @@ export class OpenAiAssistantProvider implements AssistantProviderPort {
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.apiKey}` },
           body
         })
-        if (!response.ok)
+        if (controller.signal.aborted || !response.ok) {
+          // Never leave an unread error body downloading after this request has finished.
+          void response.body?.cancel().catch(() => {})
+          if (controller.signal.aborted)
+            throw new AssistantServiceError(timedOut ? 'timeout' : 'cancelled')
           throw new AssistantServiceError(
             response.status === 401 || response.status === 403 ? 'authentication' : 'network'
           )
+        }
         if (!response.body) throw new AssistantServiceError('protocol')
         const reader = response.body.getReader()
         const chunks: Uint8Array[] = []
@@ -156,8 +185,7 @@ export class OpenAiAssistantProvider implements AssistantProviderPort {
         } catch {
           throw new AssistantServiceError('protocol')
         }
-        if (JSON.stringify(value).includes(config.apiKey))
-          throw new AssistantServiceError('protocol')
+        rejectCredentialEcho(value, config.apiKey)
         return parse(value, request.requestId)
       }
       return await Promise.race([execute(), aborted])
@@ -170,6 +198,8 @@ export class OpenAiAssistantProvider implements AssistantProviderPort {
       clearTimeout(timer)
       request.signal.removeEventListener('abort', cancel)
       if (onAbort) controller.signal.removeEventListener('abort', onAbort)
+      // Abort owned transport after classifying the result, including HTTP error paths.
+      controller.abort()
     }
   }
   /** Only the explicit testConnection IPC invokes this synthetic, billable probe. */
