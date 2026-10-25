@@ -771,7 +771,12 @@ app.whenReady().then(async () => {
     configuration: aiConfiguration,
     assertSender: (event) => assertTrustedSender(event, mainWindow, getRendererLocation())
   })
-  const offlineAssistant = createOfflineAssistantFixture()
+  const offlineAssistant = createOfflineAssistantFixture({
+    isPackaged: app.isPackaged,
+    userDataPath: app.getPath('userData'),
+    testRoot: app.commandLine.getSwitchValue('mytracer-assistant-test-root'),
+    cwd: process.cwd()
+  })
   const assistantConfiguration = new AssistantServiceConfigurationStore({
     userDataPath: app.getPath('userData'),
     credentialProtection: offlineAssistant?.protection ?? createAssistantCredentialProtection(safeStorage)

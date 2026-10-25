@@ -86,6 +86,12 @@ export class AssistantController {
     >,
     readonly simulation = false
   ) {}
+  private readonly dirtyInputs = new Set<'composer' | 'settings'>()
+  setInputDirty = (source: 'composer' | 'settings', dirty: boolean): void => {
+    if (dirty) this.dirtyInputs.add(source)
+    else this.dirtyInputs.delete(source)
+  }
+  hasUnsavedInput = (): boolean => this.dirtyInputs.size > 0
   canStop = (): boolean => this.active !== null
   updateService(service: typeof this.service): void {
     this.invalidate()
@@ -259,12 +265,12 @@ export class AssistantController {
       if (token === this.epoch) this.patch({ busy: false })
     }
   }
-  async send(text: string): Promise<void> {
+  async send(text: string): Promise<boolean> {
     const session = this.state.session
-    if (!session || this.state.busy || !text.trim()) return
+    if (!session || this.state.busy || !text.trim()) return false
     if (!this.service.enabled || !this.service.credentialPresent) {
       this.patch({ notice: '尚未配置或启用服务，仍可手工编辑。' })
-      return
+      return false
     }
     const token = this.invalidate()
     const request = { sessionId: session.id, requestId: crypto.randomUUID() }
@@ -272,9 +278,9 @@ export class AssistantController {
     this.patch({ busy: true, run: null, preview: null, notice: '正在整理；结果仅为候选。' })
     try {
       await this.cancellation
-      if (token !== this.epoch) return
+      if (token !== this.epoch) return false
       const current = unwrap(await this.api.getSession({ sessionId: session.id }))
-      if (token !== this.epoch) return
+      if (token !== this.epoch) return false
       this.patch({ session: current })
       let reading = false
       let progressActive = true
@@ -318,16 +324,16 @@ export class AssistantController {
       ) {
         this.patch({ run })
         await new Promise((resolve) => setTimeout(resolve, 500))
-        if (token !== this.epoch) return
+        if (token !== this.epoch) return false
         run = unwrap(await this.api.getRun(request))
       }
-      if (token !== this.epoch) return
+      if (token !== this.epoch) return false
       if (run.state === 'running') {
         this.stop()
-        return
+        return false
       }
       const completedSession = unwrap(await this.api.getSession({ sessionId: session.id }))
-      if (token !== this.epoch) return
+      if (token !== this.epoch) return false
       this.patch({
         run,
         session: completedSession,
@@ -336,8 +342,10 @@ export class AssistantController {
             ? '整理完成；候选尚未写入正式记录。'
             : (errors[run.error?.code ?? 'cancelled'] ?? '整理失败，可以手动重试。')
       })
+      return run.state === 'completed'
     } catch (error) {
       if (token === this.epoch) this.fail(error)
+      return false
     } finally {
       if (token === this.epoch) {
         this.active = null

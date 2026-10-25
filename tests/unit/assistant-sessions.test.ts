@@ -1,3 +1,8 @@
+import { EventEmitter } from 'node:events'
+import type { IpcMainInvokeEvent } from 'electron'
+import { registerAssistantIpc } from '../../src/main/assistant-ipc'
+import { InstallOperationGate } from '../../src/main/install-operation-gate'
+import { ASSISTANT_CHANNELS } from '../../src/contracts/assistant'
 import { createHash } from 'node:crypto'
 import { mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -752,5 +757,96 @@ describe('Assistant review draft preview and uncertain candidate identity', () =
     )
     expect(createdActions).toEqual(['persisted-action'])
     expect(h.write).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('sender lifecycle through real assistant IPC', () => {
+  function bridge(service: AssistantSessionService) {
+    const handlers = new Map<string, (event: IpcMainInvokeEvent, ...args: unknown[]) => unknown>()
+    const registration = registerAssistantIpc({
+      service,
+      ipc: {
+        removeHandler: (name) => {
+          handlers.delete(name)
+        },
+        handle: (name, handler) => {
+          handlers.set(name, handler)
+        }
+      },
+      assertSender: () => {},
+      operationGate: new InstallOperationGate()
+    })
+    const sender = (id: number) => Object.assign(new EventEmitter(), { id })
+    const call = async (
+      from: ReturnType<typeof sender>,
+      method: keyof typeof ASSISTANT_CHANNELS,
+      input?: unknown
+    ) =>
+      handlers.get(ASSISTANT_CHANNELS[method])!(
+        { sender: from } as unknown as IpcMainInvokeEvent,
+        ...(input === undefined ? [] : [input])
+      ) as Promise<{ ok: boolean; value?: unknown; error?: { code: string } }>
+    return { ...registration, sender, call }
+  }
+  it.each(['reload', 'destroy'] as const)(
+    '%s deletes only owned temporary sessions and preserves saved/other sender sessions',
+    async (event) => {
+      const h = setup()
+      const b = bridge(h.service)
+      const first = b.sender(1),
+        second = b.sender(2)
+      const create = (sender: typeof first, mode: string) =>
+        b.call(sender, 'createSession', { entry: { object: record, intent: 'organize' }, mode })
+      const own = (await create(first, 'temporary')).value as { id: string }
+      const saved = (await create(first, 'persistent')).value as { id: string }
+      const other = (await create(second, 'temporary')).value as { id: string }
+      expect(await b.call(first, 'getSession', { sessionId: other.id })).toEqual({
+        ok: false,
+        error: { code: 'not-found' }
+      })
+      if (event === 'reload') b.disposeSender(first.id)
+      else first.emit('destroyed')
+      expect(() => h.service.getSession({ sessionId: own.id })).toThrow('not-found')
+      expect(h.service.getSession({ sessionId: saved.id }).mode).toBe('persistent')
+      expect(h.service.getSession({ sessionId: other.id }).mode).toBe('temporary')
+      expect((await b.call(first, 'listSessions')).value).toEqual([
+        expect.objectContaining({ id: saved.id })
+      ])
+      b.disposeSender(first.id)
+    }
+  )
+  it('tracks creation before its IPC response yields and discards late model completion after disposal', async () => {
+    let finish!: (value: ReturnType<typeof answer>) => void
+    const h = setup({
+      complete: () =>
+        new Promise((resolve) => {
+          finish = resolve
+        })
+    })
+    const b = bridge(h.service),
+      sender = b.sender(1)
+    const creation = b.call(sender, 'createSession', {
+      entry: { object: record, intent: 'organize' },
+      mode: 'temporary'
+    })
+    b.disposeSender(sender.id)
+    const deleted = (await creation).value as { id: string }
+    expect(() => h.service.getSession({ sessionId: deleted.id })).toThrow('not-found')
+    const session = (
+      await b.call(sender, 'createSession', {
+        entry: { object: record, intent: 'organize' },
+        mode: 'temporary'
+      })
+    ).value as { id: string }
+    const pending = b.call(sender, 'sendTurn', {
+      sessionId: session.id,
+      expectedRevision: 0,
+      requestId: 'late',
+      text: 'synthetic'
+    })
+    sender.emit('destroyed')
+    finish(answer('late'))
+    await pending
+    expect(h.service.listSessions()).toEqual([])
   })
 })

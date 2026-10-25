@@ -139,9 +139,22 @@ export function AssistantPanel({
     controller.getSnapshot
   )
   const dialog = useRef<HTMLDialogElement>(null)
-  const [composer, setComposer] = useState({ sessionId: '', text: '' })
-  const input = composer.sessionId === state.session?.id ? composer.text : ''
-  const setInput = (text: string): void => setComposer({ sessionId: state.session?.id ?? '', text })
+  const [composers, setComposers] = useState<Record<string, string>>({})
+  const composersRef = useRef<Record<string, string>>({})
+  // Entry identity survives a fresh session on reopen. Other entry drafts remain recoverable.
+  const entryKey = state.launch
+    ? JSON.stringify([state.launch.entry.intent, state.launch.entry.object])
+    : ''
+  const input = composers[entryKey] ?? ''
+  const setInput = (text: string): void => {
+    const next = { ...composersRef.current, [entryKey]: text }
+    composersRef.current = next
+    controller.setInputDirty(
+      'composer',
+      Object.values(next).some((value) => value.length > 0)
+    )
+    setComposers(next)
+  }
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [mode, setMode] = useState<'persistent' | 'temporary'>('persistent')
   useEffect(() => {
@@ -218,7 +231,6 @@ export function AssistantPanel({
                   type="button"
                   disabled={state.busy}
                   onClick={() => {
-                    setInput('')
                     setDeleteId(null)
                     void controller.restore(s.id)
                   }}
@@ -396,7 +408,20 @@ export function AssistantPanel({
         <form
           onSubmit={(event) => {
             event.preventDefault()
-            void controller.send(input)
+            const submitted = input
+            const submittedEntry = entryKey
+            void controller.send(submitted).then((completed) => {
+              if (!completed) return
+              const current = composersRef.current
+              if (current[submittedEntry] !== submitted) return
+              const next = { ...current, [submittedEntry]: '' }
+              composersRef.current = next
+              controller.setInputDirty(
+                'composer',
+                Object.values(next).some((value) => value.length > 0)
+              )
+              setComposers(next)
+            })
           }}
         >
           <label>
@@ -423,6 +448,18 @@ export function AssistantPanel({
                 发送
               </button>
             )}
+            {Object.values(composers).some((value) => value.length > 0) ? (
+              <button
+                type="button"
+                onClick={() => {
+                  composersRef.current = {}
+                  setComposers({})
+                  controller.setInputDirty('composer', false)
+                }}
+              >
+                清空所有未发送输入
+              </button>
+            ) : null}
             <small>未确认不会写入正式记录。</small>
           </div>
         </form>

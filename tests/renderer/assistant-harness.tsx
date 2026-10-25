@@ -14,6 +14,8 @@ const controller = new AssistantController(fake.api, fake.status, true)
 function Harness(): ReactNode {
   const [note, setNote] = useState(syntheticAssistantEntries[0].entry.editorText!)
   const [summary, setSummary] = useState('')
+  const [dirty, setDirty] = useState(false)
+  const [settingsVisible, setSettingsVisible] = useState(true)
   const [review, setReview] = useState({
     confirmedProgress: '',
     mainObstacle: '',
@@ -28,6 +30,8 @@ function Harness(): ReactNode {
         data-testid="underlying-pane"
         style={{ padding: 24, maxWidth: 900, height: 440, overflowY: 'auto' }}
       >
+        <button onClick={() => setDirty(controller.hasUnsavedInput())}>检查安装草稿</button>
+        <span data-testid="install-dirty">{String(dirty)}</span>
         <h1>整理居住空间 · 合成测试</h1>
         <label>
           原笔记
@@ -90,11 +94,15 @@ function Harness(): ReactNode {
           复盘调整草稿
           <textarea aria-label="复盘调整草稿" value={review.nextAdjustment} readOnly />
         </label>
-        <AssistantSettings
-          api={fake.serviceApi}
-          simulation
-          onChanged={(status) => controller.updateService(status)}
-        />
+        <button onClick={() => setSettingsVisible(!settingsVisible)}>切换设置可见</button>
+        <div hidden={!settingsVisible}>
+          <AssistantSettings
+            api={fake.serviceApi}
+            simulation
+            onDirtyChange={(dirty) => controller.setInputDirty('settings', dirty)}
+            onChanged={(status) => controller.updateService(status)}
+          />
+        </div>
       </main>
     </AssistantHost>
   )

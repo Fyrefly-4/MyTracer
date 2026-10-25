@@ -8,11 +8,13 @@ import './assistant.css'
 export function AssistantSettings({
   api,
   simulation = false,
-  onChanged
+  onChanged,
+  onDirtyChange
 }: {
   readonly api: AssistantServiceApi
   readonly simulation?: boolean
   readonly onChanged?: (status: AssistantServiceStatus) => void
+  readonly onDirtyChange?: (dirty: boolean) => void
 }): ReactNode {
   const [endpoint, setEndpoint] = useState('')
   const [model, setModel] = useState('')
@@ -23,7 +25,23 @@ export function AssistantSettings({
   const [saved, setSaved] = useState(false)
   const [notice, setNotice] = useState('正在读取配置…')
   const alive = useRef(true)
+  const baseline = useRef({ endpoint: '', model: '', enabled: false })
+  const publishDirty = (next: {
+    endpoint?: string
+    model?: string
+    enabled?: boolean
+    key?: string
+  }): void => {
+    onDirtyChange?.(
+      (next.endpoint ?? endpoint) !== baseline.current.endpoint ||
+        (next.model ?? model) !== baseline.current.model ||
+        (next.enabled ?? enabled) !== baseline.current.enabled ||
+        (next.key ?? key).length > 0
+    )
+  }
   const accept = (status: AssistantServiceStatus): void => {
+    baseline.current = { endpoint: status.endpoint, model: status.model, enabled: status.enabled }
+    onDirtyChange?.(false)
     setEndpoint(status.endpoint)
     setModel(status.model)
     setEnabled(status.enabled)
@@ -38,6 +56,11 @@ export function AssistantSettings({
       .then((result) => {
         if (!alive.current) return
         if (result.ok) {
+          baseline.current = {
+            endpoint: result.value.endpoint,
+            model: result.value.model,
+            enabled: result.value.enabled
+          }
           setEndpoint(result.value.endpoint)
           setModel(result.value.model)
           setEnabled(result.value.enabled)
@@ -60,7 +83,7 @@ export function AssistantSettings({
     if (busy) return
     setBusy(true)
     const credential = key
-    setKey('')
+    // Keep the unsaved credential until persistence succeeds; never publish it to the probe.
     try {
       if (action === 'test') {
         const result = await api.testConnection()
@@ -81,6 +104,7 @@ export function AssistantSettings({
           : api.deleteCredential())
         if (!alive.current) return
         if (result.ok) {
+          setKey('')
           accept(result.value)
           setNotice(action === 'delete' ? '密钥已删除。' : '配置已保存；未发起连接请求。')
         } else setNotice(`操作未完成（${result.error.code}），请检查配置。`)
@@ -107,6 +131,7 @@ export function AssistantSettings({
             value={endpoint}
             placeholder="https://example.invalid/v1"
             onChange={(e) => {
+              publishDirty({ endpoint: e.target.value })
               setEndpoint(e.target.value)
               setSaved(false)
             }}
@@ -117,6 +142,7 @@ export function AssistantSettings({
           <input
             value={model}
             onChange={(e) => {
+              publishDirty({ model: e.target.value })
               setModel(e.target.value)
               setSaved(false)
             }}
@@ -130,6 +156,7 @@ export function AssistantSettings({
             value={key}
             placeholder={present ? '已保存密钥（不会回填）' : '尚未保存密钥'}
             onChange={(e) => {
+              publishDirty({ key: e.target.value })
               setKey(e.target.value)
               setSaved(false)
             }}
@@ -140,6 +167,7 @@ export function AssistantSettings({
             type="checkbox"
             checked={enabled}
             onChange={(e) => {
+              publishDirty({ enabled: e.target.checked })
               setEnabled(e.target.checked)
               setSaved(false)
             }}

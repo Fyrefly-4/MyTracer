@@ -2,16 +2,19 @@
 
 状态：2026-10-25，已在独立 `codex/assistant-integration` 分支接入真实 Main / preload / renderer。阶段基线 [PR #163](https://github.com/Fyrefly-4/MyTracer/pull/163) 已经父任务批准后普通合并，merge SHA `cb3972843608afc97809ee00d0eba64f01312a06`；main 未变。A/B/C 子 PR 尚未由本任务合入阶段分支。
 
-当前整合模块：A `f7152633f5f490dc4a2d7fb19872d08b617eba41`、B `3199b374d2cb17ddb9287bc62918507056036763`、C `bdcc6ac76c4ef2f9ebc91827429cba25db5430e6`。共享 DTO 全部来自 owner 提交。冲突收敛采用 B 的 preview / uncertain-write 实现，撤回集成侧临时 preview 实现；Main 仅通过当前可信 window 的 ReviewContextStore 提供 `resolveReviewContext`，不把临时 contextId 当正式复盘 ID。
+当前整合模块：A `555816780cf110fa31c927f7b19cfa0e3904e086`、B `3199b374d2cb17ddb9287bc62918507056036763`、C `9cbf25393ee16cb379bd7b2b92cc1a134dfb8b77`。共享 DTO 全部来自 owner 提交。冲突收敛采用 B 的 preview / uncertain-write 实现，撤回集成侧临时 preview 实现；Main 仅通过当前可信 window 的 ReviewContextStore 提供 `resolveReviewContext`，不把临时 contextId 当正式复盘 ID。
 
 ## 当前验证与限制
 
 - 全项目 typecheck、全仓 ESLint、应用 build 通过。原环境缺失的 marked 按 lock 的精确版本和 SHA-512 恢复，未改 package/lock；本地 Node 24.19.0，与 CI 锁定 24.18.0 不同。
-- Assistant A/B/C 聚焦单元及现有 review-reference、安装协调/gate 共 80/80 通过。
-- 新 `assistant-journey.e2e.test.ts` 在 Linux Electron + 虚拟显示器通过。使用真实 OpenAI provider adapter、配置 IPC、会话内核、preload 和 SQLite，仅 HTTP fetch 与测试凭据保护是显式合成替身，无真实模型请求。
+- Assistant A/B/C 聚焦单元及现有 review-reference、安装协调/gate 共 91/91 通过（含新增 fixture 5 项和 sender 生命周期 3 项）。
+- 原集成 `a4b390b` 的 `assistant-journey.e2e.test.ts` 在 Linux Electron + Xorg dummy 显示器通过；发现 Playwright Linux 默认注入 `--no-sandbox`，此结果仅证明功能，不证明 sandbox。当前测试显式 `chromiumSandbox: true`，云环境启动失败，等待支持 sandbox 的环境/Windows 验证。未改 host 权限或产品安全配置。使用真实 OpenAI provider adapter、配置 IPC、会话内核、preload 和 SQLite，仅 HTTP fetch 与测试凭据保护是显式合成替身，无真实模型请求。
 - 旅程实际检查三入口，复盘三字段/记录简述填草稿且业务数据不变，正式复盘 confirm 拒绝，范围统计两条/15 分钟，多轮、取消、配置变更取消、重复确认、持久恢复/删除、临时不落盘、活动请求退出 drain。
 - 初次 Electron 失败是测试对目标按钮使用过窄 exact name（按钮还含状态/活动文字），已按真实 accessible name 修正；不改变产品或断言。
-- C 的 temporary review 在 setScope 期间关闭的清理修复由 C owner 继续提交，本 head 尚未包含；集成合并前须纳入并验证。
+- 已纳入 C 的 temporary review 初始 setScope 关闭清理修复。Main sender 生命周期另外删除所属 temporary 会话，保留 persistent/其他 sender 会话，并覆盖创建应答竞态和迟到响应。
+- Synthetic fixture 无条件拒绝 packaged；开发测试还要求显式 root switch、规范隔离 root/cwd/userData 和 marker，环境变量本身不能替换凭据保护。
+- 安装草稿检查包含 composer/settings 的 boolean dirty；设置视图收起仍保持挂载，连接测试不被当作草稿。新增 Chromium 回归覆盖未发送阻止/清空允许、跨入口清理、设置隐藏保留/保存清除；3 项 browser 通过（默认启动，仅证明 UI 功能）。
+- Linux 合成截图已检查目标/复盘/记录入口、820 原生最小窗口和 420 renderer 压力尺寸（后者低于产品窗口最小值），位于 `.tmp/assistant-visual/`。它们来自上述 Playwright 默认 sandbox 设置，仅为布局证据；双栏保留、面板可见且窄屏无横向溢出。来源详情默认展开仍偏长，候选常需纵向滚动，这是待改善的体验问题。Linux 不证明 Windows Mica/C1。
 - Windows CI、安装完整回归、Mica/C1 视觉和独立集成 review 仍待实际结果。旧 Today 启动帮助暂保留兼容；不把该迁移和正式 review 写入描述为已完成。
 
 ## 接线顺序与 owner 交付

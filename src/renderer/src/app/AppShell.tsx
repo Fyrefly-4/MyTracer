@@ -210,6 +210,7 @@ export function AppShell(): ReactNode {
           requestId: request.requestId,
           hasUnsavedContent:
             session.hasUnsavedContent() ||
+            assistantController.hasUnsavedInput() ||
             (() => {
               const view = assistantController.getSnapshot()
               return (
@@ -345,7 +346,22 @@ export function AppShell(): ReactNode {
               </div>
             </nav>
 
+            <section
+              className="content"
+              hidden={!assistantSettingsOpen || installPreparing || restartRequired}
+              aria-label="Assistant 服务设置"
+            >
+              <AssistantSettings
+                api={window.myTracer.assistantService}
+                onDirtyChange={(dirty) => assistantController.setInputDirty('settings', dirty)}
+                onChanged={(value) => assistantController.updateService(value)}
+              />
+              <button type="button" onClick={() => setAssistantSettingsOpen(false)}>
+                关闭服务设置
+              </button>
+            </section>
             <main
+              hidden={assistantSettingsOpen && !installPreparing && !restartRequired}
               className={`content content-${bookMode === 'reading' ? 'book' : bookMode === 'original' ? 'data' : activeSection}`}
               ref={mainRef}
               onScrollCapture={(event) => {
@@ -365,17 +381,6 @@ export function AppShell(): ReactNode {
               key={`${activeSection}:${bookMode ?? 'source'}`}
             >
               <div className="content-inner">
-                {assistantSettingsOpen && !installPreparing && !restartRequired ? (
-                  <section aria-label="Assistant 服务设置">
-                    <AssistantSettings
-                      api={window.myTracer.assistantService}
-                      onChanged={(value) => assistantController.updateService(value)}
-                    />
-                    <button type="button" onClick={() => setAssistantSettingsOpen(false)}>
-                      关闭服务设置
-                    </button>
-                  </section>
-                ) : null}
                 {appearanceOpen && !updateOpen && !installPreparing && !restartRequired ? (
                   <section className="appearance-panel" aria-label="外观设置">
                     <h2>外观</h2>

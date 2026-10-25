@@ -12,10 +12,18 @@ export function registerAssistantIpc(options: {
   operationGate: InstallOperationGate
 }): { disposeSender(senderId: number): void } {
   const sessionsBySender = new Map<number, Set<string>>()
+  const temporaryOwners = new Map<string, number>()
   const disposeSender = (senderId: number) => {
-    for (const sessionId of sessionsBySender.get(senderId) ?? [])
-      options.service.cancelSession(sessionId)
+    const sessions = sessionsBySender.get(senderId)
     sessionsBySender.delete(senderId)
+    for (const sessionId of sessions ?? []) {
+      if (temporaryOwners.get(sessionId) === senderId) {
+        temporaryOwners.delete(sessionId)
+        options.service.deleteSession({ sessionId })
+      } else {
+        options.service.cancelSession(sessionId)
+      }
+    }
   }
   for (const method of Object.keys(ASSISTANT_CHANNELS) as (keyof typeof ASSISTANT_CHANNELS)[]) {
     const channel = ASSISTANT_CHANNELS[method]
@@ -35,24 +43,44 @@ export function registerAssistantIpc(options: {
           typeof input === 'object' &&
           'sessionId' in input &&
           typeof input.sessionId === 'string'
-        )
-          sessionsBySender.get(event.sender.id)!.add(input.sessionId)
-        const invoke = () =>
-          method === 'listSessions'
-            ? options.service.listSessions()
-            : options.service[method](input)
+        ) {
+          const session = options.service.getSession({ sessionId: input.sessionId })
+          if (session.mode === 'temporary' && temporaryOwners.get(session.id) !== event.sender.id)
+            throw new AssistantError('not-found')
+          sessionsBySender.get(event.sender.id)!.add(session.id)
+        }
+        const invoke = () => {
+          if (method === 'listSessions')
+            return options.service
+              .listSessions()
+              .filter(
+                (session) =>
+                  session.mode === 'persistent' ||
+                  temporaryOwners.get(session.id) === event.sender.id
+              )
+          const result = options.service[method](input)
+          // Creation is synchronous: establish ownership before yielding to sender disposal.
+          if (method === 'createSession' && result && 'id' in result) {
+            sessionsBySender.get(event.sender.id)!.add(result.id)
+            if ('mode' in result && result.mode === 'temporary')
+              temporaryOwners.set(result.id, event.sender.id)
+          }
+          if (
+            method === 'deleteSession' &&
+            input &&
+            typeof input === 'object' &&
+            'sessionId' in input &&
+            typeof input.sessionId === 'string'
+          ) {
+            temporaryOwners.delete(input.sessionId)
+            for (const sessions of sessionsBySender.values()) sessions.delete(input.sessionId)
+          }
+          return result
+        }
         // Cancellation remains available while the install gate is draining.
         const result = await (method === 'cancelTurn'
           ? invoke()
           : options.operationGate.run(invoke))
-        if (
-          method === 'createSession' &&
-          result &&
-          typeof result === 'object' &&
-          'id' in result &&
-          typeof result.id === 'string'
-        )
-          sessionsBySender.get(event.sender.id)!.add(result.id)
         return { ok: true, value: result }
       } catch (error) {
         return {

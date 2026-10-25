@@ -1,13 +1,39 @@
+import { readFileSync, realpathSync } from 'node:fs'
+import { basename, join, resolve } from 'node:path'
 import type { CredentialProtectionPort } from '../application/ports/configuration'
 import type { AssistantCandidatePayload, AssistantContextManifest } from '../contracts/assistant'
 
 /** Explicit isolated Electron fixture. Production still constructs the real OpenAI adapter. */
-export function createOfflineAssistantFixture(): {
+export function createOfflineAssistantFixture(launch: {
+  isPackaged: boolean
+  userDataPath: string
+  testRoot: string
+  cwd: string
+}): {
   fetcher: typeof fetch
   protection: CredentialProtectionPort
 } | null {
-  if (process.env.NODE_ENV !== 'test' || process.env.MYTRACER_E2E_ASSISTANT !== 'journey')
+  // Environment variables alone must never replace OS credential protection.
+  if (
+    launch.isPackaged ||
+    process.env.NODE_ENV !== 'test' ||
+    process.env.MYTRACER_E2E_ASSISTANT !== 'journey' ||
+    !launch.testRoot
+  )
     return null
+  try {
+    const root = realpathSync(launch.testRoot)
+    if (
+      root !== resolve(launch.testRoot) ||
+      !basename(root).startsWith('mytracer-tests-') ||
+      realpathSync(launch.cwd) !== root ||
+      realpathSync(launch.userDataPath) !== join(root, 'electron-user-data') ||
+      readFileSync(join(root, '.assistant-synthetic-test'), 'utf8') !== 'isolated-synthetic-only'
+    )
+      return null
+  } catch {
+    return null
+  }
   const reply = (
     text: string | null,
     tools?: readonly { id: string; name: string; arguments: string }[]

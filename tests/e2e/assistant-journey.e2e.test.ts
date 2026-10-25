@@ -1,5 +1,5 @@
 import { join } from 'node:path'
-import { readFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { expect, test, type ElectronApplication } from '@playwright/test'
 import { _electron as electron } from 'playwright'
 import { minimalElectronEnvironment } from '../support/electron-environment'
@@ -14,7 +14,12 @@ test('Assistant uses real preload/Main/SQLite for scoped tools, confirmation and
   const launch = () =>
     electron.launch({
       cwd: root.root,
-      args: [join(process.cwd(), 'out/main/index.js'), `--user-data-dir=${root.electronUserData}`],
+      chromiumSandbox: true,
+      args: [
+        join(process.cwd(), 'out/main/index.js'),
+        `--user-data-dir=${root.electronUserData}`,
+        `--mytracer-assistant-test-root=${root.root}`
+      ],
       env: {
         ...minimalElectronEnvironment(root),
         NODE_ENV: 'test',
@@ -22,7 +27,13 @@ test('Assistant uses real preload/Main/SQLite for scoped tools, confirmation and
       }
     })
   try {
+    await writeFile(join(root.root, '.assistant-synthetic-test'), 'isolated-synthetic-only', {
+      flag: 'wx'
+    })
     application = await launch()
+    expect(await application.evaluate(({ app }) => app.commandLine.hasSwitch('no-sandbox'))).toBe(
+      false
+    )
     let page = await application.firstWindow()
     await expect(
       page.getByRole('button', { name: 'Assistant 服务设置', exact: true })
@@ -273,6 +284,12 @@ test('Assistant uses real preload/Main/SQLite for scoped tools, confirmation and
       restored.data.ok &&
         restored.data.value.actionRecords.find((r) => r.id === ids.recordIds[0])?.summary
     ).toBe(result.after.summary)
+    const capture = async (name: string) => {
+      if (process.env.MYTRACER_ASSISTANT_VISUAL !== '1') return
+      const directory = join(process.cwd(), '.tmp/assistant-visual')
+      await mkdir(directory, { recursive: true })
+      await page.screenshot({ path: join(directory, `${name}.png`) })
+    }
     // Actual host/settings mount, not the renderer fake adapter.
     await page.getByRole('button', { name: 'Assistant 服务设置', exact: true }).click()
     await expect(page.getByRole('heading', { name: 'Assistant 服务', exact: true })).toBeVisible()
@@ -282,6 +299,7 @@ test('Assistant uses real preload/Main/SQLite for scoped tools, confirmation and
     await page.getByRole('button', { name: '接上上次', exact: true }).click()
     await expect(page.getByRole('dialog')).toBeVisible()
     await expect(page.getByLabel('继续聊聊')).toBeVisible()
+    await capture('goal-resume')
     await page.getByRole('dialog').getByRole('button', { name: '关闭', exact: true }).click()
     await page.getByRole('button', { name: '复盘', exact: true }).click()
     await page.getByRole('button', { name: '选择作参考', exact: true }).first().click()
@@ -290,6 +308,7 @@ test('Assistant uses real preload/Main/SQLite for scoped tools, confirmation and
     await page.getByLabel('继续聊聊').fill('根据选定事实起草复盘')
     await page.getByRole('button', { name: '发送', exact: true }).click()
     await expect(page.getByRole('button', { name: '仅填入编辑草稿', exact: true })).toBeVisible()
+    await capture('review-preview')
     await page.getByRole('button', { name: '仅填入编辑草稿', exact: true }).click()
     await expect(
       page.getByText('已填入未保存草稿；请回到编辑器检查并手动保存。', { exact: true })
@@ -309,6 +328,20 @@ test('Assistant uses real preload/Main/SQLite for scoped tools, confirmation and
     await page.getByRole('button', { name: '帮我整理', exact: true }).click()
     await page.getByLabel('继续聊聊').fill('提炼简述')
     await page.getByRole('button', { name: '发送', exact: true }).click()
+    await expect(page.getByRole('button', { name: '仅填入编辑草稿', exact: true })).toBeVisible()
+    await capture('record-preview')
+    if (process.env.MYTRACER_ASSISTANT_VISUAL === '1') {
+      await application.evaluate(({ BrowserWindow }) =>
+        BrowserWindow.getAllWindows()[0].setSize(820, 700)
+      )
+      await capture('record-narrow-native-820')
+      await page.setViewportSize({ width: 420, height: 800 })
+      await expect(page.getByLabel('继续聊聊')).toBeVisible()
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)
+      ).toBe(true)
+      await capture('record-stress-420')
+    }
     await page.getByRole('button', { name: '仅填入编辑草稿', exact: true }).click()
     await expect(
       page.getByText('已填入未保存草稿；请回到编辑器检查并手动保存。', { exact: true })
