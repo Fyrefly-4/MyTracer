@@ -38,6 +38,7 @@ function CandidateEditor({
             <label>
               确认的进展
               <textarea
+                maxLength={4000}
                 value={payload.confirmedProgress}
                 onChange={(e) => change({ ...payload, confirmedProgress: e.target.value })}
               />
@@ -45,6 +46,7 @@ function CandidateEditor({
             <label>
               主要阻碍
               <textarea
+                maxLength={4000}
                 value={payload.mainObstacle}
                 onChange={(e) => change({ ...payload, mainObstacle: e.target.value })}
               />
@@ -52,6 +54,7 @@ function CandidateEditor({
             <label>
               下一次调整
               <textarea
+                maxLength={4000}
                 value={payload.nextAdjustment}
                 onChange={(e) => change({ ...payload, nextAdjustment: e.target.value })}
               />
@@ -70,6 +73,7 @@ function CandidateEditor({
             <label>
               行动说明
               <textarea
+                maxLength={2000}
                 value={payload.description ?? ''}
                 onChange={(e) => change({ ...payload, description: e.target.value })}
               />
@@ -81,7 +85,7 @@ function CandidateEditor({
             <textarea
               rows={3}
               value={payload.text}
-              maxLength={payload.kind === 'record-summary' ? 500 : 10000}
+              maxLength={payload.kind === 'record-summary' ? 500 : 8000}
               onChange={(e) => change({ ...payload, text: e.target.value })}
             />
           </label>
@@ -96,13 +100,19 @@ function CandidateEditor({
               仅填入编辑草稿
             </button>
           ) : null}
-          <button
-            type="button"
-            className="secondary-button"
-            onClick={() => void controller.preview(candidate, payload)}
-          >
-            预览：{candidateLabels[payload.kind]}
-          </button>
+          {payload.kind === 'review-draft' ? (
+            <small>
+              仅生成三字段草稿；正式保存请回到原复盘页面确认。填入前仍需通过来源版本验证。
+            </small>
+          ) : (
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={() => void controller.preview(candidate, payload)}
+            >
+              预览：{candidateLabels[payload.kind]}
+            </button>
+          )}
         </div>
       </fieldset>
     </section>
@@ -187,7 +197,7 @@ export function AssistantPanel({
               onClick={() => {
                 if (state.launch) {
                   setInput('')
-                  void controller.open(state.launch, mode)
+                  void controller.createNew(state.launch, mode)
                 }
               }}
             >

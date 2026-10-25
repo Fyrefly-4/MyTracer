@@ -34,22 +34,26 @@ describe('Assistant renderer orchestration with synthetic-only adapter', () => {
     expect(send).toHaveBeenCalledTimes(1)
   })
   it('ignores a late response after stopping and never implicitly retries on reopen', async () => {
-    const { controller, api } = setup({ delayMs: 15, ignoreCancellation: true })
+    const { controller, api } = setup({ delayMs: 100, ignoreCancellation: true })
     await controller.open(launch)
+    const inFlight = vi.spyOn(api, 'sendTurn')
     const pending = controller.send('整理')
+    await vi.waitFor(() => expect(inFlight).toHaveBeenCalledTimes(1), { interval: 1 })
     controller.stop()
     await pending
     expect(controller.getSnapshot().run).toBeNull()
     expect(controller.getSnapshot().notice).toContain('晚到')
-    const send = vi.spyOn(api, 'sendTurn')
+    const send = vi.spyOn(api, 'sendTurn').mockClear()
     controller.close()
     await controller.open(launch)
     expect(send).not.toHaveBeenCalled()
   })
   it('does not let an old turn overwrite another selected session', async () => {
-    const { controller } = setup({ delayMs: 15, ignoreCancellation: true })
+    const { controller, api } = setup({ delayMs: 100, ignoreCancellation: true })
     await controller.open(launch)
+    const inFlight = vi.spyOn(api, 'sendTurn')
     const pending = controller.send('整理')
+    await vi.waitFor(() => expect(inFlight).toHaveBeenCalledTimes(1), { interval: 1 })
     await controller.open(syntheticAssistantEntries[1])
     const selected = controller.getSnapshot().session?.id
     await pending
@@ -160,4 +164,148 @@ describe('Assistant renderer orchestration with synthetic-only adapter', () => {
     expect(settings).toContain('type="password"')
     expect(settings).toContain('模拟设置')
   })
+})
+
+it('uses the refreshed revision after a confirmed write before sending again', async () => {
+  const { controller, api } = setup()
+  await controller.open(launch)
+  await controller.send('整理')
+  const candidate = controller.getSnapshot().run!.candidates[0]
+  await controller.preview(candidate, candidate.payload)
+  await controller.confirm()
+  const current = await api.getSession({ sessionId: controller.getSnapshot().session!.id })
+  expect(current.ok).toBe(true)
+  const send = vi.spyOn(api, 'sendTurn')
+  await controller.send('继续')
+  expect(send.mock.calls[0][0].expectedRevision).toBe(current.ok ? current.value.revision : -1)
+  expect(controller.getSnapshot().run?.state).toBe('completed')
+})
+
+it('shows running read-only steps while a final-result send is still pending', async () => {
+  const { controller, api } = setup()
+  await controller.open(launch)
+  await controller.send('首次')
+  const initial = controller.getSnapshot().run!
+  const send = api.sendTurn
+  vi.spyOn(api, 'sendTurn').mockImplementation(async (input) => {
+    await new Promise((resolve) => setTimeout(resolve, 650))
+    return send(input)
+  })
+  vi.spyOn(api, 'getRun').mockImplementation(async (input) => ({
+    ok: true,
+    value: {
+      ...initial,
+      requestId: input.requestId,
+      state: 'running',
+      steps: [{ call: { name: 'getStatistics' }, sources: [], truncated: false, omittedCount: 0 }]
+    }
+  }))
+  const pending = controller.send('继续')
+  await vi.waitFor(() => expect(controller.getSnapshot().run?.steps).toHaveLength(1), {
+    timeout: 1000
+  })
+  expect(controller.getSnapshot().busy).toBe(true)
+  await pending
+  expect(controller.getSnapshot().run?.state).toBe('completed')
+})
+
+it('does not pretend unsupported review preview can fill or save a draft', async () => {
+  const { controller, api, writes } = setup()
+  const apply = vi.fn(() => true)
+  await controller.open({
+    ...syntheticAssistantEntries[2],
+    draft: { revision: () => 'draft-1', apply }
+  })
+  await controller.send('回顾')
+  const candidate = controller.getSnapshot().run!.candidates[0]
+  const preview = vi.spyOn(api, 'previewWrite')
+  await controller.preview(candidate, candidate.payload)
+  expect(preview).not.toHaveBeenCalled()
+  expect(controller.getSnapshot().notice).toContain('不直接保存复盘')
+  await controller.preview(candidate, candidate.payload, true)
+  expect(apply).not.toHaveBeenCalled()
+  expect(writes).toHaveLength(0)
+  expect(controller.getSnapshot().notice).toContain('尚未提供复盘草稿的来源验证')
+})
+
+it('explicit new goal conversation creates a different ID while resume reuses history', async () => {
+  const { controller } = setup()
+  const goal = syntheticAssistantEntries[1]
+  await controller.open(goal)
+  const first = controller.getSnapshot().session!.id
+  await controller.send('接续')
+  await controller.open(goal)
+  expect(controller.getSnapshot().session!.id).toBe(first)
+  await controller.createNew(goal, 'persistent')
+  expect(controller.getSnapshot().session!.id).not.toBe(first)
+  expect(controller.getSnapshot().session!.messages).toHaveLength(0)
+})
+
+it('refreshes the authoritative turn revision after cancel before scope change or next send', async () => {
+  const { controller, api } = setup()
+  await controller.open(launch)
+  const originalSession = controller.getSnapshot().session!
+  let current = originalSession
+  let finish: (() => void) | undefined
+  const send = vi
+    .spyOn(api, 'sendTurn')
+    .mockImplementationOnce(async () => {
+      current = { ...current, revision: current.revision + 1 }
+      await new Promise<void>((resolve) => {
+        finish = resolve
+      })
+      return { ok: false, error: { code: 'cancelled' } }
+    })
+    .mockImplementationOnce(async (input) => {
+      expect(input.expectedRevision).toBe(current.revision)
+      return { ok: false, error: { code: 'provider-unavailable' } }
+    })
+  vi.spyOn(api, 'getSession').mockImplementation(async () => ({ ok: true, value: current }))
+  vi.spyOn(api, 'cancelTurn').mockImplementation(async () => {
+    finish?.()
+    return { ok: true, value: { cancelled: true } }
+  })
+  const first = controller.send('开始')
+  await vi.waitFor(() => expect(send).toHaveBeenCalledTimes(1))
+  controller.stop()
+  await first
+  await vi.waitFor(() => expect(controller.getSnapshot().busy).toBe(false))
+  expect(controller.getSnapshot().session!.revision).toBe(originalSession.revision + 1)
+  const scope = vi.spyOn(api, 'setScope').mockImplementation(async (input) => {
+    expect(input.expectedRevision).toBe(current.revision)
+    return { ok: true, value: current }
+  })
+  await controller.changeScope(current.scope)
+  expect(scope).toHaveBeenCalledTimes(1)
+  await controller.send('继续')
+  expect(send).toHaveBeenCalledTimes(2)
+})
+
+it('reloads authoritative committed and sibling-stale candidates after confirmation', async () => {
+  const { controller, api } = setup()
+  await controller.open(launch)
+  await controller.send('整理')
+  const run = controller.getSnapshot().run!
+  const candidate = run.candidates[0]
+  const sibling = { ...candidate, id: 'sibling' }
+  const get = api.getSession
+  vi.spyOn(api, 'getSession').mockImplementation(get)
+  vi.spyOn(api, 'getRun').mockResolvedValue({
+    ok: true,
+    value: {
+      ...run,
+      candidates: [
+        { ...candidate, state: 'committed' },
+        { ...sibling, state: 'stale' }
+      ]
+    }
+  })
+  await controller.preview(candidate, candidate.payload)
+  const revision = controller.getSnapshot().session!.revision
+  await controller.confirm()
+  expect(controller.getSnapshot().session!.revision).toBe(revision + 1)
+  expect(controller.getSnapshot().run!.candidates.map((c) => c.state)).toEqual([
+    'committed',
+    'stale'
+  ])
 })

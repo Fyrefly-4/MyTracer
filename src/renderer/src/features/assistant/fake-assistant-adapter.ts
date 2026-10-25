@@ -40,7 +40,14 @@ export const syntheticAssistantEntries: readonly { label: string; entry: Assista
 ]
 const ok = <T>(value: T): AssistantResult<T> => ({ ok: true, value })
 const failure = <T>(
-  code: 'not-found' | 'stale-context' | 'out-of-scope' | 'cancelled' | 'provider-unavailable'
+  code:
+    | 'not-found'
+    | 'stale-context'
+    | 'out-of-scope'
+    | 'cancelled'
+    | 'provider-unavailable'
+    | 'unsupported'
+    | 'validation'
 ): AssistantResult<T> => ({ ok: false, error: { code } })
 export function createFakeAssistantAdapter(
   options: { delayMs?: number; failSend?: boolean; ignoreCancellation?: boolean } = {}
@@ -73,6 +80,14 @@ export function createFakeAssistantAdapter(
   }
   const api: AssistantApi = {
     createSession: async ({ entry, mode }) => {
+      if (
+        entry.editorText !== undefined &&
+        (!entry.editorText.trim() ||
+          entry.editorText.length > 12000 ||
+          !entry.editorRevision ||
+          entry.editorRevision.length > 128)
+      )
+        return failure('validation')
       if (
         !syntheticAssistantEntries.some(
           (item) =>
@@ -128,6 +143,18 @@ export function createFakeAssistantAdapter(
       const session = sessions.get(sessionId)
       if (!session) return failure('not-found')
       if (session.revision !== expectedRevision) return failure('stale-context')
+      const userMessage = {
+        id: crypto.randomUUID(),
+        role: 'user' as const,
+        text,
+        sourceRefs: [],
+        createdAt: new Date().toISOString()
+      }
+      sessions.set(sessionId, {
+        ...session,
+        revision: session.revision + 1,
+        messages: [...session.messages, userMessage]
+      })
       await new Promise((resolve) => setTimeout(resolve, options.delayMs ?? 350))
       if (!sessions.has(sessionId)) return failure('not-found')
       if (cancelled.has(requestId) && !options.ignoreCancellation) return failure('cancelled')
@@ -165,13 +192,7 @@ export function createFakeAssistantAdapter(
       }
       const messages = [
         ...session.messages,
-        {
-          id: crypto.randomUUID(),
-          role: 'user' as const,
-          text,
-          sourceRefs: [],
-          createdAt: new Date().toISOString()
-        },
+        userMessage,
         {
           id: crypto.randomUUID(),
           role: 'assistant' as const,
@@ -205,7 +226,7 @@ export function createFakeAssistantAdapter(
       runs.set(requestId, run)
       sessions.set(sessionId, {
         ...session,
-        revision: session.revision + 1,
+        revision: session.revision + 2,
         messages,
         updatedAt: new Date().toISOString()
       })
@@ -218,6 +239,7 @@ export function createFakeAssistantAdapter(
       return ok({ cancelled: true })
     },
     previewWrite: async ({ sessionId, candidateId, payload, expectedTargetRevision }) => {
+      if (payload.kind === 'review-draft') return failure('unsupported')
       const session = sessions.get(sessionId)
       const candidate = [...runs.values()]
         .flatMap((run) => run.candidates)
@@ -257,6 +279,21 @@ export function createFakeAssistantAdapter(
         target: preview.changes[0].target,
         status: 'committed' as const
       }
+      const session = sessions.get(sessionId)!
+      sessions.set(sessionId, { ...session, revision: session.revision + 1 })
+      for (const [id, run] of runs)
+        runs.set(id, {
+          ...run,
+          candidates: run.candidates.map((candidate) => ({
+            ...candidate,
+            state:
+              candidate.id === preview.candidateId
+                ? 'committed'
+                : candidate.state === 'committed'
+                  ? 'committed'
+                  : 'stale'
+          }))
+        })
       writes.push(candidateText(preview.payload))
       receipts.set(operationId, receipt)
       previews.delete(previewId)

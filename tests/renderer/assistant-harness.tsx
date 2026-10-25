@@ -19,7 +19,10 @@ function Harness(): ReactNode {
       controller={controller}
       scopeChoices={[{ ref: syntheticAssistantEntries[0].entry.object, label: '选择合成记录' }]}
     >
-      <main style={{ padding: 24, maxWidth: 900 }}>
+      <main
+        data-testid="underlying-pane"
+        style={{ padding: 24, maxWidth: 900, height: 440, overflowY: 'auto' }}
+      >
         <h1>整理居住空间 · 合成测试</h1>
         <label>
           原笔记
