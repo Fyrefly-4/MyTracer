@@ -1,5 +1,7 @@
 # MyTracer v0.1 AI 边界
 
+> Assistant 探索阶段的已批准演进见 [启动基线与并行约定](../implementation/ASSISTANT_EXPLORATION.md) 与 [issue #161](https://github.com/Fyrefly-4/MyTracer/issues/161)。该阶段更新本地会话保存、显式参考范围和服务配置的限制；下文保留 v0.1 历史基线及仍有效的安全边界，不代表新能力已经实现。
+
 > 文档状态：v0.1 最终架构基线（工程决策已批准）  
 > 冻结职责：用户主动触发的温和启动帮助  
 > 已批准边界：Electron Main 请求、safeStorage 凭据、最近 5 条相关 Record、1～3 条建议；接口保持可替换，首个适配器为已批准 LiteLLM Gateway/gemini-3.7-flash
