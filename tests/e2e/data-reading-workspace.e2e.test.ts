@@ -1,6 +1,7 @@
 import { join } from 'node:path'
 import { expect, test, type ElectronApplication } from '@playwright/test'
 import { _electron as electron } from 'playwright'
+import { startElectronDiagnostics } from '../support/electron-diagnostics'
 import { minimalElectronEnvironment } from '../support/electron-environment'
 import { createTemporaryTestRoot, removeTemporaryTestRoot } from '../support/temporary-test-root'
 
@@ -8,13 +9,38 @@ test('history is readable, paginated, and separates reading from protected local
   test.slow()
   const root = await createTemporaryTestRoot()
   let application: ElectronApplication | undefined
+  let finishDiagnostics: ((failure?: unknown) => Promise<void>) | undefined
   try {
     application = await electron.launch({
+      chromiumSandbox: true,
       cwd: root.root,
       args: [join(process.cwd(), 'out/main/index.js'), `--user-data-dir=${root.electronUserData}`],
       env: minimalElectronEnvironment(root)
     })
+    finishDiagnostics = await startElectronDiagnostics(application, test.info())
     const page = await application.firstWindow()
+    await page.evaluate(() => {
+      const events: object[] = []
+      Reflect.set(window, '__dataScrollEvidence', events)
+      document.addEventListener(
+        'scroll',
+        (event) => {
+          const pane = event.target
+          if (!(pane instanceof HTMLElement) || pane.dataset.scrollKey !== 'detail') return
+          if (events.length >= 40) return
+          events.push({
+            at: performance.now(),
+            section: document.querySelector('main')?.className,
+            top: pane.scrollTop,
+            scrollHeight: pane.scrollHeight,
+            clientHeight: pane.clientHeight,
+            recordMounted: Boolean(pane.querySelector('.data-record-card')),
+            noteOpen: pane.querySelector('details.record-note-details')?.hasAttribute('open')
+          })
+        },
+        true
+      )
+    })
     const title = '阅读一段足够长的中文材料，并记录值得继续追问的问题'
     const understanding =
       '这是一条包含多行内容的理解。\n它应该完整显示，而不是被一个很窄的单行输入框截断。'
@@ -67,9 +93,21 @@ test('history is readable, paginated, and separates reading from protected local
     await expect
       .poll(() => selected.evaluate((element) => element.scrollHeight - element.clientHeight))
       .toBeGreaterThanOrEqual(180)
-    await selected.evaluate((element) => {
-      element.scrollTop = 180
-    })
+    await test.step('Scroll to 180 and await native event delivery before leaving Data', () =>
+      selected.evaluate(
+        (element) =>
+          new Promise<void>((resolve) => {
+            const observed = (): void => {
+              if (element.scrollTop !== 180) return
+              element.removeEventListener('scroll', observed)
+              resolve()
+            }
+            // React's main capture handler saves the offset before this target listener runs.
+            // Reading scrollTop alone would not establish that the scroll event was delivered.
+            element.addEventListener('scroll', observed)
+            element.scrollTop = 180
+          })
+      ))
     await expect.poll(() => selected.evaluate((element) => element.scrollTop)).toBe(180)
     await page.getByRole('navigation').getByRole('button', { name: '进展', exact: true }).click()
     await page.getByRole('navigation').getByRole('button', { name: '数据', exact: true }).click()
@@ -128,9 +166,30 @@ test('history is readable, paginated, and separates reading from protected local
     await page.getByRole('button', { name: '完成筛选' }).click()
     await expect(rows).toHaveCount(8)
     await expect(page.getByLabel('历史记录分页')).toContainText('第 1 / 2 页')
+  } catch (error) {
+    await finishDiagnostics?.(error)
+    throw error
   } finally {
-    await application?.close().catch(() => undefined)
-    await removeTemporaryTestRoot(root)
+    try {
+      const page = application?.windows()[0]
+      if (page) {
+        await test
+          .info()
+          .attach('data-scroll-events', {
+            body: JSON.stringify(
+              await page
+                .evaluate(() => Reflect.get(window, '__dataScrollEvidence'))
+                .catch(() => ({ unavailable: true }))
+            ),
+            contentType: 'application/json'
+          })
+          .catch(() => undefined)
+      }
+      await finishDiagnostics?.()
+    } finally {
+      await application?.close().catch(() => undefined)
+      await removeTemporaryTestRoot(root)
+    }
   }
 })
 

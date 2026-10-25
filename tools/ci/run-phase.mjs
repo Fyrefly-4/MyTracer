@@ -12,6 +12,14 @@ const commands = {
   integration: ['run', 'test:integration'],
   build: ['run', 'build'],
   diagnostics: ['run', 'test:diagnostics'],
+  scroll: [
+    'run',
+    'test:e2e:run',
+    '--',
+    'tests/e2e/data-reading-workspace.e2e.test.ts',
+    '--grep=history',
+    '--repeat-each=3'
+  ],
   e2e: ['run', 'test:e2e:run']
 }
 const phase = process.argv[2]
@@ -25,7 +33,11 @@ const startedAt = new Date().toISOString()
 const start = performance.now()
 const result = spawnSync(process.platform === 'win32' ? 'npm.cmd' : 'npm', commands[phase], {
   stdio: 'inherit',
-  shell: process.platform === 'win32'
+  shell: process.platform === 'win32',
+  env:
+    phase === 'scroll'
+      ? { ...process.env, PLAYWRIGHT_JSON_OUTPUT_FILE: join(output, 'scroll-repeat.json') }
+      : process.env
 })
 const durationMs = Math.round(performance.now() - start)
 const record = {

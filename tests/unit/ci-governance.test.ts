@@ -338,6 +338,7 @@ describe('workflow safety boundaries', () => {
       'integration',
       'build',
       'diagnostics',
+      'scroll',
       'e2e'
     ]) {
       expect(source).toContain(`run: node tools/ci/run-phase.mjs ${phase}`)

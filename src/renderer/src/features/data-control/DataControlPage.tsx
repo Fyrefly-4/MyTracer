@@ -877,7 +877,6 @@ function DataControlWorkspace({
   const [readState, setReadState] = useState<'loading' | 'ready' | 'error'>('loading')
   const [readError, setReadError] = useState('')
   const [error, setError] = useState<string | null>(null)
-  usePagePosition('data', data !== null)
   const [panel, setPanel] = useState<
     'backfill' | 'export' | 'more' | 'filters' | 'search-scope' | null
   >(null)
@@ -1354,6 +1353,15 @@ function DataControlWorkspace({
     selectedRecord?.type === 'routine-record'
       ? (data?.routineRecords.find((record) => record.id === selectedRecord.id) ?? null)
       : null
+  // Rows can arrive one commit before selection reconciliation mounts the detail.
+  // Restoring into that empty pane clamps its saved offset to zero permanently.
+  usePagePosition(
+    'data',
+    data !== null &&
+      (visibleHistory.length === 0 ||
+        selectedActionRecord !== null ||
+        selectedRoutineRecord !== null)
+  )
   const deleteOptions =
     deleteType === 'goal'
       ? (data?.goals.map((item) => ({ id: item.id, label: item.title })) ?? [])

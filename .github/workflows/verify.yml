@@ -102,6 +102,9 @@ jobs:
       - name: Prove Electron failure diagnostics
         if: steps.changes.outputs.category == 'source'
         run: node tools/ci/run-phase.mjs diagnostics
+      - name: Repeat Data scroll restoration three times
+        if: steps.changes.outputs.category == 'source'
+        run: node tools/ci/run-phase.mjs scroll
       - name: Verify Electron E2E
         if: steps.changes.outputs.category == 'source'
         run: node tools/ci/run-phase.mjs e2e

@@ -37,7 +37,7 @@ observation, not speculative waits, tolerance changes or unrelated product repai
 
 ## Actual Electron contexts
 
-The goal-content-draft and routine-content-draft suites call
+The goal-content-draft, routine-content-draft and Data reading regression call
 `startElectronDiagnostics` on the application returned by `electron.launch`, before
 fixture setup and assertions. Named steps distinguish launch, first window, trace
 startup and the draft continuity/race scenario; Playwright API/assertion steps provide
@@ -102,3 +102,43 @@ whether its assertion passed. These measurements will determine whether remainin
 work is in setup, actual extraction or elsewhere. Removing 22 redundant compressions
 is a bounded fixture change, not evidence that the original outlier was conclusively
 caused by compression or a claim of general CI speedup.
+
+
+## Windows evidence and Data scroll restoration
+
+[Verification 40146912058](https://github.com/Fyrefly-4/MyTracer/actions/runs/40146912058)
+on head `d108e84432fdf4c033d72396134420e54dd227a6`, test merge
+`fe0cc7722e712e67282c813f4c2ec1d7d4fe2944`, passed integration (277, one skipped),
+build and the **actual Electron diagnostic negative control**. The checker confirmed
+that the controlled assertion stayed failed and that PNG, real-context trace and
+main/renderer synthetic errors were attached. This is native Windows proof, not
+inference from configuring Playwright's browser fixture. Artifact `12580239282` was
+published; connector download access was unavailable, so its visual contents have not
+been independently inspected. Installer run `40146912060` also succeeded.
+
+Shared ZIP compression measured 1047 ms (1071 ms including setup/cleanup); the two
+visibility subprocesses measured 883/894 ms, including real prepare extraction and
+validation at 388/386 ms and publish extraction/validation at 385/398 ms. All 23
+release-tag scenarios passed. This single new sample does not prove the cause of the
+previous 8.852 s outlier or a general speedup.
+
+Full E2E still failed one Data reading assertion (130 passed, five skipped): after
+returning from Progress, the long note was open but detail `scrollTop` was 0 instead
+of 180. That suite did not yet use the context diagnostic helper, so the old log cannot
+establish whether the outgoing native scroll event was delivered. Source inspection
+also identified a real readiness gap: `data !== null` became true before the subsequent
+selection reconciliation commit mounted the selected record. The one-shot frame could
+then restore into an empty pane and clamp its offset to zero.
+
+Data now waits for its selected record (or an actually empty result) before restoring.
+The regression awaits native scroll-event delivery before leaving, retains the exact
+180 assertion, and captures bounded numeric scroll events with pane height, mounted
+record and disclosure state alongside the real-context trace. It does not synthesize
+scroll events or use sleeps. Both possible timing boundaries are now explicit; the
+old failure's exact interleaving remains unproven.
+
+The Windows source gate runs that focused scenario three independent times with
+`--repeat-each=3`, serially and with zero retries, before the unchanged full E2E suite.
+Every repetition must pass. `scroll-repeat.json` is separate from the full-suite JSON;
+a focused failure still fails the gate. This is bounded regression evidence, not a
+retry-until-green policy or a replacement for full premerge coverage.
