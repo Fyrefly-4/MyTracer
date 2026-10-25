@@ -2,7 +2,7 @@ name: Installer validation
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, assistant/exploration]
     paths:
       - build/installer/**
       - resources/brand/**
