@@ -114,7 +114,7 @@ export async function exportInstalledFacts(
   const document = JSON.parse(await readFile(destination, 'utf8')) as Record<string, unknown>
   expect(document).toMatchObject({
     exportVersion,
-    sourceDataVersion: exportVersion + 1
+    sourceDataVersion: exportVersion === 6 ? 8 : exportVersion + 1
   })
   return document
 }

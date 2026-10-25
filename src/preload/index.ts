@@ -1,3 +1,5 @@
+import { PendingCloseRequest } from './pending-close-request'
+import { DRAFT_CHANNELS, type RecordDraftApi } from '../contracts/record-drafts'
 import { RECORD_BOOK_CHANNELS, type RecordBookApi } from '../contracts/record-book'
 import {
   APPEARANCE_CHANNELS,
@@ -142,7 +144,24 @@ import {
   type UpdateStatusDto
 } from '../contracts/updates'
 
+const closeRequests = new PendingCloseRequest()
+ipcRenderer.on(DRAFT_CHANNELS.closeRequest, (_event, requestId: string) =>
+  closeRequests.receive(requestId)
+)
+
 const api: MyTracerApi = Object.freeze({
+  recordDrafts: {
+    load: () => ipcRenderer.invoke(DRAFT_CHANNELS.load),
+    retain: (input: Parameters<RecordDraftApi['retain']>[0]) =>
+      ipcRenderer.invoke(DRAFT_CHANNELS.retain, input),
+    review: (input: Parameters<RecordDraftApi['review']>[0]) =>
+      ipcRenderer.invoke(DRAFT_CHANNELS.review, input),
+    reconcile: (input: Parameters<RecordDraftApi['reconcile']>[0]) =>
+      ipcRenderer.invoke(DRAFT_CHANNELS.reconcile, input),
+    subscribeClose: (listener: (requestId: string) => void) => closeRequests.subscribe(listener),
+    replyClose: (input: Parameters<RecordDraftApi['replyClose']>[0]) =>
+      ipcRenderer.invoke(DRAFT_CHANNELS.closeReply, input)
+  },
   home: Object.freeze({
     get: (input: Readonly<Record<string, never>>): Promise<HomeResult<HomeOverviewDto>> =>
       ipcRenderer.invoke(HOME_CHANNELS.get, input),

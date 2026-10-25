@@ -1,4 +1,5 @@
 export interface RoutineRecordingContext {
+  readonly operationId: string
   readonly id: string
   readonly senderId: number
   readonly routineId: string
@@ -17,13 +18,25 @@ export class RoutineRecordingContextStore {
 
   public constructor(private readonly generateId: () => string) {}
 
-  public begin(senderId: number, routineId: string, capturedOn: string): RoutineRecordingContext {
+  public begin(
+    senderId: number,
+    routineId: string,
+    capturedOn: string,
+    operationId?: string
+  ): RoutineRecordingContext {
     for (const [id, context] of this.contexts) {
       if (context.senderId === senderId && context.routineId === routineId) {
         this.contexts.delete(id)
       }
     }
-    const context = Object.freeze({ id: this.generateId(), senderId, routineId, capturedOn })
+    const id = this.generateId()
+    const context = Object.freeze({
+      id,
+      operationId: operationId ?? id,
+      senderId,
+      routineId,
+      capturedOn
+    })
     this.contexts.set(context.id, context)
     return context
   }
@@ -33,6 +46,12 @@ export class RoutineRecordingContextStore {
     if (!context || context.senderId !== senderId || context.routineId !== routineId) {
       throw new InvalidRoutineRecordingContextError()
     }
+    return context
+  }
+
+  public requireSender(senderId: number, contextId: string): RoutineRecordingContext {
+    const context = this.contexts.get(contextId)
+    if (!context || context.senderId !== senderId) throw new InvalidRoutineRecordingContextError()
     return context
   }
 

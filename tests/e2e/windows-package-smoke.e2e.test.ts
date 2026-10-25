@@ -47,6 +47,7 @@ async function verifyPackagedApplication(
       ai: { configured: false, availability: 'not-configured' }
     })
     expect(await page.evaluate(() => Object.keys(window.myTracer))).toEqual([
+      'recordDrafts',
       'home',
       'shell',
       'updates',
@@ -234,7 +235,7 @@ async function verifyPackagedApplication(
     expect(
       database.prepare("SELECT value FROM metadata WHERE key = 'schemaVersion'").get()
     ).toEqual({
-      value: '7'
+      value: '8'
     })
     expect(database.pragma('foreign_keys', { simple: true })).toBe(1)
   } finally {

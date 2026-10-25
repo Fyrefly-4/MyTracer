@@ -1,3 +1,5 @@
+import { RecordContinuityNotice, UnavailableRecordInputs } from '../../app/RecordContinuityNotice'
+import { hasRecordInput } from '../../../../contracts/record-drafts'
 import { RecordSummaryInput, RecordNoteInput, RecordNote } from '../../app/RecordText'
 import { recordDuration } from '../../app/ui-text'
 import { chooseVisibleSelection } from '../../app/selection-preferences'
@@ -7,7 +9,7 @@ import {
   recordOutcomeText,
   routineRecordOutcomeText
 } from '../../app/ui-text'
-import { type ReactNode, useEffect, useEffectEvent, useRef, useState } from 'react'
+import { type ReactNode, useEffect, useLayoutEffect, useEffectEvent, useRef, useState } from 'react'
 import type {
   ActionDetailDto,
   ActionErrorCode,
@@ -25,6 +27,7 @@ import type { TodayViewDto } from '../../../../contracts/today'
 import type { GoalActivityViewDto } from '../../../../contracts/progress'
 import {
   useUiSession,
+  useRecordOperation,
   useActiveUnsavedContent,
   useUnsavedContent,
   usePagePosition,
@@ -58,6 +61,8 @@ const actionErrorText: Record<ActionErrorCode, string> = {
 }
 
 const recordErrorText: Record<RecordErrorCode, string> = {
+  'already-saved': '这笔已保存，不会重复写入。',
+  'context-changed': '对象或安排已变化，请核对后继续。',
   validation: '请检查记录内容；时长需为非负整数分钟。',
   'not-found': '行动或记录已不存在，请刷新后重试。',
   'invalid-transition': '该行动当前不能新增记录。',
@@ -98,7 +103,6 @@ function ActionRecordingPanel(props: {
   const activeRef = useUiLifetime()
   const session = useUiSession()
   const [restoredDraft] = useState(() => session.getActionDraft(props.action.id))
-  const [restoredNotice, setRestoredNotice] = useState(Boolean(restoredDraft))
   const panelRef = useRef<HTMLElement | null>(null)
   const beginRef = useRef<HTMLButtonElement | null>(null)
   const restoreBeginFocus = useRef(false)
@@ -138,9 +142,34 @@ function ActionRecordingPanel(props: {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [invalidContext, setInvalidContext] = useState(false)
-  useUnsavedContent(`action-record-${props.action.id}`, Boolean(context))
+  const operation = useRecordOperation(context?.recordingContextId)
+  useUnsavedContent(
+    `action-record-${props.action.id}`,
+    Boolean(
+      context &&
+      hasRecordInput({
+        kind: 'action',
+        draft: {
+          context,
+          durationMinutes,
+          outcome,
+          understanding,
+          confusion,
+          nextStep,
+          summary,
+          note,
+          postAction,
+          nextMode,
+          replacementActionId,
+          applyRecordedNextStep,
+          deepExpanded,
+          postExpanded
+        }
+      })
+    )
+  )
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!context) return
     session.setActionDraft(props.action.id, {
       context,
@@ -179,7 +208,7 @@ function ActionRecordingPanel(props: {
 
   useEffect(() => {
     if (!context) {
-      if (restoreBeginFocus.current) {
+      if (!busy && restoreBeginFocus.current) {
         restoreBeginFocus.current = false
         revealStart(panelRef.current)
         beginRef.current?.focus({ preventScroll: true })
@@ -191,7 +220,7 @@ function ActionRecordingPanel(props: {
     if (context === restoredDraft?.context) return
     revealStart(panelRef.current)
     panelRef.current?.querySelector<HTMLInputElement>('input')?.focus({ preventScroll: true })
-  }, [context, restoredDraft?.context])
+  }, [busy, context, restoredDraft?.context])
 
   const loadRecords = async (): Promise<void> => {
     const result = await window.myTracer.records.listForAction({ actionId: props.action.id })
@@ -222,7 +251,6 @@ function ActionRecordingPanel(props: {
   }, [props.action.id])
 
   const resetForm = (): void => {
-    setRestoredNotice(false)
     session.clearActionDraft(props.action.id)
     contextRef.current = null
     setContext(null)
@@ -244,6 +272,10 @@ function ActionRecordingPanel(props: {
   }
 
   const begin = async (): Promise<void> => {
+    if (session.loadFailed) {
+      setError('请先重试读取本机未完成输入，再开始记录。')
+      return
+    }
     setBusy(true)
     const result = await window.myTracer.records.begin({ actionId: props.action.id })
     if (!activeRef.current) {
@@ -282,29 +314,42 @@ function ActionRecordingPanel(props: {
   }
 
   const restartContext = async (): Promise<void> => {
+    if (!context) return
     setBusy(true)
-    const result = await window.myTracer.records.begin({ actionId: props.action.id })
-    if (!activeRef.current) return
-    setBusy(false)
-    if (!result.ok) {
-      setError(recordErrorText[result.error.code])
-      return
+    try {
+      await window.myTracer.recordDrafts.review({
+        kind: 'action',
+        contextId: context.recordingContextId
+      })
+      setContext({ ...context, continuityIssue: undefined })
+      setInvalidContext(false)
+      setError(null)
+    } catch {
+      setError('这次输入的对象暂不可用，请重新打开应用核对；输入不会被当作新的一笔重放。')
+    } finally {
+      setBusy(false)
     }
-    contextRef.current = result.value
-    setContext(result.value)
-    setInvalidContext(false)
-    setError(null)
   }
 
   const cancel = async (): Promise<void> => {
-    if (!context) return
+    if (!context || operation.pending || operation.uncertain) return
     setBusy(true)
-    const result = await window.myTracer.records.cancel({
-      recordingContextId: context.recordingContextId
-    })
+    const result = await session
+      .trackRecordOperation(context.recordingContextId, () =>
+        window.myTracer.records.cancel({ recordingContextId: context.recordingContextId })
+      )
+      .catch(() => ({
+        ok: false as const,
+        error: { code: 'persistence-failed' as const, message: 'Discard result unavailable.' }
+      }))
     if (!activeRef.current) return
     setBusy(false)
-    if (!result.ok && result.error.code !== 'invalid-recording-context') {
+    if (!result.ok && result.error.code === 'already-saved') {
+      resetForm()
+      setSavedMessage('上次提交已完成，已有记录未被删除。')
+      return
+    }
+    if (!result.ok) {
       setError(recordErrorText[result.error.code])
       return
     }
@@ -325,7 +370,7 @@ function ActionRecordingPanel(props: {
   }
 
   const save = async (dateChoice?: RecordingDateChoiceDto): Promise<void> => {
-    if (!context) return
+    if (!context || context.continuityIssue || operation.pending || operation.uncertain) return
     const minutes = durationMinutes === '' ? null : Number(durationMinutes)
     if (minutes !== null && (!Number.isInteger(minutes) || minutes < 0)) {
       setError('时长必须是非负整数分钟；0 表示不足一分钟但确有行动。')
@@ -352,26 +397,57 @@ function ActionRecordingPanel(props: {
           : ({ kind: 'clear' } as const)
       : undefined
     setBusy(true)
-    const result = await window.myTracer.records.record({
-      actionId: props.action.id,
-      recordingContextId: context.recordingContextId,
-      dateChoice,
-      durationMinutes: minutes,
-      outcome,
-      understanding: understanding.trim() ? understanding : null,
-      confusion: confusion.trim() ? confusion : null,
-      nextStep: nextStep.trim() ? nextStep : null,
-      summary: summary.trim() ? summary : null,
-      note: note.trim() ? note : null,
-      postRecord: {
-        action: postAction,
-        currentNextResolution,
-        applyRecordedNextStep: !changingCurrentAction && applyRecordedNextStep
+    const result = await session
+      .trackRecordOperation(context.recordingContextId, () =>
+        window.myTracer.records.record({
+          actionId: props.action.id,
+          recordingContextId: context.recordingContextId,
+          dateChoice,
+          durationMinutes: minutes,
+          outcome,
+          understanding: understanding.trim() ? understanding : null,
+          confusion: confusion.trim() ? confusion : null,
+          nextStep: nextStep.trim() ? nextStep : null,
+          summary: summary.trim() ? summary : null,
+          note: note.trim() ? note : null,
+          postRecord: {
+            action: postAction,
+            currentNextResolution,
+            applyRecordedNextStep: !changingCurrentAction && applyRecordedNextStep
+          }
+        })
+      )
+      .catch(() => ({
+        ok: false as const,
+        error: { code: 'persistence-failed' as const, message: 'Save result unavailable.' }
+      }))
+    if (
+      (result.ok && result.value.kind === 'saved') ||
+      (!result.ok && result.error.code === 'already-saved')
+    ) {
+      if (
+        session.getActionDraft(props.action.id)?.context.recordingContextId ===
+        context.recordingContextId
+      )
+        session.clearActionDraft(props.action.id)
+      if (!activeRef.current) {
+        if (result.ok && result.value.kind === 'saved') await props.onSaved(result.value.action)
+        return
       }
-    })
+    }
     if (!activeRef.current) return
     setBusy(false)
     if (!result.ok) {
+      if (result.error.code === 'already-saved') {
+        resetForm()
+        setSavedMessage('这笔已保存。')
+        await loadRecords()
+        const current = await window.myTracer.actions.getDetail({ actionId: props.action.id })
+        if (current.ok) await props.onSaved(current.value)
+        return
+      }
+      if (result.error.code === 'context-changed')
+        setContext({ ...context, continuityIssue: 'changed' })
       setInvalidContext(result.error.code === 'invalid-recording-context')
       setError(recordErrorText[result.error.code])
       return
@@ -403,6 +479,21 @@ function ActionRecordingPanel(props: {
     await loadRecords()
     if (!activeRef.current) return
     await props.onSaved(saved.action)
+  }
+
+  if (operation.consumed && context) {
+    setContext(null)
+    setDurationMinutes('')
+    setOutcome('partial')
+    setUnderstanding('')
+    setConfusion('')
+    setNextStep('')
+    setSummary('')
+    setNote('')
+    setPostAction('keep-pending')
+    setNextMode('clear')
+    setReplacementActionId('')
+    setApplyRecordedNextStep(false)
   }
 
   const canApplyNextStep = props.action.goal?.status === 'active'
@@ -437,7 +528,7 @@ function ActionRecordingPanel(props: {
             ref={beginRef}
             className="primary-button"
             type="button"
-            disabled={busy}
+            disabled={busy || operation.pending}
             onClick={() => void begin()}
           >
             开始记录
@@ -463,12 +554,28 @@ function ActionRecordingPanel(props: {
             void save()
           }}
         >
-          <fieldset className="recording-fields today-recording-fields" disabled={busy}>
-            <p className="draft-notice" role="status">
-              {restoredNotice
-                ? '未保存的记录草稿已恢复。它仍未写入记录，你可以继续填写、保存或放弃。'
-                : '未保存草稿会在本次应用会话中保留，直到你保存或明确放弃。'}
-            </p>
+          <RecordContinuityNotice
+            kind="action"
+            context={context}
+            onReconciled={async (result) => {
+              if (result.state !== 'saved') return
+              try {
+                await loadRecords()
+                const action = await window.myTracer.actions.getDetail({
+                  actionId: props.action.id
+                })
+                if (action.ok) await props.onSaved(action.value)
+                setSavedMessage('这笔已保存。')
+              } catch {
+                setError('这笔已保存，但列表刷新失败。请重新打开今天查看。')
+              }
+            }}
+            onReviewed={() => setContext({ ...context, continuityIssue: undefined })}
+          />
+          <fieldset
+            className="recording-fields today-recording-fields"
+            disabled={busy || operation.pending || operation.uncertain}
+          >
             <p className="captured-date">记录日期：{context.capturedOn}</p>
             <div className="quick-record-grid">
               <label>
@@ -623,12 +730,16 @@ function ActionRecordingPanel(props: {
                 <div>
                   <button
                     type="button"
-                    disabled={busy}
+                    disabled={busy || operation.pending}
                     onClick={() => void save('keep-captured-on')}
                   >
                     保留开始日
                   </button>
-                  <button type="button" disabled={busy} onClick={() => void save('use-current-on')}>
+                  <button
+                    type="button"
+                    disabled={busy || operation.pending}
+                    onClick={() => void save('use-current-on')}
+                  >
                     使用当前日
                   </button>
                 </div>
@@ -638,18 +749,24 @@ function ActionRecordingPanel(props: {
               <button
                 className="primary-button"
                 type="submit"
-                disabled={busy || Boolean(dateConfirmation)}
+                disabled={
+                  busy || operation.pending || operation.uncertain || Boolean(dateConfirmation)
+                }
               >
                 保存记录
               </button>
-              <button type="button" disabled={busy} onClick={() => void cancel()}>
+              <button
+                type="button"
+                disabled={busy || operation.pending || operation.uncertain}
+                onClick={() => void cancel()}
+              >
                 放弃草稿
               </button>
               {invalidContext ? (
                 <button
                   className="secondary-button"
                   type="button"
-                  disabled={busy}
+                  disabled={busy || operation.pending}
                   onClick={() => void restartContext()}
                 >
                   保留内容并重新开始记录
@@ -1176,7 +1293,6 @@ function TodayWorkspace(): ReactNode {
                   {actionStatusText[action.status]}
                   {action.goal ? ` · ${action.goal.name}` : ' · 独立行动'}
                   {action.isCurrentNextAction ? ' · 目标当前下一步' : ''}
-                  {session.hasActionDraft(action.id) ? ' · 有未保存草稿' : ''}
                 </small>
                 {action.goal ? <small>{activityText(action.goal.id)}</small> : null}
               </button>
@@ -1300,6 +1416,7 @@ function TodayWorkspace(): ReactNode {
       className={`today-workspace today-experiment ${masterCollapsed ? 'is-master-collapsed' : ''}`}
       aria-label="今日行动"
     >
+      <UnavailableRecordInputs kind="action" />
       {selectionError ? (
         <p className="form-error" role="alert">
           {selectionError}
@@ -1456,7 +1573,6 @@ function TodayWorkspace(): ReactNode {
                           {actionStatusText[action.status]}
                           {action.goal ? ` · ${action.goal.name}` : ' · 独立行动'}
                           {action.isCurrentNextAction ? ' · 目标当前下一步' : ''}
-                          {session.hasActionDraft(action.id) ? ' · 有未保存草稿' : ''}
                         </small>
                       </button>
                       <button
@@ -1500,7 +1616,6 @@ function TodayWorkspace(): ReactNode {
                             {actionStatusText[action.status]}
                             {action.goal ? ` · ${action.goal.name}` : ' · 独立行动'}
                             {action.isCurrentNextAction ? ' · 目标当前下一步' : ''}
-                            {session.hasActionDraft(action.id) ? ' · 有未保存草稿' : ''}
                           </small>
                         </button>
                         <button
@@ -1538,10 +1653,7 @@ function TodayWorkspace(): ReactNode {
                     >
                       <strong>{routine.name}</strong>
                       <span>最小行动：{routine.minimumAction}</span>
-                      <small>
-                        {routineRecordOutcomeText[routine.recordState]}
-                        {session.hasRoutineDraft(routine.id) ? ' · 有未保存草稿' : ''}
-                      </small>
+                      <small>{routineRecordOutcomeText[routine.recordState]}</small>
                     </button>
                   ))
                 ) : (
@@ -1565,10 +1677,7 @@ function TodayWorkspace(): ReactNode {
                     >
                       <strong>{routine.name}</strong>
                       <span>最小行动：{routine.minimumAction}</span>
-                      <small>
-                        {routineRecordOutcomeText[routine.recordState]}
-                        {session.hasRoutineDraft(routine.id) ? ' · 有未保存草稿' : ''}
-                      </small>
+                      <small>{routineRecordOutcomeText[routine.recordState]}</small>
                     </button>
                   ))}
                   {!today?.unscheduledRoutines.length && (

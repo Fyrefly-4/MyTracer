@@ -129,6 +129,7 @@ test('blocks Action, Routine, Review, Record, and Data drafts before installer h
     const action = page.getByLabel('T083 Action draft 行动记录')
     await expect(action).toBeVisible()
     await action.getByRole('button', { name: '开始记录' }).click()
+    await action.getByLabel('投入时长（分钟，可选）').fill('2')
     await expectBlocked()
     await action.getByRole('button', { name: '放弃草稿' }).click()
 
@@ -140,6 +141,7 @@ test('blocks Action, Routine, Review, Record, and Data drafts before installer h
     await routineCreate.getByRole('button', { name: '创建例行' }).click()
     const routine = page.getByLabel('T083 Routine draft 例行记录')
     await routine.getByRole('button', { name: '记录例行' }).click()
+    await routine.getByLabel('投入时长（分钟，可选）').fill('2')
     await expectBlocked()
     await routine.getByRole('button', { name: '放弃草稿' }).click()
 

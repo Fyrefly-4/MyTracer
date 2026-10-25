@@ -101,10 +101,11 @@ test('first record preserves drafts, explicit choices, retry identity and modal 
       })
     })
     await dialog.getByRole('button', { name: '保存行动和第一笔', exact: true }).click()
-    await expect(dialog.getByRole('alert')).toContainText('未能确认保存')
+    await expect(dialog.locator('.form-error[role=alert]')).toContainText('保存结果仍未确认')
     expect(await snapshot()).toMatchObject({ ok: true, value: { actions: [], actionRecords: [] } })
-    await dialog.getByRole('button', { name: '保存行动和第一笔', exact: true }).click()
-    await expect(dialog.getByRole('alert')).toContainText('保存结果暂未确认')
+    await expect(dialog.getByLabel('刚才做了什么', { exact: true })).toBeDisabled()
+    await dialog.getByRole('button', { name: '重试确认同一笔', exact: true }).click()
+    await expect(dialog.locator('.form-error[role=alert]')).toContainText('保存结果暂未确认')
     await expect(dialog.getByRole('button', { name: '放弃这份草稿' })).toBeDisabled()
     await dialog.getByRole('button', { name: '重试确认同一笔' }).dblclick()
     await expect(dialog).not.toBeVisible()
@@ -271,15 +272,15 @@ test('late begin cannot replace a newer draft; an authoritative rejection releas
       }))
     await test.step('submit first-record draft', () =>
       dialog.getByRole('button', { name: '保存行动和第一笔' }).click())
-    await expect(dialog.getByRole('alert')).toContainText('保存结果暂未确认')
+    await expect(dialog.locator('.form-error[role=alert]')).toContainText('保存结果暂未确认')
     expect(
       await page.evaluate((id) => window.myTracer.goals.pause({ goalId: id }), goalId)
     ).toMatchObject({ ok: true })
     await test.step('retry after goal pause and require authoritative rejection', async () => {
       await dialog.getByRole('button', { name: '重试确认同一笔' }).click()
-      await expect(dialog.getByRole('alert')).toContainText('本次未保存')
+      await expect(dialog.locator('.form-error[role=alert]')).toContainText('本次未保存')
     })
-    await expect(dialog.getByRole('alert')).toContainText('本次未保存')
+    await expect(dialog.locator('.form-error[role=alert]')).toContainText('本次未保存')
     await expect(dialog.getByLabel('关联目标（可选）', { exact: true })).toBeEnabled()
     await expect(dialog.getByRole('button', { name: '放弃这份草稿' })).toBeEnabled()
     expect(await page.evaluate(() => window.myTracer.dataControl.list())).toMatchObject({
@@ -287,6 +288,7 @@ test('late begin cannot replace a newer draft; an authoritative rejection releas
       value: { actions: [], actionRecords: [] }
     })
     await dialog.getByLabel('关联目标（可选）', { exact: true }).selectOption('')
+    await dialog.getByRole('button', { name: '已核对，继续填写' }).click()
     await test.step('submit first-record draft', () =>
       dialog.getByRole('button', { name: '保存行动和第一笔' }).click())
     await expect(dialog).not.toBeVisible()

@@ -137,7 +137,7 @@ describe('summary migration and lossless storage', () => {
       const parsed = JSON.parse(JSON.stringify(exported))
       expect(() => validateCompleteExport(parsed)).not.toThrow()
       expect(parsed.data).toEqual(before)
-      expect(parsed).toMatchObject({ exportVersion: 6, sourceDataVersion: 7 })
+      expect(parsed).toMatchObject({ exportVersion: 6, sourceDataVersion: 8 })
       for (const summary of [undefined, 1, {}, 'x'.repeat(501)]) {
         const bad = structuredClone(parsed)
         bad.data.actionRecords[0].summary = summary

@@ -11,6 +11,12 @@
     "playwright.config.ts",
     "tests/**/*.ts",
     "src/main/appearance.ts",
+    "src/preload/pending-close-request.ts",
+    "src/main/record-continuity.ts",
+    "src/main/record-drafts-ipc.ts",
+    "src/main/records-ipc.ts",
+    "src/main/action-recording-contexts.ts",
+    "src/main/routine-recording-contexts.ts",
     "src/main/windows-transparency.ts",
     "src/main/appearance-ipc.ts",
     "src/main/ipc-security.ts",
@@ -31,6 +37,7 @@
     "src/renderer/src/features/home/home-model.ts",
     "src/renderer/src/features/data-control/history-search.ts",
     "src/renderer/src/app/ui-text.ts",
+    "src/renderer/src/app/retained-record-text.ts",
     "src/presentation/**/*.ts"
   ]
 }

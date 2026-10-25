@@ -60,7 +60,7 @@ test('keeps Today feedback out of flow and record controls visible while preserv
 
     await page.getByRole('navigation').getByRole('button', { name: '目标', exact: true }).click()
     await page.getByRole('navigation').getByRole('button', { name: '今天', exact: true }).click()
-    await expect(panel.getByText('未保存的记录草稿已恢复', { exact: false })).toBeVisible()
+    await expect(panel.getByText('未保存的记录草稿已恢复', { exact: false })).toHaveCount(0)
     await expect(panel.getByLabel('投入时长（分钟，可选）')).toHaveValue('12')
     await expect(panel.getByLabel('我理解了（可选）')).toHaveValue(
       '把理解写成自己的话，比只标记完成更有意义。'

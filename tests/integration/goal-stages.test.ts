@@ -297,7 +297,7 @@ describe('independent linked goal stages', () => {
         asCompleteExportRepository(s.connection.repository).readCompleteCoreSnapshot(),
         s.dependencies.clock
       )
-      expect(document).toMatchObject({ exportVersion: 6, sourceDataVersion: 7 })
+      expect(document).toMatchObject({ exportVersion: 6, sourceDataVersion: 8 })
       expect(() => validateCompleteExport(JSON.parse(JSON.stringify(document)))).not.toThrow()
       for (const predecessorGoalId of ['missing', 'next', undefined, 123]) {
         const bad = structuredClone(document)

@@ -266,7 +266,10 @@ function validateCompleteExportVersion(
     'Source data version is invalid.'
   )
   if (expectedVersion === 6)
-    assert(document.sourceDataVersion === 7, 'Export v6 requires source data version 7.')
+    assert(
+      document.sourceDataVersion === 7 || document.sourceDataVersion === 8,
+      'Export v6 requires source data version 7 or 8.'
+    )
   if (expectedVersion === 5)
     assert(document.sourceDataVersion === 6, 'Export v5 requires source data version 6.')
   assert(validInstant(document.exportedAt), 'Export timestamp is invalid.')

@@ -1,3 +1,4 @@
+import { ContinuityError, type RecordContinuity } from './record-continuity'
 import type { IpcMainInvokeEvent } from 'electron'
 import {
   ActionRecordApplicationError,
@@ -32,6 +33,7 @@ export interface RegisterRecordIpcOptions {
   readonly ipc: RecordIpcMain
   readonly service: ActionRecordService
   readonly contexts: ActionRecordingContextStore
+  readonly continuity?: RecordContinuity
   readonly assertSender: (event: IpcMainInvokeEvent) => void
 }
 
@@ -45,6 +47,8 @@ function execute<T>(work: () => T): RecordResult<T> {
   try {
     return Object.freeze({ ok: true, value: work() })
   } catch (error) {
+    if (error instanceof ContinuityError)
+      return fail(error.code, 'Please check this recording before continuing.')
     if (error instanceof RecordIpcValidationError) {
       return fail('validation', 'The Action record request was invalid.')
     }
@@ -277,6 +281,7 @@ export function registerRecordIpc(options: RegisterRecordIpcOptions): void {
         prepared.capturedOn,
         true
       )
+      options.continuity?.bind('first', prepared.actionId, context)
       return Object.freeze({ ...prepared, recordingContextId: context.id })
     }
   )
@@ -290,11 +295,13 @@ export function registerRecordIpc(options: RegisterRecordIpcOptions): void {
     // Keep this session capability for a retry after a lost IPC response. The persisted
     // record ID is the idempotency key; no separate receipt or schema is needed.
     if (context.savedFirstResult) return context.savedFirstResult
-    const result = options.service.recordFirstAction({
-      ...input,
-      recordId: context.id,
-      capturedOn: context.capturedOn
-    })
+    const save = () =>
+      options.service.recordFirstAction({
+        ...input,
+        recordId: context.operationId ?? context.id,
+        capturedOn: context.capturedOn
+      })
+    const result = options.continuity ? options.continuity.commit(context.id, save) : save()
     if (result.kind === 'saved')
       options.contexts.rememberFirstResult(event.sender.id, input.actionId, context.id, result)
     return result
@@ -302,10 +309,14 @@ export function registerRecordIpc(options: RegisterRecordIpcOptions): void {
   register(RECORD_CHANNELS.begin, parseBegin, (event, input: BeginActionRecordingInputDto) => {
     const prepared = options.service.beginActionRecording(input.actionId)
     const context = options.contexts.begin(event.sender.id, input.actionId, prepared.capturedOn)
+    options.continuity?.bind('action', input.actionId, context)
     return Object.freeze({ ...prepared, recordingContextId: context.id })
   })
   register(RECORD_CHANNELS.cancel, parseCancel, (event, input: CancelActionRecordingInputDto) => {
-    options.contexts.cancel(event.sender.id, input.recordingContextId)
+    if (options.continuity)
+      options.contexts.requireSender(event.sender.id, input.recordingContextId)
+    options.continuity?.discard(input.recordingContextId)
+    if (!options.continuity) options.contexts.cancel(event.sender.id, input.recordingContextId)
     return Object.freeze({ cancelled: true as const })
   })
   register(RECORD_CHANNELS.record, parseRecord, (event, input: RecordActionInputDto) => {
@@ -315,11 +326,13 @@ export function registerRecordIpc(options: RegisterRecordIpcOptions): void {
       input.recordingContextId
     )
     if (context.firstRecord) throw new InvalidActionRecordingContextError()
-    const result = options.service.recordAction({
-      ...input,
-      capturedOn: context.capturedOn
-    })
-    if (result.kind === 'saved') {
+    const save = () =>
+      options.service.recordAction({
+        ...input,
+        capturedOn: context.capturedOn
+      })
+    const result = options.continuity ? options.continuity.commit(context.id, save) : save()
+    if (result.kind === 'saved' && !options.continuity) {
       options.contexts.consume(event.sender.id, input.actionId, input.recordingContextId)
     }
     return result

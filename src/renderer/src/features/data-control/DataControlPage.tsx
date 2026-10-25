@@ -1422,6 +1422,9 @@ function DataControlWorkspace({
         <DataPanel title="导出数据" busy={exporting} onClose={() => setPanel(null)}>
           <p>导出包含目标、行动、例行、记录及其关联状态，并由你选择保存位置。</p>
           <p>目前只支持导出；尚不支持自动导入或一键恢复。</p>
+          <p>
+            新记录的未完成输入会加密保留在本机，方便下次继续；正式保存或放弃后清除，不进入导出。系统备份可能包含本机文件，跨设备或系统账户不保证可恢复。升级前的数据库快照可能保留旧资料，不再需要时可在关闭应用后自行删除。
+          </p>
           <button
             className="primary-button"
             type="button"
