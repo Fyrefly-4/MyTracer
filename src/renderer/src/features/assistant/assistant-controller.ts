@@ -36,7 +36,7 @@ const errors: Record<string, string> = {
   'not-configured': '尚未配置服务，仍可手工编辑。',
   'provider-unavailable': '服务暂时不可用，仍可手工编辑。',
   cancelled: '已停止；没有自动写入记录。',
-  'operation-uncertain': '保存结果尚未确认，请保留预览并重试同一次确认。',
+  'operation-uncertain': '保存结果尚未确认，请先检查目标记录；不要重新生成或重复保存。',
   unsupported: '当前连接暂不支持此操作。',
   'not-found': '此会话或来源已不存在。'
 }
@@ -54,7 +54,7 @@ export const candidateLabels: Record<AssistantCandidatePayload['kind'], string> 
   'record-summary': '替换记录简述',
   'note-append': '追加补充笔记',
   'action-create': '创建行动（不设为下一步）',
-  'review-draft': '保存复盘草稿'
+  'review-draft': '复盘三字段草稿'
 }
 function unwrap<T>(result: AssistantResult<T>): T {
   if (!result.ok) throw new Error(result.error.code)
@@ -75,6 +75,7 @@ export class AssistantController {
   private listeners = new Set<() => void>()
   private epoch = 0
   private active: { sessionId: string; requestId: string } | null = null
+  private cancellation: Promise<void> = Promise.resolve()
   private operation: { previewId: string; operationId: string } | null = null
   constructor(
     readonly api: AssistantApi,
@@ -112,13 +113,18 @@ export class AssistantController {
     this.epoch += 1
     const active = this.active
     this.active = null
-    if (active) void this.api.cancelTurn(active).catch(() => undefined)
+    if (active)
+      this.cancellation = this.api
+        .cancelTurn(active)
+        .then(() => undefined)
+        .catch(() => undefined)
     this.operation = null
     return this.epoch
   }
   async open(
     launch: AssistantLaunch,
-    mode: AssistantSession['mode'] = 'persistent'
+    mode: AssistantSession['mode'] = 'persistent',
+    resumeExisting = true
   ): Promise<void> {
     const previousSession = this.state.session
     const token = this.invalidate()
@@ -134,10 +140,10 @@ export class AssistantController {
     try {
       if (previousSession?.mode === 'temporary')
         unwrap(await this.api.deleteSession({ sessionId: previousSession.id }))
-      const sessions = unwrap(await this.api.listSessions())
+      const sessions = unwrap(await this.api.listSessions()).filter((s) => s.mode === 'persistent')
       if (token !== this.epoch) return
       const previous =
-        mode === 'persistent' && launch.entry.intent === 'resume'
+        resumeExisting && mode === 'persistent' && launch.entry.intent === 'resume'
           ? sessions.find(
               (s) =>
                 s.entry.object.kind === launch.entry.object.kind &&
@@ -169,8 +175,11 @@ export class AssistantController {
       if (token === this.epoch) this.patch({ busy: false })
     }
   }
+  createNew(launch: AssistantLaunch, mode: AssistantSession['mode']): Promise<void> {
+    return this.open(launch, mode, false)
+  }
   private async refresh(token: number): Promise<void> {
-    const sessions = unwrap(await this.api.listSessions())
+    const sessions = unwrap(await this.api.listSessions()).filter((s) => s.mode === 'persistent')
     if (token === this.epoch) this.patch({ sessions })
   }
   close(): void {
@@ -247,14 +256,46 @@ export class AssistantController {
     this.active = request
     this.patch({ busy: true, run: null, preview: null, notice: '正在整理；结果仅为候选。' })
     try {
-      let run = unwrap(
-        await this.api.sendTurn({
-          ...request,
-          expectedRevision: session.revision,
-          text: text.trim()
-        })
-      )
-      // A final-result API requires no polling. Running responses use bounded, read-only status reads.
+      await this.cancellation
+      if (token !== this.epoch) return
+      const current = unwrap(await this.api.getSession({ sessionId: session.id }))
+      if (token !== this.epoch) return
+      this.patch({ session: current })
+      let reading = false
+      let progressActive = true
+      let reads = 0
+      const progress = setInterval(() => {
+        if (token !== this.epoch || ++reads > 120) {
+          clearInterval(progress)
+          return
+        }
+        if (reading) return
+        reading = true
+        void this.api
+          .getRun(request)
+          .then((result) => {
+            if (progressActive && token === this.epoch && result.ok)
+              this.patch({ run: result.value })
+          })
+          .catch(() => undefined)
+          .finally(() => {
+            reading = false
+          })
+      }, 500)
+      let run: AssistantRun
+      try {
+        run = unwrap(
+          await this.api.sendTurn({
+            ...request,
+            expectedRevision: current.revision,
+            text: text.trim()
+          })
+        )
+      } finally {
+        progressActive = false
+        clearInterval(progress)
+      }
+      // Also accept adapters that return a running snapshot before completion.
       for (
         let reads = 0;
         token === this.epoch && run.state === 'running' && reads < 120;
@@ -270,11 +311,11 @@ export class AssistantController {
         this.stop()
         return
       }
-      const current = unwrap(await this.api.getSession({ sessionId: session.id }))
+      const completedSession = unwrap(await this.api.getSession({ sessionId: session.id }))
       if (token !== this.epoch) return
       this.patch({
         run,
-        session: current,
+        session: completedSession,
         notice:
           run.state === 'completed'
             ? '整理完成；候选尚未写入正式记录。'
@@ -290,8 +331,21 @@ export class AssistantController {
     }
   }
   stop(): void {
-    this.invalidate()
-    this.patch({ busy: false, run: null, preview: null, notice: '已停止；晚到结果将被忽略。' })
+    const session = this.state.session
+    const token = this.invalidate()
+    this.patch({ busy: true, run: null, preview: null, notice: '已停止；晚到结果将被忽略。' })
+    void this.cancellation
+      .then(async () => {
+        if (!session || token !== this.epoch) return
+        const current = unwrap(await this.api.getSession({ sessionId: session.id }))
+        if (token === this.epoch) this.patch({ session: current })
+      })
+      .catch((error) => {
+        if (token === this.epoch) this.fail(error)
+      })
+      .finally(() => {
+        if (token === this.epoch) this.patch({ busy: false })
+      })
   }
   clearPreview(): void {
     if (!this.state.busy) {
@@ -305,6 +359,10 @@ export class AssistantController {
     fillDraft = false
   ): Promise<void> {
     const { session, launch } = this.state
+    if (payload.kind === 'review-draft' && !fillDraft) {
+      this.patch({ notice: 'Assistant 不直接保存复盘；填入三字段草稿后，请使用原复盘页面确认。' })
+      return
+    }
     if (!session || this.state.busy || candidate.state !== 'proposed') return
     const token = this.epoch
     this.patch({ busy: true, preview: null })
@@ -339,7 +397,19 @@ export class AssistantController {
         this.patch({ preview })
       }
     } catch (error) {
-      if (token === this.epoch) this.fail(error)
+      if (token === this.epoch) {
+        if (
+          fillDraft &&
+          payload.kind === 'review-draft' &&
+          error instanceof Error &&
+          error.message === 'unsupported'
+        )
+          this.patch({
+            notice:
+              '当前会话内核尚未提供复盘草稿的来源验证，暂不能安全填入；可查看候选并继续手工复盘。'
+          })
+        else this.fail(error)
+      }
     } finally {
       if (token === this.epoch) this.patch({ busy: false })
     }
@@ -358,13 +428,32 @@ export class AssistantController {
           ? {
               ...this.state.run,
               candidates: this.state.run.candidates.map((c) =>
-                c.id === preview.candidateId ? { ...c, state: 'committed' } : c
+                c.id === preview.candidateId
+                  ? { ...c, state: 'committed' }
+                  : c.state === 'committed'
+                    ? c
+                    : { ...c, state: 'stale' }
               )
             }
           : null,
         notice: '已确认保存。删除对话不会删除这条正式记录。'
       })
       this.operation = null
+      try {
+        const refreshed = unwrap(await this.api.getSession({ sessionId: session.id }))
+        if (token !== this.epoch) return
+        this.patch({ session: refreshed })
+        const run = this.state.run
+        if (run) {
+          const authoritative = unwrap(
+            await this.api.getRun({ sessionId: session.id, requestId: run.requestId })
+          )
+          if (token === this.epoch) this.patch({ run: authoritative })
+        }
+      } catch {
+        if (token === this.epoch)
+          this.patch({ notice: '已确认保存，但会话状态刷新失败；请重新打开对话后继续。' })
+      }
     } catch (error) {
       if (token === this.epoch) this.fail(error)
     } finally {

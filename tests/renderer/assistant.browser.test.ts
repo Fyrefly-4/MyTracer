@@ -4,9 +4,15 @@ test('overlay preserves underlying draft and restores focus; candidates need sep
   page
 }) => {
   await page.goto(path)
-  await page.getByLabel('原笔记').fill('合成笔记：书桌整理了一半，其他日期没有记录。')
+  await page.getByLabel('原笔记').fill('合成笔记：书桌整理了一半，其他日期没有记录。'.repeat(8))
   const trigger = page.getByRole('button', { name: '帮我整理', exact: true })
+  const pane = page.getByTestId('underlying-pane')
+  await pane.evaluate((element) => {
+    element.scrollTop = 100
+  })
   await trigger.click()
+  const paneScroll = await pane.evaluate((element) => element.scrollTop)
+  expect(paneScroll).toBeGreaterThan(0)
   const dialog = page.getByRole('dialog')
   await expect(dialog).toBeVisible()
   await dialog.getByLabel('继续聊聊').fill('整理一句简述')
@@ -17,8 +23,9 @@ test('overlay preserves underlying draft and restores focus; candidates need sep
   await expect(dialog.getByRole('status')).toContainText('未保存草稿')
   await dialog.getByRole('button', { name: '关闭', exact: true }).click()
   await expect(trigger).toBeFocused()
+  expect(await pane.evaluate((element) => element.scrollTop)).toBe(paneScroll)
   await expect(page.getByLabel('原笔记')).toHaveValue(
-    '合成笔记：书桌整理了一半，其他日期没有记录。'
+    '合成笔记：书桌整理了一半，其他日期没有记录。'.repeat(8)
   )
   expect(await page.getByLabel('简述草稿').inputValue()).toContain('整理了书桌左侧')
   await page.getByRole('button', { name: '接上上次', exact: true }).click()
