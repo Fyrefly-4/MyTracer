@@ -161,7 +161,7 @@ test('supports keyboard Goal creation and optional quick recording at the minimu
       await expect(page.getByRole('heading', { name: section, exact: true })).toBeVisible()
       expect(
         await page.evaluate(() => {
-          const content = document.querySelector('.content')!
+          const content = document.querySelector('main.content')!
           return content.scrollWidth <= content.clientWidth + 1
         })
       ).toBe(true)

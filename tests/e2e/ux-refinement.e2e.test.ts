@@ -51,7 +51,7 @@ async function expectStableWorkspace(page: Page, selector: string): Promise<void
 async function expectReadableVisualFoundation(page: Page): Promise<void> {
   const metrics = await page.evaluate(() => {
     const rootStyle = getComputedStyle(document.documentElement)
-    const content = document.querySelector<HTMLElement>('.content')
+    const content = document.querySelector<HTMLElement>('main.content')
     const surface = content?.querySelector<HTMLElement>('.content-inner')
     const title = content?.querySelector<HTMLElement>('h1')
     const visibleButtons = [...document.querySelectorAll<HTMLElement>('button')].filter(

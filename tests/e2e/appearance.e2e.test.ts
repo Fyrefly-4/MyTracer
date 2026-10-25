@@ -44,11 +44,19 @@ test('appearance is narrow, validated, opaque in content, and survives restart',
     await expect
       .poll(() => page.evaluate(() => window.myTracer.shell.getAppearance()))
       .toEqual({ mode: 'solid', intensity: 'subtle', overlay: 1, materialRequested: false })
-    expect(
-      await page
-        .locator('.content-inner')
-        .evaluate((element) => getComputedStyle(element).backgroundColor)
-    ).toBe('rgb(250, 249, 245)')
+    const main = page.getByRole('main')
+    await expect(main).toHaveCount(1)
+    await expect(main.getByRole('region', { name: '外观设置', exact: true })).toBeVisible()
+    const surface = main.locator(':scope > .content-inner')
+    await expect(surface).toHaveCount(1)
+    await expect(surface).toBeVisible()
+    // Settings retain unsaved local inputs while hidden; they are not this page's surface.
+    const assistantSettings = page.locator('section[aria-label="Assistant 服务设置"]')
+    await expect(assistantSettings).toHaveCount(1)
+    await expect(assistantSettings).toBeHidden()
+    expect(await surface.evaluate((element) => getComputedStyle(element).backgroundColor)).toBe(
+      'rgb(250, 249, 245)'
+    )
     expect(
       await page
         .locator('.app-shell')
