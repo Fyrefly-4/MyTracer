@@ -12,6 +12,14 @@
 
 ## 必须一起接入的生命周期
 
+已核对 A [PR #164](https://github.com/Fyrefly-4/MyTracer/pull/164) 的 `e7eb6213d04d3c9d6927df2109dad6819262adf9`（含其 IPC test include 补充），尚未并入本分支。准确装配为 `createAssistantCredentialProtection(safeStorage)` → `AssistantServiceConfigurationStore({userDataPath, credentialProtection})` → `new OpenAiAssistantProvider(configuration)`。必须使用 A 的凭据包装以拒绝 basic_text；不复用旧 AI 配置。
+
+A 的 renderer API 为 `AssistantServiceApi`：`getStatus/saveConfiguration/deleteCredential/testConnection`，channels 为 `ASSISTANT_SERVICE_CHANNELS`；预定暴露在 `window.myTracer.assistantService`，不改旧 `aiConfiguration` 的语义。Provider port 使用 `complete(request)`，请求携带 messages/tools、AbortSignal、timeoutMs/maxOutputTokens/maxResponseBytes；结果的 toolCalls 仍由 B 校验授权并执行。
+
+`registerAssistantServiceIpc` 接受 guardedIpc、configuration、provider、assertSender、configurationChanged。返回的 `cancelConnectionTest/hasPendingConnectionTest` 供生命周期接线；配置变更回调必须调用 B 的真实取消/失效方法，不能用 no-op 占位。测试 include 已由 A 添加，集成侧不重复修改。
+
+连接测试只属于待结束工作，不属于未保存草稿：不能把 `hasPendingConnectionTest()` 直接并入 UpdateInstallCoordinator 的 `hasPendingAiDraft`，否则初次 probe 就拒绝安装，永远无法进入内部取消。应在 cancelAiRequests 调用 cancelConnectionTest，随后由 gate drain 等待 Promise 收敛；新的用户候选/临时未保存内容继续单独受草稿保护。
+
 - `did-start-navigation`、webContents `destroyed`、window `closed`：撤销 sender 的活动请求、预览授权和临时会话；保留本地持久会话。旧 AiStartHelpSessionStore 的 clearSender 不可直接套给新存储。
 - `before-quit`：先取消新旧请求，完成必要本地会话保存后再关闭数据库；需要异步 flush 时明确处理 Electron 退出时序，不能 fire-and-forget。B 需提供取消/flush 的具体方法与错误语义。
 - `UpdateInstallCoordinator` 当前只检查旧 AI draft。增加新运行/未处理候选和临时会话的丢失风险，保留现有 renderer draft probe；持久历史本身不应永久阻止安装。安装取消通过 Main 内部方法执行，不通过已锁定的 renderer IPC。
