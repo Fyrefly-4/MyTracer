@@ -698,22 +698,7 @@ export function ReviewPage({ onOpenBook }: { onOpenBook: () => void }): ReactNod
                     ) : null}
                   </fieldset>
                 ) : null}
-                <div className="review-form-actions">
-                  <button
-                    className="secondary-button"
-                    type="button"
-                    disabled={busy || !contextId}
-                    onClick={() => void cancelDraft()}
-                  >
-                    取消
-                  </button>
-                  <button className="primary-button" type="submit" disabled={busy || !contextId}>
-                    {saving ? '正在保存…' : '保存复盘'}
-                  </button>
-                </div>
-              </fieldset>
-              <div className="review-notice" role="status" aria-label="复盘保存状态">
-                <p>
+                <p className="review-notice" role="status" aria-label="复盘保存状态">
                   {saving
                     ? '正在保存复盘，请稍候。'
                     : saveError
@@ -730,15 +715,28 @@ export function ReviewPage({ onOpenBook }: { onOpenBook: () => void }): ReactNod
                               ? '本周期复盘已保存。'
                               : '填写后点击「保存复盘」，才会保存这三段文字。'}
                 </p>
-                {hasSavedResult && !saving && !busy && !error && !periodConflict ? (
-                  <p>
-                    {dirty || saveError
-                      ? '记录册显示上次已保存的版本，不包含这里尚未保存的修改。'
-                      : '这里显示的是已保存的内容，不是未提交草稿。'}
-                    复盘收录在记录册，按周期起始日查找，不在行动或例行记录列表中。
-                  </p>
-                ) : null}
-              </div>
+                <div className="review-form-actions">
+                  <button
+                    className="secondary-button"
+                    type="button"
+                    disabled={busy || !contextId}
+                    onClick={() => void cancelDraft()}
+                  >
+                    取消
+                  </button>
+                  <button className="primary-button" type="submit" disabled={busy || !contextId}>
+                    {saving ? '正在保存…' : '保存复盘'}
+                  </button>
+                </div>
+              </fieldset>
+              {hasSavedResult && !saving && !busy && !error && !periodConflict ? (
+                <p>
+                  {dirty || saveError
+                    ? '记录册显示上次已保存的版本，不包含这里尚未保存的修改。'
+                    : '这里显示的是已保存的内容，不是未提交草稿。'}
+                  复盘收录在记录册，按周期起始日查找，不在行动或例行记录列表中。
+                </p>
+              ) : null}
               {hasSavedResult && summary ? (
                 <button
                   className="secondary-button"
