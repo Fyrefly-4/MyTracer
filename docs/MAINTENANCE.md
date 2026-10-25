@@ -42,6 +42,8 @@ Electron E2E 需要可启动 Windows 桌面进程的环境。测试使用唯一�
 
 [Release](../.github/workflows/release.yml) 的版本协调和发布任务仍使用 Ubuntu，Windows 构建任务负责验证、打包与安装 smoke。无需为了统一平台迁移纯协调任务。测试实验分支应选择 Verification，不能用 Release recovery 代替验证；仓库可见性与额度决定也不自动授权合并或发布。托管检查不等于人工视觉、辅助技术或本机体验验收。
 
+[Installer validation](../.github/workflows/installer.yml) 在应用源码、安装器、打包依赖/配置及相关冒烟测试变更时运行：编译安装包后执行 `test:package-smoke`，覆盖 unpacked 应用、隔离 NSIS 安装、安装后启动及卸载。更新检查对真实打包 provider 的 session 显式模拟离线，断言网络错误后核心读取仍可用，不依赖公共 GitHub 的实时状态；公共元数据与无 token 请求合同由合成集成测试覆盖。这不替代真实跨版本升级验收。
+
 CI 阶段计时、合成 Electron 失败证据和复验约定见 [CI 诊断维护](maintenance/CI_DIAGNOSTICS.md)。
 
 新 [Focused Electron 工作流](../.github/workflows/electron-focus.yml) 提供固定 Data 阅读／内容草稿测试组的 Windows 手动入口；使用方法和“聚焦通过不等于 CI Gate”的边界见 [CI 诊断维护](maintenance/CI_DIAGNOSTICS.md#bounded-windows-focused-entrypoint-next-batch-after-158)。
