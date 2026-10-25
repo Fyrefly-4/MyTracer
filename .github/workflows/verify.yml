@@ -2,7 +2,7 @@ name: Verification
 
 on:
   pull_request:
-    branches: [main, experiment/ui-ux-20261022]
+    branches: [main, experiment/ui-ux-20261022, assistant/exploration]
     types: [opened, synchronize, reopened]
   workflow_dispatch:
 
