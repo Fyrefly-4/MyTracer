@@ -235,7 +235,7 @@ async function verifyPackagedApplication(
     expect(
       database.prepare("SELECT value FROM metadata WHERE key = 'schemaVersion'").get()
     ).toEqual({
-      value: '7'
+      value: '8'
     })
     expect(database.pragma('foreign_keys', { simple: true })).toBe(1)
   } finally {

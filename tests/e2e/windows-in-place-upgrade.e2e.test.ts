@@ -339,7 +339,7 @@ test('keeps all old-version facts and synthetic configuration through an in-plac
       newPage,
       join(root.exports, 'after-upgrade.json')
     )
-    expect(afterExport).toMatchObject({ exportVersion: 6, sourceDataVersion: 7 })
+    expect(afterExport).toMatchObject({ exportVersion: 6, sourceDataVersion: 8 })
     expect(afterExport.data).toEqual({
       ...(beforeExport.data as object),
       actionRecords: (beforeExport.data as { actionRecords: object[] }).actionRecords.map(

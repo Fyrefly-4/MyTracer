@@ -68,7 +68,7 @@ test('exports complete retained facts through the UI without exposing a destinat
     expect(exported).toMatchObject({
       format: 'mytracer-core-export',
       exportVersion: 6,
-      sourceDataVersion: 7
+      sourceDataVersion: 8
     })
     expect(exported.data).toMatchObject({
       goals: [{ title: 'Export goal' }],
