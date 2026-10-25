@@ -127,7 +127,7 @@ describe('complete export SQLite snapshot', () => {
     const connection = await openConnection()
     populate(connection)
     const snapshot = asCompleteExportRepository(connection.repository).readCompleteCoreSnapshot()
-    expect(snapshot.sourceDataVersion).toBe(7)
+    expect(snapshot.sourceDataVersion).toBe(8)
     expect(Object.values(snapshot.coreSnapshot).map((rows) => rows.length)).toEqual([
       1, 1, 1, 1, 1, 1, 1, 1, 1, 1
     ])

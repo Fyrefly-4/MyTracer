@@ -1,6 +1,8 @@
+import { SqliteRecordContinuityStore } from './record-continuity-store'
 import { SqliteHomeQuery } from './home-query'
 import type { HomeQueryPort } from '../../application/home'
-import { mkdirSync } from 'node:fs'
+import { mkdirSync, chmodSync } from 'node:fs'
+import { randomUUID } from 'node:crypto'
 import { dirname } from 'node:path'
 import Database from 'better-sqlite3'
 import { migrateToCurrentSchema } from './migrations'
@@ -13,9 +15,11 @@ export interface SqlitePragmas {
 }
 
 export class SqliteConnection implements UnitOfWorkPort {
+  readonly continuity: SqliteRecordContinuityStore
   readonly homeQuery: HomeQueryPort
   readonly repository: RepositoryPort
   private constructor(private readonly database: Database.Database) {
+    this.continuity = new SqliteRecordContinuityStore(database)
     this.repository = new SqliteRepository(database)
     this.homeQuery = new SqliteHomeQuery(database)
   }
@@ -37,6 +41,27 @@ export class SqliteConnection implements UnitOfWorkPort {
         throw new Error('SQLite WAL journal mode could not be enabled.')
       }
 
+      database.pragma('synchronous = FULL')
+      if (
+        databasePath !== ':memory:' &&
+        database.prepare("SELECT 1 FROM sqlite_master WHERE name = 'metadata'").get()
+      ) {
+        const version = database
+          .prepare("SELECT value FROM metadata WHERE key = 'schemaVersion'")
+          .get() as { value: string } | undefined
+        if (version && Number(version.value) < 8) {
+          const backupPath = `${databasePath}.before-record-continuity-v8-${randomUUID()}.sqlite3`
+          database.prepare('VACUUM INTO ?').run(backupPath)
+          if (process.platform !== 'win32') chmodSync(backupPath, 0o600)
+          const backup = new Database(backupPath, { readonly: true })
+          try {
+            if (backup.pragma('integrity_check', { simple: true }) !== 'ok')
+              throw new Error('Migration backup validation failed.')
+          } finally {
+            backup.close()
+          }
+        }
+      }
       migrateToCurrentSchema(database)
       return new SqliteConnection(database)
     } catch (error) {

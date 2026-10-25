@@ -1,3 +1,4 @@
+import type { RecordDraftApi } from './record-drafts'
 import type { RecordBookApi } from './record-book'
 import type { AppearanceSettings, AppearanceState } from './appearance'
 import type { HomeApi } from './home'
@@ -28,6 +29,7 @@ export interface ShellStatus {
 }
 
 export interface MyTracerApi {
+  readonly recordDrafts: RecordDraftApi
   readonly shell: {
     readonly getStatus: () => Promise<ShellStatus>
     readonly getAppearance: () => Promise<AppearanceState>

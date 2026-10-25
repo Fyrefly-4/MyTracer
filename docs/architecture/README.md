@@ -27,3 +27,5 @@
 - [关联的新目标阶段](LINKED_GOAL_STAGES.md)：#127 C 的独立目标、断链删除、SQLite v6 与 JSON v5。
 
 - [记录简述与补充笔记](RECORD_SUMMARY_NOTES.md)：#150 的独立文字字段、安全 Markdown、schema 7 / JSON 6 与回退边界。
+
+- [未完成记录续写](RECORD_CONTINUITY.md)：#157 的三类新增记录输入、本机加密、schema 8 与提交核对。

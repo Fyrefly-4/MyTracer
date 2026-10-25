@@ -1,3 +1,5 @@
+import { RecordContinuityNotice, UnavailableRecordInputs } from '../../app/RecordContinuityNotice'
+import { hasRecordInput } from '../../../../contracts/record-drafts'
 import { RecordSummaryInput, RecordNoteInput } from '../../app/RecordText'
 import '../forms-workspace.css'
 import '../object-workspace.css'
@@ -7,10 +9,18 @@ import {
   usePagePosition,
   useUiLifetime,
   useUiSession,
+  useRecordOperation,
   useUnsavedContent
 } from '../../app/ui-session'
 import { goalStatusText, routineRecordOutcomeText } from '../../app/ui-text'
-import { type ReactNode, useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import {
+  type ReactNode,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useSyncExternalStore
+} from 'react'
 import type { GoalErrorCode, GoalSummaryDto } from '../../../../contracts/goals'
 import type {
   RoutineErrorCode,
@@ -48,6 +58,8 @@ const routineErrorText: Record<RoutineErrorCode, string> = {
 }
 
 const routineRecordErrorText: Record<RoutineRecordErrorCode, string> = {
+  'already-saved': '这笔已保存，不会重复写入。',
+  'context-changed': '对象或安排已变化，请核对后继续。',
   validation: '请检查记录内容；行动时长需为非负整数分钟。',
   'not-found': '例行已不存在，请刷新后重试。',
   'invalid-transition': '只有活跃例行可以新增记录。',
@@ -137,7 +149,6 @@ export function RoutineRecordingPanel(props: {
   const activeRef = useUiLifetime()
   const session = useUiSession()
   const [restoredDraft] = useState(() => session.getRoutineDraft(props.routineId))
-  const [restoredNotice, setRestoredNotice] = useState(Boolean(restoredDraft))
   const panelRef = useRef<HTMLElement | null>(null)
   const beginRef = useRef<HTMLButtonElement | null>(null)
   const restoreBeginFocus = useRef(false)
@@ -158,9 +169,19 @@ export function RoutineRecordingPanel(props: {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [invalidContext, setInvalidContext] = useState(false)
-  useUnsavedContent(`routine-record-${props.routineId}`, Boolean(context))
+  const operation = useRecordOperation(context?.recordingContextId)
+  useUnsavedContent(
+    `routine-record-${props.routineId}`,
+    Boolean(
+      context &&
+      hasRecordInput({
+        kind: 'routine',
+        draft: { context, outcome, durationMinutes, summary, note }
+      })
+    )
+  )
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!context) return
     session.setRoutineDraft(props.routineId, { context, outcome, durationMinutes, summary, note })
   }, [context, durationMinutes, summary, note, outcome, props.routineId, session])
@@ -175,7 +196,6 @@ export function RoutineRecordingPanel(props: {
       context.recordingContextId
   ) {
     setContext(null)
-    setRestoredNotice(false)
     setDateConfirmation(null)
     setInvalidContext(false)
     setError(null)
@@ -202,6 +222,10 @@ export function RoutineRecordingPanel(props: {
   }, [props.routineId])
 
   const begin = async (): Promise<void> => {
+    if (session.loadFailed) {
+      setError('请先重试读取本机未完成输入，再开始记录。')
+      return
+    }
     setBusy(true)
     const result = await window.myTracer.routines.beginRecording({ routineId: props.routineId })
     if (!activeRef.current) {
@@ -255,8 +279,13 @@ export function RoutineRecordingPanel(props: {
     if (!activeRef.current) return
     setBusy(false)
     if (!result.ok) {
+      if (result.error.code === 'already-saved') {
+        session.clearRoutineDraft(props.routineId)
+        setContext(null)
+        setSavedMessage('上次提交已完成，已有记录未被删除。')
+        return
+      }
       if (result.error.code === 'invalid-recording-context') {
-        setRestoredNotice(false)
         session.clearRoutineDraft(props.routineId)
         contextRef.current = null
         setContext(null)
@@ -269,7 +298,6 @@ export function RoutineRecordingPanel(props: {
       return
     }
     restoreBeginFocus.current = true
-    setRestoredNotice(false)
     contextRef.current = null
     setContext(null)
     session.clearRoutineDraft(props.routineId)
@@ -282,22 +310,25 @@ export function RoutineRecordingPanel(props: {
   }
 
   const restartContext = async (): Promise<void> => {
+    if (!context) return
     setBusy(true)
-    const result = await window.myTracer.routines.beginRecording({ routineId: props.routineId })
-    if (!activeRef.current) return
-    setBusy(false)
-    if (!result.ok) {
-      setError(routineRecordErrorText[result.error.code])
-      return
+    try {
+      await window.myTracer.recordDrafts.review({
+        kind: 'routine',
+        contextId: context.recordingContextId
+      })
+      setContext({ ...context, continuityIssue: undefined })
+      setInvalidContext(false)
+      setError(null)
+    } catch {
+      setError('这次输入的对象暂不可用，请重新打开应用核对；输入不会被当作新的一笔重放。')
+    } finally {
+      setBusy(false)
     }
-    contextRef.current = result.value
-    setContext(result.value)
-    setInvalidContext(false)
-    setError(null)
   }
 
   const save = async (dateChoice?: RoutineRecordingDateChoiceDto): Promise<void> => {
-    if (!context) return
+    if (!context || context.continuityIssue || operation.pending || operation.uncertain) return
     const actionOutcome = outcome === 'target_met' || outcome === 'acted'
     const parsedDuration = durationMinutes === '' ? null : Number(durationMinutes)
     if (
@@ -310,15 +341,22 @@ export function RoutineRecordingPanel(props: {
     }
     const submittedContextId = context.recordingContextId
     setBusy(true)
-    const result = await window.myTracer.routines.record({
-      routineId: props.routineId,
-      recordingContextId: context.recordingContextId,
-      dateChoice,
-      outcome,
-      durationMinutes: actionOutcome ? parsedDuration : null,
-      summary: summary.trim() ? summary : null,
-      note: note.trim() ? note : null
-    })
+    const result = await session
+      .trackRecordSave(context.recordingContextId, () =>
+        window.myTracer.routines.record({
+          routineId: props.routineId,
+          recordingContextId: context.recordingContextId,
+          dateChoice,
+          outcome,
+          durationMinutes: actionOutcome ? parsedDuration : null,
+          summary: summary.trim() ? summary : null,
+          note: note.trim() ? note : null
+        })
+      )
+      .catch(() => ({
+        ok: false as const,
+        error: { code: 'persistence-failed' as const, message: 'Save result unavailable.' }
+      }))
     // Persistence belongs to the submitted operation, not the panel lifetime.
     // Selection can unmount this panel while Main is committing the record.
     if (result.ok && result.value.kind !== 'date-confirmation-required') {
@@ -334,6 +372,14 @@ export function RoutineRecordingPanel(props: {
     if (!activeRef.current) return
     setBusy(false)
     if (!result.ok) {
+      if (result.error.code === 'already-saved') {
+        session.clearRoutineDraft(props.routineId)
+        setContext(null)
+        setSavedMessage('这笔已保存。')
+        return
+      }
+      if (result.error.code === 'context-changed')
+        setContext({ ...context, continuityIssue: 'changed' })
       setInvalidContext(result.error.code === 'invalid-recording-context')
       setError(routineRecordErrorText[result.error.code])
       return
@@ -344,7 +390,6 @@ export function RoutineRecordingPanel(props: {
       return
     }
     contextRef.current = null
-    setRestoredNotice(false)
     setContext(null)
     setDateConfirmation(null)
     setSavedMessage(
@@ -364,6 +409,14 @@ export function RoutineRecordingPanel(props: {
 
   const displayedDayState = props.initialState ?? dayState
   const state = displayedDayState?.recordState ?? 'unknown'
+  if (operation.consumed && context) {
+    setContext(null)
+    setOutcome('acted')
+    setDurationMinutes('')
+    setSummary('')
+    setNote('')
+  }
+
   return (
     <section
       ref={panelRef}
@@ -409,12 +462,15 @@ export function RoutineRecordingPanel(props: {
             void save()
           }}
         >
-          <fieldset className="recording-fields" disabled={busy}>
-            <p className="draft-notice" role="status">
-              {restoredNotice
-                ? '未保存的例行记录草稿已恢复。它仍未写入记录，你可以继续填写、保存或放弃。'
-                : '未保存草稿会在本次应用会话中保留，直到你保存或明确放弃。'}
-            </p>
+          <RecordContinuityNotice
+            kind="routine"
+            context={context}
+            onReviewed={() => setContext({ ...context, continuityIssue: undefined })}
+          />
+          <fieldset
+            className="recording-fields"
+            disabled={busy || operation.pending || operation.uncertain}
+          >
             <p>记录日期： {context.capturedOn}</p>
             <label>
               本次结果
@@ -449,10 +505,18 @@ export function RoutineRecordingPanel(props: {
                   保存时已经跨日。请选择保留开始日 {dateConfirmation.capturedOn}，或使用当前日{' '}
                   {dateConfirmation.currentLocalDate}。
                 </p>
-                <button type="button" disabled={busy} onClick={() => void save('keep-captured-on')}>
+                <button
+                  type="button"
+                  disabled={busy || operation.pending}
+                  onClick={() => void save('keep-captured-on')}
+                >
                   保留开始日
                 </button>
-                <button type="button" disabled={busy} onClick={() => void save('use-current-on')}>
+                <button
+                  type="button"
+                  disabled={busy || operation.pending}
+                  onClick={() => void save('use-current-on')}
+                >
                   使用当前日
                 </button>
               </div>
@@ -461,18 +525,24 @@ export function RoutineRecordingPanel(props: {
               <button
                 className="primary-button"
                 type="submit"
-                disabled={busy || Boolean(dateConfirmation)}
+                disabled={
+                  busy || operation.pending || operation.uncertain || Boolean(dateConfirmation)
+                }
               >
                 保存例行记录
               </button>
-              <button type="button" disabled={busy} onClick={() => void cancel()}>
+              <button
+                type="button"
+                disabled={busy || operation.pending}
+                onClick={() => void cancel()}
+              >
                 放弃草稿
               </button>
               {invalidContext ? (
                 <button
                   className="secondary-button"
                   type="button"
-                  disabled={busy}
+                  disabled={busy || operation.pending}
                   onClick={() => void restartContext()}
                 >
                   保留内容并重新开始记录
@@ -772,6 +842,7 @@ function RoutineWorkspace(): ReactNode {
 
   return (
     <section className="routine-workspace notebook-object-workspace" aria-label="例行管理">
+      <UnavailableRecordInputs kind="routine" />
       {error ? (
         <p className="form-error" role="alert">
           {error}
@@ -903,7 +974,6 @@ function RoutineWorkspace(): ReactNode {
                         {routine.arrangementMode === 'unscheduled'
                           ? '无固定安排'
                           : `周${routine.weekdays.join('、')}`}
-                        {session.hasRoutineDraft(routine.id) ? ' · 有未保存草稿' : ''}
                       </small>
                     </button>
                   ))

@@ -378,7 +378,7 @@ test('keeps all old-version facts and synthetic configuration through an in-plac
         arrangement_mode: 'weekly'
       })),
       metadata: beforeDatabase.metadata.map((row) =>
-        (row as { key: string }).key === 'schemaVersion' ? { ...(row as object), value: '7' } : row
+        (row as { key: string }).key === 'schemaVersion' ? { ...(row as object), value: '8' } : row
       )
     })
 
@@ -544,7 +544,7 @@ test('observes a running old application during installation', async () => {
         arrangement_mode: 'weekly'
       })),
       metadata: beforeDatabase.metadata.map((row) =>
-        (row as { key: string }).key === 'schemaVersion' ? { ...(row as object), value: '7' } : row
+        (row as { key: string }).key === 'schemaVersion' ? { ...(row as object), value: '8' } : row
       )
     })
   } finally {
@@ -682,7 +682,7 @@ test('repairs a failed package launch without replacing old facts', async () => 
         arrangement_mode: 'weekly'
       })),
       metadata: beforeDatabase.metadata.map((row) =>
-        (row as { key: string }).key === 'schemaVersion' ? { ...(row as object), value: '7' } : row
+        (row as { key: string }).key === 'schemaVersion' ? { ...(row as object), value: '8' } : row
       )
     })
 

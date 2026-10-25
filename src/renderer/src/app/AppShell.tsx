@@ -110,6 +110,20 @@ export function AppShell(): ReactNode {
       setAppearanceSaving(false)
     }
   }
+  const [inputsReady, setInputsReady] = useState(false)
+  useEffect(() => {
+    void session.restoreRecordInputs().then(() => setInputsReady(true))
+    const unsubscribe = window.myTracer.recordDrafts?.subscribeClose((requestId) => {
+      document.body.inert = Boolean(requestId)
+      if (!requestId) return
+      requestAnimationFrame(() => {
+        void session
+          .flushRecordInputs()
+          .then((retained) => window.myTracer.recordDrafts.replyClose({ requestId, retained }))
+      })
+    })
+    return () => unsubscribe?.()
+  }, [session])
   const [installPreparing, setInstallPreparing] = useState(true)
   const [restartRequired, setRestartRequired] = useState(false)
 
@@ -342,7 +356,23 @@ export function AppShell(): ReactNode {
                 </section>
               ) : null}
 
-              {bookMode === 'reading' ? (
+              {session.loadFailed ? (
+                <p role="alert">
+                  未能读取本机未完成输入。新记录入口暂不可用，已有资料仍可查看。
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setInputsReady(false)
+                      void session.restoreRecordInputs().then(() => setInputsReady(true))
+                    }}
+                  >
+                    重试读取
+                  </button>
+                </p>
+              ) : null}
+              {!inputsReady ? (
+                <p>正在打开…</p>
+              ) : bookMode === 'reading' ? (
                 <RecordBookPage
                   onBack={() => setBookMode(null)}
                   onOriginal={(selection) => {

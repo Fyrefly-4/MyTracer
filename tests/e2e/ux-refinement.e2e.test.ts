@@ -302,7 +302,7 @@ test('keeps existing work reachable, restores selection, and records without imp
     await panel.getByLabel('备注（可选）').fill('页面切换后仍应保留')
     await navigate(page, '目标')
     await navigate(page, '今天')
-    await expect(panel.getByText('未保存的记录草稿已恢复')).toBeVisible()
+    await expect(panel.getByText('未保存的记录草稿已恢复')).toHaveCount(0)
     await expect(panel.getByLabel('投入时长（分钟，可选）')).toHaveValue('7')
     await expect(panel.getByLabel('备注（可选）')).toHaveValue('页面切换后仍应保留')
     await panel.getByRole('button', { name: '放弃草稿' }).click()

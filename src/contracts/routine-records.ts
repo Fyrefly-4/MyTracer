@@ -32,6 +32,7 @@ export interface BeginRoutineRecordingDto {
   readonly routineId: string
   readonly recordingContextId: string
   readonly capturedOn: string
+  readonly continuityIssue?: 'changed' | 'unavailable'
 }
 
 export interface CancelRoutineRecordingInputDto {
@@ -77,6 +78,8 @@ export type RoutineRecordErrorCode =
   | 'record-already-exists'
   | 'invalid-recording-context'
   | 'persistence-failed'
+  | 'already-saved'
+  | 'context-changed'
 
 export type RoutineRecordResult<T> =
   | { readonly ok: true; readonly value: T }

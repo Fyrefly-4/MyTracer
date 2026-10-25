@@ -12,52 +12,23 @@ import {
   type RefObject
 } from 'react'
 import type { GoalStatusDto } from '../../../contracts/goals'
-import type {
-  BeginActionRecordingDto,
-  ActionRecordOutcomeDto,
-  FirstActionRecordInputDto,
-  RecordErrorCode
-} from '../../../contracts/records'
-import type {
-  BeginRoutineRecordingDto,
-  RoutineRecordOutcomeDto
-} from '../../../contracts/routine-records'
+import type { RecordErrorCode } from '../../../contracts/records'
 import type { AppSectionId } from './navigation'
 
-export type PostRecordActionChoice = 'keep-pending' | 'complete' | 'cancel' | 'reschedule'
-export type RecordedNextMode = 'clear' | 'use-existing' | 'recorded-next'
-
-export interface ActionRecordingDraft {
-  readonly context: BeginActionRecordingDto
-  readonly durationMinutes: string
-  readonly outcome: ActionRecordOutcomeDto
-  readonly deepExpanded: boolean
-  readonly understanding: string
-  readonly confusion: string
-  readonly nextStep: string
-  readonly summary: string
-  readonly note: string
-  readonly postExpanded: boolean
-  readonly postAction: PostRecordActionChoice
-  readonly nextMode: RecordedNextMode
-  readonly replacementActionId: string
-  readonly applyRecordedNextStep: boolean
-}
-
-export interface FirstActionRecordingDraft {
-  readonly context: BeginActionRecordingDto
-  readonly title: string
-  readonly goalId: string
-  readonly durationMinutes: string
-  readonly unknownDuration: boolean
-  readonly outcome: ActionRecordOutcomeDto | ''
-  readonly lifecycle: 'keep-pending' | 'complete' | ''
-  readonly summary: string
-  readonly note: string
-  // A transport failure must retry exactly the same request before editing/abandoning.
-  readonly uncertainInput?: FirstActionRecordInputDto
-}
-
+export type {
+  ActionRecordingDraft,
+  FirstActionRecordingDraft,
+  RoutineRecordingDraft,
+  PostRecordActionChoice,
+  RecordedNextMode
+} from '../../../contracts/record-drafts'
+import {
+  hasRecordInput,
+  type RecordDraft,
+  type ActionRecordingDraft,
+  type FirstActionRecordingDraft,
+  type RoutineRecordingDraft
+} from '../../../contracts/record-drafts'
 export function firstRecordDraftAfterFailure(
   draft: FirstActionRecordingDraft,
   code: RecordErrorCode
@@ -70,14 +41,6 @@ export function firstRecordDraftAfterFailure(
     return { ...draft, uncertainInput: undefined }
   }
   return draft
-}
-
-export interface RoutineRecordingDraft {
-  readonly context: BeginRoutineRecordingDto
-  readonly outcome: RoutineRecordOutcomeDto
-  readonly durationMinutes: string
-  readonly summary: string
-  readonly note: string
 }
 
 export interface ProgressFilterState {
@@ -104,6 +67,172 @@ export interface ReviewWritingDraft {
 }
 
 export class UiSession {
+  private readonly recordSubmissions = new Set<string>()
+  private readonly consumedRecords = new Set<string>()
+  private readonly uncertainRecords = new Set<string>()
+  isRecordUncertain(id: string): boolean {
+    return this.uncertainRecords.has(id)
+  }
+  isRecordPending(id: string): boolean {
+    return this.recordSubmissions.has(id)
+  }
+  isRecordConsumed(id: string): boolean {
+    return this.consumedRecords.has(id)
+  }
+  async trackRecordSave<T>(id: string, work: () => Promise<T>): Promise<T> {
+    if (this.recordSubmissions.has(id)) throw new Error('Record submission already pending.')
+    this.recordSubmissions.add(id)
+    this.notifyRetention()
+    try {
+      const result = await work()
+      const value = result as { ok: boolean; value?: { kind?: string }; error?: { code?: string } }
+      if (
+        (value.ok && value.value?.kind === 'saved') ||
+        (!value.ok && value.error?.code === 'already-saved')
+      ) {
+        this.consumedRecords.add(id)
+        if (this.firstActionDraft?.context.recordingContextId === id) this.setFirstActionDraft(null)
+        for (const [key, draft] of this.actionDrafts)
+          if (draft.context.recordingContextId === id) this.clearActionDraft(key)
+        for (const [key, draft] of this.routineDrafts)
+          if (draft.context.recordingContextId === id) this.clearRoutineDraft(key)
+      }
+      if (!value.ok && value.error?.code === 'persistence-failed') this.uncertainRecords.add(id)
+      else this.uncertainRecords.delete(id)
+      return result
+    } catch (error) {
+      this.uncertainRecords.add(id)
+      throw error
+    } finally {
+      this.recordSubmissions.delete(id)
+      this.notifyRetention()
+    }
+  }
+
+  async reconcileRecord(
+    kind: RecordDraft['kind'],
+    id: string
+  ): Promise<'open' | 'saved' | 'discarded'> {
+    const state = await window.myTracer.recordDrafts.reconcile({ kind, contextId: id })
+    if (state !== 'open') {
+      this.consumedRecords.add(id)
+      if (this.firstActionDraft?.context.recordingContextId === id) this.setFirstActionDraft(null)
+      for (const [key, draft] of this.actionDrafts)
+        if (draft.context.recordingContextId === id) this.clearActionDraft(key)
+      for (const [key, draft] of this.routineDrafts)
+        if (draft.context.recordingContextId === id) this.clearRoutineDraft(key)
+    }
+    this.uncertainRecords.delete(id)
+    this.notifyRetention()
+    return state
+  }
+  private readonly retaining = new Set<Promise<void>>()
+  private readonly revisions = new Map<string, number>()
+  private readonly retentionFailures = new Set<string>()
+  private retentionReady = false
+  loadFailed = false
+  retentionError = false
+  private notifyRetention(): void {
+    for (const listener of this.unsavedListeners) listener()
+  }
+  private restoringInputs: Promise<void> | null = null
+  restoreRecordInputs(): Promise<void> {
+    if (this.restoringInputs) return this.restoringInputs
+    if (this.retentionReady && !this.loadFailed) return Promise.resolve()
+    this.restoringInputs = this.readRecordInputs().finally(() => {
+      this.restoringInputs = null
+    })
+    return this.restoringInputs
+  }
+  private async readRecordInputs(): Promise<void> {
+    if (!window.myTracer.recordDrafts) {
+      this.retentionReady = true
+      return
+    }
+    try {
+      const values = await window.myTracer.recordDrafts.load()
+      for (const value of values) {
+        if (value.kind === 'first') this.firstActionDraft = value.draft
+        else if (value.kind === 'action')
+          this.actionDrafts.set(value.draft.context.actionId, value.draft)
+        else this.routineDrafts.set(value.draft.context.routineId, value.draft)
+      }
+      this.retentionFailures.delete('load')
+    } catch {
+      this.retentionFailures.add('load')
+    }
+    this.loadFailed = this.retentionFailures.has('load')
+    this.retentionReady = true
+    this.retentionError = this.retentionFailures.size > 0
+    this.notifyRetention()
+  }
+  private ownsRecordContext(id: string): boolean {
+    return (
+      this.firstActionDraft?.context.recordingContextId === id ||
+      [...this.actionDrafts.values(), ...this.routineDrafts.values()].some(
+        (draft) => draft.context.recordingContextId === id
+      )
+    )
+  }
+  private retain(value: RecordDraft): void {
+    if (!this.retentionReady || !window.myTracer.recordDrafts) return
+    const id = value.draft.context.recordingContextId
+    const revision = (this.revisions.get(id) ?? 0) + 1
+    this.revisions.set(id, revision)
+    const pending = window.myTracer.recordDrafts
+      .retain({ ...value, revision })
+      .then(
+        () => {
+          if (this.revisions.get(id) === revision) this.retentionFailures.delete(id)
+        },
+        () => {
+          if (this.revisions.get(id) === revision && this.ownsRecordContext(id))
+            this.retentionFailures.add(id)
+        }
+      )
+      .finally(() => {
+        this.retaining.delete(pending)
+        this.retentionError = this.retentionFailures.size > 0
+        this.notifyRetention()
+      })
+    this.retaining.add(pending)
+  }
+  async flushRecordInputs(): Promise<boolean> {
+    while (this.retaining.size) await Promise.all([...this.retaining])
+    if (this.recordSubmissions.size)
+      await new Promise<void>((resolve) => {
+        const unsubscribe = this.subscribeUnsaved(() => {
+          if (!this.recordSubmissions.size) {
+            unsubscribe()
+            resolve()
+          }
+        })
+      })
+    while (this.retaining.size) await Promise.all([...this.retaining])
+    return !this.retentionError && this.retentionReady
+  }
+  unavailableRecordInputs(kind: 'action' | 'routine'): RecordDraft[] {
+    return kind === 'action'
+      ? [...this.actionDrafts.values()]
+          .filter((draft) => draft.context.continuityIssue === 'unavailable')
+          .map((draft) => ({ kind: 'action', draft }))
+      : [...this.routineDrafts.values()]
+          .filter((draft) => draft.context.continuityIssue === 'unavailable')
+          .map((draft) => ({ kind: 'routine', draft }))
+  }
+  async retryRecordRetention(): Promise<void> {
+    if (this.firstActionDraft) this.retain({ kind: 'first', draft: this.firstActionDraft })
+    for (const draft of this.actionDrafts.values()) this.retain({ kind: 'action', draft })
+    for (const draft of this.routineDrafts.values()) this.retain({ kind: 'routine', draft })
+    await this.flushRecordInputs()
+  }
+  private forgetRetention(contextId?: string): void {
+    if (contextId) this.retentionFailures.delete(contextId)
+    this.retentionError = this.retentionFailures.size > 0
+    this.notifyRetention()
+  }
+  hasRetentionError = (): boolean => this.retentionError
+
   // Reading state only, retained across navigation within this app session.
   readonly expandedRecordNotes = new Set<string>()
   readonly expandedActionDescriptions = new Set<string>()
@@ -179,7 +308,9 @@ export class UiSession {
   }
   setFirstActionDraft(draft: FirstActionRecordingDraft | null): void {
     this.firstActionBeginGeneration++
+    if (!draft) this.forgetRetention(this.firstActionDraft?.context.recordingContextId)
     this.firstActionDraft = draft
+    if (draft) this.retain({ kind: 'first', draft })
     for (const listener of this.unsavedListeners) listener()
   }
   private pendingReviewSave: Promise<void> | null = null
@@ -325,8 +456,10 @@ export class UiSession {
   }
   setActionDraft(actionId: string, draft: ActionRecordingDraft): void {
     this.actionDrafts.set(actionId, draft)
+    this.retain({ kind: 'action', draft })
   }
   clearActionDraft(actionId: string): void {
+    this.forgetRetention(this.actionDrafts.get(actionId)?.context.recordingContextId)
     this.actionDrafts.delete(actionId)
   }
   hasActionDraft(actionId: string): boolean {
@@ -337,8 +470,10 @@ export class UiSession {
   }
   setRoutineDraft(routineId: string, draft: RoutineRecordingDraft): void {
     this.routineDrafts.set(routineId, draft)
+    this.retain({ kind: 'routine', draft })
   }
   clearRoutineDraft(routineId: string): void {
+    this.forgetRetention(this.routineDrafts.get(routineId)?.context.recordingContextId)
     this.routineDrafts.delete(routineId)
   }
   hasRoutineDraft(routineId: string): boolean {
@@ -365,14 +500,17 @@ export class UiSession {
   }
   hasUnsavedContent(): boolean {
     return (
-      this.firstActionDraft !== null ||
+      (this.firstActionDraft !== null &&
+        hasRecordInput({ kind: 'first', draft: this.firstActionDraft })) ||
       this.routineEditor.hasDraft() ||
       this.unsavedContent.size > 0 ||
       this.reviewWritingDraft !== null ||
       this.goalContentDraft.dirty ||
       this.goalContentDraft.saving ||
-      this.actionDrafts.size > 0 ||
-      this.routineDrafts.size > 0 ||
+      [...this.actionDrafts.values()].some((draft) => hasRecordInput({ kind: 'action', draft })) ||
+      [...this.routineDrafts.values()].some((draft) =>
+        hasRecordInput({ kind: 'routine', draft })
+      ) ||
       this.goalCoverDrafts.size > 0
     )
   }
@@ -514,4 +652,22 @@ export function useActiveUnsavedContent(): boolean {
 export function useDataUnsavedContent(): boolean {
   const session = useUiSession()
   return useSyncExternalStore(session.subscribeUnsaved, session.hasDataUnsavedContent)
+}
+
+export function useRecordOperation(id: string | undefined): {
+  pending: boolean
+  consumed: boolean
+  uncertain: boolean
+} {
+  const session = useUiSession()
+  const pending = useSyncExternalStore(session.subscribeUnsaved, () =>
+    Boolean(id && session.isRecordPending(id))
+  )
+  const consumed = useSyncExternalStore(session.subscribeUnsaved, () =>
+    Boolean(id && session.isRecordConsumed(id))
+  )
+  const uncertain = useSyncExternalStore(session.subscribeUnsaved, () =>
+    Boolean(id && session.isRecordUncertain(id))
+  )
+  return { pending, consumed, uncertain }
 }

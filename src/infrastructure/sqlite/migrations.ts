@@ -10,7 +10,9 @@ import goalStages from './migrations/006_goal_stages.sql?raw'
 
 import recordSummaries from './migrations/007_record_summaries.sql?raw'
 
-export const schemaVersion = 7
+import recordContinuity from './migrations/008_record_continuity.sql?raw'
+
+export const schemaVersion = 8
 
 interface Migration {
   readonly version: number
@@ -29,7 +31,8 @@ const migrations: readonly Migration[] = [
   { version: 4, name: '004_unknown_action_duration', sql: unknownActionDuration },
   { version: 5, name: '005_routine_arrangement', sql: routineArrangement },
   { version: 6, name: '006_goal_stages', sql: goalStages },
-  { version: 7, name: '007_record_summaries', sql: recordSummaries }
+  { version: 7, name: '007_record_summaries', sql: recordSummaries },
+  { version: 8, name: '008_record_continuity', sql: recordContinuity }
 ]
 
 function assertReviewResultsV2CanMigrate(database: Database.Database): void {

@@ -313,6 +313,7 @@ describe('SQLite persistence', () => {
           { name: 'confusions' },
           { name: 'goals' },
           { name: 'metadata' },
+          { name: 'record_continuity' },
           { name: 'review_results' },
           { name: 'routine_records' },
           { name: 'routine_schedule_days' },
@@ -392,7 +393,7 @@ describe('SQLite persistence', () => {
       expect(inspected.prepare('PRAGMA foreign_key_check').all()).toEqual([])
       expect(
         inspected.prepare("SELECT value FROM metadata WHERE key = 'schemaVersion'").get()
-      ).toEqual({ value: '7' })
+      ).toEqual({ value: String(schemaVersion) })
       expect(
         inspected
           .prepare(

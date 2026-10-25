@@ -32,6 +32,7 @@ export interface BeginActionRecordingDto {
   readonly actionId: string
   readonly recordingContextId: string
   readonly capturedOn: string
+  readonly continuityIssue?: 'changed' | 'unavailable'
 }
 
 export interface CancelActionRecordingInputDto {
@@ -121,6 +122,8 @@ export type RecordErrorCode =
   | 'invariant-violation'
   | 'invalid-recording-context'
   | 'persistence-failed'
+  | 'already-saved'
+  | 'context-changed'
 
 export type RecordResult<T> =
   | { readonly ok: true; readonly value: T }

@@ -191,7 +191,7 @@ it('preserves null across creation, backfill, edits, queries, mixed/all-unknown 
     ).toMatchObject({ unknownDurationCount: 1, realActionCount: 3 })
     const snapshot = asCompleteExportRepository(connection.repository).readCompleteCoreSnapshot()
     const exported = JSON.parse(JSON.stringify(buildCompleteExport(snapshot, clock)))
-    expect(exported).toMatchObject({ exportVersion: 6, sourceDataVersion: 7 })
+    expect(exported).toMatchObject({ exportVersion: 6, sourceDataVersion: 8 })
     expect(() => validateCompleteExport(exported)).not.toThrow()
     for (const record of exported.data.actionRecords) delete record.summary
     for (const record of exported.data.routineRecords) delete record.summary

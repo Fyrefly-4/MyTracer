@@ -1,3 +1,4 @@
+import { DRAFT_CHANNELS, type RecordDraftApi } from '../contracts/record-drafts'
 import { RECORD_BOOK_CHANNELS, type RecordBookApi } from '../contracts/record-book'
 import {
   APPEARANCE_CHANNELS,
@@ -143,6 +144,22 @@ import {
 } from '../contracts/updates'
 
 const api: MyTracerApi = Object.freeze({
+  recordDrafts: {
+    load: () => ipcRenderer.invoke(DRAFT_CHANNELS.load),
+    retain: (input: Parameters<RecordDraftApi['retain']>[0]) =>
+      ipcRenderer.invoke(DRAFT_CHANNELS.retain, input),
+    review: (input: Parameters<RecordDraftApi['review']>[0]) =>
+      ipcRenderer.invoke(DRAFT_CHANNELS.review, input),
+    reconcile: (input: Parameters<RecordDraftApi['reconcile']>[0]) =>
+      ipcRenderer.invoke(DRAFT_CHANNELS.reconcile, input),
+    subscribeClose: (listener: (requestId: string) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, requestId: string) => listener(requestId)
+      ipcRenderer.on(DRAFT_CHANNELS.closeRequest, handler)
+      return () => ipcRenderer.removeListener(DRAFT_CHANNELS.closeRequest, handler)
+    },
+    replyClose: (input: Parameters<RecordDraftApi['replyClose']>[0]) =>
+      ipcRenderer.invoke(DRAFT_CHANNELS.closeReply, input)
+  },
   home: Object.freeze({
     get: (input: Readonly<Record<string, never>>): Promise<HomeResult<HomeOverviewDto>> =>
       ipcRenderer.invoke(HOME_CHANNELS.get, input),

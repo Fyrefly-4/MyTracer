@@ -1,3 +1,4 @@
+import { ContinuityError, type RecordContinuity } from './record-continuity'
 import type { IpcMainInvokeEvent } from 'electron'
 import {
   RoutineRecordApplicationError,
@@ -30,6 +31,7 @@ export interface RegisterRoutineRecordIpcOptions {
   readonly ipc: RoutineRecordIpcMain
   readonly service: RoutineRecordService
   readonly contexts: RoutineRecordingContextStore
+  readonly continuity?: RecordContinuity
   readonly assertSender: (event: IpcMainInvokeEvent) => void
 }
 
@@ -43,6 +45,8 @@ function execute<T>(work: () => T): RoutineRecordResult<T> {
   try {
     return Object.freeze({ ok: true, value: work() })
   } catch (error) {
+    if (error instanceof ContinuityError)
+      return fail(error.code, 'Please check this recording before continuing.')
     if (error instanceof RoutineRecordIpcValidationError) {
       return fail('validation', 'The Routine record request was invalid.')
     }
@@ -200,6 +204,7 @@ export function registerRoutineRecordIpc(options: RegisterRoutineRecordIpcOption
     (event, input: BeginRoutineRecordingInputDto) => {
       const prepared = options.service.beginRoutineRecording(input.routineId)
       const context = options.contexts.begin(event.sender.id, input.routineId, prepared.capturedOn)
+      options.continuity?.bind('routine', input.routineId, context)
       return Object.freeze({ ...prepared, recordingContextId: context.id })
     }
   )
@@ -207,7 +212,10 @@ export function registerRoutineRecordIpc(options: RegisterRoutineRecordIpcOption
     ROUTINE_RECORD_CHANNELS.cancel,
     parseCancel,
     (event, input: CancelRoutineRecordingInputDto) => {
-      options.contexts.cancel(event.sender.id, input.recordingContextId)
+      if (options.continuity)
+        options.contexts.requireSender(event.sender.id, input.recordingContextId)
+      options.continuity?.discard(input.recordingContextId)
+      if (!options.continuity) options.contexts.cancel(event.sender.id, input.recordingContextId)
       return Object.freeze({ cancelled: true as const })
     }
   )
@@ -217,8 +225,9 @@ export function registerRoutineRecordIpc(options: RegisterRoutineRecordIpcOption
       input.routineId,
       input.recordingContextId
     )
-    const result = options.service.recordRoutine({ ...input, capturedOn: context.capturedOn })
-    if (result.kind === 'saved') {
+    const save = () => options.service.recordRoutine({ ...input, capturedOn: context.capturedOn })
+    const result = options.continuity ? options.continuity.commit(context.id, save) : save()
+    if (result.kind === 'saved' && !options.continuity) {
       options.contexts.consume(event.sender.id, input.routineId, input.recordingContextId)
     }
     return result

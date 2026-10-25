@@ -53,6 +53,10 @@ import { GithubUpdatePort } from '../infrastructure/update/github-update-port'
 import { registerGoalIpc } from './goals-ipc'
 import { registerActionIpc } from './actions-ipc'
 import { registerTodayIpc } from './today-ipc'
+import { DRAFT_CHANNELS } from '../contracts/record-drafts'
+import { asRoutineRecordRepository } from '../application/ports/persistence'
+import { RecordContinuity } from './record-continuity'
+import { registerRecordDraftIpc } from './record-drafts-ipc'
 import { registerRecordIpc } from './records-ipc'
 import { registerProgressIpc } from './progress-ipc'
 import { registerRecoveryIpc } from './recovery-ipc'
@@ -83,6 +87,9 @@ let aiStartHelpSessions: AiStartHelpSessionStore | null = null
 let updateService: UpdateService | null = null
 const installGate = new InstallOperationGate()
 let draftProbe: RendererDraftProbe | null = null
+let closeProbe: RendererDraftProbe | null = null
+let closeApproved = false
+let closePending = false
 const guardedIpc = {
   removeHandler: (channel: string): void => ipcMain.removeHandler(channel),
   handle: (
@@ -442,7 +449,25 @@ async function createMainWindow(): Promise<void> {
   refreshAppearance()
   applyWebContentsRestrictions(mainWindow)
   mainWindow.on('close', (event) => {
-    if (installGate.state === 'preparing') event.preventDefault()
+    if (installGate.state === 'preparing') { event.preventDefault(); return }
+    if (closeApproved || installGate.state === 'closed') return
+    event.preventDefault()
+    if (closePending) return
+    closePending = true
+    void (async () => {
+      const retained = await closeProbe?.request()
+      let leave = retained === 'clear'
+      if (!leave && mainWindow && !mainWindow.isDestroyed()) {
+        const result = await dialog.showMessageBox(mainWindow, {
+          type: 'warning', buttons: ['继续填写', '仍然退出'], defaultId: 0, cancelId: 0,
+          message: '未能确认未完成输入已保留在本机。', detail: '现在退出可能丢失最近的输入。'
+        })
+        leave = result.response === 1
+      }
+      closePending = false
+      if (leave) { closeApproved = true; mainWindow?.close() }
+      else mainWindow?.webContents.send(DRAFT_CHANNELS.closeRequest, '')
+    })()
   })
   const senderId = mainWindow.webContents.id
   mainWindow.webContents.on('did-start-navigation', () => {
@@ -553,6 +578,19 @@ app.whenReady().then(async () => {
       mainWindow.webContents.send(UPDATE_CHANNELS.draftRequest, { requestId })
       return true
     }
+  })
+  closeProbe = new RendererDraftProbe({
+    generateId: randomUUID,
+    sendRequest: (requestId) => {
+      if (!mainWindow || mainWindow.isDestroyed() || mainWindow.webContents.isDestroyed()) return false
+      mainWindow.webContents.send(DRAFT_CHANNELS.closeRequest, requestId)
+      return true
+    }
+  })
+  ipcMain.handle(DRAFT_CHANNELS.closeReply, (event, input: unknown) => {
+    assertTrustedSender(event, mainWindow, getRendererLocation())
+    if (!input || typeof input !== 'object' || !('requestId' in input) || !('retained' in input) || typeof input.requestId !== 'string' || typeof input.retained !== 'boolean' || Object.keys(input).length !== 2) throw new Error('Invalid close reply.')
+    closeProbe?.reply({ requestId: input.requestId, hasUnsavedContent: !input.retained })
   })
   const goalService = new GoalService({
     repository: sqliteConnection.repository,
@@ -693,13 +731,51 @@ app.whenReady().then(async () => {
     service: routineService,
     assertSender: (event) => assertTrustedSender(event, mainWindow, getRendererLocation())
   })
+  const continuity = new RecordContinuity({
+    store: sqliteConnection.continuity,
+    protect: (text) => {
+      if (process.platform === 'linux' && safeStorage.getSelectedStorageBackend() === 'basic_text') throw new Error('Secure input storage unavailable.')
+      return credentialStore.protect(text)
+    },
+    unprotect: (text) => {
+      if (process.platform === 'linux' && safeStorage.getSelectedStorageBackend() === 'basic_text') throw new Error('Secure input storage unavailable.')
+      return credentialStore.unprotect(text)
+    },
+    actions: actionRecordingContexts,
+    routines: routineRecordingContexts,
+    snapshot: (kind, id, capturedOn) => {
+      const repository = sqliteConnection!.repository
+      if (kind === 'first') {
+        if (!id) return null
+        const goal = repository.findGoalById(id)
+        if (!goal) throw new Error('Recording goal unavailable.')
+        return goal
+      }
+      if (kind === 'action') {
+        const action = repository.findActionById(id)
+        if (!action) throw new Error('Recording object unavailable.')
+        return [action, action.goalId ? repository.findGoalById(action.goalId) : null]
+      }
+      const routineRepository = asRoutineRecordRepository(repository)
+      const routine = routineRepository.findRoutineById(id)
+      if (!routine) throw new Error('Recording object unavailable.')
+      return [routine, routineRepository.listRoutineScheduleDays(id), routineRepository.findRoutineRecordByRoutineAndDate(id, capturedOn)?.id ?? null]
+    }
+  })
+  registerRecordDraftIpc({
+    ipc: guardedIpc, service: continuity,
+    actions: actionRecordingContexts, routines: routineRecordingContexts,
+    assertSender: (event) => assertTrustedSender(event, mainWindow, getRendererLocation())
+  })
   registerRoutineRecordIpc({
+    continuity,
     ipc: guardedIpc,
     service: routineRecordService,
     contexts: routineRecordingContexts,
     assertSender: (event) => assertTrustedSender(event, mainWindow, getRendererLocation())
   })
   registerRecordIpc({
+    continuity,
     ipc: guardedIpc,
     service: actionRecordService,
     contexts: actionRecordingContexts,
@@ -786,6 +862,11 @@ app.on('window-all-closed', () => {
 })
 
 app.on('before-quit', (event) => {
+  if (!closeApproved && mainWindow && !mainWindow.isDestroyed() && installGate.state === 'open') {
+    event.preventDefault()
+    mainWindow.close()
+    return
+  }
   if (installGate.state === 'preparing') {
     event.preventDefault()
     return
