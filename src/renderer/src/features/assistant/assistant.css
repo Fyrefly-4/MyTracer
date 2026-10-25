@@ -1,0 +1,124 @@
+.assistant-panel {
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: 16px;
+  padding: 0;
+  margin: auto 24px auto auto;
+  width: min(640px, calc(100vw - 48px));
+  height: min(860px, calc(100vh - 64px));
+  max-height: calc(100vh - 64px);
+  box-shadow: 0 18px 60px #293a3426;
+}
+.assistant-panel[open] {
+  display: flex;
+  flex-direction: column;
+}
+.assistant-panel::backdrop {
+  background: #293a3424;
+}
+.assistant-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--color-line);
+}
+.assistant-header h2 {
+  margin: 4px 0;
+}
+.assistant-body {
+  min-height: 0;
+  overflow: auto;
+  padding: 18px 24px;
+  overscroll-behavior: contain;
+}
+.assistant-body > * + * {
+  margin-top: 18px;
+}
+.assistant-panel small {
+  color: var(--color-muted);
+  display: block;
+}
+.assistant-panel p,
+.assistant-panel pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: inherit;
+}
+.assistant-panel label,
+.assistant-settings label {
+  display: grid;
+  gap: 6px;
+  margin-block: 10px;
+}
+.assistant-panel textarea,
+.assistant-panel input,
+.assistant-settings input {
+  box-sizing: border-box;
+  width: 100%;
+}
+.assistant-panel input[type='checkbox'] {
+  width: auto;
+}
+.assistant-panel fieldset {
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.assistant-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.assistant-source,
+.assistant-candidate,
+.assistant-preview {
+  padding: 14px;
+  background: var(--color-shell);
+  border: 1px solid var(--color-line);
+  border-radius: 10px;
+}
+.assistant-messages article {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--color-line);
+}
+.assistant-sessions {
+  padding: 0;
+  list-style: none;
+}
+.assistant-sessions li {
+  display: flex;
+  gap: 8px;
+  margin: 8px 0;
+}
+.assistant-composer {
+  padding: 12px 24px 20px;
+  border-top: 1px solid var(--color-line);
+}
+.assistant-composer p {
+  margin-top: 0;
+}
+@media (max-width: 680px) {
+  .assistant-panel {
+    margin: auto;
+    width: calc(100vw - 16px);
+    height: calc(100dvh - 24px);
+    max-height: calc(100dvh - 24px);
+  }
+  .assistant-header,
+  .assistant-body,
+  .assistant-composer {
+    padding-inline: 16px;
+  }
+}
+
+.assistant-header > button {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.assistant-settings input[type='checkbox'] {
+  width: auto;
+  justify-self: start;
+}
