@@ -304,6 +304,19 @@ describe('dependency-free documentation checks', () => {
 })
 
 describe('workflow safety boundaries', () => {
+  test.each(['installer', 'electron-focus'])(
+    'covers Assistant integration PRs in %s without changing the publication branch',
+    (name) => {
+      const workflow = readFileSync(join(repositoryRoot, `.github/workflows/${name}.yml`), 'utf8')
+      expect(workflow.match(/^\s+branches: \[([^\]]+)\]/m)?.[1]).toBe('main, assistant/exploration')
+      expect(workflow).toContain('contents: read')
+      expect(workflow).not.toContain('pull_request_target')
+      const release = readFileSync(join(repositoryRoot, '.github/workflows/release.yml'), 'utf8')
+      expect(release).not.toContain('assistant/exploration')
+      expect(release).toContain('target-branch: main')
+    }
+  )
+
   test('keeps one stable required job, PR updates and manual execution, without publication', () => {
     const source = readFileSync(join(repositoryRoot, '.github/workflows/verify.yml'), 'utf8')
     expect(
@@ -319,7 +332,9 @@ describe('workflow safety boundaries', () => {
     expect(source).toContain("if: steps.changes.outputs.category == 'release-tooling'")
     expect(source).toContain('run: npm.cmd ci --ignore-scripts')
     expect(source).toContain('run: npm.cmd run verify:release-tooling')
-    expect(source.match(/^\s+branches: \[([^\]]+)\]/m)?.[1]).toBe('main, experiment/ui-ux-20261022')
+    expect(source.match(/^\s+branches: \[([^\]]+)\]/m)?.[1]).toBe(
+      'main, experiment/ui-ux-20261022, assistant/exploration'
+    )
     expect(source).toContain('types: [opened, synchronize, reopened]')
     expect(source).toContain('workflow_dispatch:')
     expect(source).not.toMatch(/^ {2}push:|^\s+paths(?:-ignore)?:/m)
