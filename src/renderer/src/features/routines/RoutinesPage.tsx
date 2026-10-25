@@ -271,11 +271,16 @@ export function RoutineRecordingPanel(props: {
   }
 
   const cancel = async (): Promise<void> => {
-    if (!context) return
+    if (!context || operation.pending || operation.uncertain) return
     setBusy(true)
-    const result = await window.myTracer.routines.cancelRecording({
-      recordingContextId: context.recordingContextId
-    })
+    const result = await session
+      .trackRecordOperation(context.recordingContextId, () =>
+        window.myTracer.routines.cancelRecording({ recordingContextId: context.recordingContextId })
+      )
+      .catch(() => ({
+        ok: false as const,
+        error: { code: 'persistence-failed' as const, message: 'Discard result unavailable.' }
+      }))
     if (!activeRef.current) return
     setBusy(false)
     if (!result.ok) {
@@ -283,15 +288,6 @@ export function RoutineRecordingPanel(props: {
         session.clearRoutineDraft(props.routineId)
         setContext(null)
         setSavedMessage('上次提交已完成，已有记录未被删除。')
-        return
-      }
-      if (result.error.code === 'invalid-recording-context') {
-        session.clearRoutineDraft(props.routineId)
-        contextRef.current = null
-        setContext(null)
-        setSavedMessage('已放弃未保存草稿。')
-        setInvalidContext(false)
-        setError(null)
         return
       }
       setError(routineRecordErrorText[result.error.code])
@@ -342,7 +338,7 @@ export function RoutineRecordingPanel(props: {
     const submittedContextId = context.recordingContextId
     setBusy(true)
     const result = await session
-      .trackRecordSave(context.recordingContextId, () =>
+      .trackRecordOperation(context.recordingContextId, () =>
         window.myTracer.routines.record({
           routineId: props.routineId,
           recordingContextId: context.recordingContextId,
@@ -465,6 +461,21 @@ export function RoutineRecordingPanel(props: {
           <RecordContinuityNotice
             kind="routine"
             context={context}
+            onReconciled={async (result) => {
+              if (result.state !== 'saved') return
+              setSavedMessage(`这笔已保存 · ${result.occurredOn}`)
+              try {
+                const current = await window.myTracer.routines.getDayState({
+                  routineId: props.routineId,
+                  localDate: result.occurredOn
+                })
+                if (current.ok) setDayState(current.value)
+                else setError('这笔已保存，但对象已不可用。请重新打开例行查看。')
+                await props.onSaved?.()
+              } catch {
+                setError('这笔已保存，但列表刷新失败。请重新打开例行查看。')
+              }
+            }}
             onReviewed={() => setContext({ ...context, continuityIssue: undefined })}
           />
           <fieldset

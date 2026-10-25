@@ -25,6 +25,7 @@ export type {
 import {
   hasRecordInput,
   type RecordDraft,
+  type RecordReconciliation,
   type ActionRecordingDraft,
   type FirstActionRecordingDraft,
   type RoutineRecordingDraft
@@ -79,15 +80,19 @@ export class UiSession {
   isRecordConsumed(id: string): boolean {
     return this.consumedRecords.has(id)
   }
-  async trackRecordSave<T>(id: string, work: () => Promise<T>): Promise<T> {
+  async trackRecordOperation<T>(id: string, work: () => Promise<T>): Promise<T> {
     if (this.recordSubmissions.has(id)) throw new Error('Record submission already pending.')
     this.recordSubmissions.add(id)
     this.notifyRetention()
     try {
       const result = await work()
-      const value = result as { ok: boolean; value?: { kind?: string }; error?: { code?: string } }
+      const value = result as {
+        ok: boolean
+        value?: { kind?: string; cancelled?: boolean }
+        error?: { code?: string }
+      }
       if (
-        (value.ok && value.value?.kind === 'saved') ||
+        (value.ok && (value.value?.kind === 'saved' || value.value?.cancelled === true)) ||
         (!value.ok && value.error?.code === 'already-saved')
       ) {
         this.consumedRecords.add(id)
@@ -109,12 +114,9 @@ export class UiSession {
     }
   }
 
-  async reconcileRecord(
-    kind: RecordDraft['kind'],
-    id: string
-  ): Promise<'open' | 'saved' | 'discarded'> {
+  async reconcileRecord(kind: RecordDraft['kind'], id: string): Promise<RecordReconciliation> {
     const state = await window.myTracer.recordDrafts.reconcile({ kind, contextId: id })
-    if (state !== 'open') {
+    if (state.state !== 'open') {
       this.consumedRecords.add(id)
       if (this.firstActionDraft?.context.recordingContextId === id) this.setFirstActionDraft(null)
       for (const [key, draft] of this.actionDrafts)
@@ -500,6 +502,11 @@ export class UiSession {
   }
   hasUnsavedContent(): boolean {
     return (
+      this.retentionError ||
+      this.retaining.size > 0 ||
+      this.recordSubmissions.size > 0 ||
+      this.uncertainRecords.size > 0 ||
+      this.restoringInputs !== null ||
       (this.firstActionDraft !== null &&
         hasRecordInput({ kind: 'first', draft: this.firstActionDraft })) ||
       this.routineEditor.hasDraft() ||

@@ -334,9 +334,14 @@ function ActionRecordingPanel(props: {
   const cancel = async (): Promise<void> => {
     if (!context || operation.pending || operation.uncertain) return
     setBusy(true)
-    const result = await window.myTracer.records.cancel({
-      recordingContextId: context.recordingContextId
-    })
+    const result = await session
+      .trackRecordOperation(context.recordingContextId, () =>
+        window.myTracer.records.cancel({ recordingContextId: context.recordingContextId })
+      )
+      .catch(() => ({
+        ok: false as const,
+        error: { code: 'persistence-failed' as const, message: 'Discard result unavailable.' }
+      }))
     if (!activeRef.current) return
     setBusy(false)
     if (!result.ok && result.error.code === 'already-saved') {
@@ -344,7 +349,7 @@ function ActionRecordingPanel(props: {
       setSavedMessage('上次提交已完成，已有记录未被删除。')
       return
     }
-    if (!result.ok && result.error.code !== 'invalid-recording-context') {
+    if (!result.ok) {
       setError(recordErrorText[result.error.code])
       return
     }
@@ -393,7 +398,7 @@ function ActionRecordingPanel(props: {
       : undefined
     setBusy(true)
     const result = await session
-      .trackRecordSave(context.recordingContextId, () =>
+      .trackRecordOperation(context.recordingContextId, () =>
         window.myTracer.records.record({
           actionId: props.action.id,
           recordingContextId: context.recordingContextId,
@@ -552,6 +557,19 @@ function ActionRecordingPanel(props: {
           <RecordContinuityNotice
             kind="action"
             context={context}
+            onReconciled={async (result) => {
+              if (result.state !== 'saved') return
+              try {
+                await loadRecords()
+                const action = await window.myTracer.actions.getDetail({
+                  actionId: props.action.id
+                })
+                if (action.ok) await props.onSaved(action.value)
+                setSavedMessage('这笔已保存。')
+              } catch {
+                setError('这笔已保存，但列表刷新失败。请重新打开今天查看。')
+              }
+            }}
             onReviewed={() => setContext({ ...context, continuityIssue: undefined })}
           />
           <fieldset

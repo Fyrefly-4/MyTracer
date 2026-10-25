@@ -236,6 +236,11 @@ describe('quiet record continuity', () => {
                 note: entered.note
               })
       expect(f.s.continuity.commit(f.context.id, work).kind).toBe('saved')
+      expect(f.s.continuity.reconcile(f.context.id)).toEqual({
+        state: 'saved',
+        objectId: f.objectId,
+        occurredOn: f.context.capturedOn
+      })
       expect(() => f.s.continuity.commit(f.context.id, work)).toThrow(ContinuityError)
       f.s.continuity.retain(f.context.id, kind, entered, 2)
       expect(f.c.continuity.list()).toEqual([])
@@ -247,7 +252,9 @@ describe('quiet record continuity', () => {
       expect(setup(reopened).continuity.load(2)).toEqual([])
       expect(reopened.continuity.find(f.context.operationId)).toMatchObject({
         state: 'saved',
-        payload: null
+        payload: null,
+        objectId: f.objectId,
+        occurredOn: f.context.capturedOn
       })
     })
     it(`${kind}: explicit discard wins over a later retained revision`, async () => {
@@ -290,45 +297,54 @@ describe('quiet record continuity', () => {
     expect(f.c.repository.findActionById(f.objectId)?.status).toBe('pending')
     expect(f.c.continuity.list()).toHaveLength(1)
   })
-  it('revalidates changed objects and never silently changes an old occurrence date', async () => {
-    const f = await fixture('action')
-    f.s.continuity.retain(
-      f.context.id,
-      'action',
-      { ...f.value.draft, note: 'Synthetic old date' },
-      1
-    )
-    const action = f.c.repository.findActionById(f.objectId)!
-    f.c.repository.saveAction({ ...action, title: 'Changed synthetic action' })
-    const next = setup(f.c)
-    const [restored] = next.continuity.load(2)
-    expect(restored.draft.context.continuityIssue).toBe('changed')
-    expect(() =>
-      next.continuity.commit(restored.draft.context.recordingContextId, () => ({ kind: 'saved' }))
-    ).toThrow('context-changed')
-    next.continuity.review(restored.draft.context.recordingContextId)
-    next.clock.setState({
-      instant: '2026-10-25T08:00:00.000Z',
-      localDate: '2026-10-25',
-      timeZone: 'UTC'
-    })
-    const input = {
-      actionId: f.objectId,
-      capturedOn: restored.draft.context.capturedOn,
-      durationMinutes: null,
-      outcome: 'partial' as const
+  it.each(['keep-captured-on', 'use-current-on'] as const)(
+    'revalidates changed objects and receipts the explicit date choice %s',
+    async (dateChoice) => {
+      const f = await fixture('action')
+      f.s.continuity.retain(
+        f.context.id,
+        'action',
+        { ...f.value.draft, note: 'Synthetic old date' },
+        1
+      )
+      const action = f.c.repository.findActionById(f.objectId)!
+      f.c.repository.saveAction({ ...action, title: 'Changed synthetic action' })
+      const next = setup(f.c)
+      const [restored] = next.continuity.load(2)
+      expect(restored.draft.context.continuityIssue).toBe('changed')
+      expect(() =>
+        next.continuity.commit(restored.draft.context.recordingContextId, () => ({ kind: 'saved' }))
+      ).toThrow('context-changed')
+      next.continuity.review(restored.draft.context.recordingContextId)
+      next.clock.setState({
+        instant: '2026-10-25T08:00:00.000Z',
+        localDate: '2026-10-25',
+        timeZone: 'UTC'
+      })
+      const input = {
+        actionId: f.objectId,
+        capturedOn: restored.draft.context.capturedOn,
+        durationMinutes: null,
+        outcome: 'partial' as const
+      }
+      expect(
+        next.continuity.commit(restored.draft.context.recordingContextId, () =>
+          next.records.recordAction(input)
+        ).kind
+      ).toBe('date-confirmation-required')
+      expect(f.c.continuity.list()).toHaveLength(1)
+      const result = next.continuity.commit(restored.draft.context.recordingContextId, () =>
+        next.records.recordAction({ ...input, dateChoice })
+      )
+      const occurredOn = dateChoice === 'keep-captured-on' ? '2026-10-24' : '2026-10-25'
+      expect(result).toMatchObject({ kind: 'saved', record: { occurredOn } })
+      expect(next.continuity.reconcile(restored.draft.context.recordingContextId)).toEqual({
+        state: 'saved',
+        objectId: f.objectId,
+        occurredOn
+      })
     }
-    expect(
-      next.continuity.commit(restored.draft.context.recordingContextId, () =>
-        next.records.recordAction(input)
-      ).kind
-    ).toBe('date-confirmation-required')
-    expect(f.c.continuity.list()).toHaveLength(1)
-    const result = next.continuity.commit(restored.draft.context.recordingContextId, () =>
-      next.records.recordAction({ ...input, dateChoice: 'keep-captured-on' })
-    )
-    expect(result).toMatchObject({ kind: 'saved', record: { occurredOn: '2026-10-24' } })
-  })
+  )
   it('keeps unavailable objects and corrupted encrypted input without replay or erasure', async () => {
     const f = await fixture('action')
     f.s.continuity.retain(

@@ -118,6 +118,7 @@ export function FirstActionRecord(props: {
     if (
       !draft ||
       draft.context.continuityIssue ||
+      (operation.uncertain && !draft.uncertainInput) ||
       operation.pending ||
       busyRef.current ||
       composing.current ||
@@ -178,7 +179,7 @@ export function FirstActionRecord(props: {
     change({ ...draft, uncertainInput: request })
     let saved: ActionDetailDto | null = null
     try {
-      const result = await session.trackRecordSave(draft.context.recordingContextId, () =>
+      const result = await session.trackRecordOperation(draft.context.recordingContextId, () =>
         window.myTracer.records.saveFirst(request)
       )
       if (!result.ok) {
@@ -230,14 +231,21 @@ export function FirstActionRecord(props: {
     }
   }
   const abandon = async (): Promise<void> => {
-    if (!draft || busyRef.current || draft.uncertainInput) return
+    if (
+      !draft ||
+      busyRef.current ||
+      operation.pending ||
+      operation.uncertain ||
+      draft.uncertainInput
+    )
+      return
     busyRef.current = true
     setBusy(true)
     try {
-      const result = await window.myTracer.records.cancel({
-        recordingContextId: draft.context.recordingContextId
-      })
-      if (!result.ok && result.error.code !== 'invalid-recording-context') {
+      const result = await session.trackRecordOperation(draft.context.recordingContextId, () =>
+        window.myTracer.records.cancel({ recordingContextId: draft.context.recordingContextId })
+      )
+      if (!result.ok && result.error.code !== 'already-saved') {
         setError('暂时无法放弃草稿，请重试。')
         return
       }
@@ -312,12 +320,30 @@ export function FirstActionRecord(props: {
               <RecordContinuityNotice
                 kind="first"
                 context={draft.context}
-                onReconciled={() => change({ ...draft, uncertainInput: undefined })}
+                onReconciled={async (result) => {
+                  if (result.state === 'open') change({ ...draft, uncertainInput: undefined })
+                  if (result.state === 'saved') {
+                    setOpen(false)
+                    try {
+                      const action = await window.myTracer.actions.getDetail({
+                        actionId: result.objectId
+                      })
+                      if (action.ok) await props.onSaved(action.value)
+                      else setError('第一笔已保存，但对象已不可用。请重新打开今天查看。')
+                    } catch {
+                      setError('第一笔已保存，但列表刷新失败。请重新打开今天查看。')
+                    }
+                  }
+                }}
                 onReviewed={() =>
                   change({ ...draft, context: { ...draft.context, continuityIssue: undefined } })
                 }
               />
-              <fieldset disabled={busy || operation.pending || Boolean(draft.uncertainInput)}>
+              <fieldset
+                disabled={
+                  busy || operation.pending || operation.uncertain || Boolean(draft.uncertainInput)
+                }
+              >
                 <legend>已有行动？复用原来的记录路径</legend>
                 <label>
                   <span id="first-record-existing-label">选择已有行动</span>
@@ -351,7 +377,11 @@ export function FirstActionRecord(props: {
                   <p className="empty-copy">当前没有可开始的行动。例行或历史补记仍使用原有入口。</p>
                 ) : null}
               </fieldset>
-              <fieldset disabled={busy || operation.pending || Boolean(draft.uncertainInput)}>
+              <fieldset
+                disabled={
+                  busy || operation.pending || operation.uncertain || Boolean(draft.uncertainInput)
+                }
+              >
                 <legend>新行动的第一次记录</legend>
                 <label>
                   刚才做了什么
@@ -482,7 +512,12 @@ export function FirstActionRecord(props: {
                 </button>
                 <button
                   type="button"
-                  disabled={busy || operation.pending || Boolean(draft.uncertainInput)}
+                  disabled={
+                    busy ||
+                    operation.pending ||
+                    operation.uncertain ||
+                    Boolean(draft.uncertainInput)
+                  }
                   onClick={() => setDiscarding(true)}
                 >
                   放弃这份草稿
@@ -493,7 +528,12 @@ export function FirstActionRecord(props: {
                   <p>放弃会清空输入，不创建行动或记录。</p>
                   <button
                     type="button"
-                    disabled={busy || operation.pending || Boolean(draft.uncertainInput)}
+                    disabled={
+                      busy ||
+                      operation.pending ||
+                      operation.uncertain ||
+                      Boolean(draft.uncertainInput)
+                    }
                     onClick={() => void abandon()}
                   >
                     确认放弃

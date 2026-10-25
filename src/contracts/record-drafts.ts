@@ -59,14 +59,13 @@ export const DRAFT_CHANNELS = {
   closeRequest: 'record-drafts:close-request',
   closeReply: 'record-drafts:close-reply'
 } as const
+export type RecordReconciliation =
+  { state: 'open' | 'discarded' } | { state: 'saved'; objectId: string; occurredOn: string }
 export interface RecordDraftApi {
   load(): Promise<readonly RecordDraft[]>
   retain(input: RecordDraft & { revision: number }): Promise<void>
   review(input: { kind: RecordDraft['kind']; contextId: string }): Promise<void>
-  reconcile(input: {
-    kind: RecordDraft['kind']
-    contextId: string
-  }): Promise<'open' | 'saved' | 'discarded'>
+  reconcile(input: { kind: RecordDraft['kind']; contextId: string }): Promise<RecordReconciliation>
   subscribeClose(listener: (requestId: string) => void): () => void
   replyClose(input: { requestId: string; retained: boolean }): Promise<void>
 }

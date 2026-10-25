@@ -1,11 +1,11 @@
 import { useState, useSyncExternalStore } from 'react'
 import { useUiSession, useRecordOperation } from './ui-session'
-import type { RecordDraft } from '../../../contracts/record-drafts'
+import type { RecordDraft, RecordReconciliation } from '../../../contracts/record-drafts'
 export function RecordContinuityNotice(props: {
   kind: RecordDraft['kind']
   context: { recordingContextId: string; continuityIssue?: 'changed' | 'unavailable' }
   onReviewed(): void
-  onReconciled?(): void
+  onReconciled?(result: RecordReconciliation): void | Promise<void>
 }) {
   const session = useUiSession()
   const operation = useRecordOperation(props.context.recordingContextId)
@@ -31,7 +31,7 @@ export function RecordContinuityNotice(props: {
     <>
       {operation.uncertain ? (
         <p role="alert">
-          上次保存结果未确认，请先核对，再继续修改或放弃。
+          上次操作结果未确认，请先核对，再继续修改或放弃。
           <button
             type="button"
             disabled={busy}
@@ -39,15 +39,15 @@ export function RecordContinuityNotice(props: {
               setBusy(true)
               void session
                 .reconcileRecord(props.kind, props.context.recordingContextId)
-                .then((state) => {
-                  if (state === 'open') props.onReconciled?.()
+                .then(async (state) => {
+                  await props.onReconciled?.(state)
                   setError(false)
                 })
                 .catch(() => setError(true))
                 .finally(() => setBusy(false))
             }}
           >
-            核对上次保存
+            核对上次操作
           </button>
         </p>
       ) : null}
@@ -82,10 +82,11 @@ export function UnavailableRecordInputs({ kind }: { kind: 'action' | 'routine' }
   const discard = async (value: RecordDraft) => {
     try {
       const input = { recordingContextId: value.draft.context.recordingContextId }
-      const result =
+      const result = await session.trackRecordOperation(input.recordingContextId, () =>
         value.kind === 'routine'
-          ? await window.myTracer.routines.cancelRecording(input)
-          : await window.myTracer.records.cancel(input)
+          ? window.myTracer.routines.cancelRecording(input)
+          : window.myTracer.records.cancel(input)
+      )
       if (!result.ok) {
         setError(true)
         return

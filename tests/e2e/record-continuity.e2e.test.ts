@@ -29,7 +29,7 @@ async function normalClose(app: ElectronApplication) {
   await closed
 }
 
-test('three recording entrypoints quietly retain inputs across normal window close, then clear after explicit save/discard', async () => {
+test('three recording entrypoints quietly retain inputs across normal window close, then reconcile lost save replies and refresh their owners', async () => {
   test.slow()
   const root = await createTemporaryTestRoot()
   let app: ElectronApplication | undefined
@@ -82,15 +82,46 @@ test('three recording entrypoints quietly retain inputs across normal window clo
     await first.getByLabel('这次不记时长（未知）').check()
     await first.getByLabel('本次结果', { exact: true }).selectOption('partial')
     await first.getByLabel('保存后，整个行动').selectOption('keep-pending')
+    // Each real commit succeeds; lose its response once, then reconcile through the UI.
+    await app.evaluate(({ ipcMain }) => {
+      const handlers = Reflect.get(ipcMain, '_invokeHandlers') as Map<
+        string,
+        (...args: unknown[]) => unknown
+      >
+      for (const channel of [
+        'records:save-first-record',
+        'records:record-action',
+        'routine-records:record'
+      ]) {
+        const original = handlers.get(channel)!
+        let loseReply = true
+        ipcMain.removeHandler(channel)
+        ipcMain.handle(channel, async (...args) => {
+          const result = await original(...args)
+          if (loseReply) {
+            loseReply = false
+            throw Error('Synthetic lost commit reply')
+          }
+          return result
+        })
+      }
+    })
     await first.getByRole('button', { name: '保存行动和第一笔' }).click()
+    await first.getByRole('button', { name: '核对上次操作' }).click()
     await expect(first).not.toBeVisible()
+    await expect(page.getByRole('button', { name: /合成未完成第一笔.*待行动/ })).toBeVisible()
     await page.getByRole('button', { name: /合成续写行动.*待行动/ }).click()
     await action.getByRole('button', { name: '保存记录', exact: true }).click()
+    await action.getByRole('button', { name: '核对上次操作' }).click()
+    await expect(action.getByText('这笔已保存。', { exact: true })).toBeVisible()
     await expect(action.getByRole('button', { name: '开始记录' })).toBeVisible()
     await navigate(page, '例行')
     routine = page.getByLabel('合成续写例行 例行记录')
     await expect(routine.getByLabel('投入时长（分钟，可选）')).toHaveValue('3')
-    await routine.getByRole('button', { name: '放弃草稿', exact: true }).click()
+    await routine.getByRole('button', { name: '保存例行记录', exact: true }).click()
+    await routine.getByRole('button', { name: '核对上次操作' }).click()
+    await expect(routine.locator('.routine-record-state strong')).toHaveText('有所行动')
+    await expect(routine.getByRole('button', { name: '记录例行', exact: true })).toHaveCount(0)
     await normalClose(app)
     app = undefined
     app = await launch(root)
@@ -104,11 +135,11 @@ test('three recording entrypoints quietly retain inputs across normal window clo
     const after = await page.evaluate(() => window.myTracer.dataControl.list())
     if (!after.ok) throw Error('Synthetic snapshot unavailable')
     expect(after.value.actionRecords).toHaveLength(2)
-    expect(after.value.routineRecords).toHaveLength(0)
+    expect(after.value.routineRecords).toHaveLength(1)
     await navigate(page, '例行')
     await expect(
       page.getByLabel('合成续写例行 例行记录').getByRole('button', { name: '记录例行' })
-    ).toBeVisible()
+    ).toHaveCount(0)
   } finally {
     await app?.close()
     await removeTemporaryTestRoot(root)

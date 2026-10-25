@@ -1,5 +1,9 @@
 import { createHash } from 'node:crypto'
-import { hasRecordInput, type RecordDraft } from '../contracts/record-drafts'
+import {
+  hasRecordInput,
+  type RecordDraft,
+  type RecordReconciliation
+} from '../contracts/record-drafts'
 import { createLocalDate } from '../domain/local-date'
 import type { RecordContinuityPort } from '../application/ports/record-continuity'
 import type { ActionRecordingContextStore } from './action-recording-contexts'
@@ -246,8 +250,13 @@ export class RecordContinuity {
       } as RecordDraft
     })
   }
-  reconcile(contextId: string): 'open' | 'saved' | 'discarded' {
-    return this.options.store.find(this.require(contextId).operationId)?.state ?? 'open'
+  reconcile(contextId: string): RecordReconciliation {
+    const row = this.options.store.find(this.require(contextId).operationId)
+    if (row?.state === 'saved') {
+      if (!row.objectId || !row.occurredOn) throw new Error('Incomplete operation receipt.')
+      return { state: 'saved', objectId: row.objectId, occurredOn: row.occurredOn }
+    }
+    return { state: row?.state ?? 'open' }
   }
   discard(contextId: string): void {
     const binding = this.require(contextId)
@@ -280,13 +289,18 @@ export class RecordContinuity {
       }
       if (currentBasis !== b.basis) throw new ContinuityError('context-changed')
       const result = work()
-      if (result.kind === 'saved')
+      if (result.kind === 'saved') {
+        const record = (result as { kind: string; record?: { occurredOn: string } }).record
+        if (!record) throw new Error('Saved operation has no record result.')
         this.options.store.write({
           operationId: b.operationId,
           state: 'saved',
           revision: row?.revision ?? 0,
-          payload: null
+          payload: null,
+          objectId: b.objectId,
+          occurredOn: record.occurredOn
         })
+      }
       return result
     })
   }

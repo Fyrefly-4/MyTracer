@@ -89,7 +89,9 @@ describe('record input retention lifetime', () => {
     expect(hasRecordInput({ kind: 'action', draft: { ...draft, outcome: 'stopped' } })).toBe(true)
   })
   it('shares uncertain submission state across entrypoints and reconciles without replay', async () => {
-    const reconcile = vi.fn().mockResolvedValue('saved')
+    const reconcile = vi
+      .fn()
+      .mockResolvedValue({ state: 'saved', objectId: 'a', occurredOn: '2026-10-24' })
     vi.stubGlobal('window', {
       myTracer: { recordDrafts: { load: async () => [], retain: async () => undefined, reconcile } }
     })
@@ -97,14 +99,18 @@ describe('record input retention lifetime', () => {
     await session.restoreRecordInputs()
     session.setFirstActionDraft({ ...empty, title: 'Synthetic pending submission' })
     await expect(
-      session.trackRecordSave('c', async () => {
+      session.trackRecordOperation('c', async () => {
         throw Error('Synthetic lost reply')
       })
     ).rejects.toThrow()
     expect(session.isRecordPending('c')).toBe(false)
     expect(session.isRecordUncertain('c')).toBe(true)
     expect(session.getFirstActionDraft()).not.toBeNull()
-    expect(await session.reconcileRecord('first', 'c')).toBe('saved')
+    expect(await session.reconcileRecord('first', 'c')).toEqual({
+      state: 'saved',
+      objectId: 'a',
+      occurredOn: '2026-10-24'
+    })
     expect(session.isRecordUncertain('c')).toBe(false)
     expect(session.isRecordConsumed('c')).toBe(true)
     expect(session.getFirstActionDraft()).toBeNull()
@@ -127,5 +133,64 @@ describe('record input retention lifetime', () => {
     await first
     await session.restoreRecordInputs()
     expect(load).toHaveBeenCalledTimes(1)
+  })
+  it('blocks update installation when reverting to empty has not been persisted', async () => {
+    let completeClear!: () => void
+    const retain = vi
+      .fn()
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValueOnce(Error('Synthetic failed clearing write'))
+      .mockImplementationOnce(
+        () =>
+          new Promise<void>((resolve) => {
+            completeClear = resolve
+          })
+      )
+    vi.stubGlobal('window', { myTracer: { recordDrafts: { load: async () => [], retain } } })
+    const session = new UiSession(() => undefined)
+    await session.restoreRecordInputs()
+    session.setFirstActionDraft({ ...empty, title: 'Synthetic original retained text' })
+    expect(await session.flushRecordInputs()).toBe(true)
+    session.setFirstActionDraft(empty)
+    expect(await session.flushRecordInputs()).toBe(false)
+    expect(hasRecordInput({ kind: 'first', draft: session.getFirstActionDraft()! })).toBe(false)
+    expect(session.hasUnsavedContent()).toBe(true)
+    const retry = session.retryRecordRetention()
+    expect(session.hasUnsavedContent()).toBe(true)
+    completeClear()
+    await retry
+    expect(session.hasUnsavedContent()).toBe(false)
+  })
+  it('clears discarded input after the original panel unmounts and protects pending/uncertain operations', async () => {
+    vi.stubGlobal('window', {
+      myTracer: { recordDrafts: { load: async () => [], retain: async () => undefined } }
+    })
+    const session = new UiSession(() => undefined)
+    await session.restoreRecordInputs()
+    session.setFirstActionDraft({ ...empty, title: 'Synthetic discarded elsewhere' })
+    let complete!: (value: { ok: true; value: { cancelled: true } }) => void
+    const discard = session.trackRecordOperation(
+      'c',
+      () =>
+        new Promise<{ ok: true; value: { cancelled: true } }>((resolve) => {
+          complete = resolve
+        })
+    )
+    expect(session.isRecordPending('c')).toBe(true)
+    expect(session.hasUnsavedContent()).toBe(true)
+    complete({ ok: true, value: { cancelled: true } })
+    await discard
+    expect(session.getFirstActionDraft()).toBeNull()
+    expect(session.isRecordConsumed('c')).toBe(true)
+    await session.flushRecordInputs()
+    expect(session.hasUnsavedContent()).toBe(false)
+    session.setFirstActionDraft(empty)
+    await session.flushRecordInputs()
+    await expect(
+      session.trackRecordOperation('c', async () => {
+        throw Error('Synthetic lost reply')
+      })
+    ).rejects.toThrow()
+    expect(session.hasUnsavedContent()).toBe(true)
   })
 })

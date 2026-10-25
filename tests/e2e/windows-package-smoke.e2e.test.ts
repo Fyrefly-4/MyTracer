@@ -47,6 +47,7 @@ async function verifyPackagedApplication(
       ai: { configured: false, availability: 'not-configured' }
     })
     expect(await page.evaluate(() => Object.keys(window.myTracer))).toEqual([
+      'recordDrafts',
       'home',
       'shell',
       'updates',
