@@ -21,6 +21,11 @@ test.each(['1', '3'])('selects exact synthetic regressions with %s independent r
       '--forbid-only'
     ]
   })
+  expect(focusPlan('recovery-context', repeat).arguments).toEqual([
+    'tests/e2e/recovery-context.e2e.test.ts',
+    `--repeat-each=${repeat}`,
+    '--forbid-only'
+  ])
   expect(focusPlan('content-drafts', repeat).arguments).toEqual([
     'tests/e2e/goal-content-draft.e2e.test.ts',
     'tests/e2e/routine-content-draft.e2e.test.ts',

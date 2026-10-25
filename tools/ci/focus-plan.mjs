@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 export function focusPlan(profile, repeat) {
   if (!['1', '3'].includes(repeat)) throw new Error('Focus repeat must be 1 or 3')
   const profiles = {
+    'recovery-context': ['tests/e2e/recovery-context.e2e.test.ts'],
     'data-reading': ['tests/e2e/data-reading-workspace.e2e.test.ts', '--grep=history'],
     'content-drafts': [
       'tests/e2e/goal-content-draft.e2e.test.ts',

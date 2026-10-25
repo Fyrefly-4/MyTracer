@@ -8,7 +8,7 @@ on:
         type: choice
         required: true
         default: data-reading
-        options: [data-reading, content-drafts]
+        options: [data-reading, content-drafts, recovery-context]
       repeat:
         description: 'Independent runs; every run must pass (not retries)'
         type: choice
@@ -23,6 +23,7 @@ on:
       - .github/workflows/electron-focus.yml
       - tools/ci/focus-plan.mjs
       - tools/ci/run-phase.mjs
+      - tests/e2e/recovery-context.e2e.test.ts
       - tests/unit/ci-focus.test.ts
       - tests/unit/ci-phase.test.ts
       - tests/support/focus-report-fixture.ts
@@ -42,8 +43,8 @@ jobs:
     env:
       CI: 'true'
       PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
-      FOCUS_PROFILE: ${{ github.event_name == 'pull_request' && 'content-drafts' || inputs.profile }}
-      FOCUS_REPEAT: ${{ github.event_name == 'pull_request' && '1' || inputs.repeat }}
+      FOCUS_PROFILE: ${{ github.event_name == 'pull_request' && 'recovery-context' || inputs.profile }}
+      FOCUS_REPEAT: ${{ github.event_name == 'pull_request' && '3' || inputs.repeat }}
     steps:
       - name: Checkout PR test merge or selected manual revision
         uses: actions/checkout@v6.0.2

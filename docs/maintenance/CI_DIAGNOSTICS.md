@@ -171,6 +171,7 @@ build and actual-context diagnostic control precede the chosen profile:
 | --- | --- | --- |
 | `data-reading` | History-reading scenario only | Exact pane restoration, pagination and protected edits |
 | `content-drafts` | Goal and routine content draft suites (11 scenarios at introduction) | Selection, navigation, delayed responses and draft continuity |
+| `recovery-context` | Existing Recovery reopen scenario | Distinguish launch, body, reopen and cleanup stalls |
 
 Select **Actions → Focused Electron → Run workflow**, select the intended branch/ref,
 and choose a profile and `1` or `3` independent runs. Inspect the recorded checkout SHA,
@@ -183,8 +184,9 @@ gh workflow run electron-focus.yml --ref <branch> -f profile=data-reading -f rep
 
 GitHub exposes manual dispatch only once the workflow exists on the default branch.
 Before that first merge, this workflow self-checks its entrypoint on PR changes to its
-workflow, selector, runner or selector test; it runs `content-drafts` once on the PR test
-merge. It does not run automatically on every product change. The existing Verification
+workflow, selector, runner, adapter tests or Recovery scenario; it currently runs
+`recovery-context` three times on the PR test merge. The initial content-drafts self-check
+passed on Windows in run `40159955911` (head `143dcba`). It does not run automatically on every product change. The existing Verification
 workflow still runs the complete required `CI Gate` for applicable source PRs, unchanged.
 The focused job has a distinct name and concurrency group, so it neither substitutes
 for nor cancels full verification. Do not make this path-filtered optional job a required
@@ -225,3 +227,31 @@ flows or moving scroll/focus assertions to unit tests could remove the very trig
 protect. Keep them intact. Pure schema/DTO/text failures already have lower-level coverage;
 no demonstrated redundant case justifies deleting premerge checks in this batch. Sharding,
 more workers, release/installer trigger changes and broad test migration remain deferred.
+
+
+### Recovery timeout investigation (PR #159)
+
+The original failed run [40159955914](https://github.com/Fyrefly-4/MyTracer/actions/runs/40159955914),
+job `121069480138`, head `143dcba15f075084aa5a7bc86853ef3a2730dd7f`,
+test merge `14219ef27339f2192b5fea17c15d56d8aa8a9b37`, attempt 1, remains evidence.
+The full suite reported 130 passed, five skipped and the unchanged Recovery scenario
+failed at its 30-second test budget, followed by a 30-second worker-teardown timeout.
+Its E2E phase measured 295689 ms. Earlier phases, the real Electron diagnostic negative
+control and the repeated Data scroll assertions passed. This is not evidence of a
+specific product race or a proven flaky test.
+
+The readable log has no call stack identifying launch, assertions, close or root removal.
+The failure artifact `12586181267` exists, but its returned download URL gave HTTP 403;
+its error-context contents have not been read. The scenario previously lacked actual-context
+tracing and lifecycle markers. Its last source change predates this maintenance branch.
+
+The bounded next experiment instruments the same scenario with static step names and
+durations, including both launches, controlled dates, synthetic setup, factual assertions,
+close/reopen and cleanup. Both manually launched contexts use the existing diagnostics
+helper. Cleanup errors cannot replace an earlier failure; cleanup alone still fails a test.
+Traces stop before successful close; lifecycle start/done markers locate a close stall even
+when trace capture cannot finish. No user data, environment dump or database is collected.
+Windows focused validation executes all three independent repetitions with exact manifest
+matching and zero retries; full premerge E2E still includes the scenario. Neither passing
+repetitions nor a passing full run alone establish the original root cause. No timeout,
+assertion, sandbox setting or product behavior was changed for this experiment.
