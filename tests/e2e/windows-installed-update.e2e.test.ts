@@ -84,8 +84,9 @@ async function launch(
   initialConfiguration = false
 ): Promise<ElectronApplication> {
   const environment = minimalElectronEnvironment(root)
-  // This explicit opt-in is the sole path that propagates the dedicated real read token.
-  environment.MYTRACER_UPDATE_TOKEN = required('MYTRACER_UPDATE_TOKEN')
+  // Only legacy source clients need this optional read token; public clients ignore it.
+  if (process.env.MYTRACER_UPDATE_TOKEN)
+    environment.MYTRACER_UPDATE_TOKEN = process.env.MYTRACER_UPDATE_TOKEN
   if (initialConfiguration)
     environment.MYTRACER_LITELLM_API_KEY = 'synthetic-config-only-never-requested'
   const application = await electron.launch({
@@ -127,7 +128,7 @@ async function assertDownloadedHash(root: TemporaryTestRoot): Promise<void> {
 test('preserves one fixture through manual A to B and application-installed B to C', async () => {
   test.skip(
     process.env.MYTRACER_INSTALLED_UPDATE_TEST !== '1',
-    'Requires a real stable feed, read credential and T084-approved Windows identity.'
+    'Requires a real stable feed and approved isolated Windows identity.'
   )
   test.setTimeout(900_000)
   preflight()

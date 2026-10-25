@@ -3,9 +3,9 @@ import { type ReactNode, useEffect, useState } from 'react'
 import type { UpdateFailureCode, UpdateStatusDto } from '../../../../contracts/updates'
 
 const ERROR_TEXT: Record<UpdateFailureCode, string> = {
-  'not-configured': '尚未配置更新源只读凭据。设置后请重启应用。',
+  'not-configured': '更新源暂不可用，请稍后重试。',
   unavailable: '当前无法连接更新源；安装版应用或更新源可能暂不可用。',
-  authentication: '更新源拒绝了凭据。请检查凭据是否过期或已撤销。',
+  authentication: '公共更新源暂时拒绝访问，请稍后重试。无需配置更新凭据。',
   network: '网络连接失败，请检查网络后重试。',
   timeout: '等待更新源超时，请稍后重试。',
   cancelled: '本次操作已取消，可以稍后重试。',
@@ -82,7 +82,7 @@ export function UpdatePanel(props: { readonly onClose: () => void }): ReactNode 
 
       {connectionError ? <p role="alert">暂时无法读取更新状态，核心功能仍可使用。</p> : null}
       {status?.state === 'idle' ? <p>如需检查新版本，请手动开始。</p> : null}
-      {status?.state === 'checking' ? <p role="status">正在检查私有更新源…</p> : null}
+      {status?.state === 'checking' ? <p role="status">正在检查公共更新源…</p> : null}
       {status?.state === 'upToDate' ? <p role="status">当前已是最新稳定版。</p> : null}
       {status?.state === 'available' ? (
         <p role="status">发现可用版本 {candidate?.version}。</p>
@@ -196,7 +196,9 @@ export function UpdatePanel(props: { readonly onClose: () => void }): ReactNode 
           稍后
         </button>
       </div>
-      <p className="update-privacy">检查更新会连接私有分发服务；不会上传本地记录或 AI 密钥。</p>
+      <p className="update-privacy">
+        检查更新会连接 GitHub 公共分发服务；无需更新密钥，不会上传本地记录或 AI 密钥。
+      </p>
     </aside>
   )
 }

@@ -4,6 +4,12 @@
 >
 > 普通工作不需要本阶段合同、账本、审批或聚合验收；当前范围与权限以根目录 [AGENTS.md](../../AGENTS.md) 和 owner 当次请求为准。任务顺序、旧授权与阶段门已移至[历史执行记录](../implementation/archive/stage-execution/S8_EXECUTION.md)，仅在追溯或 owner 明确启用相应阶段流程时查阅。
 
+## 公共更新演进（2026-10-25）
+
+Owner 已批准不再保留私有分发：新版固定使用本仓库公共 GitHubProvider，不读取或传递客户端 token，不保留私有 provider 双轨。下文私有鉴权与早期发布方案保留为首期背景；现行操作见[更新维护](../maintenance/UPDATE.md)及[发布维护](../maintenance/RELEASE.md)。
+
+公共 provider 的 tag、唯一完整安装包和 SHA-512 校验取代私有 API assets 校验，网络限于本仓库必要路径及既有 GitHub 资产 CDN。保持主动检查、确认下载/重启、退出保护、防降级、候选复核和安装前完整性检查；不改变 schema、安装身份/范围、数据路径或签名策略。旧版仍需有效旧 token 或手动覆盖一次新版；真实跨版本安装未测。发布凭据保持独立，不撤销用户 token。
+
 <a id="1-stage-information"></a>
 
 <a id="2-baseline-manifest"></a>

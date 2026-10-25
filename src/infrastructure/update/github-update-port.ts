@@ -8,7 +8,7 @@ import {
   type UpdatePort
 } from '../../application/ports/update'
 import type { UpdateFailureCode } from '../../contracts/updates'
-import { validatePrivateRelease, type ReleaseInfo } from './release-metadata'
+import { validatePublicRelease, type ReleaseInfo } from './release-metadata'
 import { isAllowedUpdaterUrl } from './request-policy'
 import { verifyDownloadedPackage } from './package-integrity'
 
@@ -56,10 +56,7 @@ function restrictUpdaterRequests(): void {
 }
 
 export class GithubUpdatePort implements UpdatePort {
-  private readonly token: string | null
-
-  constructor(options: { readonly token: string | undefined; readonly isPackaged: boolean }) {
-    this.token = options.token?.trim() || null
+  constructor(options: { readonly isPackaged: boolean }) {
     this.isPackaged = options.isPackaged
     if (options.isPackaged) restrictUpdaterRequests()
   }
@@ -68,13 +65,12 @@ export class GithubUpdatePort implements UpdatePort {
 
   async check(signal: AbortSignal): Promise<CheckedUpdate> {
     if (!this.isPackaged) throw new UpdatePortError('unavailable')
-    if (!this.token) throw new UpdatePortError('not-configured')
     try {
       const updater = this.createUpdater()
       const result = await updater.checkForUpdates()
       if (signal.aborted) throw new UpdatePortError('cancelled')
       if (!result) throw new UpdatePortError('unavailable')
-      const info = validatePrivateRelease(result.updateInfo)
+      const info = validatePublicRelease(result.updateInfo)
       return {
         version: info.version,
         releaseNotes: info.releaseNotes,
@@ -86,12 +82,11 @@ export class GithubUpdatePort implements UpdatePort {
   }
 
   private createUpdater(): NsisUpdater {
-    // Passing the dedicated token through runtime options avoids using GH_TOKEN or writing it to app-update.yml.
+    // Public-only: never pass a token; private:false also disables GH_TOKEN/GITHUB_TOKEN lookup.
     const updater = new electronUpdater.NsisUpdater({
       provider: 'github',
       owner: SOURCE.owner,
       repo: SOURCE.repo,
-      token: this.token!,
       private: false
     })
     updater.logger = null
@@ -118,7 +113,7 @@ export class GithubUpdatePort implements UpdatePort {
       if (signal.aborted) throw new UpdatePortError('cancelled')
       const result = await updater.checkForUpdates()
       if (!result) throw new UpdatePortError('unavailable')
-      const actual = validatePrivateRelease(result.updateInfo)
+      const actual = validatePublicRelease(result.updateInfo)
       if (
         actual.version !== expected.version ||
         actual.file.name !== expected.file.name ||

@@ -8,7 +8,7 @@ MyTracer 已用于 owner 的日常使用。发布流程服务于快速迭代：�
 
 仓库可为 private 或 public：发布与来源校验都要求 GitHub 返回的 `private` 字段为布尔值，同时固定仓库全名 `Fyrefly-4/MyTracer` 与 ID `1326905280`；缺失或错误类型不会被当作 public 接受。可见性变化不放宽源提交、workflow、制品、发布 PR 审批、草稿完整性或重试规则。此兼容性不负责修改仓库可见性或凭据权限。
 
-已安装客户端的更新令牌行为不变：仍需本机有效的 `MYTRACER_UPDATE_TOKEN`，不会因仓库公开自动转为匿名更新。公开仓库的正式 Release 对公众可见；草稿仍须先完成全部验证才能发布。不要将仓库 public/private 与 Release draft/published 混为一谈。
+包含公共更新改动的新版客户端无需 token；已安装旧版仍需有效的原只读 token，或手动覆盖安装一次新版。公开仓库的正式 Release 对公众可见；草稿仍须先完成全部验证才能发布。不要将仓库 public/private 与 Release draft/published 混为一谈。
 
 ## 日常操作
 
@@ -83,7 +83,7 @@ main 中的 `0.1.5` 只是旧流程的版本准备，没有同版已发布 Relea
 
 本地更新器不依赖旧 `candidate-manifest.json`，因此不再将跨 workflow 的候选查找、14 天时效或手动批准作为发布前置条件。旧候选工具和测试夹具如仍保留，仅用于历史检查，不构成另一条有效发布入口。
 
-CI 使用 GitHub Actions 的发布权限，客户端继续使用专用只读 `MYTRACER_UPDATE_TOKEN`；两者不得混用，不将 CI token 写入安装包。既有客户端凭据无需因接入 Release Please 而重建。配置、轮换与恢复见[更新与凭据维护](UPDATE.md)。
+CI 继续使用 GitHub App / Actions 发布凭据；新版客户端公共读取更新，不使用这些凭据，也不将 CI token 写入安装包。旧版迁移与恢复见[更新维护](UPDATE.md)。
 
 ## 重试与故障处理
 

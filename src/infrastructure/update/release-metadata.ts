@@ -1,7 +1,5 @@
 import { UpdatePortError } from '../../application/ports/update'
 
-const API_ASSET_PREFIX = 'https://api.github.com/repos/Fyrefly-4/MyTracer/releases/assets/'
-
 export interface ReleaseInfo {
   readonly version: string
   readonly releaseNotes: string
@@ -12,7 +10,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-export function validatePrivateRelease(value: unknown): ReleaseInfo {
+export function validatePublicRelease(value: unknown): ReleaseInfo {
   if (
     !isRecord(value) ||
     typeof value.version !== 'string' ||
@@ -22,26 +20,18 @@ export function validatePrivateRelease(value: unknown): ReleaseInfo {
     throw new UpdatePortError('invalid-metadata')
   }
   const expectedName = `MyTracer-${value.version}-x64-setup.exe`
-  const file = value.files.find((entry: unknown) => isRecord(entry) && entry.url === expectedName)
-  const assets = value.assets
-  if (!isRecord(file) || !Array.isArray(assets)) throw new UpdatePortError('invalid-metadata')
-  const asset = assets.find((entry: unknown) => isRecord(entry) && entry.name === expectedName)
-  if (!isRecord(asset) || typeof asset.url !== 'string') {
+  // GitHubProvider returns { tag, ...latestYml }, not the private API assets array.
+  // Exactly one full installer prevents the provider selecting a different executable.
+  if (value.tag !== `v${value.version}` || value.files.length !== 1 || value.packages != null) {
     throw new UpdatePortError('invalid-metadata')
   }
-  let url: URL
-  try {
-    url = new URL(asset.url)
-  } catch {
+  const file: unknown = value.files[0]
+  if (!isRecord(file) || file.url !== expectedName) {
     throw new UpdatePortError('invalid-metadata')
   }
   if (
-    !url.href.startsWith(API_ASSET_PREFIX) ||
-    !/^\d+$/.test(url.pathname.slice(new URL(API_ASSET_PREFIX).pathname.length)) ||
-    url.username ||
-    url.password ||
-    url.search ||
-    url.hash
+    (value.path != null && value.path !== expectedName) ||
+    (value.sha512 != null && value.sha512 !== file.sha512)
   ) {
     throw new UpdatePortError('invalid-metadata')
   }
