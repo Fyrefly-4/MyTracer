@@ -80,7 +80,7 @@ test('explicit check and confirmation download only, with plain text notes and n
   }
 })
 
-test('missing token, rejected token and offline source leave the core UI usable', async () => {
+test('unavailable, access-rejected and offline source leave the core UI usable', async () => {
   for (const scenario of [undefined, 'authentication', 'network'] as const) {
     const root = await createTemporaryTestRoot()
     let application: ElectronApplication | undefined

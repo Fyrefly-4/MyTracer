@@ -525,7 +525,6 @@ app.whenReady().then(async () => {
   let updatePort: UpdatePort
   try {
     updatePort = createOfflineTestUpdatePort(app.getVersion()) ?? new GithubUpdatePort({
-      token: process.env.MYTRACER_UPDATE_TOKEN,
       isPackaged: app.isPackaged
     })
   } catch {

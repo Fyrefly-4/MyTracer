@@ -11,7 +11,7 @@ publish:
   provider: github
   owner: Fyrefly-4
   repo: MyTracer
-  private: true
+  private: false
   channel: latest
 files:
   - out/**/*

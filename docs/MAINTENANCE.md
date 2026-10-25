@@ -10,7 +10,7 @@
 | 构建、验证或生成 Windows 安装包 | [开发与验证](#开发与验证) |
 | 定位故障并修改代码 | 先读相关代码和测试；涉及行为时按需核对[产品需求](PRODUCT_REQUIREMENTS_V0.1.md)、[产品决定](DECISIONS.md)和[变更规则](REQUIREMENTS_CHANGE_POLICY.md) |
 | 理解模块、数据、删除、日期或 AI 边界 | [架构入口](architecture/README.md) |
-| 配置或轮换更新凭据、处理更新失败 | [更新与凭据维护](maintenance/UPDATE.md) |
+| 公共更新、旧版迁移与更新失败 | [更新维护](maintenance/UPDATE.md) |
 | 管理发布 PR、打包与更新 | [发布维护](maintenance/RELEASE.md) |
 | 创建分支、提交或 PR；理解 CI | [GitHub 日常工作流](implementation/GITHUB_WORKFLOW_V0.1.md) |
 

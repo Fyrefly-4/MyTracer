@@ -18,8 +18,9 @@ describe('T082 updater request policy', () => {
   })
 
   it.each([
-    'https://api.github.com/repos/Fyrefly-4/MyTracer/releases/latest',
-    'https://api.github.com/repos/Fyrefly-4/MyTracer/releases/assets/123',
+    'https://github.com/Fyrefly-4/MyTracer/releases.atom',
+    'https://github.com/Fyrefly-4/MyTracer/releases/latest',
+    'https://github.com/Fyrefly-4/MyTracer/releases/download/v0.1.3/latest.yml',
     'https://github.com/Fyrefly-4/MyTracer/releases/download/v0.1.3/MyTracer-0.1.3-x64-setup.exe',
     'https://release-assets.githubusercontent.com/signed-download?token=synthetic'
   ])('allows the fixed source and known GitHub asset hosts', (url) => {
@@ -34,6 +35,15 @@ describe('T082 updater request policy', () => {
     'https://github.com/Other/MyTracer/releases/download/v0.1.3/setup.exe',
     'https://evil.invalid/file',
     'https://user:pass@api.github.com/repos/Fyrefly-4/MyTracer/releases/latest',
+    'https://api.github.com/repos/Fyrefly-4/MyTracer/releases/latest',
+    'https://api.github.com/repos/Fyrefly-4/MyTracer/releases/assets/123',
+    'https://github.com/Fyrefly-4/MyTracer/releases.atom?token=x',
+    'https://github.com/Fyrefly-4/MyTracer/releases/tag/v0.1.3',
+    'https://github.com/Fyrefly-4/MyTracer/releases/download/v0.1.3/MyTracer-0.1.4-x64-setup.exe',
+    'https://github.com/Fyrefly-4/MyTracer/releases/download/v0.1.3-beta.1/latest.yml',
+    'https://github.com/Fyrefly-4/MyTracer/releases/download/v0.1.3/arbitrary.exe',
+    'https://github.com:8443/Fyrefly-4/MyTracer/releases/latest',
+    'https://github.com/Fyrefly-4/MyTracer/releases/latest#fragment',
     'not a url'
   ])('rejects non-source requests and redirects', (url) => {
     expect(isAllowedUpdaterUrl(url)).toBe(false)

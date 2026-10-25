@@ -52,7 +52,7 @@ CI 不检查 PR 正文，不校验历史任务账本或 Profile，不创建正�
 - 旧手动候选和 owner tag 发布 workflow 退出有效流程，避免两条入口并行。Agent 不因 CI 通过或发布 PR 已准备好而自行合并、创建 tag 或发布。
 - bot PR 的检查和权限按 GitHub 实际配置执行；不得移除 required checks 或私自配置长期凭据来绕过限制。
 
-详细规则、首次基线、故障重试和验证限制见[发布维护](../maintenance/RELEASE.md)，客户端凭据和本地更新见[更新维护](../maintenance/UPDATE.md)。
+详细规则、首次基线、故障重试和验证限制见[发布维护](../maintenance/RELEASE.md)，公共更新与旧版迁移见[更新维护](../maintenance/UPDATE.md)。
 
 ## 5. 分支保护与远端事实
 
