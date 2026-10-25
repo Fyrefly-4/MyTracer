@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.1](https://github.com/Fyrefly-4/MyTracer/compare/v1.11.0...v1.11.1) (2026-10-25)
+
+
+### Bug Fixes
+
+* make packaged update smoke deterministic and run it before release ([#168](https://github.com/Fyrefly-4/MyTracer/issues/168)) ([de8c8b4](https://github.com/Fyrefly-4/MyTracer/commit/de8c8b4aa5a1d7657d638b179a7bdb3739b547db))
+
 ## [1.11.0](https://github.com/Fyrefly-4/MyTracer/compare/v1.10.0...v1.11.0) (2026-10-25)
 
 
