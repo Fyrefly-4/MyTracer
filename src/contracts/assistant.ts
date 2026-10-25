@@ -40,6 +40,8 @@ export interface AssistantMessage {
   readonly createdAt: string
 }
 export interface AssistantSession {
+  /** Earlier messages remain visible locally but are excluded after a scope change. */
+  readonly historyStartIndex?: number
   readonly id: string
   readonly mode: 'persistent' | 'temporary'
   readonly entry: AssistantEntry
