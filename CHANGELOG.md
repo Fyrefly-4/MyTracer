@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.0](https://github.com/Fyrefly-4/MyTracer/compare/v1.10.0...v1.11.0) (2026-10-25)
+
+
+### Features
+
+* 公共免密钥更新，保留下载与安装安全校验 ([#160](https://github.com/Fyrefly-4/MyTracer/issues/160)) ([6a1e908](https://github.com/Fyrefly-4/MyTracer/commit/6a1e90899eb8cd84231c116e68b1cf08fec381c9))
+
 ## [1.10.0](https://github.com/Fyrefly-4/MyTracer/compare/v1.9.1...v1.10.0) (2026-10-24)
 
 
