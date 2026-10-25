@@ -87,10 +87,27 @@ async function verifyPackagedApplication(
       state: 'idle',
       currentVersion: expectedVersion
     })
-    expect(await page.evaluate(() => window.myTracer.updates.check())).toMatchObject({
-      state: 'error',
-      error: { code: 'not-configured' }
+    // Exercise the packaged public provider without depending on GitHub availability.
+    // Keep its production request allowlist intact; only emulate an offline transport.
+    await application.evaluate(({ session }) => {
+      session.fromPartition('electron-updater', { cache: false }).enableNetworkEmulation({
+        offline: true
+      })
     })
+    try {
+      expect(await page.evaluate(() => window.myTracer.updates.check())).toMatchObject({
+        state: 'error',
+        error: { code: 'network' }
+      })
+      expect(await page.evaluate(() => window.myTracer.home.get({}))).toMatchObject({
+        ok: true,
+        value: { activeGoalCount: 0, totalGoalCount: 0, recentRecords: [] }
+      })
+    } finally {
+      await application.evaluate(({ session }) => {
+        session.fromPartition('electron-updater', { cache: false }).disableNetworkEmulation()
+      })
+    }
     await expect(
       page.getByRole('heading', { name: '看看最近走到了哪里。', exact: true })
     ).toBeVisible()

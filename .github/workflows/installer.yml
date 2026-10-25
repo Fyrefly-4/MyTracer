@@ -7,6 +7,12 @@ on:
       - build/installer/**
       - resources/brand/**
       - tools/installer/**
+      - src/**
+      - tests/e2e/windows-package-smoke.e2e.test.ts
+      - tests/support/**
+      - playwright.config.ts
+      - electron.vite.config.*
+      - tsconfig*.json
       - electron-builder.yml
       - package.json
       - package-lock.json
@@ -20,6 +26,9 @@ jobs:
     name: NSIS compile and scope fixtures
     runs-on: windows-2025
     timeout-minutes: 15
+    env:
+      CI: 'true'
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
     steps:
       - uses: actions/checkout@v6.0.2
         with:
@@ -34,3 +43,5 @@ jobs:
         run: node tools/installer/verify.mjs
       - name: Compile real installer and uninstaller (never publish)
         run: npm.cmd run package
+      - name: Validate unpacked and isolated NSIS-installed applications offline
+        run: npm.cmd run test:package-smoke
