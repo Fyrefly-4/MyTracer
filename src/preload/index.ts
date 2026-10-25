@@ -1,3 +1,4 @@
+import { createAssistantBridge } from './assistant-bridge'
 import { RECORD_BOOK_CHANNELS, type RecordBookApi } from '../contracts/record-book'
 import {
   APPEARANCE_CHANNELS,
@@ -389,6 +390,7 @@ const api: MyTracerApi = Object.freeze({
   exports: Object.freeze({
     generate: (): Promise<CompleteExportResult> => ipcRenderer.invoke(EXPORT_CHANNELS.generate)
   }),
+  ...createAssistantBridge(ipcRenderer),
   aiStartHelp: Object.freeze({
     status: (): Promise<AiStartHelpSessionDto> => ipcRenderer.invoke(AI_START_HELP_CHANNELS.status),
     start: (input: StartAiStartHelpInputDto): Promise<AiStartHelpSessionDto> =>

@@ -222,3 +222,19 @@
     height: 90dvh;
   }
 }
+
+/* Keep the optional Assistant entry in the heading, preserving reading height below controls. */
+.review-workspace .review-reference-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-shrink: 0;
+}
+.review-workspace .review-reference-heading h2 {
+  margin: 0;
+}
+.review-workspace .review-reference-heading button {
+  flex-shrink: 0;
+}

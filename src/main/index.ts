@@ -1,3 +1,14 @@
+import { createHash } from 'node:crypto'
+import { AssistantSessionService } from '../application/assistant/service'
+import { createAssistantWriter } from '../application/assistant/writes'
+import { FileAssistantSessionStore } from '../infrastructure/assistant/session-store'
+import { AssistantServiceConfigurationStore } from '../infrastructure/configuration/assistant-service-configuration'
+import { createAssistantCredentialProtection } from '../infrastructure/credentials/assistant-credential-protection'
+import { OpenAiAssistantProvider } from '../infrastructure/ai/assistant-openai-provider'
+import { registerAssistantIpc } from './assistant-ipc'
+import { registerAssistantServiceIpc } from './assistant-service-ipc'
+import { ASSISTANT_CHANNELS } from '../contracts/assistant'
+import { createOfflineAssistantFixture } from './test-assistant-provider'
 import { RecordBookService } from '../application/record-book-service'
 import { registerRecordBookIpc } from './record-book-ipc'
 import appIcon from '../../resources/brand/MyTracer-app-icon-256.png?asset'
@@ -80,6 +91,11 @@ let sqliteConnection: SqliteConnection | null = null
 let aiConfiguration: MutableAiConfigurationPort | null = null
 let diagnostics: DiagnosticsPort | null = null
 let aiStartHelpSessions: AiStartHelpSessionStore | null = null
+let assistantSessions: AssistantSessionService | null = null
+let assistantIpc: ReturnType<typeof registerAssistantIpc> | null = null
+let assistantServiceIpc: ReturnType<typeof registerAssistantServiceIpc> | null = null
+let assistantQuitReady = false
+let assistantQuitPending = false
 let updateService: UpdateService | null = null
 const installGate = new InstallOperationGate()
 let draftProbe: RendererDraftProbe | null = null
@@ -451,6 +467,8 @@ async function createMainWindow(): Promise<void> {
     deletePreviewContexts.clearSender(senderId)
     reviewContexts.clearSender(senderId)
     aiStartHelpSessions?.clearSender(senderId)
+    assistantIpc?.disposeSender(senderId)
+    assistantServiceIpc?.cancelConnectionTest()
   })
   mainWindow.webContents.on('destroyed', () => {
     draftProbe?.clear()
@@ -459,6 +477,8 @@ async function createMainWindow(): Promise<void> {
     deletePreviewContexts.clearSender(senderId)
     reviewContexts.clearSender(senderId)
     aiStartHelpSessions?.clearSender(senderId)
+    assistantIpc?.disposeSender(senderId)
+    assistantServiceIpc?.cancelConnectionTest()
   })
   mainWindow.once('ready-to-show', () => mainWindow?.show())
   mainWindow.on('closed', () => {
@@ -467,6 +487,8 @@ async function createMainWindow(): Promise<void> {
     deletePreviewContexts.clearSender(senderId)
     reviewContexts.clearSender(senderId)
     aiStartHelpSessions?.clearSender(senderId)
+    assistantIpc?.disposeSender(senderId)
+    assistantServiceIpc?.cancelConnectionTest()
     mainWindow = null
   })
 
@@ -749,6 +771,59 @@ app.whenReady().then(async () => {
     configuration: aiConfiguration,
     assertSender: (event) => assertTrustedSender(event, mainWindow, getRendererLocation())
   })
+  const offlineAssistant = createOfflineAssistantFixture({
+    isPackaged: app.isPackaged,
+    userDataPath: app.getPath('userData'),
+    testRoot: app.commandLine.getSwitchValue('mytracer-assistant-test-root'),
+    cwd: process.cwd()
+  })
+  const assistantConfiguration = new AssistantServiceConfigurationStore({
+    userDataPath: app.getPath('userData'),
+    credentialProtection: offlineAssistant?.protection ?? createAssistantCredentialProtection(safeStorage)
+  })
+  const assistantProvider = new OpenAiAssistantProvider(assistantConfiguration, offlineAssistant?.fetcher)
+  assistantServiceIpc = registerAssistantServiceIpc({
+    ipc: guardedIpc,
+    configuration: assistantConfiguration,
+    provider: assistantProvider,
+    assertSender: (event) => assertTrustedSender(event, mainWindow, getRendererLocation()),
+    configurationChanged: () => assistantSessions?.cancelAll()
+  })
+  const fingerprint = (value: string): string => createHash('sha256').update(value).digest('hex')
+  const readSnapshot = () => sqliteConnection!.repository.readSnapshot()
+  try {
+    assistantSessions = new AssistantSessionService({
+      store: new FileAssistantSessionStore(join(app.getPath('userData'), 'assistant')),
+      provider: assistantProvider,
+      readSnapshot,
+      resolveReviewContext: (contextId) => {
+        if (!mainWindow || mainWindow.isDestroyed()) return null
+        try {
+          const context = reviewContexts.get(mainWindow.webContents.id, contextId)
+          return { periodStartedOn: context.periodStartedOn, periodEndedOn: context.periodEndedOn }
+        } catch { return null }
+      },
+      fingerprint,
+      generateId: randomUUID,
+      now: () => clock.nowInstant(),
+      write: createAssistantWriter({ readSnapshot, dataControl: dataControlService, actions: actionService })
+    })
+    assistantIpc = registerAssistantIpc({
+      ipc: ipcMain,
+      service: assistantSessions,
+      assertSender: (event) => assertTrustedSender(event, mainWindow, getRendererLocation()),
+      operationGate: installGate
+    })
+  } catch {
+    // A corrupt conversation file must not prevent ordinary recording or be overwritten.
+    for (const channel of Object.values(ASSISTANT_CHANNELS)) {
+      ipcMain.removeHandler(channel)
+      guardedIpc.handle(channel, (event) => {
+        assertTrustedSender(event, mainWindow, getRendererLocation())
+        return { ok: false, error: { code: 'persistence-failed' } }
+      })
+    }
+  }
   const installCoordinator = new UpdateInstallCoordinator({
     service: updateService,
     gate: installGate,
@@ -758,8 +833,13 @@ app.whenReady().then(async () => {
       const state = aiStartHelpSessions.status(mainWindow.webContents.id).state
       return !['idle', 'cancelled', 'confirmed', 'rejected', 'closed'].includes(state)
     },
-    cancelAiRequests: () => aiStartHelpSessions?.clearAll(),
+    cancelAiRequests: () => {
+      aiStartHelpSessions?.clearAll()
+      assistantSessions?.cancelAll()
+      assistantServiceIpc?.cancelConnectionTest()
+    },
     closeDatabase: () => {
+      assistantSessions?.flush()
       sqliteConnection?.close()
       sqliteConnection = null
     },
@@ -789,6 +869,31 @@ app.on('before-quit', (event) => {
   if (installGate.state === 'preparing') {
     event.preventDefault()
     return
+  }
+  if (!assistantQuitReady) {
+    assistantSessions?.cancelAll()
+    assistantServiceIpc?.cancelConnectionTest()
+    if (assistantQuitPending) { event.preventDefault(); return }
+    if (assistantSessions?.hasPendingOperations() || assistantServiceIpc?.hasPendingConnectionTest()) {
+      event.preventDefault()
+      if (!installGate.beginPreparation()) return
+      assistantQuitPending = true
+      const controller = new AbortController()
+      const timer = setTimeout(() => controller.abort(), 15000)
+      void installGate.drain(controller.signal).then((drained) => {
+        if (!drained) return
+        assistantSessions?.flush()
+        assistantQuitReady = true
+      }).catch(() => { /* Keep the application open on a persistence failure. */ }).finally(() => {
+        clearTimeout(timer)
+        assistantQuitPending = false
+        installGate.cancelPreparation()
+        if (assistantQuitReady) app.quit()
+      })
+      return
+    }
+    try { assistantSessions?.flush() } catch { event.preventDefault(); return }
+    assistantQuitReady = true
   }
   const updateStatus = updateService?.getStatus()
   if (updateStatus?.operationId) updateService?.cancel({ operationId: updateStatus.operationId })

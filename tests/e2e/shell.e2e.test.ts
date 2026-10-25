@@ -89,9 +89,31 @@ test('runs the Electron shell with an isolated userData root', async () => {
       'dataControl',
       'recordBook',
       'exports',
+      'assistant',
+      'assistantService',
       'aiStartHelp',
       'aiConfiguration'
     ])
+    expect(await page.evaluate(() => Object.keys(window.myTracer.assistant))).toEqual([
+      'createSession',
+      'listSessions',
+      'getSession',
+      'deleteSession',
+      'setScope',
+      'sendTurn',
+      'getRun',
+      'cancelTurn',
+      'previewWrite',
+      'confirmWrite'
+    ])
+    expect(await page.evaluate(() => Object.keys(window.myTracer.assistantService))).toEqual([
+      'getStatus',
+      'saveConfiguration',
+      'deleteCredential',
+      'testConnection'
+    ])
+    expect(await page.evaluate(() => Object.isFrozen(window.myTracer.assistant))).toBe(true)
+    expect(await page.evaluate(() => Object.isFrozen(window.myTracer.assistantService))).toBe(true)
     expect(await page.evaluate(() => Object.keys(window.myTracer.recordBook))).toEqual([
       'read',
       'export'

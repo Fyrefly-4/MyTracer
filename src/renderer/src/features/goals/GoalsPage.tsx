@@ -1,3 +1,4 @@
+import { AssistantEntryButton } from '../assistant/AssistantContext'
 import { recordDuration } from '../../app/ui-text'
 import { chooseVisibleSelection } from '../../app/selection-preferences'
 import '../forms-workspace.css'
@@ -1023,6 +1024,12 @@ function GoalWorkspace(): ReactNode {
                   <div>
                     <p className="eyebrow">目标详情</p>
                     <h2>{detail.name}</h2>
+                    <AssistantEntryButton
+                      label={detail.name}
+                      entry={{ object: { kind: 'goal', id: detail.id }, intent: 'resume' }}
+                    >
+                      接上上次
+                    </AssistantEntryButton>
                   </div>
                   <span className={`status-badge status-${detail.status}`}>
                     {goalStatusText[detail.status]}

@@ -1,3 +1,5 @@
+import { reviewAssistantSources } from '../assistant/assistant-review-source'
+import { AssistantEntryButton } from '../assistant/AssistantContext'
 import { ProgressActionNotes } from '../progress/ProgressActionNotes'
 import { RecordNote } from '../../app/RecordText'
 import { recordDuration } from '../../app/ui-text'
@@ -681,7 +683,38 @@ export function ReviewPage(): ReactNode {
             </form>
             <aside className="review-reference-panel" aria-label="复盘事实参考">
               <div className="review-reference-selection" aria-live="polite">
-                <h2>事实参考</h2>
+                <div className="review-reference-heading">
+                  <h2>事实参考</h2>
+                  {selectedReference ? (
+                    <AssistantEntryButton
+                      label={`${selectedReference.label} · 选定内容回顾`}
+                      selectedObjects={reviewAssistantSources(selectedReference.key, summary)}
+                      disabled={busy || !contextId || periodConflict || selectedState !== 'current'}
+                      entry={{
+                        object: { kind: 'review', id: contextId ?? '' },
+                        intent: 'review',
+                        editorText: selectedReference.citation,
+                        editorRevision: JSON.stringify([
+                          contextId,
+                          currentDraft,
+                          selectedState,
+                          selectedReference.key,
+                          selectedReference.citation
+                        ])
+                      }}
+                      apply={(payload) => {
+                        if (payload.kind !== 'review-draft' || selectedState !== 'current')
+                          return false
+                        setConfirmedProgress(payload.confirmedProgress)
+                        setMainObstacle(payload.mainObstacle)
+                        setNextAdjustment(payload.nextAdjustment)
+                        return true
+                      }}
+                    >
+                      选定内容回顾
+                    </AssistantEntryButton>
+                  ) : null}
+                </div>
                 {selectedReference ? (
                   <>
                     <div className="review-reference-controls">
