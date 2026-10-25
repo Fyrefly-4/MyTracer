@@ -111,7 +111,7 @@ describe('Assistant renderer orchestration with synthetic-only adapter', () => {
     expect(writes).toHaveLength(1)
     expect(controller.getSnapshot().session).toBeNull()
   })
-  it('keeps the same operation id when confirmation outcome is uncertain', async () => {
+  it('marks uncertain candidates and does not retry an uncertain write', async () => {
     const { api, controller } = setup()
     await controller.open(launch)
     await controller.send('整理')
@@ -124,7 +124,9 @@ describe('Assistant renderer orchestration with synthetic-only adapter', () => {
       .mockImplementationOnce(realConfirm)
     await controller.confirm()
     await controller.confirm()
-    expect(confirm.mock.calls[0][0].operationId).toBe(confirm.mock.calls[1][0].operationId)
+    expect(confirm).toHaveBeenCalledTimes(1)
+    expect(controller.getSnapshot().run!.candidates[0].state).toBe('uncertain')
+    expect(controller.getSnapshot().notice).toContain('请先检查目标记录')
   })
   it('invalidates previews on scope change and shows safe configuration/provider failure messages', async () => {
     const { controller, api } = setup()
@@ -209,7 +211,7 @@ it('shows running read-only steps while a final-result send is still pending', a
   expect(controller.getSnapshot().run?.state).toBe('completed')
 })
 
-it('does not pretend unsupported review preview can fill or save a draft', async () => {
+it('fills a validated review editor draft but never requests formal review save', async () => {
   const { controller, api, writes } = setup()
   const apply = vi.fn(() => true)
   await controller.open({
@@ -223,9 +225,9 @@ it('does not pretend unsupported review preview can fill or save a draft', async
   expect(preview).not.toHaveBeenCalled()
   expect(controller.getSnapshot().notice).toContain('不直接保存复盘')
   await controller.preview(candidate, candidate.payload, true)
-  expect(apply).not.toHaveBeenCalled()
+  expect(apply).toHaveBeenCalledTimes(1)
   expect(writes).toHaveLength(0)
-  expect(controller.getSnapshot().notice).toContain('尚未提供复盘草稿的来源验证')
+  expect(controller.getSnapshot().notice).toContain('未保存草稿')
 })
 
 it('explicit new goal conversation creates a different ID while resume reuses history', async () => {

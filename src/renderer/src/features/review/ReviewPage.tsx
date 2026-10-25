@@ -1,3 +1,4 @@
+import { reviewAssistantSources } from '../assistant/assistant-review-source'
 import { AssistantEntryButton } from '../assistant/AssistantContext'
 import { ProgressActionNotes } from '../progress/ProgressActionNotes'
 import { RecordNote } from '../../app/RecordText'
@@ -688,6 +689,7 @@ export function ReviewPage(): ReactNode {
                     <div className="review-reference-controls">
                       <AssistantEntryButton
                         label={`${selectedReference.label} · 选定内容回顾`}
+                        selectedObjects={reviewAssistantSources(selectedReference.key, summary)}
                         disabled={
                           busy || !contextId || periodConflict || selectedState !== 'current'
                         }
@@ -699,6 +701,7 @@ export function ReviewPage(): ReactNode {
                             contextId,
                             currentDraft,
                             selectedState,
+                            selectedReference.key,
                             selectedReference.citation
                           ])
                         }}

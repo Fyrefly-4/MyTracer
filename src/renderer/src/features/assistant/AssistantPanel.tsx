@@ -30,7 +30,13 @@ function CandidateEditor({
       <h3>{candidateLabels[payload.kind]}</h3>
       <p>
         候选 · {candidate.target.kind}/{candidate.target.id} ·{' '}
-        {candidate.state === 'committed' ? '已保存' : '尚未保存'}
+        {candidate.state === 'committed'
+          ? '已保存'
+          : candidate.state === 'uncertain'
+            ? '结果不确定，请核对目标记录；不会自动重试'
+            : candidate.state === 'stale'
+              ? '已过期，请重新整理'
+              : '尚未保存'}
       </p>
       <fieldset disabled={!editable}>
         {payload.kind === 'review-draft' ? (

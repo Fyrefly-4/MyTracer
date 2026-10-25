@@ -15,6 +15,7 @@ import type { AssistantServiceStatus } from '../../../../contracts/assistant-ser
 export interface AssistantLaunch {
   readonly entry: AssistantEntry
   readonly label: string
+  readonly selectedObjects?: AssistantScope['selectedObjects']
   /** Reads live editor state, not the snapshot captured when the panel opened. */
   readonly draft?: {
     revision(): string
@@ -150,7 +151,7 @@ export class AssistantController {
                 s.entry.object.id === launch.entry.object.id
             )
           : undefined
-      const session = unwrap(
+      let session = unwrap(
         await (previous
           ? this.api.getSession({ sessionId: previous.id })
           : this.api.createSession({ entry: launch.entry, mode }))
@@ -158,6 +159,16 @@ export class AssistantController {
       if (token !== this.epoch) {
         if (session.mode === 'temporary') await this.api.deleteSession({ sessionId: session.id })
         return
+      }
+      if (!previous && launch.selectedObjects?.length) {
+        session = unwrap(
+          await this.api.setScope({
+            sessionId: session.id,
+            expectedRevision: session.revision,
+            scope: { ...session.scope, selectedObjects: launch.selectedObjects }
+          })
+        )
+        if (token !== this.epoch) return
       }
       this.patch({
         session,
@@ -387,7 +398,10 @@ export class AssistantController {
       if (fillDraft) {
         if (
           !launch?.draft ||
-          launch.draft.revision() !== session.entry.editorRevision ||
+          !preview.editorRevision ||
+          preview.editorRevision !== session.entry.editorRevision ||
+          launch.draft.revision() !== preview.editorRevision ||
+          (preview.payload.kind === 'review-draft' && preview.destination !== 'editor-draft') ||
           !launch.draft.apply(preview.payload)
         )
           throw new Error('stale-context')
@@ -455,7 +469,23 @@ export class AssistantController {
           this.patch({ notice: '已确认保存，但会话状态刷新失败；请重新打开对话后继续。' })
       }
     } catch (error) {
-      if (token === this.epoch) this.fail(error)
+      if (token === this.epoch) {
+        if (error instanceof Error && error.message === 'operation-uncertain') {
+          this.operation = null
+          this.patch({
+            preview: null,
+            run: this.state.run
+              ? {
+                  ...this.state.run,
+                  candidates: this.state.run.candidates.map((c) =>
+                    c.id === preview.candidateId ? { ...c, state: 'uncertain' } : c
+                  )
+                }
+              : null
+          })
+        }
+        this.fail(error)
+      }
     } finally {
       if (token === this.epoch) this.patch({ busy: false })
     }
