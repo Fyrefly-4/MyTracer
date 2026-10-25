@@ -14,7 +14,15 @@ export default defineConfig({
   workers: 1,
   retries: 0,
   timeout: 30_000,
-  reporter: [['list']],
+  reporter: [
+    ['list'],
+    [
+      'json',
+      {
+        outputFile: join(process.env.RUNNER_TEMP ?? '.tmp', 'mytracer-ci-phases', 'playwright.json')
+      }
+    ]
+  ],
   use: {
     screenshot: 'off',
     trace: 'off',

@@ -328,7 +328,21 @@ describe('workflow safety boundaries', () => {
     expect(source).not.toContain('governance:metadata:check')
     expect(source).not.toContain('Windows required gate')
     expect(source).not.toMatch(/contents: write|run: .*package/)
-    expect(source).toContain('run: npm.cmd run verify')
+    for (const phase of [
+      'install',
+      'electron',
+      'format',
+      'lint',
+      'types',
+      'unit',
+      'integration',
+      'build',
+      'diagnostics',
+      'e2e'
+    ]) {
+      expect(source).toContain(`run: node tools/ci/run-phase.mjs ${phase}`)
+    }
+    expect(source).not.toContain('continue-on-error:')
     expect(source).toContain("if: steps.changes.outputs.category == 'source'")
   })
 

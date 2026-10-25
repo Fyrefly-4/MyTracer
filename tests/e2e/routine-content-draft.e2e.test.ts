@@ -1,3 +1,4 @@
+import { startElectronDiagnostics } from '../support/electron-diagnostics'
 import { join } from 'node:path'
 import { expect, test, type ElectronApplication, type Page } from '@playwright/test'
 import { _electron as electron } from 'playwright'
@@ -14,38 +15,53 @@ async function fixture(
 ): Promise<void> {
   const root = await createTemporaryTestRoot()
   let app: ElectronApplication | undefined
+  let finishDiagnostics: ((failure?: unknown) => Promise<void>) | undefined
   try {
-    app = await electron.launch({
-      chromiumSandbox: true,
-      cwd: root.root,
-      args: [join(process.cwd(), 'out/main/index.js'), `--user-data-dir=${root.electronUserData}`],
-      env: minimalElectronEnvironment(root)
-    })
-    const page = await app.firstWindow()
-    const ids = await page.evaluate(async () => {
-      const ids: string[] = []
-      for (let i = 1; i <= 8; i++) {
-        const result = await window.myTracer.routines.create({
-          arrangementMode: 'weekly' as const,
-          name: `草稿例行${i}`,
-          minimumAction: '做一步',
-          weekdays: [1, 3]
-        })
-        if (!result.ok) throw new Error('Fixture failed')
-        ids.push(result.value.id)
-      }
-      return ids
-    })
+    app = await test.step('Launch isolated Electron with sandbox', () =>
+      electron.launch({
+        chromiumSandbox: true,
+        cwd: root.root,
+        args: [
+          join(process.cwd(), 'out/main/index.js'),
+          `--user-data-dir=${root.electronUserData}`
+        ],
+        env: minimalElectronEnvironment(root)
+      }))
+    finishDiagnostics = await startElectronDiagnostics(app, test.info())
+    const page = await test.step('Wait for first application window', () => app!.firstWindow())
+    const ids = await test.step('Seed eight isolated synthetic routines', () =>
+      page.evaluate(async () => {
+        const ids: string[] = []
+        for (let i = 1; i <= 8; i++) {
+          const result = await window.myTracer.routines.create({
+            arrangementMode: 'weekly' as const,
+            name: `草稿例行${i}`,
+            minimumAction: '做一步',
+            weekdays: [1, 3]
+          })
+          if (!result.ok) throw new Error('Fixture failed')
+          ids.push(result.value.id)
+        }
+        return ids
+      }))
     await navigate(page, '例行')
     await page
       .getByLabel('例行列表', { exact: true })
       .getByRole('button', { name: /草稿例行1 / })
       .click()
     await openEditor(page)
-    await run(page, app, ids)
+    await test.step('Exercise synthetic draft continuity and race assertions', () =>
+      run(page, app!, ids))
+  } catch (error) {
+    await finishDiagnostics?.(error)
+    throw error
   } finally {
     try {
-      await app?.close()
+      try {
+        await finishDiagnostics?.()
+      } finally {
+        await app?.close()
+      }
     } finally {
       await removeTemporaryTestRoot(root)
     }

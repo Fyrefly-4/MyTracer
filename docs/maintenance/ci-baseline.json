@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "scope": "Two bounded successful historical samples at different heads; not a speed or flakiness comparison.",
+  "samples": [
+    {
+      "pr": 151,
+      "run": 40112670799,
+      "job": 120927477168,
+      "attempt": null,
+      "attemptNote": "Connector result and job log do not expose attempt; unknown, do not infer 1.",
+      "head": "d6787ff21ae833e9e49081ca78855f4c1a95bf8c",
+      "base": "eca4d07843e663358c221059b95fc8ae159de489",
+      "testMerge": "b611772a9a03d1345920d32e0d8e2b2d000ebe0d",
+      "runnerImage": "windows-2025-vs2026",
+      "imageVersion": "20261021.278.1",
+      "cache": "miss",
+      "unitSeconds": 14.53,
+      "integrationSeconds": 58.04,
+      "e2eReportedMinutes": 4.7,
+      "phaseMeasurement": "Test-runner reported wall durations; E2E rounded by runner. Other phase timing unavailable as direct measurements in old aggregate.",
+      "failureCategory": null
+    },
+    {
+      "pr": 154,
+      "run": 40118727700,
+      "job": 120945435510,
+      "attempt": null,
+      "attemptNote": "Connector result and job log do not expose attempt; unknown, do not infer 1.",
+      "head": "a487b1db33ae11158cd1fe6e9b224b9a29afa165",
+      "base": "a7733116a70b600a40e0235c10909f718f10a60a",
+      "testMerge": "af991bd35a2c211a4d6073821929cffc052102a6",
+      "runnerImage": "windows-2025-vs2026",
+      "imageVersion": "20261021.278.1",
+      "cache": "hit",
+      "unitSeconds": 13.44,
+      "integrationSeconds": 58.78,
+      "e2eReportedMinutes": 4.6,
+      "phaseMeasurement": "Test-runner reported wall durations; E2E rounded by runner. Other phase timing unavailable as direct measurements in old aggregate.",
+      "failureCategory": null
+    }
+  ]
+}
