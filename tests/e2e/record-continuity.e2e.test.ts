@@ -146,10 +146,18 @@ test('three recording entrypoints quietly retain inputs across normal window clo
       .getByRole('button', { name: /合成续写例行/ })
       .first()
       .click()
-    await expect(page.getByLabel('合成续写例行 例行记录')).toBeVisible()
-    await expect(
-      page.getByLabel('合成续写例行 例行记录').getByRole('button', { name: '记录例行' })
-    ).toHaveCount(0)
+    routine = page.getByLabel('合成续写例行 例行记录')
+    await expect(routine).toBeVisible()
+    await expect(routine.getByLabel('投入时长（分钟，可选）')).toHaveCount(0)
+    // This entry queries the current day when opened; it must discover the saved
+    // fact rather than restoring the consumed inputs or offering an overwrite.
+    await routine.getByRole('button', { name: '记录例行', exact: true }).click()
+    await expect(routine.locator('.routine-record-state strong')).toHaveText('有所行动')
+    await expect(routine.getByLabel('投入时长（分钟，可选）')).toHaveCount(0)
+    const finalFacts = await page.evaluate(() => window.myTracer.dataControl.list())
+    if (!finalFacts.ok) throw Error('Synthetic snapshot unavailable')
+    expect(finalFacts.value.actionRecords).toHaveLength(2)
+    expect(finalFacts.value.routineRecords).toHaveLength(1)
   } finally {
     await app?.close()
     await removeTemporaryTestRoot(root)
