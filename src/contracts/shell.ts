@@ -1,3 +1,5 @@
+import type { AssistantApi } from './assistant'
+import type { AssistantServiceApi } from './assistant-service'
 import type { RecordBookApi } from './record-book'
 import type { AppearanceSettings, AppearanceState } from './appearance'
 import type { HomeApi } from './home'
@@ -46,6 +48,8 @@ export interface MyTracerApi {
   readonly dataControl: DataControlApi
   readonly recordBook: RecordBookApi
   readonly exports: CompleteExportApi
+  readonly assistant: AssistantApi
+  readonly assistantService: AssistantServiceApi
   readonly aiStartHelp: AiStartHelpApi
   readonly aiConfiguration: AiConfigurationApi
   readonly updates: UpdateApi

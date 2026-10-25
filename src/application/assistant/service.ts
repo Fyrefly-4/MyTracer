@@ -36,6 +36,8 @@ export interface AssistantDependencies {
   store: AssistantSessionStore
   provider: AssistantProviderPort
   readSnapshot(): CorePersistenceSnapshot
+  /** Main validates a live review context and its explicitly selected fact. */
+  readAdditionalContext?(entry: D.AssistantEntry): readonly ContextObject[]
   fingerprint(value: string): string
   generateId(): string
   now(): string
@@ -176,11 +178,14 @@ export class AssistantSessionService {
     check(r, 'not-found')
     return r
   }
-  private all(): ContextObject[] {
-    return project(this.deps.readSnapshot(), this.deps.fingerprint)
+  private all(entry: D.AssistantEntry): ContextObject[] {
+    return [
+      ...project(this.deps.readSnapshot(), this.deps.fingerprint),
+      ...(this.deps.readAdditionalContext?.(entry) ?? [])
+    ]
   }
-  private assertSources(sources: readonly D.AssistantSource[]): void {
-    const all = this.all()
+  private assertSources(sources: readonly D.AssistantSource[], entry: D.AssistantEntry): void {
+    const all = this.all(entry)
     for (const s of sources)
       if (s.origin === 'saved')
         check(
@@ -218,7 +223,7 @@ export class AssistantSessionService {
     check(this.sessions.size < 100, 'budget-exceeded')
     const e = entry(v.entry)
     const s: D.AssistantScope = { current: e.object, selectedObjects: [] }
-    resolveScope(s, this.all())
+    resolveScope(s, this.all(e))
     const now = this.deps.now()
     const session: D.AssistantSession = {
       id: this.deps.generateId(),
@@ -284,7 +289,7 @@ export class AssistantSessionService {
     check(revision(v.expectedRevision) === r.session.revision, 'stale-context')
     const s = scope(v.scope)
     check(refKey(s.current) === refKey(r.session.entry.object))
-    resolveScope(s, this.all())
+    resolveScope(s, this.all(r.session.entry))
     this.invalidate(r)
     r.session = {
       ...r.session,
@@ -322,7 +327,7 @@ export class AssistantSessionService {
     check(!r.active, 'busy')
     check(revision(v.expectedRevision) === r.session.revision, 'stale-context')
     check(r.session.messages.length < 98, 'budget-exceeded')
-    const authorized = resolveScope(r.session.scope, this.all())
+    const authorized = resolveScope(r.session.scope, this.all(r.session.entry))
     const sources = authorized.slice(0, 8).map(source)
     if (r.session.entry.editorText !== undefined)
       sources.unshift({
@@ -430,8 +435,8 @@ export class AssistantSessionService {
             const args = object(JSON.parse(c.arguments))
             check(!('name' in args), 'invalid-response')
             const call = tool({ name: c.name, ...args })
-            this.assertSources(run.manifest.sources)
-            const current = resolveScope(r.session.scope, this.all()).filter((o) =>
+            this.assertSources(run.manifest.sources, r.session.entry)
+            const current = resolveScope(r.session.scope, this.all(r.session.entry)).filter((o) =>
               authorized.some((a) => refKey(a.ref) === refKey(o.ref) && a.revision === o.revision)
             )
             const result = executeTool(call, current)
@@ -485,7 +490,7 @@ export class AssistantSessionService {
         const answer = text(final.text, 8000)
         const sourceRefs = validateRefs(final.sourceRefs)
         check(Array.isArray(final.candidates) && final.candidates.length <= 4, 'invalid-response')
-        this.assertSources(run.manifest.sources)
+        this.assertSources(run.manifest.sources, r.session.entry)
         const candidates = final.candidates.map((raw) => {
           const c = object(raw)
           keys(c, ['target', 'sourceRefs', 'payload'])
@@ -597,9 +602,8 @@ export class AssistantSessionService {
     const p = payload(v.payload)
     check(p.kind === candidate.payload.kind)
     this.assertTarget(candidate.target, p)
-    // Review draft remains editable, but cannot bypass the established review-context command.
-    check(p.kind !== 'review-draft', 'unsupported')
-    const current = resolveScope(r.session.scope, this.all()).find(
+    // Review preview is allowed for editor filling; formal persistence uses the existing Review UI.
+    const current = resolveScope(r.session.scope, this.all(r.session.entry)).find(
       (o) => refKey(o.ref) === refKey(candidate.target)
     )
     check(
@@ -609,7 +613,7 @@ export class AssistantSessionService {
       'stale-context'
     )
     const sources = r.candidateSources.get(candidate.id)!
-    this.assertSources(sources)
+    this.assertSources(sources, r.session.entry)
     const before =
       p.kind === 'record-summary'
         ? String(current.fields.summary ?? '')
@@ -637,7 +641,9 @@ export class AssistantSessionService {
               ? '更新简述'
               : p.kind === 'note-append'
                 ? '追加到笔记'
-                : '创建行动（不设为下一步）',
+                : p.kind === 'review-draft'
+                  ? '填入复盘编辑草稿（尚未保存）'
+                  : '创建行动（不设为下一步）',
           before,
           after
         }
@@ -663,10 +669,11 @@ export class AssistantSessionService {
     check(!r.active, 'busy')
     const p = r.previews.get(previewId)
     check(p, 'stale-context')
+    check(p.payload.kind !== 'review-draft', 'unsupported')
     check(p.sessionRevision === r.session.revision, 'stale-context')
-    this.assertSources(p.sources)
+    this.assertSources(p.sources, r.session.entry)
     const target = p.changes[0].target
-    const current = resolveScope(r.session.scope, this.all()).find(
+    const current = resolveScope(r.session.scope, this.all(r.session.entry)).find(
       (o) => refKey(o.ref) === refKey(target)
     )
     check(current?.revision === p.targetRevision, 'stale-context')

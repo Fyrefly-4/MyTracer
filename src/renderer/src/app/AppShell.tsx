@@ -1,3 +1,7 @@
+import { AssistantHost } from '../features/assistant/AssistantHost'
+import { AssistantSettings } from '../features/assistant/AssistantSettings'
+import { AssistantController } from '../features/assistant/assistant-controller'
+import type { AssistantObjectRef } from '../../../contracts/assistant'
 import { RecordBookPage } from '../features/record-book/RecordBookPage'
 import wordmark from '../../../../resources/brand/MyTracer-wordmark-green.svg'
 import type { AppearanceSettings, AppearanceState } from '../../../contracts/appearance'
@@ -17,6 +21,32 @@ import { appSections, type AppSectionId } from './navigation'
 import { NavigationIcon } from './NavigationIcon'
 
 export function AppShell(): ReactNode {
+  const [assistantController] = useState(() => new AssistantController(window.myTracer.assistant, {
+    endpoint: '', model: '', enabled: false, credentialPresent: false
+  }))
+  const [assistantSettingsOpen, setAssistantSettingsOpen] = useState(false)
+  const [assistantChoices, setAssistantChoices] = useState<{ref: AssistantObjectRef, label: string}[]>([])
+  useEffect(() => {
+    let active = true
+    void window.myTracer.assistantService.getStatus().then((result) => {
+      if (active && result.ok) assistantController.updateService(result.value)
+    }).catch(() => undefined)
+    // Source lists stay local; only explicit selections are sent through setScope.
+    const refresh = async () => {
+      const records = await window.myTracer.dataControl.list()
+      if (active && records.ok) setAssistantChoices([
+        ...records.value.actionRecords.map((r) => ({ref: {kind: 'action-record' as const, id: r.id}, label: `${r.occurredOn} · ${r.summary ?? "行动记录"}`})),
+        ...records.value.routineRecords.map((r) => ({ref: {kind: 'routine-record' as const, id: r.id}, label: `${r.occurredOn} · ${r.summary ?? "例行记录"}`}))
+      ])
+    }
+    let wasVisible = false
+    const unsubscribe = assistantController.subscribe(() => {
+      const visible = assistantController.getSnapshot().visible
+      if (visible && !wasVisible) void refresh().catch(() => undefined)
+      wasVisible = visible
+    })
+    return () => { active = false; unsubscribe(); void assistantController.close() }
+  }, [assistantController])
   const [activeSection, setActiveSection] = useState<AppSectionId>('home')
   const mainRef = useRef<HTMLElement | null>(null)
   const [bookMode, setBookMode] = useState<'reading' | 'original' | null>(null)
@@ -156,7 +186,10 @@ export function AppShell(): ReactNode {
       requestAnimationFrame(() => {
         void window.myTracer.updates.replyToDraftRequest({
           requestId: request.requestId,
-          hasUnsavedContent: session.hasUnsavedContent()
+          hasUnsavedContent: session.hasUnsavedContent() || (() => {
+            const view = assistantController.getSnapshot()
+            return Boolean(view.busy && !assistantController.canStop()) || Boolean(view.preview) || Boolean(view.run?.candidates.some((c) => c.state === 'proposed')) || Boolean(view.session?.mode === 'temporary' && view.session.messages.length)
+          })()
         })
       })
     })
@@ -165,11 +198,20 @@ export function AppShell(): ReactNode {
       unsubscribeStatus()
       unsubscribeDraftRequests()
     }
-  }, [session])
+  }, [session, assistantController])
 
   const selected = appSections.find((section) => section.id === activeSection) ?? appSections[0]
 
   return (
+    <AssistantHost controller={assistantController} scopeChoices={assistantChoices} onSource={(ref) => {
+      guardedNavigation(() => {
+        void assistantController.close()
+        if (ref.kind === 'goal') session.openGoal(ref.id)
+        else if (ref.kind === 'action') session.openAction(ref.id)
+        else if (ref.kind === 'action-record' || ref.kind === 'routine-record') session.openDataRecord({type: ref.kind, id: ref.id}, 'home')
+        else navigate('review')
+      })
+    }}>
     <UiSessionContext value={session}>
       <div className="app-shell" data-section={activeSection}>
         <header className="topbar" aria-label="窗口标题栏">
@@ -226,6 +268,7 @@ export function AppShell(): ReactNode {
               </button>
             ))}
             <div className="sidebar-note">
+              <button type="button" className="update-entry" aria-expanded={assistantSettingsOpen} onClick={() => setAssistantSettingsOpen(!assistantSettingsOpen)}>Assistant 服务设置</button>
               <button
                 type="button"
                 className="update-entry"
@@ -278,6 +321,12 @@ export function AppShell(): ReactNode {
             key={`${activeSection}:${bookMode ?? 'source'}`}
           >
             <div className="content-inner">
+              {assistantSettingsOpen && !installPreparing && !restartRequired ? (
+                <section aria-label="Assistant 服务设置">
+                  <AssistantSettings api={window.myTracer.assistantService} onChanged={(value) => assistantController.updateService(value)} />
+                  <button type="button" onClick={() => setAssistantSettingsOpen(false)}>关闭服务设置</button>
+                </section>
+              ) : null}
               {appearanceOpen && !updateOpen && !installPreparing && !restartRequired ? (
                 <section className="appearance-panel" aria-label="外观设置">
                   <h2>外观</h2>
@@ -377,5 +426,6 @@ export function AppShell(): ReactNode {
         </div>
       </div>
     </UiSessionContext>
+    </AssistantHost>
   )
 }
