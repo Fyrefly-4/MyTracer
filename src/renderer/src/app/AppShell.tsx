@@ -396,7 +396,7 @@ export function AppShell({
               ) : activeSection === 'data' ? (
                 <DataControlPage onOpenBook={openBook} />
               ) : (
-                <ReviewPage />
+                <ReviewPage onOpenBook={openBook} />
               )}
             </div>
           </main>

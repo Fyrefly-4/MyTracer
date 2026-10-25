@@ -33,6 +33,12 @@ const errorText: Record<ReviewErrorCode, string> = {
   'persistence-failed': '本地周期记录暂时无法读取。'
 }
 
+const saveErrorText: Record<ReviewErrorCode, string> = {
+  ...errorText,
+  validation: '请检查三段文字是否都已填写，以及所选下一步是否完整。',
+  'persistence-failed': '暂时无法确认保存结果。文字仍保留在这里，请重新读取后核对。'
+}
+
 const routineColumns: readonly {
   readonly key: keyof ReviewRoutineOutcomeFactsDto
   readonly title: string
@@ -56,7 +62,7 @@ function shiftLocalDate(localDate: string, days: number): string {
   return date.toISOString().slice(0, 10)
 }
 
-export function ReviewPage(): ReactNode {
+export function ReviewPage({ onOpenBook }: { onOpenBook: () => void }): ReactNode {
   const session = useUiSession()
   const activeRef = useUiLifetime()
   const [initialDraft] = useState(() => session.getReviewDraft())
@@ -75,6 +81,9 @@ export function ReviewPage(): ReactNode {
   const [summary, setSummary] = useState<ReviewSummaryDto | null>(initialDraft?.summary ?? null)
   usePagePosition('review', summary !== null)
   const [busy, setBusy] = useState(true)
+  const [saving, setSaving] = useState(Boolean(session.getPendingReviewSave()))
+  const [hasSavedResult, setHasSavedResult] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [confirmedProgress, setConfirmedProgress] = useState(initialDraft?.confirmedProgress ?? '')
@@ -99,7 +108,8 @@ export function ReviewPage(): ReactNode {
     existingActionId,
     newActionTitle
   ])
-  useUnsavedContent('review-form', Boolean(loadedDraft && currentDraft !== loadedDraft))
+  const dirty = Boolean(loadedDraft && currentDraft !== loadedDraft)
+  useUnsavedContent('review-form', dirty)
 
   useEffect(() => {
     session.setReviewDraft(
@@ -150,6 +160,8 @@ export function ReviewPage(): ReactNode {
           ? setMainObstacle
           : setNextAdjustment
     setter((text) => appendCitation(text, selectedReference.citation))
+    if (saveError) setError(null)
+    setSaveError(null)
     const field =
       citationTarget === 'progress'
         ? progressRef
@@ -180,6 +192,7 @@ export function ReviewPage(): ReactNode {
     void Promise.resolve(session.getPendingReviewSave())
       .then(() => window.myTracer.review.begin({}))
       .then(async (beginResult) => {
+        if (active) setSaving(false)
         if (!beginResult.ok) {
           if (active) {
             setBusy(false)
@@ -222,6 +235,7 @@ export function ReviewPage(): ReactNode {
           setContextId(openedContextId)
           setSummary(summaryResult.value)
           setGoals(goalsResult.value)
+          setHasSavedResult(reviewResult.value !== null)
           if (!retained) {
             setConfirmedProgress(reviewResult.value?.confirmedProgress ?? '')
             setMainObstacle(reviewResult.value?.mainObstacle ?? '')
@@ -256,6 +270,7 @@ export function ReviewPage(): ReactNode {
       })
       .catch(() => {
         if (active) {
+          setSaving(false)
           setBusy(false)
           setError(errorText['persistence-failed'])
         }
@@ -321,6 +336,8 @@ export function ReviewPage(): ReactNode {
     }
     if (!activeRef.current) return
     session.setReviewDraft(null)
+    setSaveError(null)
+    setHasSavedResult(false)
     setLoadedDraft('')
     setSummary(null)
     setSelectedReference(null)
@@ -331,7 +348,9 @@ export function ReviewPage(): ReactNode {
     setNextAdjustment('')
     setRelatedGoalId('')
     setNextStepKind('none')
-    setNotice('已取消，本次填写没有保存。')
+    setNotice(
+      hasSavedResult ? '已放弃本次修改，保留上次已保存的复盘。' : '已取消，本次填写没有保存。'
+    )
     setEntryKey((value) => value + 1)
   }
 
@@ -344,7 +363,10 @@ export function ReviewPage(): ReactNode {
           ? { kind: 'create-and-use', title: newActionTitle }
           : { kind: 'none' }
     setBusy(true)
+    setSaving(true)
     setError(null)
+    setSaveError(null)
+    setNotice(null)
     const completion = window.myTracer.review
       .complete({
         reviewContextId: contextId,
@@ -367,9 +389,15 @@ export function ReviewPage(): ReactNode {
     if (!activeRef.current) return
     if (!result.ok) {
       setBusy(false)
-      setError(errorText[result.error.code])
+      setSaving(false)
+      setSaveError(saveErrorText[result.error.code])
+      setError(saveErrorText[result.error.code])
+      if (result.error.code === 'context-invalid' || result.error.code === 'context-stale') {
+        setContextId(null)
+      }
       return
     }
+    setHasSavedResult(true)
     if (relatedGoalId && nextStepKind !== 'none') {
       const [goalResult, todayResult] = await Promise.all([
         window.myTracer.goals.getDetail({ goalId: relatedGoalId }).catch(() => null),
@@ -395,9 +423,9 @@ export function ReviewPage(): ReactNode {
       setFollowUp(null)
     }
     setBusy(false)
+    setSaving(false)
     setLoadedDraft(currentDraft)
     setSelectedReference(null)
-    setNotice('本周期复盘已保存。')
     setContextId(null)
     setEntryKey((value) => value + 1)
   }
@@ -450,6 +478,7 @@ export function ReviewPage(): ReactNode {
               setContextId(null)
               setBusy(true)
               setError(null)
+              setSaveError(null)
               setEntryKey((value) => value + 1)
             }}
           >
@@ -550,6 +579,11 @@ export function ReviewPage(): ReactNode {
               ref={composerRef}
               tabIndex={-1}
               aria-label="复盘填写"
+              onChange={() => {
+                if (saveError) setError(null)
+                setSaveError(null)
+                setNotice(null)
+              }}
               onSubmit={(event) => {
                 event.preventDefault()
                 void save()
@@ -561,7 +595,7 @@ export function ReviewPage(): ReactNode {
               >
                 <div className="review-section-heading">
                   <h2>确认本周期复盘</h2>
-                  <p>记录摘要会随已有内容更新；下面三段由你确认的文字会保持原样保存。</p>
+                  <p>每周期保留一份复盘；保存后仍可在这里编辑，再次保存会更新同一份。</p>
                 </div>
                 <label>
                   一个真实进展
@@ -674,10 +708,52 @@ export function ReviewPage(): ReactNode {
                     取消
                   </button>
                   <button className="primary-button" type="submit" disabled={busy || !contextId}>
-                    保存复盘
+                    {saving ? '正在保存…' : '保存复盘'}
                   </button>
                 </div>
               </fieldset>
+              <div className="review-notice" role="status" aria-label="复盘保存状态">
+                <p>
+                  {saving
+                    ? '正在保存复盘，请稍候。'
+                    : saveError
+                      ? '本次保存尚未确认，填写的文字已保留。'
+                      : error || periodConflict
+                        ? '暂时无法确认当前填写的保存状态。'
+                        : busy || !contextId
+                          ? '正在读取本周期复盘…'
+                          : dirty
+                            ? hasSavedResult
+                              ? '有尚未保存的修改。'
+                              : '本周期复盘尚未保存。'
+                            : hasSavedResult
+                              ? '本周期复盘已保存。'
+                              : '填写后点击「保存复盘」，才会保存这三段文字。'}
+                </p>
+                {hasSavedResult && !saving && !busy && !error && !periodConflict ? (
+                  <p>
+                    {dirty || saveError
+                      ? '记录册显示上次已保存的版本，不包含这里尚未保存的修改。'
+                      : '这里显示的是已保存的内容，不是未提交草稿。'}
+                    复盘收录在记录册，按周期起始日查找，不在行动或例行记录列表中。
+                  </p>
+                ) : null}
+              </div>
+              {hasSavedResult && summary ? (
+                <button
+                  className="secondary-button"
+                  type="button"
+                  disabled={busy || saving || periodConflict}
+                  onClick={() => {
+                    const month = summary.periodStartedOn.slice(0, 7)
+                    session.setBookMonth(month)
+                    session.setBookPosition(month, 0)
+                    onOpenBook()
+                  }}
+                >
+                  在记录册查看已保存复盘
+                </button>
+              ) : null}
             </form>
             <aside className="review-reference-panel" aria-label="复盘事实参考">
               <div className="review-reference-selection" aria-live="polite">
