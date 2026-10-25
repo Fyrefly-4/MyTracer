@@ -74,3 +74,31 @@ is required to establish native capture behavior. Sharding, desktop parallelism,
 additional classification and speed claims remain deferred until comparable measurements
 justify them. Extend the small helper to other isolated suites only with a demonstrated
 need and keep semantic assertions intact.
+
+
+## Release integration fixture timing
+
+In [run 40145815296](https://github.com/Fyrefly-4/MyTracer/actions/runs/40145815296),
+the first `release-tag-flow` visibility scenario took 8.852 s and exceeded Vitest's
+unchanged 5 s test limit; the next visibility case took 1.345 s. The old wrapper
+included fixture creation, a fresh PowerShell compression process and two real
+PowerShell extractions in each happy-path case. It did not measure these separately,
+so cold-start compression versus extraction, filesystem work or runner contention
+cannot be assigned a proven share of that outlier.
+
+The suite now creates its immutable synthetic ZIP once in `beforeAll`, using the
+same PowerShell compression. Each of the 23 scenarios keeps independent mutable
+metadata, working directory, API call log and cleanup, and continues calling the
+production extractor for prepare/publish. No selection, visibility, hash or write
+ordering assertions are moved out of their tests. Default test/hook limits and the
+existing child-process bound are unchanged; setup failures still fail the suite.
+
+`release-tag-flow.ndjson` in the phase artifact records shared compression/setup,
+isolated setup, prepare/extraction/validation, publish/extraction/validation and
+cleanup times. The subprocess duration includes Node startup/imports. A child exit
+zero does not override a Vitest timeout; consult the test runner's conclusion.
+A phase rejection can be expected by a negative test; the child/test result determines
+whether its assertion passed. These measurements will determine whether remaining
+work is in setup, actual extraction or elsewhere. Removing 22 redundant compressions
+is a bounded fixture change, not evidence that the original outlier was conclusively
+caused by compression or a claim of general CI speedup.

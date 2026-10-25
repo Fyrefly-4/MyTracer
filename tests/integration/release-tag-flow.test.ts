@@ -1,18 +1,87 @@
-import { spawnSync } from 'node:child_process'
-import { describe, expect, test } from 'vitest'
+import { execFileSync, spawnSync } from 'node:child_process'
+import { appendFileSync, mkdirSync } from 'node:fs'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
+import { beforeAll, describe, expect, test } from 'vitest'
+
+const { fixture } = await import(
+  pathToFileURL(join(process.cwd(), 'tests/support/release-fixture.mjs')).href
+)
+let archiveBase64: string
+
+function recordPhases(phases: Record<string, unknown>) {
+  const record = JSON.stringify({ suite: 'release-tag-flow', ...phases })
+  console.log(`Release fixture phases: ${record}`)
+  const output = join(process.env.RUNNER_TEMP ?? '.tmp', 'mytracer-ci-phases')
+  mkdirSync(output, { recursive: true })
+  appendFileSync(join(output, 'release-tag-flow.ndjson'), record + '\n')
+}
+
+// Only immutable ZIP bytes are shared. Every scenario still creates its own context,
+// staging directories and API call log, and invokes the real extraction script.
+beforeAll(async () => {
+  const start = performance.now()
+  const f = await fixture()
+  const root = await mkdtemp(join(tmpdir(), 'mytracer-publish-archive-'))
+  try {
+    const zipScript = join(root, 'zip.ps1'),
+      zip = join(root, 'candidate.zip')
+    await writeFile(
+      zipScript,
+      'param($Source,$Archive)\nCompress-Archive -Path (Join-Path $Source "*") -DestinationPath $Archive'
+    )
+    const compressionStart = performance.now()
+    try {
+      execFileSync(
+        'powershell.exe',
+        [
+          '-NoProfile',
+          '-NonInteractive',
+          '-File',
+          zipScript,
+          '-Source',
+          f.directory,
+          '-Archive',
+          zip
+        ],
+        { windowsHide: true }
+      )
+      archiveBase64 = (await readFile(zip)).toString('base64')
+    } finally {
+      recordPhases({
+        phase: 'shared-archive-compression',
+        durationMs: Math.round(performance.now() - compressionStart)
+      })
+    }
+  } finally {
+    try {
+      await f.cleanup()
+    } finally {
+      await rm(root, { recursive: true, force: true })
+    }
+    recordPhases({
+      phase: 'shared-archive-setup-and-cleanup',
+      durationMs: Math.round(performance.now() - start)
+    })
+  }
+})
 
 function scenario(body: string) {
-  return spawnSync(process.execPath, ['--input-type=module'], {
+  const start = performance.now()
+  const result = spawnSync(process.execPath, ['--input-type=module'], {
     input: `
       import assert from 'node:assert/strict';
       import {createHash} from 'node:crypto';
       import {copyFile,mkdir,mkdtemp,readFile,writeFile,rm} from 'node:fs/promises';
       import {tmpdir} from 'node:os';
       import {join} from 'node:path';
-      import {execFileSync} from 'node:child_process';
       import {fixture} from './tests/support/release-fixture.mjs';
       import {runPublication} from './tools/release/publish.mjs';
       import {validateCandidateSource} from './tools/release/validate-candidate-source.mjs';
+      const phases=[], started=performance.now();
+      const phase=async(name,run)=>{const start=performance.now();let outcome='rejected';try{const result=await run();outcome='returned';return result;}finally{phases.push({phase:name,outcome,durationMs:Math.round(performance.now()-start)});}};
       const cwd=process.cwd(), f=await fixture(), root=await mkdtemp(join(tmpdir(),'mytracer-publish-flow-'));
       const sha=f.manifest.sourceRevision, calls=[], stored=new Map();
       try {
@@ -20,10 +89,7 @@ function scenario(body: string) {
         await copyFile('tools/release/extract-artifact.ps1',join(root,'tools/release/extract-artifact.ps1'));
         await writeFile(join(root,'package.json'),JSON.stringify({version:'0.1.4'}));
         await writeFile(join(root,'package-lock.json'),JSON.stringify({version:'0.1.4',packages:{'':{version:'0.1.4'}}}));
-        const zipScript=join(root,'zip.ps1'),zip=join(root,'candidate.zip');
-        await writeFile(zipScript,'param($Source,$Archive)\\nCompress-Archive -Path (Join-Path $Source "*") -DestinationPath $Archive');
-        execFileSync('powershell.exe',['-NoProfile','-NonInteractive','-File',zipScript,'-Source',f.directory,'-Archive',zip],{windowsHide:true});
-        const archive=await readFile(zip);
+        const archive=Buffer.from(${JSON.stringify(archiveBase64)},'base64');
         f.context.artifact.digest='sha256:'+createHash('sha256').update(archive).digest('hex');
         f.context.artifact.created_at=new Date(Date.now()-60000).toISOString();
         f.context.artifact.expires_at=new Date(Date.now()+86400000).toISOString();
@@ -46,15 +112,29 @@ function scenario(body: string) {
           makeVisible:async()=>{calls.push('visible');return {id:1,draft:false,prerelease:false,tag_name:'v0.1.4'};}
         };
         process.chdir(root);
-        const prepare=()=>runPublication('prepare',env,api,()=>sha);
-        const publish=()=>runPublication('publish',env,api,()=>sha);
+        phases.push({phase:'isolated-scenario-setup',durationMs:Math.round(performance.now()-started)});
+        const prepare=()=>phase('prepare-extract-validate',()=>runPublication('prepare',env,api,()=>sha));
+        const publish=()=>phase('publish-extract-validate',()=>runPublication('publish',env,api,()=>sha));
         ${body}
-      } finally {process.chdir(cwd);await f.cleanup();await rm(root,{recursive:true,force:true});}
+      } finally {
+        try {await phase('isolated-scenario-cleanup',async()=>{process.chdir(cwd);try{await f.cleanup();}finally{await rm(root,{recursive:true,force:true});}});}
+        finally {process.stdout.write('RELEASE_PHASES '+JSON.stringify(phases)+'\\n');}
+      }
     `,
     encoding: 'utf8',
     windowsHide: true,
     timeout: 60000
   })
+  const phaseLine = result.stdout?.split(/\r?\n/).find((line) => line.startsWith('RELEASE_PHASES '))
+  recordPhases({
+    scenario: expect.getState().currentTestName,
+    subprocessExitCode: result.status,
+    subprocessDurationMs: Math.round(performance.now() - start),
+    signal: result.signal,
+    phases: phaseLine ? JSON.parse(phaseLine.slice('RELEASE_PHASES '.length)) : [],
+    phaseReportMissing: !phaseLine
+  })
+  return result
 }
 
 describe('tag publication resolves and pins a real safely extracted bundle', () => {
