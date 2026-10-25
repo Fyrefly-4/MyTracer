@@ -8,7 +8,6 @@ import { OpenAiAssistantProvider } from '../infrastructure/ai/assistant-openai-p
 import { registerAssistantIpc } from './assistant-ipc'
 import { registerAssistantServiceIpc } from './assistant-service-ipc'
 import { ASSISTANT_CHANNELS } from '../contracts/assistant'
-import { reviewReferences } from '../presentation/review-reference'
 import { createOfflineAssistantFixture } from './test-assistant-provider'
 import { RecordBookService } from '../application/record-book-service'
 import { registerRecordBookIpc } from './record-book-ipc'
@@ -792,21 +791,12 @@ app.whenReady().then(async () => {
       store: new FileAssistantSessionStore(join(app.getPath('userData'), 'assistant')),
       provider: assistantProvider,
       readSnapshot,
-      readAdditionalContext: (entry) => {
-        if (entry.object.kind !== 'review' || entry.intent !== 'review' || !mainWindow) return []
+      resolveReviewContext: (contextId) => {
+        if (!mainWindow || mainWindow.isDestroyed()) return null
         try {
-          const context = reviewContexts.get(mainWindow.webContents.id, entry.object.id)
-          const selected = reviewReferences(reviewService.getReviewSummary(context)).find(
-            (reference) => reference.citation === entry.editorText
-          )
-          if (!selected) return []
-          return [{
-            ref: entry.object,
-            revision: fingerprint(JSON.stringify({ context, selected })),
-            label: '复盘选定事实：' + selected.label,
-            fields: { selectedFact: selected.citation }
-          }]
-        } catch { return [] }
+          const context = reviewContexts.get(mainWindow.webContents.id, contextId)
+          return { periodStartedOn: context.periodStartedOn, periodEndedOn: context.periodEndedOn }
+        } catch { return null }
       },
       fingerprint,
       generateId: randomUUID,

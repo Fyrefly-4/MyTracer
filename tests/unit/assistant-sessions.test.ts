@@ -505,7 +505,7 @@ describe('Assistant preview-confirm command boundary', () => {
       throw new Error('simulated command crash')
     })
     const input = { sessionId: session.id, previewId: preview.previewId, operationId: 'op' }
-    expect(() => h.service.confirmWrite(input)).toThrow('simulated command crash')
+    expect(() => h.service.confirmWrite(input)).toThrow('operation-uncertain')
     expect(() => new AssistantSessionService(h.deps).confirmWrite(input)).toThrow(
       'operation-uncertain'
     )
@@ -606,5 +606,151 @@ describe('Assistant UTF-8 storage byte limit', () => {
     expect(readFileSync(file).equals(before)).toBe(true)
     expect(readdirSync(h.directory)).toEqual(['assistant-sessions-v1.json'])
     expect(new FileAssistantSessionStore(h.directory).load().sessions).toHaveLength(4)
+  })
+})
+
+describe('Assistant review draft preview and uncertain candidate identity', () => {
+  it('previews three review fields for a live Main context without permitting a formal write', async () => {
+    const target: AssistantObjectRef = { kind: 'review', id: 'review-context' }
+    const draft = {
+      kind: 'review-draft' as const,
+      confirmedProgress: '归拢了纸张',
+      mainObstacle: '还没分类',
+      nextAdjustment: '先分一小叠'
+    }
+    let active = true
+    const requests: AssistantProviderRequest[] = []
+    const h = setup({
+      complete: async (request) => {
+        requests.push(request)
+        return {
+          ...answer(request.requestId),
+          text: JSON.stringify({
+            text: '这是可编辑的复盘草稿。',
+            sourceRefs: [target],
+            candidates: [{ target, sourceRefs: [target], payload: draft }]
+          })
+        }
+      }
+    })
+    const deps = {
+      ...h.deps,
+      resolveReviewContext: (contextId: string) =>
+        active && contextId === target.id
+          ? { periodStartedOn: '2026-10-01', periodEndedOn: '2026-10-07' }
+          : null
+    }
+    const service = new AssistantSessionService(deps)
+    const editorRevision = JSON.stringify({ draft: 'LOCAL_UNSELECTED_DRAFT_SENTINEL'.repeat(10) })
+    const session = service.createSession({
+      entry: {
+        object: target,
+        intent: 'review',
+        editorText: '已选定参考：归拢纸张。',
+        editorRevision
+      },
+      mode: 'temporary'
+    })
+    const run = await service.sendTurn({
+      sessionId: session.id,
+      expectedRevision: 0,
+      requestId: 'r',
+      text: '形成复盘草稿'
+    })
+    expect(run.state).toBe('completed')
+    expect(JSON.stringify(requests)).not.toContain('LOCAL_UNSELECTED_DRAFT_SENTINEL')
+    const c = run.candidates[0]
+    const input = {
+      sessionId: session.id,
+      candidateId: c.id,
+      payload: c.payload,
+      expectedTargetRevision: c.expectedTargetRevision
+    }
+    const preview = service.previewWrite(input)
+    expect(preview).toMatchObject({ destination: 'editor-draft', editorRevision, payload: draft })
+    expect(preview.changes.map((change) => change.after)).toEqual([
+      draft.confirmedProgress,
+      draft.mainObstacle,
+      draft.nextAdjustment
+    ])
+    expect(preview.sources.some((source) => source.origin === 'editor-draft')).toBe(true)
+    expect(() =>
+      service.confirmWrite({
+        sessionId: session.id,
+        previewId: preview.previewId,
+        operationId: 'op'
+      })
+    ).toThrow('unsupported')
+    expect(h.write).not.toHaveBeenCalled()
+    active = false
+    expect(() => service.previewWrite(input)).toThrow('stale-context')
+    expect(() =>
+      service.createSession({ entry: { object: target, intent: 'review' }, mode: 'temporary' })
+    ).toThrow('not-found')
+  })
+  it('consumes an action candidate when its command mutates then throws, across new IDs and restart', async () => {
+    const h = setup(
+      {
+        complete: async (request) => ({
+          ...answer(request.requestId),
+          text: JSON.stringify({
+            text: '一个可选起点',
+            sourceRefs: [goal],
+            candidates: [
+              {
+                target: goal,
+                sourceRefs: [goal],
+                payload: { kind: 'action-create', title: '整理一角' }
+              }
+            ]
+          })
+        })
+      },
+      true
+    )
+    const createdActions: string[] = []
+    h.write.mockImplementation(() => {
+      createdActions.push('persisted-action')
+      throw new Error('after-commit failure')
+    })
+    const session = h.service.createSession({
+      entry: { object: goal, intent: 'clarify' },
+      mode: 'persistent'
+    })
+    const run = await h.service.sendTurn({
+      sessionId: session.id,
+      expectedRevision: 0,
+      requestId: 'r',
+      text: '给个小起点'
+    })
+    const c = run.candidates[0]
+    const previewInput = {
+      sessionId: session.id,
+      candidateId: c.id,
+      payload: c.payload,
+      expectedTargetRevision: c.expectedTargetRevision
+    }
+    const preview = h.service.previewWrite(previewInput)
+    const confirmInput = {
+      sessionId: session.id,
+      previewId: preview.previewId,
+      operationId: 'first'
+    }
+    expect(() => h.service.confirmWrite(confirmInput)).toThrow('operation-uncertain')
+    expect(h.service.getRun({ sessionId: session.id, requestId: 'r' }).candidates[0].state).toBe(
+      'uncertain'
+    )
+    expect(() => h.service.previewWrite(previewInput)).toThrow('operation-uncertain')
+    expect(() => h.service.confirmWrite({ ...confirmInput, operationId: 'different' })).toThrow(
+      'operation-uncertain'
+    )
+    const restored = new AssistantSessionService(h.deps)
+    expect(() => restored.previewWrite(previewInput)).toThrow('operation-uncertain')
+    expect(() => restored.confirmWrite(confirmInput)).toThrow('operation-uncertain')
+    expect(() => restored.confirmWrite({ ...confirmInput, operationId: 'after-restart' })).toThrow(
+      'stale-context'
+    )
+    expect(createdActions).toEqual(['persisted-action'])
+    expect(h.write).toHaveBeenCalledTimes(1)
   })
 })
