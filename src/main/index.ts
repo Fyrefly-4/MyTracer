@@ -776,7 +776,7 @@ app.whenReady().then(async () => {
     userDataPath: app.getPath('userData'),
     credentialProtection: offlineAssistant?.protection ?? createAssistantCredentialProtection(safeStorage)
   })
-  const assistantProvider = offlineAssistant?.provider ?? new OpenAiAssistantProvider(assistantConfiguration)
+  const assistantProvider = new OpenAiAssistantProvider(assistantConfiguration, offlineAssistant?.fetcher)
   assistantServiceIpc = registerAssistantServiceIpc({
     ipc: guardedIpc,
     configuration: assistantConfiguration,

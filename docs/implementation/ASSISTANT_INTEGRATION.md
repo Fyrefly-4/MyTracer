@@ -1,6 +1,18 @@
 # Assistant 集成接线准备
 
-状态：2026-10-25，A/B/C 并行实现尚未交付，本文不表示功能已完成。集成分支 `codex/assistant-integration` 从 `assistant/exploration` 的 `c4405a85d29cbe074c5814d346b832368e463a7b` 建立；基线 [PR #163](https://github.com/Fyrefly-4/MyTracer/pull/163) 保持未合并，父任务协调检查和独立 review。
+状态：2026-10-25，已在独立 `codex/assistant-integration` 分支接入真实 Main / preload / renderer。阶段基线 [PR #163](https://github.com/Fyrefly-4/MyTracer/pull/163) 已经父任务批准后普通合并，merge SHA `cb3972843608afc97809ee00d0eba64f01312a06`；main 未变。A/B/C 子 PR 尚未由本任务合入阶段分支。
+
+当前整合模块：A `f7152633f5f490dc4a2d7fb19872d08b617eba41`、B `3199b374d2cb17ddb9287bc62918507056036763`、C `bdcc6ac76c4ef2f9ebc91827429cba25db5430e6`。共享 DTO 全部来自 owner 提交。冲突收敛采用 B 的 preview / uncertain-write 实现，撤回集成侧临时 preview 实现；Main 仅通过当前可信 window 的 ReviewContextStore 提供 `resolveReviewContext`，不把临时 contextId 当正式复盘 ID。
+
+## 当前验证与限制
+
+- 全项目 typecheck、全仓 ESLint、应用 build 通过。原环境缺失的 marked 按 lock 的精确版本和 SHA-512 恢复，未改 package/lock；本地 Node 24.19.0，与 CI 锁定 24.18.0 不同。
+- Assistant A/B/C 聚焦单元及现有 review-reference、安装协调/gate 共 80/80 通过。
+- 新 `assistant-journey.e2e.test.ts` 在 Linux Electron + 虚拟显示器通过。使用真实 OpenAI provider adapter、配置 IPC、会话内核、preload 和 SQLite，仅 HTTP fetch 与测试凭据保护是显式合成替身，无真实模型请求。
+- 旅程实际检查三入口，复盘三字段/记录简述填草稿且业务数据不变，正式复盘 confirm 拒绝，范围统计两条/15 分钟，多轮、取消、配置变更取消、重复确认、持久恢复/删除、临时不落盘、活动请求退出 drain。
+- 初次 Electron 失败是测试对目标按钮使用过窄 exact name（按钮还含状态/活动文字），已按真实 accessible name 修正；不改变产品或断言。
+- C 的 temporary review 在 setScope 期间关闭的清理修复由 C owner 继续提交，本 head 尚未包含；集成合并前须纳入并验证。
+- Windows CI、安装完整回归、Mica/C1 视觉和独立集成 review 仍待实际结果。旧 Today 启动帮助暂保留兼容；不把该迁移和正式 review 写入描述为已完成。
 
 ## 接线顺序与 owner 交付
 
@@ -12,7 +24,7 @@
 
 ## 必须一起接入的生命周期
 
-已核对 A [PR #164](https://github.com/Fyrefly-4/MyTracer/pull/164) 的 `e7eb6213d04d3c9d6927df2109dad6819262adf9`（含其 IPC test include 补充），尚未并入本分支。准确装配为 `createAssistantCredentialProtection(safeStorage)` → `AssistantServiceConfigurationStore({userDataPath, credentialProtection})` → `new OpenAiAssistantProvider(configuration)`。必须使用 A 的凭据包装以拒绝 basic_text；不复用旧 AI 配置。
+已纳入 A [PR #164](https://github.com/Fyrefly-4/MyTracer/pull/164) 的上述修复 head（含其 IPC test include 补充）。准确装配为 `createAssistantCredentialProtection(safeStorage)` → `AssistantServiceConfigurationStore({userDataPath, credentialProtection})` → `new OpenAiAssistantProvider(configuration)`。必须使用 A 的凭据包装以拒绝 basic_text；不复用旧 AI 配置。
 
 A 的 renderer API 为 `AssistantServiceApi`：`getStatus/saveConfiguration/deleteCredential/testConnection`，channels 为 `ASSISTANT_SERVICE_CHANNELS`；预定暴露在 `window.myTracer.assistantService`，不改旧 `aiConfiguration` 的语义。Provider port 使用 `complete(request)`，请求携带 messages/tools、AbortSignal、timeoutMs/maxOutputTokens/maxResponseBytes；结果的 toolCalls 仍由 B 校验授权并执行。
 
@@ -41,4 +53,4 @@ A 的 renderer API 为 `AssistantServiceApi`：`getStatus/saveConfiguration/dele
 | 配置与降级 | mock 保存/删除/连接测试；连通与 tools/streaming 能力分开；不配置/取消/失败仍可手工操作 |
 | 退出与安装 | 活动请求取消后 gate drain 能完成，用户未保存内容继续受保护；持久历史不被误删 |
 
-先运行新 IPC/preload/生命周期的针对性 unit/integration，再 typecheck/lint/build 和必要 Windows Electron 三入口旅程。接线前不写虚假的通过测试或临时空实现；本准备批没有完整应用行为可供验收。Windows、视觉/键盘焦点、独立 review 均以实际结果记录。
+先运行新 IPC/preload/生命周期的针对性 unit/integration，再 typecheck/lint/build 和必要 Windows Electron 三入口旅程。不写虚假的通过测试或临时空实现；当前旅程验证范围见上文。Windows、视觉/键盘焦点、独立 review 均以实际结果记录。
