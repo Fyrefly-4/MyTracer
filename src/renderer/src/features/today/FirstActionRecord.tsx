@@ -195,9 +195,13 @@ export function FirstActionRecord(props: {
             uncertainInput: undefined,
             context: { ...draft.context, continuityIssue: 'changed' }
           })
+          setError('本次未保存。关联对象已变化，请核对后继续。')
           return
         }
-        const recovered = firstRecordDraftAfterFailure(draft, result.error.code)
+        const recovered = firstRecordDraftAfterFailure(
+          { ...draft, uncertainInput: request },
+          result.error.code
+        )
         change(recovered)
         setError(
           recovered.uncertainInput

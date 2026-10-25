@@ -117,6 +117,10 @@ test('three recording entrypoints quietly retain inputs across normal window clo
     await expect(action.getByText('这笔已保存。', { exact: true })).toBeVisible()
     await expect(action.getByRole('button', { name: '开始记录' })).toBeVisible()
     await navigate(page, '例行')
+    await page
+      .getByRole('button', { name: /合成续写例行/ })
+      .first()
+      .click()
     routine = page.getByLabel('合成续写例行 例行记录')
     await expect(routine.getByLabel('投入时长（分钟，可选）')).toHaveValue('3')
     await routine.getByRole('button', { name: '保存例行记录', exact: true }).click()
@@ -138,6 +142,11 @@ test('three recording entrypoints quietly retain inputs across normal window clo
     expect(after.value.actionRecords).toHaveLength(2)
     expect(after.value.routineRecords).toHaveLength(1)
     await navigate(page, '例行')
+    await page
+      .getByRole('button', { name: /合成续写例行/ })
+      .first()
+      .click()
+    await expect(page.getByLabel('合成续写例行 例行记录')).toBeVisible()
     await expect(
       page.getByLabel('合成续写例行 例行记录').getByRole('button', { name: '记录例行' })
     ).toHaveCount(0)

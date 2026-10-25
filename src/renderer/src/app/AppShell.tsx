@@ -12,12 +12,19 @@ import { RoutinesPage } from '../features/routines/RoutinesPage'
 import { HomePage } from '../features/home/HomePage'
 import { TodayPage } from '../features/today/TodayPage'
 import { UpdatePanel } from '../features/update/UpdatePanel'
-import { UiSessionContext, UiSession } from './ui-session'
+import { UiSessionContext, type UiSession } from './ui-session'
 import { appSections, type AppSectionId } from './navigation'
 import { NavigationIcon } from './NavigationIcon'
 
-export function AppShell(): ReactNode {
-  const [activeSection, setActiveSection] = useState<AppSectionId>('home')
+export function AppShell({
+  session,
+  activeSection,
+  setActiveSection
+}: {
+  session: UiSession
+  activeSection: AppSectionId
+  setActiveSection(section: AppSectionId): void
+}): ReactNode {
   const mainRef = useRef<HTMLElement | null>(null)
   const [bookMode, setBookMode] = useState<'reading' | 'original' | null>(null)
   const restoreDataContext = useRef<(() => void) | null>(null)
@@ -25,7 +32,6 @@ export function AppShell(): ReactNode {
     restoreDataContext.current?.()
     restoreDataContext.current = null
   }
-  const [session] = useState(() => new UiSession((section) => setActiveSection(section)))
   const [pendingDataNavigation, setPendingDataNavigation] = useState<{ run: () => void } | null>(
     null
   )
@@ -113,16 +119,6 @@ export function AppShell(): ReactNode {
   const [inputsReady, setInputsReady] = useState(false)
   useEffect(() => {
     void session.restoreRecordInputs().then(() => setInputsReady(true))
-    const unsubscribe = window.myTracer.recordDrafts?.subscribeClose((requestId) => {
-      document.body.inert = Boolean(requestId)
-      if (!requestId) return
-      requestAnimationFrame(() => {
-        void session
-          .flushRecordInputs()
-          .then((retained) => window.myTracer.recordDrafts.replyClose({ requestId, retained }))
-      })
-    })
-    return () => unsubscribe?.()
   }, [session])
   const [installPreparing, setInstallPreparing] = useState(true)
   const [restartRequired, setRestartRequired] = useState(false)
