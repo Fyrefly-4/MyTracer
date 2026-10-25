@@ -16,6 +16,8 @@ import type {
   AssistantStoredState
 } from '../../application/assistant/service'
 import { AssistantError } from '../../application/assistant/validation'
+const MAX_STORE_BYTES = 8 * 1024 * 1024
+
 /** Isolated from the business database and product export. Single Main-process owner. */
 export class FileAssistantSessionStore implements AssistantSessionStore {
   private readonly file: string
@@ -25,7 +27,7 @@ export class FileAssistantSessionStore implements AssistantSessionStore {
   load(): AssistantStoredState {
     if (!existsSync(this.file)) return { version: 1, sessions: [], operations: [] }
     try {
-      if (statSync(this.file).size > 8 * 1024 * 1024) throw new Error('size')
+      if (statSync(this.file).size > MAX_STORE_BYTES) throw new Error('size')
       const value = JSON.parse(readFileSync(this.file, 'utf8')) as AssistantStoredState
       if (
         value.version !== 1 ||
@@ -42,7 +44,8 @@ export class FileAssistantSessionStore implements AssistantSessionStore {
   }
   save(state: AssistantStoredState): void {
     const contents = JSON.stringify(state)
-    if (contents.length > 8 * 1024 * 1024) throw new AssistantError('persistence-failed')
+    if (Buffer.byteLength(contents, 'utf8') > MAX_STORE_BYTES)
+      throw new AssistantError('persistence-failed')
     mkdirSync(this.directory, { recursive: true, mode: 0o700 })
     const temporary = this.file + '.tmp'
     let fd: number | undefined
