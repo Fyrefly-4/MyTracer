@@ -1,10 +1,15 @@
 import { useContext, useLayoutEffect, useRef, type ReactNode } from 'react'
 import { AssistantContext } from './assistant-context'
-import type { AssistantEntry, AssistantCandidatePayload } from '../../../../contracts/assistant'
+import type {
+  AssistantEntry,
+  AssistantCandidatePayload,
+  AssistantObjectRef
+} from '../../../../contracts/assistant'
 
 /** No provider means no new entry: integration explicitly enables the common panel. */
 export function AssistantEntryButton(props: {
   readonly entry: AssistantEntry
+  readonly selectedObjects?: readonly AssistantObjectRef[]
   readonly label: string
   readonly children: ReactNode
   readonly disabled?: boolean
@@ -46,6 +51,7 @@ export function AssistantEntryButton(props: {
               ? props.entry
               : { ...props.entry, editorRevision: editorVersion.current.token },
           label: props.label,
+          selectedObjects: props.selectedObjects,
           draft: props.apply
             ? {
                 revision: () => (mounted.current ? editorVersion.current.token : '__unmounted__'),

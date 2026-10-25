@@ -239,7 +239,6 @@ export function createFakeAssistantAdapter(
       return ok({ cancelled: true })
     },
     previewWrite: async ({ sessionId, candidateId, payload, expectedTargetRevision }) => {
-      if (payload.kind === 'review-draft') return failure('unsupported')
       const session = sessions.get(sessionId)
       const candidate = [...runs.values()]
         .flatMap((run) => run.candidates)
@@ -248,6 +247,11 @@ export function createFakeAssistantAdapter(
       if (expectedTargetRevision !== 'synthetic-1') return failure('stale-context')
       const preview = {
         previewId: crypto.randomUUID(),
+        destination:
+          payload.kind === 'review-draft'
+            ? ('editor-draft' as const)
+            : ('application-command' as const),
+        editorRevision: session.entry.editorRevision,
         candidateId,
         sessionId,
         sessionRevision: session.revision,
@@ -271,6 +275,7 @@ export function createFakeAssistantAdapter(
       if (previous) return ok(previous)
       const preview = previews.get(previewId)
       if (!preview || preview.sessionId !== sessionId) return failure('not-found')
+      if (preview.payload.kind === 'review-draft') return failure('unsupported')
       if (sessions.get(sessionId)?.revision !== preview.sessionRevision)
         return failure('stale-context')
       const receipt = {

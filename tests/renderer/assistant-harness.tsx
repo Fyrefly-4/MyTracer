@@ -14,6 +14,11 @@ const controller = new AssistantController(fake.api, fake.status, true)
 function Harness(): ReactNode {
   const [note, setNote] = useState(syntheticAssistantEntries[0].entry.editorText!)
   const [summary, setSummary] = useState('')
+  const [review, setReview] = useState({
+    confirmedProgress: '',
+    mainObstacle: '',
+    nextAdjustment: ''
+  })
   return (
     <AssistantHost
       controller={controller}
@@ -52,10 +57,39 @@ function Harness(): ReactNode {
           帮我整理
         </AssistantEntryButton>
         {syntheticAssistantEntries.slice(1).map((entry) => (
-          <AssistantEntryButton key={entry.entry.object.id} label={entry.label} entry={entry.entry}>
+          <AssistantEntryButton
+            key={entry.entry.object.id}
+            label={entry.label}
+            entry={
+              entry.entry.intent === 'review'
+                ? { ...entry.entry, editorRevision: JSON.stringify(review) }
+                : entry.entry
+            }
+            apply={
+              entry.entry.intent === 'review'
+                ? (payload) => {
+                    if (payload.kind !== 'review-draft') return false
+                    setReview(payload)
+                    return true
+                  }
+                : undefined
+            }
+          >
             {entry.entry.intent === 'resume' ? '接上上次' : '选定内容回顾'}
           </AssistantEntryButton>
         ))}
+        <label>
+          复盘进展草稿
+          <textarea aria-label="复盘进展草稿" value={review.confirmedProgress} readOnly />
+        </label>
+        <label>
+          复盘阻碍草稿
+          <textarea aria-label="复盘阻碍草稿" value={review.mainObstacle} readOnly />
+        </label>
+        <label>
+          复盘调整草稿
+          <textarea aria-label="复盘调整草稿" value={review.nextAdjustment} readOnly />
+        </label>
         <AssistantSettings
           api={fake.serviceApi}
           simulation
