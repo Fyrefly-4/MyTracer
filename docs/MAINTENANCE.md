@@ -44,6 +44,8 @@ Electron E2E 需要可启动 Windows 桌面进程的环境。测试使用唯一�
 
 CI 阶段计时、合成 Electron 失败证据和复验约定见 [CI 诊断维护](maintenance/CI_DIAGNOSTICS.md)。
 
+新 [Focused Electron 工作流](../.github/workflows/electron-focus.yml) 提供固定 Data 阅读／内容草稿测试组的 Windows 手动入口；使用方法和“聚焦通过不等于 CI Gate”的边界见 [CI 诊断维护](maintenance/CI_DIAGNOSTICS.md#bounded-windows-focused-entrypoint-next-batch-after-158)。
+
 ## 聚焦 UX 检查与环境边界
 
 在已安装锁定依赖、可启动桌面进程的 Windows 环境，复用现有测试即可做小范围冒烟检查，无需新建启动脚本。例如：
