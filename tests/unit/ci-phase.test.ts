@@ -3,6 +3,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, test } from 'vitest'
+import { focusReportFixture } from '../support/focus-report-fixture'
 
 const runner = join(process.cwd(), 'tools/ci/run-phase.mjs')
 test.each([
@@ -37,9 +38,10 @@ test.each([
           scripts: { lint: `node -e "process.exit(${exitCode})"`, 'test:e2e:run': 'node probe.cjs' }
         })
       )
+      writeFileSync(join(root, 'fixture.json'), JSON.stringify(focusReportFixture()))
       writeFileSync(
         join(root, 'probe.cjs'),
-        `require('node:fs').writeFileSync('arguments.json', JSON.stringify(process.argv.slice(2))); ${emitReport ? "require('node:fs').writeFileSync(process.env.PLAYWRIGHT_JSON_OUTPUT_FILE, JSON.stringify({errors:[], stats:{expected:3, unexpected:0, skipped:0, flaky:0}}));" : ''} process.exit(${exitCode})`
+        `require('node:fs').writeFileSync('arguments.json', JSON.stringify(process.argv.slice(2))); if (process.argv.includes('--list') || ${emitReport}) require('node:fs').writeFileSync(process.env.PLAYWRIGHT_JSON_OUTPUT_FILE, require('node:fs').readFileSync('fixture.json')); process.exit(process.argv.includes('--list') ? 0 : ${exitCode})`
       )
       if (phase === 'focus' && !emitReport) {
         mkdirSync(join(root, 'mytracer-ci-phases'))

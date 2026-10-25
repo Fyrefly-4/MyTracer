@@ -24,6 +24,8 @@ on:
       - tools/ci/focus-plan.mjs
       - tools/ci/run-phase.mjs
       - tests/unit/ci-focus.test.ts
+      - tests/unit/ci-phase.test.ts
+      - tests/support/focus-report-fixture.ts
 
 permissions:
   contents: read

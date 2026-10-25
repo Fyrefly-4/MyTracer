@@ -1,7 +1,7 @@
 import { spawnSync, execFileSync } from 'node:child_process'
 import { appendFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { focusPlan, validateFocusReport } from './focus-plan.mjs'
+import { focusManifest, focusPlan, validateFocusReport } from './focus-plan.mjs'
 
 const phase = process.argv[2]
 const selection =
@@ -33,26 +33,54 @@ mkdirSync(output, { recursive: true })
 const event = process.env.GITHUB_EVENT_PATH
   ? JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8'))
   : {}
-if (selection) rmSync(join(output, 'focus-repeat.json'), { force: true })
+if (selection) {
+  for (const name of ['focus-repeat.json', 'focus-discovery.json'])
+    rmSync(join(output, name), { force: true })
+}
 const startedAt = new Date().toISOString()
 const start = performance.now()
-const result = spawnSync(process.platform === 'win32' ? 'npm.cmd' : 'npm', commands[phase], {
+const spawnOptions = {
   stdio: 'inherit',
   shell: process.platform === 'win32',
   env: ['scroll', 'focus'].includes(phase)
     ? { ...process.env, PLAYWRIGHT_JSON_OUTPUT_FILE: join(output, `${phase}-repeat.json`) }
     : process.env
-})
-const durationMs = Math.round(performance.now() - start)
+}
+const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm'
+let result
+let discovery
+let focusStage = selection ? 'collection' : null
 let focusReportError = null
-if (selection && result.status === 0) {
+if (selection) {
+  result = spawnSync(npm, [...commands[phase], '--list', '--reporter=json'], {
+    ...spawnOptions,
+    env: { ...process.env, PLAYWRIGHT_JSON_OUTPUT_FILE: join(output, 'focus-discovery.json') }
+  })
+  if (result.status === 0) {
+    try {
+      discovery = JSON.parse(readFileSync(join(output, 'focus-discovery.json'), 'utf8'))
+      focusManifest(discovery, selection)
+    } catch {
+      focusReportError =
+        'Focused collection missing/invalid or selected suites/repetitions incomplete'
+    }
+  }
+}
+if (!selection || (result.status === 0 && !focusReportError)) {
+  if (selection) focusStage = 'execution'
+  result = spawnSync(npm, commands[phase], spawnOptions)
+}
+const durationMs = Math.round(performance.now() - start)
+if (selection && result.status === 0 && !focusReportError) {
   try {
     validateFocusReport(
       JSON.parse(readFileSync(join(output, 'focus-repeat.json'), 'utf8')),
-      selection.repeat
+      selection,
+      discovery
     )
   } catch {
-    focusReportError = 'Focused report missing/invalid, or tests were skipped, failed or incomplete'
+    focusReportError =
+      'Focused report missing/invalid or does not cover every collected test/repetition successfully'
   }
 }
 const record = {
@@ -63,6 +91,7 @@ const record = {
         selection,
         scope: 'focused-only; not the CI Gate',
         childExitCode: result.status,
+        focusStage,
         focusReportError
       }
     : {}),

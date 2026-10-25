@@ -1,7 +1,10 @@
-import { readFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { expect, test } from 'vitest'
+import { focusReportFixture } from '../support/focus-report-fixture'
 
 const { focusPlan, validateFocusReport } = await import(
   pathToFileURL(join(process.cwd(), 'tools/ci/focus-plan.mjs')).href
@@ -14,13 +17,15 @@ test.each(['1', '3'])('selects exact synthetic regressions with %s independent r
     arguments: [
       'tests/e2e/data-reading-workspace.e2e.test.ts',
       '--grep=history',
-      `--repeat-each=${repeat}`
+      `--repeat-each=${repeat}`,
+      '--forbid-only'
     ]
   })
   expect(focusPlan('content-drafts', repeat).arguments).toEqual([
     'tests/e2e/goal-content-draft.e2e.test.ts',
     'tests/e2e/routine-content-draft.e2e.test.ts',
-    `--repeat-each=${repeat}`
+    `--repeat-each=${repeat}`,
+    '--forbid-only'
   ])
 })
 
@@ -67,29 +72,85 @@ test('focused entrypoint stays separate from required verification and preserves
   expect(gate).not.toContain('FOCUS_PROFILE')
 })
 
-test('accepts fully executed serial repetitions', () => {
-  expect(() =>
-    validateFocusReport(
-      { errors: [], stats: { expected: 33, unexpected: 0, skipped: 0, flaky: 0 } },
-      3
-    )
-  ).not.toThrow()
+const selection = focusPlan('content-drafts', '3')
+test('accepts exact collected identities and all repetitions', () => {
+  const report = focusReportFixture()
+  expect(() => validateFocusReport(report, selection, structuredClone(report))).not.toThrow()
 })
 test.each([
-  { expected: 0, unexpected: 0, skipped: 0, flaky: 0 },
-  { expected: 0, unexpected: 0, skipped: 33, flaky: 0 },
-  { expected: 32, unexpected: 1, skipped: 0, flaky: 0 },
-  { expected: 33, unexpected: 0, skipped: 1, flaky: 0 },
-  { expected: 33, unexpected: 0, skipped: 0, flaky: 1 },
-  { expected: 1, unexpected: 0, skipped: 0, flaky: 0 }
-])('rejects empty, skipped, failed, flaky or partial repetitions: %j', (stats) => {
-  expect(() => validateFocusReport({ errors: [], stats }, 3)).toThrow('successful executed tests')
+  'suite',
+  'scenario',
+  'repeat',
+  'duplicate',
+  'identity',
+  'only',
+  'skip',
+  'result',
+  'retry',
+  'errors'
+])('rejects incomplete or invalid evidence: %s', (fault) => {
+  const discovery = focusReportFixture()
+  const report = structuredClone(discovery)
+  if (fault === 'suite') report.suites.pop()
+  if (fault === 'scenario') report.suites[0].specs.splice(0, 3)
+  if (fault === 'repeat') report.suites[0].specs.shift()
+  if (fault === 'duplicate') report.suites[0].specs[0] = structuredClone(report.suites[0].specs[1])
+  if (fault === 'identity') report.suites[0].specs[0].id = 'different-test'
+  if (fault === 'only') report.config.forbidOnly = false
+  if (fault === 'skip') report.suites[0].specs[0].tests[0].expectedStatus = 'skipped'
+  if (fault === 'result') report.suites[0].specs[0].tests[0].results = []
+  if (fault === 'retry') report.suites[0].specs[0].tests[0].results[0].retry = 1
+  if (fault === 'errors') report.errors.push({ message: 'runner error' })
+  // Even self-consistent reduced aggregate totals must not pass.
+  report.stats.expected = report.suites.reduce((sum, suite) => sum + suite.specs.length, 0)
+  expect(() => validateFocusReport(report, selection, discovery)).toThrow()
 })
-test('rejects runner errors even with otherwise passing stats', () => {
-  expect(() =>
-    validateFocusReport(
-      { errors: [{}], stats: { expected: 3, unexpected: 0, skipped: 0, flaky: 0 } },
-      3
+test('rejects a missing selected suite in discovery too', () => {
+  const discovery = focusReportFixture()
+  discovery.suites.pop()
+  expect(() => validateFocusReport(discovery, selection, discovery)).toThrow()
+})
+
+test('Playwright rejects test.only during focused discovery before any execution', () => {
+  const root = mkdtempSync(join(tmpdir(), 'mytracer-focus-only-'))
+  try {
+    writeFileSync(join(root, 'package.json'), JSON.stringify({ type: 'module' }))
+    const api = pathToFileURL(join(process.cwd(), 'node_modules/@playwright/test/index.mjs')).href
+    writeFileSync(
+      join(root, 'playwright.config.mjs'),
+      "export default { testDir: '.', testMatch: '*.spec.mjs', workers: 1, retries: 0 }"
     )
-  ).toThrow()
+    writeFileSync(
+      join(root, 'exclusive.spec.mjs'),
+      `import {test} from ${JSON.stringify(api)}; test.only('exclusive', () => {throw new Error('must not execute')}); test('omitted', () => {});`
+    )
+    const result = spawnSync(
+      process.execPath,
+      [
+        join(process.cwd(), 'node_modules/@playwright/test/cli.js'),
+        'test',
+        '--config=playwright.config.mjs',
+        '--list',
+        '--forbid-only',
+        '--reporter=json'
+      ],
+      {
+        cwd: root,
+        encoding: 'utf8',
+        timeout: 5000,
+        env: { ...process.env, PLAYWRIGHT_JSON_OUTPUT_FILE: join(root, 'discovery.json') }
+      }
+    )
+    expect(result.status).toBe(1)
+    const report = JSON.parse(readFileSync(join(root, 'discovery.json'), 'utf8'))
+    expect(
+      report.errors.some(
+        (error: { message: string }) =>
+          error.message.includes("'.only'") && error.message.includes('--forbid-only')
+      )
+    ).toBe(true)
+    expect(report.stats.expected).toBe(0)
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
 })

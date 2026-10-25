@@ -194,11 +194,18 @@ The selector rejects arbitrary files, grep expressions, shell flags, worker coun
 retry settings. Workers remain one, retries zero, and every selected repetition must
 pass. A child exit zero is insufficient: the selector requires a fresh Playwright report
 with executed passing tests, no skips/failures/flaky outcomes, and complete repetition
-counts. A stale report is removed before launch. The workflow does not change test timeouts or assertions. Reuse only isolated
+counts. Before execution, the same selection is collected with `--list --forbid-only`.
+Every selected file must be represented, and the fresh discovery manifest must contain
+unique identities for each scenario/repetition. Execution must exactly match those IDs,
+file/title/location identities and every successful result (one attempt, no retries).
+Both collection and execution forbid `.only`; totals divisible by the repeat count are
+not sufficient. This discovers current scenarios instead of hard-coding today's count.
+A stale discovery or execution report is removed before launch. The focus phase duration
+includes collection plus execution; `focusStage` identifies which child supplied its exit code. The workflow does not change test timeouts or assertions. Reuse only isolated
 synthetic fixtures and the existing sandbox-preserving Electron launch code. Profiles
 are intentionally limited to tests already using actual-context diagnostics.
 
-`electron-focus-phases-*` contains the phase identity/timing JSON and `focus-repeat.json`;
+`electron-focus-phases-*` contains the phase identity/timing JSON, `focus-discovery.json` and `focus-repeat.json`;
 `electron-focus-evidence-*` contains the diagnostic negative control and any failed
 profile captures. Retention is seven days. Both upload on failure; cancellation or missing
 output is not success. The summary explicitly says focused-only, not CI Gate. This job
