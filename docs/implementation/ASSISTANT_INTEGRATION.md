@@ -17,6 +17,12 @@
 - Linux 合成截图已检查目标/复盘/记录入口、820 原生最小窗口和 420 renderer 压力尺寸（后者低于产品窗口最小值），位于 `.tmp/assistant-visual/`。它们来自上述 Playwright 默认 sandbox 设置，仅为布局证据；双栏保留、面板可见且窄屏无横向溢出。来源详情默认展开仍偏长，候选常需纵向滚动，这是待改善的体验问题。Linux 不证明 Windows Mica/C1。
 - Windows CI、安装完整回归、Mica/C1 视觉和独立集成 review 仍待实际结果。旧 Today 启动帮助暂保留兼容；不把该迁移和正式 review 写入描述为已完成。
 
+## Windows 回归修复
+
+Windows Verification `40169653945` / job `121097892822`（head `8e3ad720`，test merge `b27cc8c63f1d4c0900f9810c00f4df775fcfbee0`）中，显式 sandbox 的 Assistant 三入口旅程通过（3.1s）；整体 129 pass / 5 skip / 3 fail，不能视作最终验收通过。
+
+三个具体回归分别修复：复盘 Assistant 入口并入标题行，恢复引用正文阅读高度；shell 精确 API 清单新增两个已批准 API，并检查各方法及冻结边界；隐藏设置区移到主内容之后并补齐奶白 content-inner，保留主内容首位 DOM 契约。原有高度 >60 和精确颜色断言不变。修复后的 Windows E2E 结果待新 head 验证，不重跑旧无变更任务，不运行禁用 sandbox 的 Electron。
+
 ## 接线顺序与 owner 交付
 
 1. 接收 B 的 `src/contracts/assistant.ts` 和 A 的服务契约/provider port 的准确 commit/export；不在集成侧复制 DTO。接收父任务确认后的模块提交，记录各 head 和集成 SHA。

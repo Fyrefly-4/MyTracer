@@ -346,20 +346,6 @@ export function AppShell(): ReactNode {
               </div>
             </nav>
 
-            <section
-              className="content"
-              hidden={!assistantSettingsOpen || installPreparing || restartRequired}
-              aria-label="Assistant 服务设置"
-            >
-              <AssistantSettings
-                api={window.myTracer.assistantService}
-                onDirtyChange={(dirty) => assistantController.setInputDirty('settings', dirty)}
-                onChanged={(value) => assistantController.updateService(value)}
-              />
-              <button type="button" onClick={() => setAssistantSettingsOpen(false)}>
-                关闭服务设置
-              </button>
-            </section>
             <main
               hidden={assistantSettingsOpen && !installPreparing && !restartRequired}
               className={`content content-${bookMode === 'reading' ? 'book' : bookMode === 'original' ? 'data' : activeSection}`}
@@ -477,6 +463,22 @@ export function AppShell(): ReactNode {
                 )}
               </div>
             </main>
+            <section
+              className="content"
+              hidden={!assistantSettingsOpen || installPreparing || restartRequired}
+              aria-label="Assistant 服务设置"
+            >
+              <div className="content-inner">
+                <AssistantSettings
+                  api={window.myTracer.assistantService}
+                  onDirtyChange={(dirty) => assistantController.setInputDirty('settings', dirty)}
+                  onChanged={(value) => assistantController.updateService(value)}
+                />
+                <button type="button" onClick={() => setAssistantSettingsOpen(false)}>
+                  关闭服务设置
+                </button>
+              </div>
+            </section>
           </div>
         </div>
       </UiSessionContext>
