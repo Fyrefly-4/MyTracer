@@ -559,3 +559,52 @@ describe('Assistant preview-confirm command boundary', () => {
     })
   })
 })
+
+describe('Assistant UTF-8 storage byte limit', () => {
+  it('reloads a multibyte state at the byte limit and preserves it when a larger write is rejected', () => {
+    const h = setup(undefined, true)
+    const original = h.create()
+    const sessions = Array.from({ length: 4 }, (_, index) => ({
+      ...original,
+      id: `boundary-${index}`,
+      messages: Array.from({ length: 100 }, (_, messageIndex) => ({
+        id: `message-${messageIndex}`,
+        role: 'user' as const,
+        text: '中',
+        sourceRefs: [],
+        createdAt: original.createdAt
+      }))
+    }))
+    const state: AssistantStoredState = { version: 1, sessions, operations: [] }
+    const limit = 8 * 1024 * 1024
+    let remaining = limit - Buffer.byteLength(JSON.stringify(state), 'utf8')
+    for (const session of sessions) {
+      for (const message of session.messages) {
+        const extraCharacters = Math.min(7999, Math.floor(remaining / 3))
+        message.text += '中'.repeat(extraCharacters)
+        remaining -= extraCharacters * 3
+      }
+    }
+    sessions[3].messages[99].text += 'x'.repeat(remaining)
+    expect(Buffer.byteLength(JSON.stringify(state), 'utf8')).toBe(limit)
+    expect(
+      sessions.every((session) => session.messages.every((message) => message.text.length <= 8000))
+    ).toBe(true)
+
+    h.deps.store.save(state)
+    const restored = new AssistantSessionService(h.deps)
+    expect(restored.listSessions()).toHaveLength(4)
+    expect(restored.getSession({ sessionId: sessions[0].id })).toEqual(sessions[0])
+    const file = join(h.directory, 'assistant-sessions-v1.json')
+    const before = readFileSync(file)
+    expect(before.byteLength).toBe(limit)
+
+    sessions[3].messages[99].text += '中'
+    expect(JSON.stringify(state).length).toBeLessThan(limit)
+    expect(Buffer.byteLength(JSON.stringify(state), 'utf8')).toBe(limit + 3)
+    expect(() => h.deps.store.save(state)).toThrow('persistence-failed')
+    expect(readFileSync(file).equals(before)).toBe(true)
+    expect(readdirSync(h.directory)).toEqual(['assistant-sessions-v1.json'])
+    expect(new FileAssistantSessionStore(h.directory).load().sessions).toHaveLength(4)
+  })
+})
