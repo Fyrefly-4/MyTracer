@@ -1,3 +1,4 @@
+import { AssistantEntryButton } from '../assistant/AssistantContext'
 import { RecordSummaryInput, RecordNoteInput, RecordNote } from '../../app/RecordText'
 import { chooseVisibleSelection } from '../../app/selection-preferences'
 import {
@@ -253,6 +254,28 @@ function ActionRecordEditor(props: {
             </Field>
             <RecordSummaryInput value={summary} onChange={setSummary} />
             <RecordNoteInput label="行动备注" value={note} onChange={setNote} />
+            <AssistantEntryButton
+              label={`${props.objectName} · 当前未保存笔记`}
+              entry={{
+                object: { kind: 'action-record', id: props.record.id },
+                intent: 'organize',
+                editorText: note,
+                editorRevision: JSON.stringify([props.record.updatedAt, summary, note])
+              }}
+              apply={(payload) => {
+                if (payload.kind === 'record-summary') {
+                  setSummary(payload.text)
+                  return true
+                }
+                if (payload.kind === 'note-append') {
+                  setNote((current) => `${current}${current ? '\n\n' : ''}${payload.text}`)
+                  return true
+                }
+                return false
+              }}
+            >
+              帮我整理
+            </AssistantEntryButton>
             <Field label="记录中的下一步（可选）" hint="仅写入这条记录，不替换目标的当前下一步。">
               <textarea
                 aria-label="行动下一步"
@@ -493,6 +516,28 @@ function RoutineRecordEditor(props: {
             </Field>
             <RecordSummaryInput value={summary} onChange={setSummary} />
             <RecordNoteInput label="例行备注" value={note} onChange={setNote} />
+            <AssistantEntryButton
+              label={`${props.objectName} · 当前未保存笔记`}
+              entry={{
+                object: { kind: 'routine-record', id: props.record.id },
+                intent: 'organize',
+                editorText: note,
+                editorRevision: JSON.stringify([props.record.updatedAt, summary, note])
+              }}
+              apply={(payload) => {
+                if (payload.kind === 'record-summary') {
+                  setSummary(payload.text)
+                  return true
+                }
+                if (payload.kind === 'note-append') {
+                  setNote((current) => `${current}${current ? '\n\n' : ''}${payload.text}`)
+                  return true
+                }
+                return false
+              }}
+            >
+              帮我整理
+            </AssistantEntryButton>
             {dateChanged ? (
               <label className="inline-check">
                 <input

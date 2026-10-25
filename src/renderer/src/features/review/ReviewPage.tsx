@@ -1,3 +1,4 @@
+import { AssistantEntryButton } from '../assistant/AssistantContext'
 import { ProgressActionNotes } from '../progress/ProgressActionNotes'
 import { RecordNote } from '../../app/RecordText'
 import { recordDuration } from '../../app/ui-text'
@@ -685,6 +686,33 @@ export function ReviewPage(): ReactNode {
                 {selectedReference ? (
                   <>
                     <div className="review-reference-controls">
+                      <AssistantEntryButton
+                        label={`${selectedReference.label} · 选定内容回顾`}
+                        disabled={
+                          busy || !contextId || periodConflict || selectedState !== 'current'
+                        }
+                        entry={{
+                          object: { kind: 'review', id: contextId ?? '' },
+                          intent: 'review',
+                          editorText: selectedReference.citation,
+                          editorRevision: JSON.stringify([
+                            contextId,
+                            currentDraft,
+                            selectedState,
+                            selectedReference.citation
+                          ])
+                        }}
+                        apply={(payload) => {
+                          if (payload.kind !== 'review-draft' || selectedState !== 'current')
+                            return false
+                          setConfirmedProgress(payload.confirmedProgress)
+                          setMainObstacle(payload.mainObstacle)
+                          setNextAdjustment(payload.nextAdjustment)
+                          return true
+                        }}
+                      >
+                        选定内容回顾
+                      </AssistantEntryButton>
                       <label>
                         引用到
                         <select

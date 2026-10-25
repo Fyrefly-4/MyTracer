@@ -1,0 +1,56 @@
+import { expect, test } from '@playwright/test'
+const path = '/tests/renderer/assistant-harness.html'
+test('overlay preserves underlying draft and restores focus; candidates need separate confirmation', async ({
+  page
+}) => {
+  await page.goto(path)
+  await page.getByLabel('原笔记').fill('合成笔记：书桌整理了一半，其他日期没有记录。')
+  const trigger = page.getByRole('button', { name: '帮我整理', exact: true })
+  await trigger.click()
+  const dialog = page.getByRole('dialog')
+  await expect(dialog).toBeVisible()
+  await dialog.getByLabel('继续聊聊').fill('整理一句简述')
+  await dialog.getByRole('button', { name: '发送', exact: true }).click()
+  await expect(dialog.getByText('整理完成；候选尚未写入正式记录。', { exact: true })).toBeVisible()
+  await page.screenshot({ path: '.tmp/assistant-browser-results/desktop.png' })
+  await dialog.getByRole('button', { name: '仅填入编辑草稿' }).click()
+  await expect(dialog.getByRole('status')).toContainText('未保存草稿')
+  await dialog.getByRole('button', { name: '关闭', exact: true }).click()
+  await expect(trigger).toBeFocused()
+  await expect(page.getByLabel('原笔记')).toHaveValue(
+    '合成笔记：书桌整理了一半，其他日期没有记录。'
+  )
+  expect(await page.getByLabel('简述草稿').inputValue()).toContain('整理了书桌左侧')
+  await page.getByRole('button', { name: '接上上次', exact: true }).click()
+  await dialog.getByLabel('继续聊聊').fill('时间少一点呢？')
+  await dialog.getByRole('button', { name: '发送', exact: true }).click()
+  await dialog.getByRole('button', { name: '预览：创建行动（不设为下一步）', exact: true }).click()
+  await expect(dialog.getByRole('region', { name: '正式写入预览' })).toBeVisible()
+  await dialog.getByRole('button', { name: '确认：创建行动（不设为下一步）', exact: true }).click()
+  await expect(dialog.getByRole('status')).toContainText('已确认保存')
+  await dialog.getByRole('button', { name: '关闭', exact: true }).click()
+  await page.getByRole('button', { name: '接上上次', exact: true }).click()
+  await expect(dialog.getByRole('status')).toContainText('没有重新发送请求')
+  await expect(dialog.getByLabel('对话').getByText('时间少一点呢？', { exact: true })).toBeVisible()
+})
+test('narrow overlay and settings disclose simulation and unknown capabilities', async ({
+  page
+}) => {
+  await page.setViewportSize({ width: 420, height: 800 })
+  await page.goto(path)
+  await page.getByRole('button', { name: '测试已保存连接' }).click()
+  await expect(page.getByRole('status')).toContainText('流式：未知；工具：未知')
+  await page.getByRole('button', { name: '选定内容回顾', exact: true }).click()
+  const dialog = page.getByRole('dialog')
+  await dialog.getByLabel('继续聊聊').fill('回顾选定事实')
+  await dialog.getByRole('button', { name: '发送', exact: true }).click()
+  await expect(dialog.getByLabel('确认的进展')).toHaveValue('整理了一次书桌。')
+  const box = await dialog.boundingBox()
+  expect(box!.x).toBeGreaterThanOrEqual(0)
+  expect(box!.x + box!.width).toBeLessThanOrEqual(420)
+  expect(box!.y).toBeGreaterThanOrEqual(0)
+  expect(box!.y + box!.height).toBeLessThanOrEqual(800)
+  await page.screenshot({ path: '.tmp/assistant-browser-results/narrow.png', fullPage: false })
+  await page.keyboard.press('Escape')
+  await expect(dialog).not.toBeVisible()
+})
