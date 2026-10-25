@@ -138,6 +138,7 @@ export class AssistantController {
       busy: true,
       notice: ''
     })
+    let unadoptedTemporaryId: string | null = null
     try {
       if (previousSession?.mode === 'temporary')
         unwrap(await this.api.deleteSession({ sessionId: previousSession.id }))
@@ -156,10 +157,8 @@ export class AssistantController {
           ? this.api.getSession({ sessionId: previous.id })
           : this.api.createSession({ entry: launch.entry, mode }))
       )
-      if (token !== this.epoch) {
-        if (session.mode === 'temporary') await this.api.deleteSession({ sessionId: session.id })
-        return
-      }
+      if (!previous && session.mode === 'temporary') unadoptedTemporaryId = session.id
+      if (token !== this.epoch) return
       if (!previous && launch.selectedObjects?.length) {
         session = unwrap(
           await this.api.setScope({
@@ -170,6 +169,8 @@ export class AssistantController {
         )
         if (token !== this.epoch) return
       }
+      // The visible controller now owns cleanup; until this point only this open call does.
+      unadoptedTemporaryId = null
       this.patch({
         session,
         sessions,
@@ -183,6 +184,9 @@ export class AssistantController {
     } catch (error) {
       if (token === this.epoch) this.fail(error)
     } finally {
+      if (unadoptedTemporaryId) {
+        await this.api.deleteSession({ sessionId: unadoptedTemporaryId }).catch(() => undefined)
+      }
       if (token === this.epoch) this.patch({ busy: false })
     }
   }

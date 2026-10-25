@@ -311,3 +311,58 @@ it('reloads authoritative committed and sibling-stale candidates after confirmat
     'stale'
   ])
 })
+
+it.each(['close', 'replace'] as const)(
+  'cleans only its unadopted temporary session after delayed scope and %s',
+  async (action) => {
+    const { controller, api } = setup()
+    let release: (() => void) | undefined
+    const gate = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    const originalScope = api.setScope
+    const scope = vi.spyOn(api, 'setScope').mockImplementationOnce(async (input) => {
+      await gate
+      return originalScope(input)
+    })
+    const deleted = vi.spyOn(api, 'deleteSession')
+    const opening = controller.open(
+      { ...syntheticAssistantEntries[2], selectedObjects: [launch.entry.object] },
+      'temporary'
+    )
+    await vi.waitFor(() => expect(scope).toHaveBeenCalledTimes(1), { interval: 1 })
+    const abandonedId = scope.mock.calls[0][0].sessionId
+    expect(controller.getSnapshot().session).toBeNull()
+    controller.close()
+    let replacementId: string | undefined
+    if (action === 'replace') {
+      await controller.open(syntheticAssistantEntries[1], 'temporary')
+      replacementId = controller.getSnapshot().session!.id
+    }
+    release!()
+    await opening
+    expect(deleted).toHaveBeenCalledExactlyOnceWith({ sessionId: abandonedId })
+    expect((await api.getSession({ sessionId: abandonedId })).ok).toBe(false)
+    if (replacementId) {
+      expect(controller.getSnapshot().session!.id).toBe(replacementId)
+      expect((await api.getSession({ sessionId: replacementId })).ok).toBe(true)
+    } else expect(controller.getSnapshot().visible).toBe(false)
+  }
+)
+
+it('cleans a newly created temporary session when its initial scope fails', async () => {
+  const { controller, api } = setup()
+  const scope = vi
+    .spyOn(api, 'setScope')
+    .mockResolvedValueOnce({ ok: false, error: { code: 'out-of-scope' } })
+  const deleted = vi.spyOn(api, 'deleteSession')
+  await controller.open(
+    { ...syntheticAssistantEntries[2], selectedObjects: [launch.entry.object] },
+    'temporary'
+  )
+  const failedId = scope.mock.calls[0][0].sessionId
+  expect(deleted).toHaveBeenCalledExactlyOnceWith({ sessionId: failedId })
+  expect((await api.getSession({ sessionId: failedId })).ok).toBe(false)
+  expect(controller.getSnapshot().session).toBeNull()
+  expect(controller.getSnapshot().busy).toBe(false)
+})
