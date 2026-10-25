@@ -1,3 +1,4 @@
+import { startElectronDiagnostics } from '../support/electron-diagnostics'
 import { join } from 'node:path'
 import type { DataControlListDto } from '../../src/contracts/data-control'
 import { expect, test, type ElectronApplication, type Page } from '@playwright/test'
@@ -37,34 +38,49 @@ async function fixture(
 ): Promise<void> {
   const root = await createTemporaryTestRoot()
   let app: ElectronApplication | undefined
+  let finishDiagnostics: ((failure?: unknown) => Promise<void>) | undefined
   try {
-    app = await electron.launch({
-      chromiumSandbox: true,
-      cwd: root.root,
-      args: [join(process.cwd(), 'out/main/index.js'), `--user-data-dir=${root.electronUserData}`],
-      env: minimalElectronEnvironment(root)
-    })
-    const page = await app.firstWindow()
-    const ids = await page.evaluate(async () => {
-      const ids: string[] = []
-      for (let i = 1; i <= 8; i++) {
-        const result = await window.myTracer.goals.create({
-          name: `内容目标${i}`,
-          description: '原说明',
-          initialNextAction: { title: `下一步${i}` }
-        })
-        if (!result.ok) throw new Error('Fixture failed')
-        ids.push(result.value.id)
-      }
-      return ids
-    })
+    app = await test.step('Launch isolated Electron with sandbox', () =>
+      electron.launch({
+        chromiumSandbox: true,
+        cwd: root.root,
+        args: [
+          join(process.cwd(), 'out/main/index.js'),
+          `--user-data-dir=${root.electronUserData}`
+        ],
+        env: minimalElectronEnvironment(root)
+      }))
+    finishDiagnostics = await startElectronDiagnostics(app, test.info())
+    const page = await test.step('Wait for first application window', () => app!.firstWindow())
+    const ids = await test.step('Seed eight isolated synthetic goals', () =>
+      page.evaluate(async () => {
+        const ids: string[] = []
+        for (let i = 1; i <= 8; i++) {
+          const result = await window.myTracer.goals.create({
+            name: `内容目标${i}`,
+            description: '原说明',
+            initialNextAction: { title: `下一步${i}` }
+          })
+          if (!result.ok) throw new Error('Fixture failed')
+          ids.push(result.value.id)
+        }
+        return ids
+      }))
     await nav(page, '目标')
     await select(page, '内容目标1')
     await openEditor(page)
-    await run(page, app, ids)
+    await test.step('Exercise synthetic draft continuity and race assertions', () =>
+      run(page, app!, ids))
+  } catch (error) {
+    await finishDiagnostics?.(error)
+    throw error
   } finally {
     try {
-      await app?.close()
+      try {
+        await finishDiagnostics?.()
+      } finally {
+        await app?.close()
+      }
     } finally {
       await removeTemporaryTestRoot(root)
     }

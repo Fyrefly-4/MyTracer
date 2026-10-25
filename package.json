@@ -18,6 +18,7 @@
     "typecheck": "tsc --build --pretty false",
     "test:unit": "vitest run --project unit",
     "test:integration": "vitest run --project integration",
+    "test:diagnostics": "node tools/ci/check-diagnostics.mjs",
     "test:e2e:run": "playwright test",
     "test:e2e": "npm run build && npm run test:e2e:run",
     "test:package-smoke": "set \"MYTRACER_PACKAGE_SMOKE=1\" && playwright test tests/e2e/windows-package-smoke.e2e.test.ts",

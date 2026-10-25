@@ -61,6 +61,7 @@ jobs:
           }
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Enable npm download cache
+        id: npm-cache
         if: steps.changes.outputs.category != 'documentation'
         uses: actions/setup-node@v6.4.0
         with:
@@ -68,7 +69,9 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         if: steps.changes.outputs.category == 'source'
-        run: npm.cmd ci
+        env:
+          CI_CACHE_HIT: ${{ steps.npm-cache.outputs.cache-hit }}
+        run: node tools/ci/run-phase.mjs install
       - name: Install locked tooling dependencies without lifecycle scripts
         if: steps.changes.outputs.category == 'release-tooling'
         run: npm.cmd ci --ignore-scripts
@@ -77,12 +80,44 @@ jobs:
         run: npm.cmd run verify:release-tooling
       - name: Install pinned Electron binary
         if: steps.changes.outputs.category == 'source'
-        run: npm.cmd exec -- install-electron --no
-      - name: Verify application
+        run: node tools/ci/run-phase.mjs electron
+      - name: Verify format
         if: steps.changes.outputs.category == 'source'
-        run: npm.cmd run verify
+        run: node tools/ci/run-phase.mjs format
+      - name: Verify lint
+        if: steps.changes.outputs.category == 'source'
+        run: node tools/ci/run-phase.mjs lint
+      - name: Verify types
+        if: steps.changes.outputs.category == 'source'
+        run: node tools/ci/run-phase.mjs types
+      - name: Verify unit tests
+        if: steps.changes.outputs.category == 'source'
+        run: node tools/ci/run-phase.mjs unit
+      - name: Verify integration tests
+        if: steps.changes.outputs.category == 'source'
+        run: node tools/ci/run-phase.mjs integration
+      - name: Verify application build
+        if: steps.changes.outputs.category == 'source'
+        run: node tools/ci/run-phase.mjs build
+      - name: Prove Electron failure diagnostics
+        if: steps.changes.outputs.category == 'source'
+        run: node tools/ci/run-phase.mjs diagnostics
+      - name: Repeat Data scroll restoration three times
+        if: steps.changes.outputs.category == 'source'
+        run: node tools/ci/run-phase.mjs scroll
+      - name: Verify Electron E2E
+        if: steps.changes.outputs.category == 'source'
+        run: node tools/ci/run-phase.mjs e2e
+      - name: Upload phase measurements
+        if: always() && steps.changes.outputs.category == 'source'
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: ci-phases-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/mytracer-ci-phases/
+          if-no-files-found: warn
+          retention-days: 7
       - name: Upload failure diagnostics
-        if: failure()
+        if: always() && steps.changes.outputs.category == 'source'
         uses: actions/upload-artifact@v4.6.2
         with:
           name: ci-failures-${{ github.run_id }}-${{ github.run_attempt }}

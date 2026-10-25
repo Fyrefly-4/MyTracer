@@ -42,6 +42,8 @@ Electron E2E 需要可启动 Windows 桌面进程的环境。测试使用唯一�
 
 [Release](../.github/workflows/release.yml) 的版本协调和发布任务仍使用 Ubuntu，Windows 构建任务负责验证、打包与安装 smoke。无需为了统一平台迁移纯协调任务。测试实验分支应选择 Verification，不能用 Release recovery 代替验证；仓库可见性与额度决定也不自动授权合并或发布。托管检查不等于人工视觉、辅助技术或本机体验验收。
 
+CI 阶段计时、合成 Electron 失败证据和复验约定见 [CI 诊断维护](maintenance/CI_DIAGNOSTICS.md)。
+
 ## 聚焦 UX 检查与环境边界
 
 在已安装锁定依赖、可启动桌面进程的 Windows 环境，复用现有测试即可做小范围冒烟检查，无需新建启动脚本。例如：
