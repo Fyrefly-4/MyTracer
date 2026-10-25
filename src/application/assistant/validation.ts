@@ -78,7 +78,7 @@ export function entry(value: unknown): AssistantEntry {
     intent: v.intent as AssistantEntry['intent'],
     ...(v.editorText === undefined
       ? {}
-      : { editorText: text(v.editorText, 12000), editorRevision: text(v.editorRevision, 128) })
+      : { editorText: text(v.editorText, 12000), editorRevision: text(v.editorRevision, 32000) })
   }
 }
 export function payload(value: unknown): AssistantCandidatePayload {

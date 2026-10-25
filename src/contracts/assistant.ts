@@ -98,7 +98,7 @@ export interface AssistantCandidate {
   readonly target: AssistantObjectRef
   readonly expectedTargetRevision: string
   readonly payload: AssistantCandidatePayload
-  readonly state: 'proposed' | 'stale' | 'committing' | 'committed'
+  readonly state: 'proposed' | 'stale' | 'committing' | 'committed' | 'uncertain'
 }
 export interface AssistantBudget {
   readonly maxToolCalls: number
@@ -118,6 +118,9 @@ export interface AssistantRun {
   readonly error?: { readonly code: AssistantErrorCode }
 }
 export interface AssistantWritePreview {
+  /** Local editor token only; never permission to save a review. */
+  readonly editorRevision?: string
+  readonly destination?: 'editor-draft' | 'application-command'
   readonly previewId: string
   readonly candidateId: string
   readonly sessionRevision: number

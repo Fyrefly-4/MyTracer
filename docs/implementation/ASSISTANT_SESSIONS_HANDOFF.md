@@ -10,7 +10,7 @@
 - findRecords / readGoal / getStatistics 为真实只读执行。统计只覆盖返回的有界来源，含 omittedCount；未知时长单列，不把缺记录计为 not_done。
 - 单回合最多 3 次工具调用、30 秒、24,000 工具/模型输出字符、4 个候选；最多取 8 个初始保存来源和 1 个当前草稿，每来源 2,000 字符。最近最多 6 条历史，省略数可见；作用域改变后保留本地旧消息，但不再发送旧范围历史。最多 100 个会话、每会话 100 消息、1,000 条确认日志，超限明确拒绝，不静默清理。
 - 候选引用必须存在于实际 manifest；scope、来源版本、目标版本、候选类型都重新验证。确认只接收 Main 保存的 previewId 和 operationId。预览修改使旧预览失效；成功回执可跨重启去重。
-- summary / note-append 复用 DataControlService，action-create 复用 ActionService 且不设为下一步。复盘三个字段已分型，可填入草稿；正式 review-draft 确认返回 unsupported，必须继续使用既有 review context/complete 路径。
+- summary / note-append 复用 DataControlService，action-create 复用 ActionService 且不设为下一步。复盘三个字段已分型，可填入草稿；review-draft 的只读 previewWrite 可用于填入编辑草稿，正式 confirmWrite 返回 unsupported，保存必须继续使用既有 review context/complete 路径。
 
 ## 集成 owner 的精确接线
 
@@ -78,3 +78,30 @@ B 使用 A 的 `complete` 端口，tools 为结构化 function definitions，too
 Provider 无工具输出时步骤保持空数组，不伪造查询历史。仅回传普通文本/不遵守最终 JSON 协议会返回 invalid-response 并保留用户输入。当前没有自动改换服务或工具失败后的隐式重新请求。
 
 本地验证采用 A `6d21253` 的端口文件作为未提交编译依赖；TypeScript 全项目检查通过，B 文件 ESLint 通过，聚焦合成单元测试通过。安装环境最初缺 marked；锁文件中的 npmmirror 下载返回 403。临时 `/tmp` 安装仅把 tarball URL 换至 npm 官方源，保留锁定版本与 integrity，未修改仓库 package/lock。环境 Node 24.19.0 / npm 11.9.0 与声明 24.18.0 / 11.16.0 不同；未运行 Windows Electron、全量 CI 或真实模型。
+
+
+## Review 修复后的增量接线（#166）
+
+`previewWrite` 输入形状不变。返回新增可选 `destination: 'editor-draft' | 'application-command'` 与 `editorRevision`；review-draft 返回三个独立 changes 和完整 typed payload。来源、目标版本、sessionRevision 均先校验。未读取当前编辑器三字段时 before 明确提示“当前编辑器草稿未读取”，不把空白冒充当前草稿；C 保持编辑器原文对照，并在实际填入前再次比较 `preview.editorRevision === draft.revision()`。正式 `confirmWrite` 对 review-draft 返回 unsupported，不写 intent、不执行 writer。
+
+复盘入口使用 Main 的 reviewContextId，未保存上下文不在业务 snapshot 中。集成方须增加以下依赖；不配置则对此类 ID fail-closed，已保存的 review 仍按 snapshot 校验：
+
+```ts
+resolveReviewContext: contextId => {
+  if (!mainWindow || mainWindow.isDestroyed()) return null
+  try {
+    // 必须使用 Main 当前可信 sender，不接收 renderer 提供的 senderId。
+    const context = reviewContexts.get(mainWindow.webContents.id, contextId)
+    return {
+      periodStartedOn: context.periodStartedOn,
+      periodEndedOn: context.periodEndedOn
+    }
+  } catch {
+    return null
+  }
+}
+```
+
+该回调只提供上下文身份与周期，不读取整个周期记录；参考仍限显式 scope 与用户传入的 editorText。上下文 cancel/consume 后旧预览拒绝为 stale-context。编辑器版本令牌支持至 32,000 字符（兼容当前 C JSON token），进入 provider 的 sourceRevision 只用其指纹，不能把 token 中未选定草稿泄漏给模型。
+
+候选状态新增 `uncertain`。正式执行前持久 intent 现在包含 candidateId；同一候选在命令抛错后，即使新建 previewId/operationId，也返回 operation-uncertain。重启后的旧候选亦按日志拒绝重新预览。C 对该状态应显示“结果不确定，请核对目标”，不能显示“尚未保存”或提供自动重试；已经成功的相同 operationId 仍返回原回执。新增测试模拟 action-create 已改变业务集合后抛错，并验证新预览、新 operationId 与重启不重放。UTF-8 存储上限统一按字节，另有 8 MiB 多字节边界恢复与超限保留原文件测试。当前聚焦测试共 20 项。

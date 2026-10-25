@@ -25,6 +25,7 @@ export interface AssistantStoredState {
     sessionId: string
     previewId: string
     operationId: string
+    candidateId?: string
     receipt?: D.AssistantWriteReceipt
   }[]
 }
@@ -35,6 +36,10 @@ export interface AssistantSessionStore {
 export interface AssistantDependencies {
   store: AssistantSessionStore
   provider: AssistantProviderPort
+  /** Main resolves only live review contexts owned by the current authorized sender. */
+  resolveReviewContext?(
+    contextId: string
+  ): { readonly periodStartedOn: string; readonly periodEndedOn: string } | null
   readSnapshot(): CorePersistenceSnapshot
   fingerprint(value: string): string
   generateId(): string
@@ -128,6 +133,7 @@ export class AssistantSessionService {
       id(operation.sessionId)
       id(operation.previewId)
       id(operation.operationId)
+      if (operation.candidateId !== undefined) id(operation.candidateId)
       check(!operationIds.has(operation.operationId), 'persistence-failed')
       operationIds.add(operation.operationId)
       if (operation.receipt) {
@@ -176,13 +182,39 @@ export class AssistantSessionService {
     check(r, 'not-found')
     return r
   }
-  private all(): ContextObject[] {
-    return project(this.deps.readSnapshot(), this.deps.fingerprint)
+  private all(extra?: D.AssistantObjectRef): ContextObject[] {
+    const all = project(this.deps.readSnapshot(), this.deps.fingerprint)
+    const refs = [
+      extra,
+      ...[...this.sessions.values()].flatMap((r) => [
+        r.session.scope.current,
+        ...r.session.scope.selectedObjects
+      ])
+    ]
+    for (const target of refs) {
+      if (!target || target.kind !== 'review' || all.some((o) => refKey(o.ref) === refKey(target)))
+        continue
+      const context = this.deps.resolveReviewContext?.(target.id)
+      if (!context) continue
+      const fields = {
+        reviewContext: target.id,
+        periodStartedOn: context.periodStartedOn,
+        periodEndedOn: context.periodEndedOn
+      }
+      all.push({
+        ref: target,
+        origin: 'editor-draft',
+        revision: this.deps.fingerprint(JSON.stringify(fields)),
+        label: '当前未保存复盘上下文',
+        fields
+      })
+    }
+    return all
   }
   private assertSources(sources: readonly D.AssistantSource[]): void {
     const all = this.all()
     for (const s of sources)
-      if (s.origin === 'saved')
+      if (!(s.origin === 'editor-draft' && s.fields.length === 1 && s.fields[0] === 'editorText'))
         check(
           all.some((o) => refKey(o.ref) === refKey(s.ref) && o.revision === s.sourceRevision),
           'stale-context'
@@ -207,7 +239,7 @@ export class AssistantSessionService {
         ...run,
         candidates: run.candidates.map((c) => ({
           ...c,
-          state: c.state === 'committed' ? 'committed' : 'stale'
+          state: c.state === 'committed' || c.state === 'uncertain' ? c.state : 'stale'
         }))
       })
   }
@@ -218,7 +250,7 @@ export class AssistantSessionService {
     check(this.sessions.size < 100, 'budget-exceeded')
     const e = entry(v.entry)
     const s: D.AssistantScope = { current: e.object, selectedObjects: [] }
-    resolveScope(s, this.all())
+    resolveScope(s, this.all(s.current))
     const now = this.deps.now()
     const session: D.AssistantSession = {
       id: this.deps.generateId(),
@@ -284,7 +316,7 @@ export class AssistantSessionService {
     check(revision(v.expectedRevision) === r.session.revision, 'stale-context')
     const s = scope(v.scope)
     check(refKey(s.current) === refKey(r.session.entry.object))
-    resolveScope(s, this.all())
+    resolveScope(s, this.all(s.current))
     this.invalidate(r)
     r.session = {
       ...r.session,
@@ -327,7 +359,7 @@ export class AssistantSessionService {
     if (r.session.entry.editorText !== undefined)
       sources.unshift({
         ref: r.session.entry.object,
-        sourceRevision: r.session.entry.editorRevision!,
+        sourceRevision: this.deps.fingerprint(r.session.entry.editorRevision!),
         label: '当前未保存草稿',
         excerpt: r.session.entry.editorText.slice(0, 2000),
         fields: ['editorText'],
@@ -494,7 +526,8 @@ export class AssistantSessionService {
           check(
             targetObject &&
               run.manifest.sources.some(
-                (s) => s.origin === 'saved' && refKey(s.ref) === refKey(target)
+                (s) =>
+                  refKey(s.ref) === refKey(target) && s.sourceRevision === targetObject.revision
               ),
             'out-of-scope'
           )
@@ -584,11 +617,29 @@ export class AssistantSessionService {
       'invalid-response'
     )
   }
+  private assertCandidateAvailable(r: Runtime, candidateId: string): void {
+    const prior = this.operations.find(
+      (o) => o.sessionId === r.session.id && o.candidateId === candidateId
+    )
+    if (prior) throw new AssistantError(prior.receipt ? 'stale-context' : 'operation-uncertain')
+  }
+  private setCandidateState(
+    r: Runtime,
+    candidateId: string,
+    state: D.AssistantCandidate['state']
+  ): void {
+    for (const [key, run] of r.runs)
+      r.runs.set(key, {
+        ...run,
+        candidates: run.candidates.map((c) => (c.id === candidateId ? { ...c, state } : c))
+      })
+  }
   previewWrite(value: unknown): D.AssistantWritePreview {
     const v = object(value)
     keys(v, ['sessionId', 'candidateId', 'payload', 'expectedTargetRevision'])
     const r = this.get(v.sessionId)
     check(!r.active, 'busy')
+    this.assertCandidateAvailable(r, id(v.candidateId))
     const candidate = [...r.runs.values()]
       .flatMap((run) => run.candidates)
       .find((c) => c.id === id(v.candidateId))
@@ -597,8 +648,8 @@ export class AssistantSessionService {
     const p = payload(v.payload)
     check(p.kind === candidate.payload.kind)
     this.assertTarget(candidate.target, p)
-    // Review draft remains editable, but cannot bypass the established review-context command.
-    check(p.kind !== 'review-draft', 'unsupported')
+    const sources = r.candidateSources.get(candidate.id)!
+    this.assertSources(sources)
     const current = resolveScope(r.session.scope, this.all()).find(
       (o) => refKey(o.ref) === refKey(candidate.target)
     )
@@ -608,8 +659,7 @@ export class AssistantSessionService {
         current.revision === candidate.expectedTargetRevision,
       'stale-context'
     )
-    const sources = r.candidateSources.get(candidate.id)!
-    this.assertSources(sources)
+
     const before =
       p.kind === 'record-summary'
         ? String(current.fields.summary ?? '')
@@ -623,25 +673,43 @@ export class AssistantSessionService {
           ? [before, p.text].filter(Boolean).join('\n\n')
           : JSON.stringify(p)
     const preview: D.AssistantWritePreview = {
+      ...(r.session.entry.editorRevision === undefined
+        ? {}
+        : { editorRevision: r.session.entry.editorRevision }),
+      destination: p.kind === 'review-draft' ? 'editor-draft' : 'application-command',
       previewId: this.deps.generateId(),
       candidateId: candidate.id,
       sessionRevision: r.session.revision,
       sources: clone(sources),
       targetRevision: current.revision,
       payload: p,
-      changes: [
-        {
-          target: candidate.target,
-          label:
-            p.kind === 'record-summary'
-              ? '更新简述'
-              : p.kind === 'note-append'
-                ? '追加到笔记'
-                : '创建行动（不设为下一步）',
-          before,
-          after
-        }
-      ]
+      changes:
+        p.kind === 'review-draft'
+          ? (['confirmedProgress', 'mainObstacle', 'nextAdjustment'] as const).map((field) => ({
+              target: candidate.target,
+              label: (
+                {
+                  confirmedProgress: '填入复盘草稿：一个真实进展',
+                  mainObstacle: '填入复盘草稿：一个主要阻力',
+                  nextAdjustment: '填入复盘草稿：一个小调整'
+                } as const
+              )[field],
+              before: String(current.fields[field] ?? '当前编辑器草稿未读取；填入前请在编辑器对照'),
+              after: p[field]
+            }))
+          : [
+              {
+                target: candidate.target,
+                label:
+                  p.kind === 'record-summary'
+                    ? '更新简述'
+                    : p.kind === 'note-append'
+                      ? '追加到笔记'
+                      : '创建行动（不设为下一步）',
+                before,
+                after
+              }
+            ]
     }
     // Editing a candidate replaces all earlier previews of that candidate.
     for (const [key, p] of r.previews) if (p.candidateId === candidate.id) r.previews.delete(key)
@@ -663,6 +731,7 @@ export class AssistantSessionService {
     check(!r.active, 'busy')
     const p = r.previews.get(previewId)
     check(p, 'stale-context')
+    this.assertCandidateAvailable(r, p.candidateId)
     check(p.sessionRevision === r.session.revision, 'stale-context')
     this.assertSources(p.sources)
     const target = p.changes[0].target
@@ -670,18 +739,28 @@ export class AssistantSessionService {
       (o) => refKey(o.ref) === refKey(target)
     )
     check(current?.revision === p.targetRevision, 'stale-context')
+    check(p.payload.kind !== 'review-draft', 'unsupported')
     check(!this.operations.some((o) => o.previewId === previewId), 'stale-context')
     check(this.operations.length < 1000, 'budget-exceeded')
     const operation: {
       sessionId: string
       previewId: string
       operationId: string
+      candidateId: string
       receipt?: D.AssistantWriteReceipt
-    } = { sessionId: r.session.id, previewId, operationId }
+    } = { sessionId: r.session.id, previewId, operationId, candidateId: p.candidateId }
     this.operations.push(operation)
-    // Persist intent BEFORE the command. A crash window is uncertain, never blindly retried.
-    if (r.session.mode === 'persistent') this.persist()
-    const savedTarget = this.deps.write(target, p.payload)
+    this.setCandidateState(r, p.candidateId, 'committing')
+    // Consume candidate identity durably BEFORE crossing the command boundary. A new preview
+    // or operation ID cannot retry an uncertain mutation, even when the target is unchanged.
+    let savedTarget: D.AssistantObjectRef
+    try {
+      if (r.session.mode === 'persistent') this.persist()
+      savedTarget = this.deps.write(target, p.payload)
+    } catch {
+      this.setCandidateState(r, p.candidateId, 'uncertain')
+      throw new AssistantError('operation-uncertain')
+    }
     const receipt: D.AssistantWriteReceipt = {
       operationId,
       previewId,
@@ -697,7 +776,11 @@ export class AssistantSessionService {
         candidates: run.candidates.map((c) => ({
           ...c,
           state:
-            c.id === p.candidateId ? 'committed' : c.state === 'committed' ? 'committed' : 'stale'
+            c.id === p.candidateId
+              ? 'committed'
+              : c.state === 'committed' || c.state === 'uncertain'
+                ? c.state
+                : 'stale'
         }))
       })
     if (r.session.mode === 'persistent') this.persist()

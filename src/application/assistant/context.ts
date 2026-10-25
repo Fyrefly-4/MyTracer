@@ -9,6 +9,7 @@ import type { CorePersistenceSnapshot } from '../ports/persistence'
 import { check, refKey } from './validation'
 
 export interface ContextObject {
+  origin?: AssistantSource['origin']
   ref: AssistantObjectRef
   revision: string
   label: string
@@ -153,7 +154,7 @@ export function source(o: ContextObject): AssistantSource {
     label: o.label,
     excerpt: excerpt.slice(0, 2000),
     fields: Object.keys(o.fields),
-    origin: 'saved',
+    origin: o.origin ?? 'saved',
     truncated: excerpt.length > 2000
   }
 }
