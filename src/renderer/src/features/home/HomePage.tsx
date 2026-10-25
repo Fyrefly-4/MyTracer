@@ -232,7 +232,9 @@ export function HomePage(): ReactNode {
                   </button>
                   {snapshot.data?.totalGoalCount === 0 ? (
                     <>
-                      <p>也可以不建目标。在“今天”新建一个行动，之后记录做过的一点。</p>
+                      <p>
+                        也可以不建目标。去“今天”，用“记一笔”留下做过的一点；已有行动就继续记在原行动下，还没开始则用“新建行动”。
+                      </p>
                       <button type="button" onClick={() => session.openSection('today')}>
                         去今天
                       </button>
