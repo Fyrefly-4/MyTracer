@@ -51,7 +51,8 @@ export interface RecordRoutineInputDto {
 
 export interface GetRoutineDayStateInputDto {
   readonly routineId: string
-  readonly localDate: string
+  /** Omitted for the current local day, resolved by the application clock. */
+  readonly localDate?: string
 }
 
 export interface RoutineDayStateDto {

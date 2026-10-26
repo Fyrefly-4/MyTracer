@@ -67,6 +67,36 @@ function setup(status: RoutinePersistenceRecord['status'] = 'active') {
 }
 
 describe('RoutineRecord application', () => {
+  it('defaults day-state reads to the application date without moving saved facts', () => {
+    const { service, clock, records } = setup()
+    service.recordRoutine({
+      routineId: 'routine-1',
+      capturedOn: '2026-08-10',
+      outcome: 'acted',
+      durationMinutes: 0
+    })
+    expect(service.getRoutineDayState('routine-1')).toMatchObject({
+      localDate: '2026-08-10',
+      recordState: 'acted',
+      record: { durationMinutes: 0 }
+    })
+    clock.setState({
+      instant: '2026-08-11T00:01:00.000Z',
+      localDate: '2026-08-11',
+      timeZone: 'Asia/Shanghai'
+    })
+    expect(service.getRoutineDayState('routine-1')).toMatchObject({
+      localDate: '2026-08-11',
+      recordState: 'unknown',
+      record: null
+    })
+    expect(service.getRoutineDayState('routine-1', '2026-08-10')).toMatchObject({
+      localDate: '2026-08-10',
+      recordState: 'acted'
+    })
+    expect(records.size).toBe(1)
+  })
+
   it('creates once with a plannedForDate snapshot and exposes all explicit states', () => {
     for (const outcome of ['target_met', 'acted', 'intentional_rest', 'not_done'] as const) {
       const context = setup()

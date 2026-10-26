@@ -1,3 +1,4 @@
+import { useRoutineDayState } from './use-routine-day-state'
 import { RecordContinuityNotice, UnavailableRecordInputs } from '../../app/RecordContinuityNotice'
 import { hasRecordInput } from '../../../../contracts/record-drafts'
 import { RecordSummaryInput, RecordNoteInput } from '../../app/RecordText'
@@ -157,7 +158,7 @@ export function RoutineRecordingPanel(props: {
     restoredDraft?.context ?? null
   )
   const contextRef = useRef<BeginRoutineRecordingDto | null>(restoredDraft?.context ?? null)
-  const [dayState, setDayState] = useState<RoutineDayStateDto | null>(props.initialState ?? null)
+  const dayRead = useRoutineDayState(props.routineId, context?.capturedOn, props.initialState)
   const [outcome, setOutcome] = useState<RoutineRecordOutcomeDto>(restoredDraft?.outcome ?? 'acted')
   const [durationMinutes, setDurationMinutes] = useState(restoredDraft?.durationMinutes ?? '')
   const [summary, setSummary] = useState(restoredDraft?.summary ?? '')
@@ -235,39 +236,50 @@ export function RoutineRecordingPanel(props: {
         })
       return
     }
-    setBusy(false)
     if (!result.ok) {
+      setBusy(false)
       setError(routineRecordErrorText[result.error.code])
       return
     }
-    setSavedMessage('')
-    contextRef.current = result.value
-    setContext(result.value)
-    session.setRoutineDraft(props.routineId, {
-      context: result.value,
-      outcome,
-      durationMinutes,
-      summary,
-      note
-    })
-    setInvalidContext(false)
-    const stateResult = await window.myTracer.routines.getDayState({
-      routineId: props.routineId,
-      localDate: result.value.capturedOn
-    })
-    if (!activeRef.current) return
-    if (stateResult.ok) {
-      setDayState(stateResult.value)
-      if (stateResult.value.record) {
+    // Resolve the captured day's fact before exposing editable inputs. A late
+    // read must never clear text typed into a newly opened recording form.
+    try {
+      const stateResult = await window.myTracer.routines.getDayState({
+        routineId: props.routineId,
+        localDate: result.value.capturedOn
+      })
+      if (!activeRef.current || !stateResult.ok || stateResult.value.record) {
         await window.myTracer.routines.cancelRecording({
           recordingContextId: result.value.recordingContextId
         })
-        contextRef.current = null
-        setContext(null)
-        session.clearRoutineDraft(props.routineId)
+        if (!activeRef.current) return
+        dayRead.refresh()
+        setError(stateResult.ok ? null : routineRecordErrorText[stateResult.error.code])
+        if (stateResult.ok && stateResult.value.record) await props.onSaved?.()
+        return
       }
+      setSavedMessage('')
+      contextRef.current = result.value
+      setContext(result.value)
+      session.setRoutineDraft(props.routineId, {
+        context: result.value,
+        outcome,
+        durationMinutes,
+        summary,
+        note
+      })
+      setInvalidContext(false)
+      setError(null)
+    } catch {
+      if (activeRef.current) setError('记录状态暂时无法读取，请重试。')
+      await window.myTracer.routines
+        .cancelRecording({
+          recordingContextId: result.value.recordingContextId
+        })
+        .catch(() => undefined)
+    } finally {
+      if (activeRef.current) setBusy(false)
     }
-    setError(null)
   }
 
   const cancel = async (): Promise<void> => {
@@ -392,18 +404,12 @@ export function RoutineRecordingPanel(props: {
       `已保存：${routineRecordOutcomeText[result.value.record.outcome]} · ${result.value.record.occurredOn}`
     )
     requestAnimationFrame(() => revealStart(panelRef.current))
-    setDayState({
-      routineId: props.routineId,
-      localDate: result.value.record.occurredOn,
-      plannedByCurrentSchedule: result.value.record.plannedForDate,
-      recordState: result.value.record.outcome,
-      record: result.value.record
-    })
+    dayRead.refresh()
     setError(null)
     await props.onSaved?.()
   }
 
-  const displayedDayState = props.initialState ?? dayState
+  const displayedDayState = dayRead.data
   const state = displayedDayState?.recordState ?? 'unknown'
   if (operation.consumed && context) {
     setContext(null)
@@ -421,7 +427,13 @@ export function RoutineRecordingPanel(props: {
     >
       <div className="routine-record-state">
         <span>{props.routineName} · 记录</span>
-        <strong>{routineRecordOutcomeText[state]}</strong>
+        <strong>
+          {dayRead.status === 'loading'
+            ? '正在读取记录…'
+            : dayRead.status === 'error'
+              ? '记录状态暂时无法读取'
+              : routineRecordOutcomeText[state]}
+        </strong>
         {displayedDayState?.record ? (
           <small>
             {displayedDayState.record.occurredOn} ·{' '}
@@ -430,11 +442,19 @@ export function RoutineRecordingPanel(props: {
               ? ''
               : ` · ${displayedDayState.record.durationMinutes} 分钟`}
           </small>
-        ) : (
+        ) : dayRead.status === 'ready' ? (
           <small>未记录表示情况未知，不等于未进行。</small>
-        )}
+        ) : null}
       </div>
-      {!context && state === 'unknown' ? (
+      {dayRead.status === 'error' ? (
+        <p role="alert">
+          无法确认这一天是否已有记录。
+          <button type="button" onClick={dayRead.refresh}>
+            重试读取记录
+          </button>
+        </p>
+      ) : null}
+      {!context && dayRead.status === 'ready' && state === 'unknown' ? (
         <button
           ref={beginRef}
           className="primary-button"
@@ -469,7 +489,7 @@ export function RoutineRecordingPanel(props: {
                   routineId: props.routineId,
                   localDate: result.occurredOn
                 })
-                if (current.ok) setDayState(current.value)
+                if (current.ok) dayRead.refresh()
                 else setError('这笔已保存，但对象已不可用。请重新打开例行查看。')
                 await props.onSaved?.()
               } catch {
