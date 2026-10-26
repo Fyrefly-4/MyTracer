@@ -687,7 +687,8 @@ export function ReviewPage(): ReactNode {
                   <h2>事实参考</h2>
                   {selectedReference ? (
                     <AssistantEntryButton
-                      label={`${selectedReference.label} · 选定内容回顾`}
+                      label={`${selectedReference.label} · AI 回顾选定内容`}
+                      originalDraft={`进展：${confirmedProgress}\n阻碍：${mainObstacle}\n调整：${nextAdjustment}`}
                       selectedObjects={reviewAssistantSources(selectedReference.key, summary)}
                       disabled={busy || !contextId || periodConflict || selectedState !== 'current'}
                       entry={{
@@ -711,7 +712,7 @@ export function ReviewPage(): ReactNode {
                         return true
                       }}
                     >
-                      选定内容回顾
+                      AI 回顾选定内容
                     </AssistantEntryButton>
                   ) : null}
                 </div>

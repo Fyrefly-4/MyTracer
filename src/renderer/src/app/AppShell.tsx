@@ -42,33 +42,35 @@ export function AppShell(): ReactNode {
         if (active && result.ok) assistantController.updateService(result.value)
       })
       .catch(() => undefined)
-    // Source lists stay local; only explicit selections are sent through setScope.
-    const refresh = async () => {
-      const records = await window.myTracer.dataControl.list()
-      if (active && records.ok)
-        setAssistantChoices([
-          ...records.value.actionRecords.map((r) => ({
+    return () => {
+      active = false
+      assistantController.close()
+    }
+  }, [assistantController])
+  // Only an explicit reference-picker action loads local choices; chat itself reads no library.
+  const refreshAssistantChoices = async (): Promise<void> => {
+    const [records, goals] = await Promise.all([
+      window.myTracer.dataControl.list(),
+      window.myTracer.goals.list({})
+    ])
+    setAssistantChoices([
+      ...(goals.ok
+        ? goals.value.map((g) => ({ ref: { kind: 'goal' as const, id: g.id }, label: g.name }))
+        : []),
+      ...(records.ok
+        ? records.value.actionRecords.map((r) => ({
             ref: { kind: 'action-record' as const, id: r.id },
             label: `${r.occurredOn} · ${r.summary ?? '行动记录'}`
-          })),
-          ...records.value.routineRecords.map((r) => ({
+          }))
+        : []),
+      ...(records.ok
+        ? records.value.routineRecords.map((r) => ({
             ref: { kind: 'routine-record' as const, id: r.id },
             label: `${r.occurredOn} · ${r.summary ?? '例行记录'}`
           }))
-        ])
-    }
-    let wasVisible = false
-    const unsubscribe = assistantController.subscribe(() => {
-      const visible = assistantController.getSnapshot().visible
-      if (visible && !wasVisible) void refresh().catch(() => undefined)
-      wasVisible = visible
-    })
-    return () => {
-      active = false
-      unsubscribe()
-      void assistantController.close()
-    }
-  }, [assistantController])
+        : [])
+    ])
+  }
   const [activeSection, setActiveSection] = useState<AppSectionId>('home')
   const mainRef = useRef<HTMLElement | null>(null)
   const [bookMode, setBookMode] = useState<'reading' | 'original' | null>(null)
@@ -236,6 +238,7 @@ export function AppShell(): ReactNode {
     <AssistantHost
       controller={assistantController}
       scopeChoices={assistantChoices}
+      onRequestSources={() => void refreshAssistantChoices().catch(() => undefined)}
       onSource={(ref) => {
         guardedNavigation(() => {
           void assistantController.close()
@@ -302,6 +305,19 @@ export function AppShell(): ReactNode {
                   {section.label}
                 </button>
               ))}
+              <button
+                type="button"
+                className="nav-item"
+                onClick={() =>
+                  void assistantController.open({
+                    entry: { object: { kind: 'conversation', id: 'free-chat' }, intent: 'chat' },
+                    label: '自由对话 · 可随时添加参考',
+                    presentation: 'conversation'
+                  })
+                }
+              >
+                AI 助手
+              </button>
               <div className="sidebar-note">
                 <button
                   type="button"

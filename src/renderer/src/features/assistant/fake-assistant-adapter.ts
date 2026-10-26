@@ -61,15 +61,6 @@ export function createFakeAssistantAdapter(
   const runs = new Map<string, AssistantRun>()
   const previews = new Map<string, AssistantWritePreview & { sessionId: string }>()
   const cancelled = new Set<string>()
-  const receipts = new Map<
-    string,
-    {
-      operationId: string
-      previewId: string
-      target: AssistantEntry['object']
-      status: 'committed'
-    }
-  >()
   const writes: string[] = []
   let status: AssistantServiceStatus = {
     endpoint: 'https://synthetic.invalid/v1',
@@ -89,6 +80,7 @@ export function createFakeAssistantAdapter(
       )
         return failure('validation')
       if (
+        entry.object.kind !== 'conversation' &&
         !syntheticAssistantEntries.some(
           (item) =>
             item.entry.object.id === entry.object.id && item.entry.object.kind === entry.object.kind
@@ -129,6 +121,7 @@ export function createFakeAssistantAdapter(
       if (
         [scope.current, ...scope.selectedObjects].some(
           (ref) =>
+            ref.kind !== 'conversation' &&
             !syntheticAssistantEntries.some(
               (item) => item.entry.object.id === ref.id && item.entry.object.kind === ref.kind
             )
@@ -171,7 +164,7 @@ export function createFakeAssistantAdapter(
       const candidate: AssistantCandidate = {
         id: crypto.randomUUID(),
         requestId,
-        sourceRefs: [source.ref],
+        sourceRefs: session.entry.intent === 'chat' ? [] : [source.ref],
         target: source.ref,
         expectedTargetRevision: source.sourceRevision,
         state: 'proposed',
@@ -196,8 +189,11 @@ export function createFakeAssistantAdapter(
         {
           id: crypto.randomUUID(),
           role: 'assistant' as const,
-          text: '这是合成服务的演示回答：你已经整理出一小块可用空间。下次可以只看书桌右侧。',
-          sourceRefs: [source.ref],
+          text:
+            session.entry.intent === 'chat'
+              ? '合成演示：可以先说说你此刻的想法。不需要先选目标，也可以只聊。当前未读取任何记录。'
+              : '这是合成服务的演示回答：你已经整理出一小块可用空间。下次可以只看书桌右侧。',
+          sourceRefs: session.entry.intent === 'chat' ? [] : [source.ref],
           createdAt: new Date().toISOString()
         }
       ]
@@ -207,14 +203,14 @@ export function createFakeAssistantAdapter(
         manifest: {
           revision: 'synthetic-1',
           scopeRevision: session.revision,
-          sources: [source],
+          sources: session.entry.intent === 'chat' ? [] : [source],
           truncated: false,
           omittedCount: 0,
           historyOmittedCount: 0
         },
         steps: [],
         messages: messages.slice(-2),
-        candidates: [candidate],
+        candidates: session.entry.intent === 'chat' ? [] : [candidate],
         budget: {
           maxToolCalls: 3,
           usedToolCalls: 0,
@@ -247,10 +243,7 @@ export function createFakeAssistantAdapter(
       if (expectedTargetRevision !== 'synthetic-1') return failure('stale-context')
       const preview = {
         previewId: crypto.randomUUID(),
-        destination:
-          payload.kind === 'review-draft'
-            ? ('editor-draft' as const)
-            : ('application-command' as const),
+        destination: 'editor-draft' as const,
         editorRevision: session.entry.editorRevision,
         candidateId,
         sessionId,
@@ -270,41 +263,9 @@ export function createFakeAssistantAdapter(
       previews.set(preview.previewId, preview)
       return ok(preview)
     },
-    confirmWrite: async ({ sessionId, previewId, operationId }) => {
-      const previous = receipts.get(operationId)
-      if (previous) return ok(previous)
-      const preview = previews.get(previewId)
-      if (!preview || preview.sessionId !== sessionId) return failure('not-found')
-      if (preview.payload.kind === 'review-draft') return failure('unsupported')
-      if (sessions.get(sessionId)?.revision !== preview.sessionRevision)
-        return failure('stale-context')
-      const receipt = {
-        operationId,
-        previewId,
-        target: preview.changes[0].target,
-        status: 'committed' as const
-      }
-      const session = sessions.get(sessionId)!
-      sessions.set(sessionId, { ...session, revision: session.revision + 1 })
-      for (const [id, run] of runs)
-        runs.set(id, {
-          ...run,
-          candidates: run.candidates.map((candidate) => ({
-            ...candidate,
-            state:
-              candidate.id === preview.candidateId
-                ? 'committed'
-                : candidate.state === 'committed'
-                  ? 'committed'
-                  : 'stale'
-          }))
-        })
-      writes.push(candidateText(preview.payload))
-      receipts.set(operationId, receipt)
-      previews.delete(previewId)
-      return ok(receipt)
-    }
+    confirmWrite: async () => failure('unsupported')
   }
+
   const serviceApi: AssistantServiceApi = {
     getStatus: async () => ({ ok: true, value: status }),
     saveConfiguration: async (input) => {

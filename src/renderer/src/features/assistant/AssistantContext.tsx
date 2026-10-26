@@ -11,10 +11,12 @@ export function AssistantEntryButton(props: {
   readonly entry: AssistantEntry
   readonly selectedObjects?: readonly AssistantObjectRef[]
   readonly label: string
+  readonly originalDraft?: string
   readonly children: ReactNode
   readonly disabled?: boolean
   readonly apply?: (payload: AssistantCandidatePayload) => boolean
 }): ReactNode {
+  const anchor = useRef<HTMLDivElement>(null)
   const open = useContext(AssistantContext)
   const current = useRef(props)
   useLayoutEffect(() => {
@@ -39,29 +41,36 @@ export function AssistantEntryButton(props: {
     props.entry.editorText !== undefined &&
     (!props.entry.editorText.trim() || props.entry.editorText.length > 12000)
   return (
-    <button
-      type="button"
-      className="secondary-button"
-      disabled={props.disabled || textLimit}
-      title={textLimit ? '请提供 1–12000 字的明确选定内容，再开始整理。' : undefined}
-      onClick={() =>
-        open({
-          entry:
-            props.entry.editorText === undefined
-              ? props.entry
-              : { ...props.entry, editorRevision: editorVersion.current.token },
-          label: props.label,
-          selectedObjects: props.selectedObjects,
-          draft: props.apply
-            ? {
-                revision: () => (mounted.current ? editorVersion.current.token : '__unmounted__'),
-                apply: (payload) => mounted.current && (current.current.apply?.(payload) ?? false)
-              }
-            : undefined
-        })
-      }
-    >
-      {props.children}
-    </button>
+    <>
+      <button
+        type="button"
+        className="secondary-button"
+        disabled={props.disabled || textLimit}
+        title={textLimit ? '请提供 1–12000 字的明确选定内容，再开始整理。' : undefined}
+        onClick={(event) =>
+          open({
+            trigger: event.currentTarget,
+            anchor: anchor.current ?? undefined,
+            presentation: props.entry.intent === 'organize' ? 'inline' : 'conversation',
+            entry:
+              props.entry.editorText === undefined
+                ? props.entry
+                : { ...props.entry, editorRevision: editorVersion.current.token },
+            label: props.label,
+            originalDraft: props.originalDraft,
+            selectedObjects: props.selectedObjects,
+            draft: props.apply
+              ? {
+                  revision: () => (mounted.current ? editorVersion.current.token : '__unmounted__'),
+                  apply: (payload) => mounted.current && (current.current.apply?.(payload) ?? false)
+                }
+              : undefined
+          })
+        }
+      >
+        {props.children}
+      </button>
+      <div ref={anchor} />
+    </>
   )
 }
