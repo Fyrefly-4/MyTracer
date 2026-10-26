@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.12.0](https://github.com/Fyrefly-4/MyTracer/compare/v1.11.1...v1.12.0) (2026-10-26)
+
+
+### Features
+
+* 安静地续写三类未完成记录（[#157](https://github.com/Fyrefly-4/MyTracer/issues/157)） ([#172](https://github.com/Fyrefly-4/MyTracer/issues/172)) ([d5db540](https://github.com/Fyrefly-4/MyTracer/commit/d5db5401eb9f683fd592142ae2573bc944ccee53))
+
+
+### Bug Fixes
+
+* clarify existing record and routine entrypoints ([#169](https://github.com/Fyrefly-4/MyTracer/issues/169)) ([a260f5d](https://github.com/Fyrefly-4/MyTracer/commit/a260f5d9b6baa03e3650322a8328941ea431a5db))
+* **data:** show backfill feedback beside the save action ([13d31cd](https://github.com/Fyrefly-4/MyTracer/commit/13d31cd1e39769ff1113d85a00c8732dedd2a692))
+* **goals:** collapse long descriptions above the next step ([73bfa82](https://github.com/Fyrefly-4/MyTracer/commit/73bfa82bf0fd90c1012a4d86ce8b36c6c7ddf23b))
+* **review:** 明确复盘保存状态与已保存原文入口 ([#173](https://github.com/Fyrefly-4/MyTracer/issues/173)) ([e4a4fbb](https://github.com/Fyrefly-4/MyTracer/commit/e4a4fbb4dae16f971efccb7e03e55941ffa73dcf))
+* **routines:** link saved records to existing data details ([ceb8275](https://github.com/Fyrefly-4/MyTracer/commit/ceb8275433e3af82213e01a9a1602101231a3e76))
+* **shell:** dismiss panels with Escape and restore trigger focus ([456ff47](https://github.com/Fyrefly-4/MyTracer/commit/456ff47dcb60c7a009805bafbe8ecbb094f4ed08))
+* **today:** bridge selected items and details for keyboard navigation ([39c8723](https://github.com/Fyrefly-4/MyTracer/commit/39c8723c095bdcabf81d3fbc6cc0d6de86ba1cec))
+* **today:** prioritize the first record in an empty workspace ([ea6f033](https://github.com/Fyrefly-4/MyTracer/commit/ea6f0335ce8cf8c00ff3268b32e2edb76fc78828))
+* **today:** stack history rows when the detail pane is narrow ([9a11e6e](https://github.com/Fyrefly-4/MyTracer/commit/9a11e6e4236b8a9e83e93cd1a76aeb0b1a35a539))
+* **ui:** 完成七项体验修复与今天页键盘路径（[#174](https://github.com/Fyrefly-4/MyTracer/issues/174) / [#156](https://github.com/Fyrefly-4/MyTracer/issues/156)） ([215dd4d](https://github.com/Fyrefly-4/MyTracer/commit/215dd4de420505b0a876b9696711af470f18cd76))
+* **ui:** 稳定数据页布局并恢复例行已保存状态（[#174](https://github.com/Fyrefly-4/MyTracer/issues/174) B1/B2） ([#175](https://github.com/Fyrefly-4/MyTracer/issues/175)) ([b5a447b](https://github.com/Fyrefly-4/MyTracer/commit/b5a447be38da0b4190a5aa4533093ab540ea02de))
+
 ## [1.11.1](https://github.com/Fyrefly-4/MyTracer/compare/v1.11.0...v1.11.1) (2026-10-25)
 
 
