@@ -1,6 +1,5 @@
 import { createHash } from 'node:crypto'
 import { AssistantSessionService } from '../application/assistant/service'
-import { createAssistantWriter } from '../application/assistant/writes'
 import { FileAssistantSessionStore } from '../infrastructure/assistant/session-store'
 import { AssistantServiceConfigurationStore } from '../infrastructure/configuration/assistant-service-configuration'
 import { createAssistantCredentialProtection } from '../infrastructure/credentials/assistant-credential-protection'
@@ -805,8 +804,7 @@ app.whenReady().then(async () => {
       },
       fingerprint,
       generateId: randomUUID,
-      now: () => clock.nowInstant(),
-      write: createAssistantWriter({ readSnapshot, dataControl: dataControlService, actions: actionService })
+      now: () => clock.nowInstant()
     })
     assistantIpc = registerAssistantIpc({
       ipc: ipcMain,

@@ -75,7 +75,15 @@ export function createOfflineAssistantFixture(launch: {
       }
       if (body.messages.length === 1 && body.messages[0].content === 'Reply OK.') return reply('OK')
       const manifest = JSON.parse(body.messages[1].content).context as AssistantContextManifest
-      const current = manifest.sources[0].ref
+      const current = manifest.sources[0]?.ref
+      if (!current)
+        return reply(
+          JSON.stringify({
+            text: '合成自由对话：可以先聊聊你的想法；未读取任何记录，也没有保存业务数据。',
+            sourceRefs: [],
+            candidates: []
+          })
+        )
       const input = body.messages.filter((message) => message.role === 'user').at(-1)?.content ?? ''
       if (input.includes('等待取消')) {
         await new Promise<void>((_, reject) =>

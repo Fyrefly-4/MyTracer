@@ -118,7 +118,9 @@ export function resolveScope(
   scope: AssistantScope,
   all: readonly ContextObject[]
 ): ContextObject[] {
-  const explicit = new Set([scope.current, ...scope.selectedObjects].map(refKey))
+  const explicit = new Set(
+    [scope.current, ...scope.selectedObjects].filter((r) => r.kind !== 'conversation').map(refKey)
+  )
   check(
     [...explicit].every((key) => all.some((o) => refKey(o.ref) === key)),
     'not-found'

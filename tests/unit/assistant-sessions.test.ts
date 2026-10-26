@@ -19,7 +19,6 @@ import type {
 } from '../../src/application/ports/assistant-provider'
 import type { CorePersistenceSnapshot } from '../../src/application/ports/persistence'
 import type { AssistantCandidatePayload, AssistantObjectRef } from '../../src/contracts/assistant'
-import { createAssistantWriter } from '../../src/application/assistant/writes'
 
 const record: AssistantObjectRef = { kind: 'action-record', id: 'record' }
 const goal: AssistantObjectRef = { kind: 'goal', id: 'goal' }
@@ -464,60 +463,49 @@ describe('Assistant isolated sessions and bounded execution', () => {
   })
 })
 describe('Assistant preview-confirm command boundary', () => {
-  it('writes only confirmed payload and deduplicates across restart', async () => {
+  it('rejects all formal writes, repeated operations and restart replay', async () => {
     const h = setup(undefined, true)
-    const { session, preview } = await candidate(h)
-    expect(h.write).not.toHaveBeenCalled()
+    const { session, preview, c } = await candidate(h)
+    expect(preview.destination).toBe('editor-draft')
     const input = { sessionId: session.id, previewId: preview.previewId, operationId: 'op' }
-    const receipt = h.service.confirmWrite(input)
-    expect(h.service.confirmWrite(input)).toEqual(receipt)
-    expect(new AssistantSessionService(h.deps).confirmWrite(input)).toEqual(receipt)
-    expect(h.write).toHaveBeenCalledTimes(1)
-    expect(() => h.service.confirmWrite({ ...input, operationId: 'other' })).toThrow(
-      'stale-context'
-    )
-  })
-  it('source edits and edited-preview replacement invalidate old confirmations', async () => {
-    const h = setup()
-    const { session, c, preview } = await candidate(h)
-    const newPreview = h.service.previewWrite({
-      sessionId: session.id,
-      candidateId: c.id,
-      payload: { kind: 'record-summary', text: '用户修改的候选' },
-      expectedTargetRevision: c.expectedTargetRevision
-    })
-    expect(() =>
-      h.service.confirmWrite({
-        sessionId: session.id,
-        previewId: preview.previewId,
-        operationId: 'old'
-      })
-    ).toThrow('stale-context')
+    for (const service of [h.service, new AssistantSessionService(h.deps)]) {
+      expect(() => service.confirmWrite(input)).toThrow('unsupported')
+      expect(() => service.confirmWrite({ ...input, operationId: 'other' })).toThrow('unsupported')
+    }
     h.change()
     expect(() =>
-      h.service.confirmWrite({
+      h.service.previewWrite({
         sessionId: session.id,
-        previewId: newPreview.previewId,
-        operationId: 'new'
+        candidateId: c.id,
+        payload: c.payload,
+        expectedTargetRevision: c.expectedTargetRevision
       })
     ).toThrow('stale-context')
     expect(h.write).not.toHaveBeenCalled()
   })
-  it('durable intent prevents re-execution after uncertain command outcome', async () => {
-    const h = setup(undefined, true)
-    const { session, preview } = await candidate(h)
-    h.write.mockImplementation(() => {
-      throw new Error('simulated command crash')
+  it('free conversation sends no records, does not read the snapshot, and permits zero candidates', async () => {
+    const h = setup({
+      complete: async (r) => ({
+        ...answer(r.requestId),
+        text: JSON.stringify({ text: '可以只聊聊。', sourceRefs: [], candidates: [] })
+      })
     })
-    const input = { sessionId: session.id, previewId: preview.previewId, operationId: 'op' }
-    expect(() => h.service.confirmWrite(input)).toThrow('operation-uncertain')
-    expect(() => new AssistantSessionService(h.deps).confirmWrite(input)).toThrow(
-      'operation-uncertain'
-    )
-    expect(h.write).toHaveBeenCalledTimes(1)
-    expect(readFileSync(join(h.directory, 'assistant-sessions-v1.json'), 'utf8')).toContain(
-      '"operationId":"op"'
-    )
+    const read = vi.spyOn(h.deps, 'readSnapshot')
+    const session = h.service.createSession({
+      entry: { object: { kind: 'conversation', id: 'free-chat' }, intent: 'chat' },
+      mode: 'persistent'
+    })
+    const run = await h.service.sendTurn({
+      sessionId: session.id,
+      expectedRevision: session.revision,
+      requestId: 'free',
+      text: '我想聊聊'
+    })
+    expect(run.state).toBe('completed')
+    expect(run.manifest.sources).toEqual([])
+    expect(run.candidates).toEqual([])
+    expect(read).not.toHaveBeenCalled()
+    expect(h.write).not.toHaveBeenCalled()
   })
   it('rejects unknown renderer fields instead of interpreting a command', () => {
     const h = setup()
@@ -534,34 +522,6 @@ describe('Assistant preview-confirm command boundary', () => {
         mode: 'temporary'
       })
     ).toThrow('validation')
-  })
-  it('uses existing data-control commands and preserves record fields', () => {
-    const data = fixture()
-    const update = vi.fn()
-    const create = vi.fn(() => ({ id: 'new-action' }))
-    const writer = createAssistantWriter({
-      readSnapshot: () => data,
-      dataControl: { updateActionRecord: update, updateRoutineRecord: vi.fn() },
-      actions: { createAction: create as never }
-    })
-    writer(record, { kind: 'note-append', text: '补充' })
-    expect(update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        recordId: 'record',
-        outcome: 'partial',
-        durationMinutes: 10,
-        note: data.actionRecords[0].note + '\n\n补充'
-      })
-    )
-    expect(writer(goal, { kind: 'action-create', title: '只整理一角' })).toEqual({
-      kind: 'action',
-      id: 'new-action'
-    })
-    expect(create).toHaveBeenCalledWith({
-      goalId: 'goal',
-      title: '只整理一角',
-      description: undefined
-    })
   })
 })
 
@@ -741,22 +701,11 @@ describe('Assistant review draft preview and uncertain candidate identity', () =
       previewId: preview.previewId,
       operationId: 'first'
     }
-    expect(() => h.service.confirmWrite(confirmInput)).toThrow('operation-uncertain')
-    expect(h.service.getRun({ sessionId: session.id, requestId: 'r' }).candidates[0].state).toBe(
-      'uncertain'
-    )
-    expect(() => h.service.previewWrite(previewInput)).toThrow('operation-uncertain')
-    expect(() => h.service.confirmWrite({ ...confirmInput, operationId: 'different' })).toThrow(
-      'operation-uncertain'
-    )
+    expect(() => h.service.confirmWrite(confirmInput)).toThrow('unsupported')
     const restored = new AssistantSessionService(h.deps)
-    expect(() => restored.previewWrite(previewInput)).toThrow('operation-uncertain')
-    expect(() => restored.confirmWrite(confirmInput)).toThrow('operation-uncertain')
-    expect(() => restored.confirmWrite({ ...confirmInput, operationId: 'after-restart' })).toThrow(
-      'stale-context'
-    )
-    expect(createdActions).toEqual(['persisted-action'])
-    expect(h.write).toHaveBeenCalledTimes(1)
+    expect(() => restored.confirmWrite(confirmInput)).toThrow('unsupported')
+    expect(createdActions).toEqual([])
+    expect(h.write).not.toHaveBeenCalled()
   })
 })
 
