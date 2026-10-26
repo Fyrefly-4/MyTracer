@@ -215,9 +215,11 @@ export function RoutineRecordingPanel(props: {
       }
       return
     }
+    // Restoring an existing draft is not an explicit request to enter its form.
+    if (context === restoredDraft?.context) return
     revealStart(panelRef.current)
     panelRef.current?.querySelector<HTMLSelectElement>('select')?.focus({ preventScroll: true })
-  }, [busy, context])
+  }, [busy, context, restoredDraft?.context])
 
   useEffect(() => {
     return () => {

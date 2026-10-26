@@ -9,7 +9,15 @@ import {
   recordOutcomeText,
   routineRecordOutcomeText
 } from '../../app/ui-text'
-import { type ReactNode, useEffect, useLayoutEffect, useEffectEvent, useRef, useState } from 'react'
+import {
+  Fragment,
+  type ReactNode,
+  useEffect,
+  useLayoutEffect,
+  useEffectEvent,
+  useRef,
+  useState
+} from 'react'
 import type {
   ActionDetailDto,
   ActionErrorCode,
@@ -894,6 +902,8 @@ function TodayWorkspace(): ReactNode {
     }
   }, [creating])
   const detailRef = useRef<HTMLElement | null>(null)
+  const masterRef = useRef<HTMLDivElement>(null)
+  const bridgePosition = useRef<{ selection: string; top: number } | null>(null)
   const [today, setToday] = useState<TodayViewDto | null>(null)
   const [activity, setActivity] = useState<GoalActivityViewDto | null>(null)
   const [activityError, setActivityError] = useState(false)
@@ -1002,12 +1012,14 @@ function TodayWorkspace(): ReactNode {
   }
 
   const selectAction = (action: ActionDetailDto): void => {
+    bridgePosition.current = null
     setRouteSelection(null)
     showDetail(action)
     requestAnimationFrame(() => revealStart(detailRef.current))
   }
 
   const selectRoutine = (routineId: string): void => {
+    bridgePosition.current = null
     setRouteSelection(null)
     session.selectTodayRoutine(routineId)
     setSelectedRoutineId(routineId)
@@ -1262,6 +1274,57 @@ function TodayWorkspace(): ReactNode {
     }
   }
 
+  const selectedKey = selectedRoutineId
+    ? `routine-${selectedRoutineId}`
+    : detail
+      ? `action-${detail.id}`
+      : null
+  const selectionInList =
+    selectedRoutine ||
+    (detail &&
+      [...(today?.focuses ?? []), ...(today?.intentions ?? []), ...availableCandidates].some(
+        (action) => action.id === detail.id
+      ))
+  const enterDetail = (): void => {
+    bridgePosition.current =
+      selectedKey && masterRef.current
+        ? { selection: selectedKey, top: masterRef.current.scrollTop }
+        : null
+    detailRef.current?.focus({ preventScroll: true })
+    revealStart(detailRef.current)
+  }
+  const returnToSelection = (): void => {
+    const key = selectedKey
+    const selected = key
+      ? masterRef.current?.querySelector<HTMLButtonElement>(`[data-today-selection="${key}"]`)
+      : null
+    if (selected && !masterCollapsed) {
+      // An explicit return may reveal a folded candidate group, without changing selection.
+      for (
+        let parent = selected.parentElement;
+        parent && parent !== masterRef.current;
+        parent = parent.parentElement
+      ) {
+        if (parent instanceof HTMLDetailsElement) parent.open = true
+      }
+      selected.focus({ preventScroll: true })
+      if (bridgePosition.current?.selection === key && masterRef.current)
+        masterRef.current.scrollTop = bridgePosition.current.top
+      else selected.scrollIntoView({ block: 'nearest' })
+    } else collapseTriggerRef.current?.focus({ preventScroll: true })
+  }
+  const detailBridge = (selected: boolean): ReactNode =>
+    selected ? (
+      <button
+        type="button"
+        className="today-detail-bridge quiet-button"
+        aria-controls="today-selected-detail"
+        onClick={enterDetail}
+      >
+        进入详情
+      </button>
+    ) : null
+
   const actionCandidates = (
     <details className="goal-card action-candidates" open={!today?.focuses.length}>
       <summary>其它行动（{availableCandidates.length}）</summary>
@@ -1281,40 +1344,45 @@ function TodayWorkspace(): ReactNode {
       <div className="action-list">
         {availableCandidates.length ? (
           availableCandidates.map((action) => (
-            <div className="candidate-row" key={action.id}>
-              <button
-                className={`goal-list-item ${detail?.id === action.id ? 'selected' : ''}`}
-                aria-pressed={detail?.id === action.id}
-                type="button"
-                onClick={() => selectAction(action)}
-              >
-                <span>{action.title}</span>
-                <small>
-                  {actionStatusText[action.status]}
-                  {action.goal ? ` · ${action.goal.name}` : ' · 独立行动'}
-                  {action.isCurrentNextAction ? ' · 目标当前下一步' : ''}
-                </small>
-                {action.goal ? <small>{activityText(action.goal.id)}</small> : null}
-              </button>
-              <div className="candidate-actions">
+            <Fragment key={action.id}>
+              {detailBridge(detail?.id === action.id)}
+              <div className="candidate-row">
                 <button
-                  className="secondary-button"
+                  className={`goal-list-item ${detail?.id === action.id ? 'selected' : ''}`}
+                  aria-pressed={detail?.id === action.id}
                   type="button"
-                  disabled={busy}
-                  onClick={() => void selectForToday(action.id)}
+                  data-today-selection={`action-${action.id}`}
+                  aria-describedby={detail?.id === action.id ? 'today-navigation-hint' : undefined}
+                  onClick={() => selectAction(action)}
                 >
-                  选为今日重点
+                  <span>{action.title}</span>
+                  <small>
+                    {actionStatusText[action.status]}
+                    {action.goal ? ` · ${action.goal.name}` : ' · 独立行动'}
+                    {action.isCurrentNextAction ? ' · 目标当前下一步' : ''}
+                  </small>
+                  {action.goal ? <small>{activityText(action.goal.id)}</small> : null}
                 </button>
-                <button
-                  className="quiet-button"
-                  type="button"
-                  disabled={busy}
-                  onClick={() => void selectAsIntention(action.id)}
-                >
-                  加入今日意向
-                </button>
+                <div className="candidate-actions">
+                  <button
+                    className="secondary-button"
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void selectForToday(action.id)}
+                  >
+                    选为今日重点
+                  </button>
+                  <button
+                    className="quiet-button"
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void selectAsIntention(action.id)}
+                  >
+                    加入今日意向
+                  </button>
+                </div>
               </div>
-            </div>
+            </Fragment>
           ))
         ) : (
           <p className="empty-copy">还没有可加入今天的行动。</p>
@@ -1545,6 +1613,7 @@ function TodayWorkspace(): ReactNode {
             </div>
           </header>
           <div
+            ref={masterRef}
             id="today-master-content"
             className="goal-column today-master-list"
             data-scroll-key="master"
@@ -1559,31 +1628,35 @@ function TodayWorkspace(): ReactNode {
               <div className="action-list">
                 {today?.focuses.length ? (
                   today.focuses.map((action) => (
-                    <div
-                      className={`focus-row ${detail?.id === action.id ? 'selected' : ''}`}
-                      key={action.id}
-                    >
-                      <button
-                        type="button"
-                        aria-pressed={detail?.id === action.id}
-                        onClick={() => selectAction(action)}
-                      >
-                        <span>{action.title}</span>
-                        <small>
-                          {actionStatusText[action.status]}
-                          {action.goal ? ` · ${action.goal.name}` : ' · 独立行动'}
-                          {action.isCurrentNextAction ? ' · 目标当前下一步' : ''}
-                        </small>
-                      </button>
-                      <button
-                        className="quiet-button"
-                        type="button"
-                        disabled={busy}
-                        onClick={() => void removeFromToday(action.id)}
-                      >
-                        移出今天
-                      </button>
-                    </div>
+                    <Fragment key={action.id}>
+                      {detailBridge(detail?.id === action.id)}
+                      <div className={`focus-row ${detail?.id === action.id ? 'selected' : ''}`}>
+                        <button
+                          type="button"
+                          aria-pressed={detail?.id === action.id}
+                          data-today-selection={`action-${action.id}`}
+                          aria-describedby={
+                            detail?.id === action.id ? 'today-navigation-hint' : undefined
+                          }
+                          onClick={() => selectAction(action)}
+                        >
+                          <span>{action.title}</span>
+                          <small>
+                            {actionStatusText[action.status]}
+                            {action.goal ? ` · ${action.goal.name}` : ' · 独立行动'}
+                            {action.isCurrentNextAction ? ' · 目标当前下一步' : ''}
+                          </small>
+                        </button>
+                        <button
+                          className="quiet-button"
+                          type="button"
+                          disabled={busy}
+                          onClick={() => void removeFromToday(action.id)}
+                        >
+                          移出今天
+                        </button>
+                      </div>
+                    </Fragment>
                   ))
                 ) : (
                   <p className="empty-copy">还没有今日重点。可以从下方其它行动中明确选择。</p>
@@ -1602,31 +1675,37 @@ function TodayWorkspace(): ReactNode {
                 <div className="action-list">
                   {today?.intentions.length ? (
                     today.intentions.map((action) => (
-                      <div
-                        className={`focus-row intention-row ${detail?.id === action.id ? 'selected' : ''}`}
-                        key={action.id}
-                      >
-                        <button
-                          type="button"
-                          aria-pressed={detail?.id === action.id}
-                          onClick={() => selectAction(action)}
+                      <Fragment key={action.id}>
+                        {detailBridge(detail?.id === action.id)}
+                        <div
+                          className={`focus-row intention-row ${detail?.id === action.id ? 'selected' : ''}`}
                         >
-                          <span>{action.title}</span>
-                          <small>
-                            {actionStatusText[action.status]}
-                            {action.goal ? ` · ${action.goal.name}` : ' · 独立行动'}
-                            {action.isCurrentNextAction ? ' · 目标当前下一步' : ''}
-                          </small>
-                        </button>
-                        <button
-                          className="quiet-button"
-                          type="button"
-                          disabled={busy}
-                          onClick={() => void removeIntention(action.id)}
-                        >
-                          移出今日意向
-                        </button>
-                      </div>
+                          <button
+                            type="button"
+                            aria-pressed={detail?.id === action.id}
+                            data-today-selection={`action-${action.id}`}
+                            aria-describedby={
+                              detail?.id === action.id ? 'today-navigation-hint' : undefined
+                            }
+                            onClick={() => selectAction(action)}
+                          >
+                            <span>{action.title}</span>
+                            <small>
+                              {actionStatusText[action.status]}
+                              {action.goal ? ` · ${action.goal.name}` : ' · 独立行动'}
+                              {action.isCurrentNextAction ? ' · 目标当前下一步' : ''}
+                            </small>
+                          </button>
+                          <button
+                            className="quiet-button"
+                            type="button"
+                            disabled={busy}
+                            onClick={() => void removeIntention(action.id)}
+                          >
+                            移出今日意向
+                          </button>
+                        </div>
+                      </Fragment>
                     ))
                   ) : (
                     <p className="empty-copy">尚未选择今日意向，不必每天安排。</p>
@@ -1644,17 +1723,23 @@ function TodayWorkspace(): ReactNode {
               <div className="planned-routine-list">
                 {today?.plannedRoutines.length ? (
                   today.plannedRoutines.map((routine) => (
-                    <button
-                      key={routine.id}
-                      type="button"
-                      className="today-routine-row"
-                      aria-pressed={selectedRoutineId === routine.id}
-                      onClick={() => selectRoutine(routine.id)}
-                    >
-                      <strong>{routine.name}</strong>
-                      <span>最小行动：{routine.minimumAction}</span>
-                      <small>{routineRecordOutcomeText[routine.recordState]}</small>
-                    </button>
+                    <Fragment key={routine.id}>
+                      {detailBridge(selectedRoutineId === routine.id)}
+                      <button
+                        type="button"
+                        className="today-routine-row"
+                        aria-pressed={selectedRoutineId === routine.id}
+                        data-today-selection={`routine-${routine.id}`}
+                        aria-describedby={
+                          selectedRoutineId === routine.id ? 'today-navigation-hint' : undefined
+                        }
+                        onClick={() => selectRoutine(routine.id)}
+                      >
+                        <strong>{routine.name}</strong>
+                        <span>最小行动：{routine.minimumAction}</span>
+                        <small>{routineRecordOutcomeText[routine.recordState]}</small>
+                      </button>
+                    </Fragment>
                   ))
                 ) : (
                   <p className="empty-copy">今天没有匹配的活跃例行。</p>
@@ -1668,17 +1753,23 @@ function TodayWorkspace(): ReactNode {
                 <p className="empty-copy">无固定安排，不计入今日计划。</p>
                 <div className="planned-routine-list">
                   {today?.unscheduledRoutines.map((routine) => (
-                    <button
-                      key={routine.id}
-                      type="button"
-                      className="today-routine-row"
-                      aria-pressed={selectedRoutineId === routine.id}
-                      onClick={() => selectRoutine(routine.id)}
-                    >
-                      <strong>{routine.name}</strong>
-                      <span>最小行动：{routine.minimumAction}</span>
-                      <small>{routineRecordOutcomeText[routine.recordState]}</small>
-                    </button>
+                    <Fragment key={routine.id}>
+                      {detailBridge(selectedRoutineId === routine.id)}
+                      <button
+                        type="button"
+                        className="today-routine-row"
+                        aria-pressed={selectedRoutineId === routine.id}
+                        data-today-selection={`routine-${routine.id}`}
+                        aria-describedby={
+                          selectedRoutineId === routine.id ? 'today-navigation-hint' : undefined
+                        }
+                        onClick={() => selectRoutine(routine.id)}
+                      >
+                        <strong>{routine.name}</strong>
+                        <span>最小行动：{routine.minimumAction}</span>
+                        <small>{routineRecordOutcomeText[routine.recordState]}</small>
+                      </button>
+                    </Fragment>
                   ))}
                   {!today?.unscheduledRoutines.length && (
                     <p className="empty-copy">还没有活跃的无固定安排例行，可在例行页创建。</p>
@@ -1689,6 +1780,7 @@ function TodayWorkspace(): ReactNode {
           </div>
           <footer className="today-master-footer" hidden={masterCollapsed}>
             浏览候选不会自动改变今天的安排
+            <span id="today-navigation-hint">选中后 Shift+Tab 到“进入详情”；Tab 继续浏览。</span>
           </footer>
         </aside>
 
@@ -1698,9 +1790,20 @@ function TodayWorkspace(): ReactNode {
           aria-label="行动与例行详情工作区"
           tabIndex={0}
         >
+          {selectedRoutine || detail ? (
+            <button
+              type="button"
+              className="quiet-button today-return-selection"
+              onClick={returnToSelection}
+            >
+              {!masterCollapsed && selectionInList ? '返回所选项' : '返回列表'}
+            </button>
+          ) : null}
           {selectedRoutine && today ? (
             <article
               ref={detailRef}
+              id="today-selected-detail"
+              tabIndex={-1}
               className="goal-card today-routine-detail"
               aria-label={`${selectedRoutine.name} 例行详情`}
             >
@@ -1737,6 +1840,8 @@ function TodayWorkspace(): ReactNode {
           ) : detail ? (
             <article
               ref={detailRef}
+              id="today-selected-detail"
+              tabIndex={-1}
               className="goal-card action-detail"
               aria-label={`${detail.title} 行动详情`}
             >

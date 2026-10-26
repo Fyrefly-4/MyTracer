@@ -569,3 +569,21 @@
     flex-wrap: wrap;
   }
 }
+
+.today-experiment .today-detail-bridge {
+  justify-self: start;
+  width: fit-content;
+  min-height: 28px;
+  padding: 3px 8px;
+  font-size: 13px;
+  color: var(--color-action);
+}
+
+.today-experiment #today-navigation-hint {
+  display: block;
+  margin-top: 6px;
+}
+
+.today-experiment .today-return-selection {
+  margin-bottom: 12px;
+}
