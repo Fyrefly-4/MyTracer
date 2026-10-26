@@ -134,3 +134,21 @@ test('unsent inline input and hidden settings remain recoverable and block insta
   await expect(page.getByRole('status').filter({ hasText: '配置已保存' })).toBeVisible()
   await probe(false)
 })
+
+test('leaving the editor cancels its inline request and preserves input for return', async ({
+  page
+}) => {
+  await page.goto(path + '?slow=1')
+  await page.getByRole('button', { name: 'AI 整理笔记', exact: true }).click()
+  const inline = page.getByRole('region', { name: 'AI 整理笔记', exact: true })
+  await inline.getByLabel('整理要求（可修改）').fill('离开前的输入')
+  await inline.getByRole('button', { name: '发送', exact: true }).click()
+  await expect(inline.getByRole('button', { name: '停止', exact: true })).toBeVisible()
+  await page.getByRole('button', { name: '切换记录编辑器' }).click()
+  await expect(inline).toHaveCount(0)
+  await expect(page.getByRole('dialog')).not.toBeVisible()
+  await page.getByRole('button', { name: '切换记录编辑器' }).click()
+  await page.getByRole('button', { name: 'AI 整理笔记', exact: true }).click()
+  await expect(inline.getByLabel('整理要求（可修改）')).toHaveValue('离开前的输入')
+  await expect(inline.getByRole('status')).not.toContainText('整理完成')
+})

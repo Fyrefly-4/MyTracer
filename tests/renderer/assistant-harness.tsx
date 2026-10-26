@@ -9,11 +9,14 @@ import { AssistantHost } from '../../src/renderer/src/features/assistant/Assista
 import { AssistantEntryButton } from '../../src/renderer/src/features/assistant/AssistantContext'
 import { AssistantSettings } from '../../src/renderer/src/features/assistant/AssistantSettings'
 import '../../src/renderer/src/design-system.css'
-const fake = createFakeAssistantAdapter({ delayMs: 100 })
+const fake = createFakeAssistantAdapter({
+  delayMs: window.location.search.includes('slow') ? 800 : 100
+})
 const controller = new AssistantController(fake.api, fake.status, true)
 function Harness(): ReactNode {
   const [note, setNote] = useState(syntheticAssistantEntries[0].entry.editorText!)
   const [summary, setSummary] = useState('')
+  const [editorVisible, setEditorVisible] = useState(true)
   const [saves, setSaves] = useState(0)
   const [dirty, setDirty] = useState(false)
   const [settingsVisible, setSettingsVisible] = useState(false)
@@ -45,41 +48,48 @@ function Harness(): ReactNode {
         >
           AI 助手
         </button>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault()
-            setSaves(saves + 1)
-          }}
-        >
-          <output data-testid="formal-saves">{saves}</output>
-          <label>
-            原笔记
-            <textarea aria-label="原笔记" value={note} onChange={(e) => setNote(e.target.value)} />
-          </label>
-          <label>
-            简述草稿
-            <textarea
-              aria-label="简述草稿"
-              value={summary}
-              onChange={(e) => setSummary(e.target.value)}
-            />
-          </label>
-          <AssistantEntryButton
-            label={syntheticAssistantEntries[0].label}
-            entry={{
-              ...syntheticAssistantEntries[0].entry,
-              editorText: note,
-              editorRevision: JSON.stringify([note, summary])
-            }}
-            apply={(payload) => {
-              if (payload.kind !== 'record-summary') return false
-              setSummary(payload.text)
-              return true
+        <button onClick={() => setEditorVisible(!editorVisible)}>切换记录编辑器</button>
+        {editorVisible ? (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              setSaves(saves + 1)
             }}
           >
-            AI 整理笔记
-          </AssistantEntryButton>
-        </form>
+            <output data-testid="formal-saves">{saves}</output>
+            <label>
+              原笔记
+              <textarea
+                aria-label="原笔记"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+              />
+            </label>
+            <label>
+              简述草稿
+              <textarea
+                aria-label="简述草稿"
+                value={summary}
+                onChange={(e) => setSummary(e.target.value)}
+              />
+            </label>
+            <AssistantEntryButton
+              label={syntheticAssistantEntries[0].label}
+              entry={{
+                ...syntheticAssistantEntries[0].entry,
+                editorText: note,
+                editorRevision: JSON.stringify([note, summary])
+              }}
+              apply={(payload) => {
+                if (payload.kind !== 'record-summary') return false
+                setSummary(payload.text)
+                return true
+              }}
+            >
+              AI 整理笔记
+            </AssistantEntryButton>
+          </form>
+        ) : null}
         {syntheticAssistantEntries.slice(1).map((entry) => (
           <AssistantEntryButton
             key={entry.entry.object.id}

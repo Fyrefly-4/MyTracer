@@ -16,6 +16,7 @@ export function AssistantEntryButton(props: {
   readonly disabled?: boolean
   readonly apply?: (payload: AssistantCandidatePayload) => boolean
 }): ReactNode {
+  const leave = useRef<(() => void) | void>(undefined)
   const anchor = useRef<HTMLDivElement>(null)
   const open = useContext(AssistantContext)
   const current = useRef(props)
@@ -34,6 +35,7 @@ export function AssistantEntryButton(props: {
     mounted.current = true
     return () => {
       mounted.current = false
+      leave.current?.()
     }
   }, [])
   if (!open) return null
@@ -47,8 +49,8 @@ export function AssistantEntryButton(props: {
         className="secondary-button"
         disabled={props.disabled || textLimit}
         title={textLimit ? '请提供 1–12000 字的明确选定内容，再开始整理。' : undefined}
-        onClick={(event) =>
-          open({
+        onClick={(event) => {
+          leave.current = open({
             trigger: event.currentTarget,
             anchor: anchor.current ?? undefined,
             presentation: props.entry.intent === 'organize' ? 'inline' : 'conversation',
@@ -66,7 +68,7 @@ export function AssistantEntryButton(props: {
                 }
               : undefined
           })
-        }
+        }}
       >
         {props.children}
       </button>
