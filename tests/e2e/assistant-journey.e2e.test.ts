@@ -192,11 +192,14 @@ test('Assistant uses real preload/Main/SQLite for scoped tools, confirmation and
     expect(result.cancelled.state).toBe('cancelled')
     expect(result.configurationCancelled.state).toBe('cancelled')
 
+    // Setup configured Main through the API, bypassing the Settings onChanged callback.
+    // Remount the renderer so its controller reads the synthetic service status before UI work.
+    await page.reload()
+
     // Optional isolated native exploration, using the exact same guarded synthetic fixture.
     // This is an explicit local opt-in, never enabled in CI and never reads a normal profile.
     if (process.env.MYTRACER_ASSISTANT_EXPLORE === '1' && !process.env.CI) {
       test.setTimeout(0)
-      await page.reload()
       await page.evaluate(() => {
         document.title = 'MyTracer · 合成数据 / 模拟模型 · 隔离探索'
         const label = document.createElement('p')
@@ -219,6 +222,7 @@ test('Assistant uses real preload/Main/SQLite for scoped tools, confirmation and
     const firstAssistant = firstForm.getByRole('region', { name: 'AI 整理笔记' })
     await firstAssistant.getByLabel('整理要求（可修改）').fill('提炼简述，保留不确定性')
     await firstAssistant.getByRole('button', { name: '发送', exact: true }).click()
+    await expect(firstAssistant.getByRole('status')).toContainText('整理完成')
     await firstAssistant.getByRole('button', { name: '填入编辑草稿' }).click()
     await expect(firstForm.getByLabel('简述（可选）')).toHaveValue(
       '整理了桌面的一部分；右侧一叠纸还没动，投入时长不确定。'

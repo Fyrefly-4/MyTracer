@@ -138,7 +138,7 @@ it('a cancelled context invalidates a late provider answer', async () => {
   expect(result.candidates).toEqual([])
   expect(h.save).not.toHaveBeenCalled()
 })
-it('rejects append and action proposals for an unsaved first note', async () => {
+it('rejects note append proposals for an unsaved first note', async () => {
   const h = setup()
   h.complete.mockImplementation(async (request) => ({
     requestId: request.requestId,
