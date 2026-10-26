@@ -1,5 +1,6 @@
 import wordmark from '../../../../../resources/brand/MyTracer-wordmark-green.svg'
-import { type ReactNode, useEffect, useState } from 'react'
+import { type ReactNode, type RefObject, useEffect, useRef, useState } from 'react'
+import { usePanelDismiss } from '../../app/use-panel-dismiss'
 import type { UpdateFailureCode, UpdateStatusDto } from '../../../../contracts/updates'
 
 const ERROR_TEXT: Record<UpdateFailureCode, string> = {
@@ -15,7 +16,10 @@ const ERROR_TEXT: Record<UpdateFailureCode, string> = {
   internal: '更新检查遇到问题，核心功能仍可继续使用。'
 }
 
-export function UpdatePanel(props: { readonly onClose: () => void }): ReactNode {
+export function UpdatePanel(props: {
+  readonly onClose: () => void
+  readonly trigger: RefObject<HTMLButtonElement | null>
+}): ReactNode {
   const [status, setStatus] = useState<UpdateStatusDto | null>(null)
   const [connectionError, setConnectionError] = useState(false)
   const [installBlocker, setInstallBlocker] = useState<string | null>(null)
@@ -45,6 +49,18 @@ export function UpdatePanel(props: { readonly onClose: () => void }): ReactNode 
       .then(setStatus)
       .catch(() => setConnectionError(true))
   }
+  const panel = useRef<HTMLElement>(null)
+  const dismissBlocked =
+    status?.state === 'preparing' ||
+    status?.state === 'installing' ||
+    status?.state === 'restartRequired'
+  usePanelDismiss({
+    panel,
+    trigger: props.trigger,
+    open: true,
+    blocked: dismissBlocked,
+    onClose: props.onClose
+  })
   const candidate = status?.candidate
   const busy =
     status?.state === 'checking' ||
@@ -59,7 +75,7 @@ export function UpdatePanel(props: { readonly onClose: () => void }): ReactNode 
       (status.state === 'error' && status.error?.retryAction === 'download'))
 
   return (
-    <aside className="update-panel" aria-label="关于与更新">
+    <aside ref={panel} tabIndex={-1} className="update-panel" aria-label="关于与更新">
       <div className="update-panel-heading">
         <div>
           <h2>关于与更新</h2>
@@ -70,7 +86,7 @@ export function UpdatePanel(props: { readonly onClose: () => void }): ReactNode 
           className="update-close"
           onClick={props.onClose}
           aria-label="关闭更新面板"
-          disabled={status?.state === 'restartRequired' || status?.state === 'installing'}
+          disabled={dismissBlocked}
         >
           ×
         </button>

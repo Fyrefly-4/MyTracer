@@ -579,7 +579,7 @@ export class UiSession {
   }
   openDataRecord(
     selection: DataRecordSelection,
-    source: 'goals' | 'progress' | 'review' | 'home' | 'today'
+    source: 'goals' | 'routines' | 'progress' | 'review' | 'home' | 'today'
   ): void {
     this.selectedDataRecord = selection
     if (selection) this.preferences.remember('data', selection)

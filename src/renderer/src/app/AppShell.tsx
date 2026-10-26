@@ -1,3 +1,4 @@
+import { usePanelDismiss } from './use-panel-dismiss'
 import { RecordBookPage } from '../features/record-book/RecordBookPage'
 import wordmark from '../../../../resources/brand/MyTracer-wordmark-green.svg'
 import type { AppearanceSettings, AppearanceState } from '../../../contracts/appearance'
@@ -80,6 +81,9 @@ export function AppShell({
   const [appearance, setAppearance] = useState<AppearanceState | null>(null)
   const [appearanceError, setAppearanceError] = useState(false)
   const [appearanceSaving, setAppearanceSaving] = useState(false)
+  const appearancePanel = useRef<HTMLElement>(null)
+  const appearanceTrigger = useRef<HTMLButtonElement>(null)
+  const updateTrigger = useRef<HTMLButtonElement>(null)
   useEffect(() => {
     let active = true
     let received = false
@@ -177,6 +181,14 @@ export function AppShell({
     }
   }, [session])
 
+  usePanelDismiss({
+    panel: appearancePanel,
+    trigger: appearanceTrigger,
+    open: appearanceOpen && !updateOpen && !installPreparing && !restartRequired,
+    blocked: appearanceSaving,
+    onClose: () => setAppearanceOpen(false)
+  })
+
   const selected = appSections.find((section) => section.id === activeSection) ?? appSections[0]
 
   return (
@@ -189,7 +201,7 @@ export function AppShell({
         </header>
 
         {updateOpen || restartRequired ? (
-          <UpdatePanel onClose={() => setUpdateOpen(false)} />
+          <UpdatePanel trigger={updateTrigger} onClose={() => setUpdateOpen(false)} />
         ) : null}
 
         {pendingDataNavigation ? (
@@ -239,6 +251,8 @@ export function AppShell({
               <button
                 type="button"
                 className="update-entry"
+                ref={appearanceTrigger}
+                disabled={appearanceSaving}
                 onClick={() => {
                   setUpdateOpen(false)
                   setAppearanceOpen(!appearanceOpen)
@@ -250,6 +264,8 @@ export function AppShell({
               <button
                 type="button"
                 className="update-entry"
+                ref={updateTrigger}
+                disabled={appearanceSaving}
                 onClick={() => {
                   setAppearanceOpen(false)
                   setUpdateOpen(true)
@@ -289,7 +305,12 @@ export function AppShell({
           >
             <div className="content-inner">
               {appearanceOpen && !updateOpen && !installPreparing && !restartRequired ? (
-                <section className="appearance-panel" aria-label="外观设置">
+                <section
+                  ref={appearancePanel}
+                  tabIndex={-1}
+                  className="appearance-panel"
+                  aria-label="外观设置"
+                >
                   <h2>外观</h2>
                   <p>
                     壁纸材质仅用于标题栏、侧栏与外壳，正文保持奶白。系统不支持或关闭材质时使用实色。
@@ -340,7 +361,11 @@ export function AppShell({
                         ? '已请求 Windows 壁纸材质；最终效果由系统控制。'
                         : '当前使用奶白实色外壳。'}
                   </p>
-                  <button type="button" onClick={() => setAppearanceOpen(false)}>
+                  <button
+                    type="button"
+                    disabled={appearanceSaving}
+                    onClick={() => setAppearanceOpen(false)}
+                  >
                     关闭外观设置
                   </button>
                 </section>

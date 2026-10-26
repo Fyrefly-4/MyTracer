@@ -343,44 +343,52 @@ export function FirstActionRecord(props: {
                   change({ ...draft, context: { ...draft.context, continuityIssue: undefined } })
                 }
               />
-              <fieldset
-                disabled={
-                  busy || operation.pending || operation.uncertain || Boolean(draft.uncertainInput)
-                }
-              >
-                <legend>已有行动？复用原来的记录路径</legend>
-                <label>
-                  <span id="first-record-existing-label">选择已有行动</span>
-                  <select
-                    aria-labelledby="first-record-existing-label"
-                    value={existingId}
-                    onChange={(event) => setExistingId(event.target.value)}
-                  >
-                    <option value="">选择行动</option>
-                    {existing.map((action) => (
-                      <option key={action.id} value={action.id}>
-                        {action.title}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <button
-                  type="button"
-                  disabled={!existingId}
-                  onClick={() => {
-                    const action = existing.find((item) => item.id === existingId)
-                    if (action) {
-                      setOpen(false)
-                      props.onExisting(action)
-                    }
-                  }}
+              {!props.ready || existing.length > 0 ? (
+                <fieldset
+                  disabled={
+                    !props.ready ||
+                    busy ||
+                    operation.pending ||
+                    operation.uncertain ||
+                    Boolean(draft.uncertainInput)
+                  }
                 >
-                  打开已有行动记录
-                </button>
-                {!existing.length ? (
-                  <p className="empty-copy">当前没有可开始的行动。例行或历史补记仍使用原有入口。</p>
-                ) : null}
-              </fieldset>
+                  <legend>已有行动？复用原来的记录路径</legend>
+                  <label>
+                    <span id="first-record-existing-label">选择已有行动</span>
+                    <select
+                      aria-labelledby="first-record-existing-label"
+                      value={existingId}
+                      onChange={(event) => setExistingId(event.target.value)}
+                    >
+                      <option value="">选择行动</option>
+                      {existing.map((action) => (
+                        <option key={action.id} value={action.id}>
+                          {action.title}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <button
+                    type="button"
+                    disabled={!existingId}
+                    onClick={() => {
+                      const action = existing.find((item) => item.id === existingId)
+                      if (action) {
+                        setOpen(false)
+                        props.onExisting(action)
+                      }
+                    }}
+                  >
+                    打开已有行动记录
+                  </button>
+                  {!props.ready ? (
+                    <p className="empty-copy" role="status">
+                      尚未确认可用行动，请返回今天页重新读取。
+                    </p>
+                  ) : null}
+                </fieldset>
+              ) : null}
               <fieldset
                 disabled={
                   busy || operation.pending || operation.uncertain || Boolean(draft.uncertainInput)

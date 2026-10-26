@@ -30,6 +30,23 @@ import { GoalCoverAppearance } from './GoalCoverAppearance'
 import { RecoveryPanel } from './RecoveryPanel'
 import type { GoalActivityViewDto } from '../../../../contracts/progress'
 
+function GoalDescription({ text }: { readonly text: string }): ReactNode {
+  const [expanded, setExpanded] = useState(false)
+  const content = <p className="goal-description">{text}</p>
+  return text.length > 240 || text.split('\n').length > 4 ? (
+    <details
+      className="record-note-details"
+      open={expanded}
+      onToggle={(event) => setExpanded(event.currentTarget.open)}
+    >
+      <summary>{expanded ? '收起说明' : '展开完整说明'}</summary>
+      {content}
+    </details>
+  ) : (
+    content
+  )
+}
+
 const goalErrorText: Record<GoalErrorCode, string> = {
   validation: '请检查必填内容。',
   'not-found': '目标或行动已不存在，请刷新后重试。',
@@ -1072,7 +1089,7 @@ function GoalWorkspace(): ReactNode {
                   </nav>
                 ) : null}
                 {detail.description ? (
-                  <p className="goal-description">{detail.description}</p>
+                  <GoalDescription key={`description-${detail.id}`} text={detail.description} />
                 ) : null}
                 <div className="next-action-panel">
                   <span>当前下一步</span>

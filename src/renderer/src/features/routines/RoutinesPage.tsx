@@ -31,6 +31,7 @@ import type {
 import type {
   BeginRoutineRecordingDto,
   RoutineDayStateDto,
+  RoutineRecordDto,
   RoutineRecordErrorCode,
   RoutineRecordOutcomeDto,
   RoutineRecordingDateChoiceDto
@@ -143,6 +144,7 @@ function RoutineWeekdayPicker(props: {
 export function RoutineRecordingPanel(props: {
   readonly routineId: string
   readonly routineName: string
+  readonly source: 'today' | 'routines'
   readonly disabled?: boolean
   readonly initialState?: RoutineDayStateDto | null
   readonly onSaved?: () => Promise<void>
@@ -154,6 +156,7 @@ export function RoutineRecordingPanel(props: {
   const beginRef = useRef<HTMLButtonElement | null>(null)
   const restoreBeginFocus = useRef(false)
   const [savedMessage, setSavedMessage] = useState('')
+  const [savedRecord, setSavedRecord] = useState<RoutineRecordDto | null>(null)
   const [context, setContext] = useState<BeginRoutineRecordingDto | null>(
     restoredDraft?.context ?? null
   )
@@ -212,9 +215,11 @@ export function RoutineRecordingPanel(props: {
       }
       return
     }
+    // Restoring an existing draft is not an explicit request to enter its form.
+    if (context === restoredDraft?.context) return
     revealStart(panelRef.current)
     panelRef.current?.querySelector<HTMLSelectElement>('select')?.focus({ preventScroll: true })
-  }, [busy, context])
+  }, [busy, context, restoredDraft?.context])
 
   useEffect(() => {
     return () => {
@@ -259,6 +264,7 @@ export function RoutineRecordingPanel(props: {
         return
       }
       setSavedMessage('')
+      setSavedRecord(null)
       contextRef.current = result.value
       setContext(result.value)
       session.setRoutineDraft(props.routineId, {
@@ -400,6 +406,7 @@ export function RoutineRecordingPanel(props: {
     contextRef.current = null
     setContext(null)
     setDateConfirmation(null)
+    setSavedRecord(result.value.record)
     setSavedMessage(
       `已保存：${routineRecordOutcomeText[result.value.record.outcome]} · ${result.value.record.occurredOn}`
     )
@@ -410,6 +417,14 @@ export function RoutineRecordingPanel(props: {
   }
 
   const displayedDayState = dayRead.data
+  // Keep a just-saved cross-midnight target; otherwise use the freshly read fact.
+  const savedForAnotherDay = savedRecord && savedRecord.occurredOn !== displayedDayState?.localDate
+  const recordToView =
+    !context && dayRead.status === 'ready'
+      ? savedForAnotherDay
+        ? savedRecord
+        : displayedDayState?.record
+      : null
   const state = displayedDayState?.recordState ?? 'unknown'
   if (operation.consumed && context) {
     setContext(null)
@@ -446,6 +461,17 @@ export function RoutineRecordingPanel(props: {
           <small>未记录表示情况未知，不等于未进行。</small>
         ) : null}
       </div>
+      {recordToView ? (
+        <button
+          type="button"
+          className="quiet-button"
+          onClick={() =>
+            session.openDataRecord({ type: 'routine-record', id: recordToView.id }, props.source)
+          }
+        >
+          查看记录（{recordToView.occurredOn}）
+        </button>
+      ) : null}
       {dayRead.status === 'error' ? (
         <p role="alert">
           无法确认这一天是否已有记录。
@@ -489,8 +515,10 @@ export function RoutineRecordingPanel(props: {
                   routineId: props.routineId,
                   localDate: result.occurredOn
                 })
-                if (current.ok) dayRead.refresh()
-                else setError('这笔已保存，但对象已不可用。请重新打开例行查看。')
+                if (current.ok) {
+                  setSavedRecord(current.value.record)
+                  dayRead.refresh()
+                } else setError('这笔已保存，但对象已不可用。请重新打开例行查看。')
                 await props.onSaved?.()
               } catch {
                 setError('这笔已保存，但列表刷新失败。请重新打开例行查看。')
@@ -1190,6 +1218,7 @@ function RoutineWorkspace(): ReactNode {
                   key={detail.id}
                   routineId={detail.id}
                   routineName={detail.name}
+                  source="routines"
                   disabled={detail.status !== 'active' || !editable}
                 />
 
