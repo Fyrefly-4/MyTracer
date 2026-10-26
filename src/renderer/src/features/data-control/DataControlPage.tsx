@@ -882,7 +882,10 @@ function DataControlWorkspace({
   >(null)
   const [discardBackfill, setDiscardBackfill] = useState(false)
   const [backfillKind, setBackfillKind] = useState<'action' | 'routine'>('action')
-  const [backfillMessage, setBackfillMessage] = useState('')
+  const [backfillMessage, setBackfillMessage] = useState<{
+    kind: 'saved' | 'cleared'
+    text: string
+  } | null>(null)
   const [savingBackfill, setSavingBackfill] = useState(false)
   const [preview, setPreview] = useState<DeletePreviewDto | null>(null)
   const [previewName, setPreviewName] = useState('')
@@ -1246,7 +1249,7 @@ function DataControlWorkspace({
   const backfillAction = async (): Promise<void> => {
     if (savingBackfill) return
     setSavingBackfill(true)
-    setBackfillMessage('')
+    setBackfillMessage(null)
     try {
       const result = await window.myTracer.dataControl.backfillActionRecord({
         actionId,
@@ -1261,9 +1264,10 @@ function DataControlWorkspace({
       })
       if (!result.ok) return setError(dataControlErrorText[result.error.code])
       setError(null)
-      setBackfillMessage(
-        `已补记：${data?.actions.find((item) => item.id === actionId)?.title ?? '记录'} · ${actionDate}`
-      )
+      setBackfillMessage({
+        kind: 'saved',
+        text: `已补记：${data?.actions.find((item) => item.id === actionId)?.title ?? '记录'} · ${actionDate}`
+      })
       setActionDate('')
       setActionDuration('')
       setActionOutcome('partial')
@@ -1282,7 +1286,7 @@ function DataControlWorkspace({
   const backfillRoutine = async (): Promise<void> => {
     if (savingBackfill) return
     setSavingBackfill(true)
-    setBackfillMessage('')
+    setBackfillMessage(null)
     try {
       const result = await window.myTracer.dataControl.backfillRoutineRecord({
         routineId,
@@ -1300,9 +1304,10 @@ function DataControlWorkspace({
       })
       if (!result.ok) return setError(dataControlErrorText[result.error.code])
       setError(null)
-      setBackfillMessage(
-        `已补记：${data?.routines.find((item) => item.id === routineId)?.name ?? '记录'} · ${routineDate}`
-      )
+      setBackfillMessage({
+        kind: 'saved',
+        text: `已补记：${data?.routines.find((item) => item.id === routineId)?.name ?? '记录'} · ${routineDate}`
+      })
       setRoutineDate('')
       setRoutinePlanned(false)
       setRoutineOutcome('not_done')
@@ -1400,6 +1405,21 @@ function DataControlWorkspace({
     return <p role="alert">这条原记录已不存在。请返回记录册读取最新资料。</p>
   }
 
+  const backfillFeedback = (
+    <>
+      {error ? (
+        <p className="form-error" role="alert">
+          {error}
+        </p>
+      ) : null}
+      {backfillMessage?.kind === 'saved' ? (
+        <p className="success-message" role="status">
+          {backfillMessage.text}
+        </p>
+      ) : null}
+    </>
+  )
+
   return (
     <section className="data-workspace" aria-label="历史记录与数据控制">
       {error && !panel ? (
@@ -1460,7 +1480,10 @@ function DataControlWorkspace({
               aria-label="补记类型"
               value={backfillKind}
               disabled={savingBackfill}
-              onChange={(event) => setBackfillKind(event.target.value as 'action' | 'routine')}
+              onChange={(event) => {
+                setBackfillKind(event.target.value as 'action' | 'routine')
+                setBackfillMessage(null)
+              }}
             >
               <option value="action">行动记录{actionBackfillDirty ? ' · 有草稿' : ''}</option>
               <option value="routine">例行记录{routineBackfillDirty ? ' · 有草稿' : ''}</option>
@@ -1503,7 +1526,7 @@ function DataControlWorkspace({
                     setRoutineNote('')
                   }
                   setError(null)
-                  setBackfillMessage('已清空当前草稿，未保存记录。')
+                  setBackfillMessage({ kind: 'cleared', text: '已清空当前草稿，未保存记录。' })
                   setDiscardBackfill(false)
                 }}
               >
@@ -1511,14 +1534,9 @@ function DataControlWorkspace({
               </button>
             </DataPanel>
           ) : null}
-          {error ? (
-            <p className="form-error" role="alert">
-              {error}
-            </p>
-          ) : null}
-          {backfillMessage ? (
+          {backfillMessage?.kind === 'cleared' ? (
             <p className="success-message" role="status">
-              {backfillMessage}
+              {backfillMessage.text}
             </p>
           ) : null}
           {backfillKind === 'action' ? (
@@ -1529,6 +1547,7 @@ function DataControlWorkspace({
               ) : null}
               <fieldset
                 className="backfill-fields"
+                onChangeCapture={() => setBackfillMessage(null)}
                 disabled={savingBackfill || !data?.actions.length}
               >
                 <Field label="行动（必选）">
@@ -1608,6 +1627,7 @@ function DataControlWorkspace({
                 </Field>
 
                 <RecordNoteInput label="行动补记备注" value={actionNote} onChange={setActionNote} />
+                {backfillFeedback}
                 <button
                   className="primary-button"
                   type="button"
@@ -1634,6 +1654,7 @@ function DataControlWorkspace({
               ) : null}
               <fieldset
                 className="backfill-fields"
+                onChangeCapture={() => setBackfillMessage(null)}
                 disabled={savingBackfill || !data?.routines.length}
               >
                 <Field label="例行（必选）">
@@ -1701,6 +1722,7 @@ function DataControlWorkspace({
                   />
                   该历史日期当时属于计划日（请按当时实际安排确认）
                 </label>
+                {backfillFeedback}
                 <button
                   className="primary-button"
                   type="button"
