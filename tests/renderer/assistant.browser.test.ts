@@ -7,7 +7,11 @@ test('inline organization compares source, preserves editor, and carries convers
   await page.goto(path)
   const original = '合成笔记：书桌整理了一半，其他日期没有记录。'
   await page.getByLabel('原笔记').fill(original)
-  await page.getByRole('button', { name: 'AI 整理笔记', exact: true }).click()
+  const entry = page.getByRole('button', { name: 'AI 整理笔记', exact: true })
+  await entry.scrollIntoViewIfNeeded()
+  const pane = page.getByTestId('underlying-pane')
+  const scrollBefore = await pane.evaluate((node) => node.scrollTop)
+  await entry.click()
   const inline = page.getByRole('region', { name: 'AI 整理笔记', exact: true })
   await expect(page.getByRole('dialog')).not.toBeVisible()
   await expect(inline.getByText(original, { exact: true })).toBeVisible()
@@ -25,6 +29,8 @@ test('inline organization compares source, preserves editor, and carries convers
   await expect(page.getByLabel('原笔记')).toHaveValue(original)
   await expect(page.getByLabel('简述草稿')).toHaveValue(/整理了书桌左侧/)
   await expect(page.getByTestId('formal-saves')).toHaveText('0')
+  await expect.poll(() => pane.evaluate((node) => node.scrollTop)).toBe(scrollBefore)
+  await expect(entry).toBeFocused()
 })
 
 test('free chat has no goal prerequisite, preserves unsent input, and resumes history', async ({

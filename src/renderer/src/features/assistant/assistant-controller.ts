@@ -16,6 +16,7 @@ export interface AssistantLaunch {
   readonly entry: AssistantEntry
   readonly label: string
   readonly originalDraft?: string
+  readonly restoreLocation?: () => void
   readonly trigger?: HTMLElement
   readonly anchor?: HTMLElement
   readonly presentation?: 'inline' | 'conversation'
@@ -220,6 +221,7 @@ export class AssistantController {
     this.invalidate()
     this.patch({ visible: false, busy: false, preview: null, run: null })
     this.state.launch?.trigger?.focus({ preventScroll: true })
+    this.state.launch?.restoreLocation?.()
     if (session?.mode === 'temporary') {
       this.patch({ session: null })
       void this.api.deleteSession({ sessionId: session.id }).catch(() => undefined)

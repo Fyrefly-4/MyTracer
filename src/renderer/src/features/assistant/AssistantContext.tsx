@@ -50,8 +50,18 @@ export function AssistantEntryButton(props: {
         disabled={props.disabled || textLimit}
         title={textLimit ? '请提供 1–12000 字的明确选定内容，再开始整理。' : undefined}
         onClick={(event) => {
+          const scrollPositions: { node: HTMLElement; top: number; left: number }[] = []
+          for (let node = event.currentTarget.parentElement; node; node = node.parentElement) {
+            scrollPositions.push({ node, top: node.scrollTop, left: node.scrollLeft })
+          }
           leave.current = open({
             trigger: event.currentTarget,
+            restoreLocation: () =>
+              requestAnimationFrame(() => {
+                if (mounted.current)
+                  for (const { node, top, left } of scrollPositions)
+                    node.scrollTo({ top, left, behavior: 'instant' })
+              }),
             anchor: anchor.current ?? undefined,
             presentation: props.entry.intent === 'organize' ? 'inline' : 'conversation',
             entry:
