@@ -10,11 +10,12 @@ test('goal list remains usable at short heights and zoom without coupling detail
   let app: ElectronApplication | undefined
   try {
     app = await electron.launch({
+      chromiumSandbox: true,
       cwd: root.root,
       args: [
         join(process.cwd(), 'out/main/index.js'),
         `--user-data-dir=${root.electronUserData}`,
-        ...(process.platform === 'linux' ? ['--ozone-platform=headless', '--no-sandbox'] : [])
+        ...(process.platform === 'linux' ? ['--headless', '--ozone-platform=headless'] : [])
       ],
       env: minimalElectronEnvironment(root)
     })
@@ -65,6 +66,10 @@ test('goal list remains usable at short heights and zoom without coupling detail
     const summary = disclosure.locator('summary')
     const list = page.locator('.object-master-scroll')
     const detail = page.locator('.object-detail-scroll')
+    // U2 collapses long descriptions by default. Explicitly open the synthetic
+    // multiline text so this independent-scroll test still exercises real overflow.
+    await detail.getByText('展开完整说明', { exact: true }).click()
+    await expect(detail.locator('.goal-description')).toBeVisible()
     for (const [width, height] of [
       [1440, 900],
       [1120, 760],
@@ -94,6 +99,9 @@ test('goal list remains usable at short heights and zoom without coupling detail
         await page.keyboard.press('Space')
         await expect(disclosure).not.toHaveAttribute('open')
         await expect(summary).toBeFocused()
+        await expect
+          .poll(() => detail.evaluate((element) => element.scrollHeight - element.clientHeight))
+          .toBeGreaterThanOrEqual(180)
         await detail.evaluate((element) => {
           element.scrollTop = 90
         })
