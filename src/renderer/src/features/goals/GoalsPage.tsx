@@ -1028,7 +1028,7 @@ function GoalWorkspace(): ReactNode {
                       label={detail.name}
                       entry={{ object: { kind: 'goal', id: detail.id }, intent: 'resume' }}
                     >
-                      接上上次
+                      AI 接上上次
                     </AssistantEntryButton>
                   </div>
                   <span className={`status-badge status-${detail.status}`}>

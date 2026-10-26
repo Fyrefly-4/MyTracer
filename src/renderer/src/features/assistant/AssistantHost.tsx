@@ -10,6 +10,10 @@ export function AssistantHost({
     <AssistantContext
       value={(launch) => {
         void props.controller.open(launch)
+        return () => {
+          if (props.controller.getSnapshot().launch?.anchor === launch.anchor)
+            props.controller.close()
+        }
       }}
     >
       {children}

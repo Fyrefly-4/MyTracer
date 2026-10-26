@@ -1,11 +1,11 @@
 /** Shared, data-only Assistant contract. No provider, storage or renderer authority. */
 export interface AssistantObjectRef {
-  readonly kind: 'goal' | 'action' | 'action-record' | 'routine-record' | 'review'
+  readonly kind: 'goal' | 'action' | 'action-record' | 'routine-record' | 'review' | 'conversation'
   readonly id: string
 }
 export interface AssistantEntry {
   readonly object: AssistantObjectRef
-  readonly intent: 'organize' | 'clarify' | 'resume' | 'review'
+  readonly intent: 'organize' | 'clarify' | 'resume' | 'review' | 'chat'
   readonly editorText?: string
   readonly editorRevision?: string
 }
@@ -51,7 +51,9 @@ export interface AssistantSession {
   readonly createdAt: string
   readonly updatedAt: string
 }
-export type AssistantSessionSummary = Omit<AssistantSession, 'messages' | 'scope'>
+export type AssistantSessionSummary = Omit<AssistantSession, 'messages' | 'scope'> & {
+  readonly title?: string
+}
 export interface AssistantTurnInput {
   readonly sessionId: string
   readonly expectedRevision: number

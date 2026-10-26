@@ -94,39 +94,20 @@ describe('Assistant renderer orchestration with synthetic-only adapter', () => {
     expect(writes).toHaveLength(0)
     expect(controller.getSnapshot().notice).toContain('没有覆盖')
   })
-  it('fills only an unchanged editor, separately previews formal write, and suppresses duplicate confirmation', async () => {
-    const { controller, writes } = setup()
+  it('fills only an unchanged editor once and never invokes formal confirmation', async () => {
+    const { controller, api, writes } = setup()
     const apply = vi.fn(() => true)
+    const confirm = vi.spyOn(api, 'confirmWrite')
     await controller.open({ ...launch, draft: { revision: () => 'draft-1', apply } })
     await controller.send('整理')
     const candidate = controller.getSnapshot().run!.candidates[0]
     await controller.preview(candidate, candidate.payload, true)
+    await controller.preview(candidate, candidate.payload, true)
+    await controller.preview(candidate, candidate.payload)
+    await controller.confirm()
     expect(apply).toHaveBeenCalledTimes(1)
+    expect(confirm).not.toHaveBeenCalled()
     expect(writes).toHaveLength(0)
-    await controller.preview(candidate, candidate.payload)
-    expect(writes).toHaveLength(0)
-    await Promise.all([controller.confirm(), controller.confirm()])
-    expect(writes).toHaveLength(1)
-    await controller.remove(controller.getSnapshot().session!.id)
-    expect(writes).toHaveLength(1)
-    expect(controller.getSnapshot().session).toBeNull()
-  })
-  it('marks uncertain candidates and does not retry an uncertain write', async () => {
-    const { api, controller } = setup()
-    await controller.open(launch)
-    await controller.send('整理')
-    const candidate = controller.getSnapshot().run!.candidates[0]
-    await controller.preview(candidate, candidate.payload)
-    const realConfirm = api.confirmWrite
-    const confirm = vi
-      .spyOn(api, 'confirmWrite')
-      .mockResolvedValueOnce({ ok: false, error: { code: 'operation-uncertain' } })
-      .mockImplementationOnce(realConfirm)
-    await controller.confirm()
-    await controller.confirm()
-    expect(confirm).toHaveBeenCalledTimes(1)
-    expect(controller.getSnapshot().run!.candidates[0].state).toBe('uncertain')
-    expect(controller.getSnapshot().notice).toContain('请先检查目标记录')
   })
   it('invalidates previews on scope change and shows safe configuration/provider failure messages', async () => {
     const { controller, api } = setup()
@@ -159,7 +140,7 @@ describe('Assistant renderer orchestration with synthetic-only adapter', () => {
     expect(html).toContain('&lt;script&gt;')
     expect(html).toContain('合成数据')
     expect(html).toContain('仅内存')
-    expect(html).toContain('未知不代表支持')
+    expect(html).not.toContain('synthetic-record')
     const settings = renderToStaticMarkup(
       createElement(AssistantSettings, { api: serviceApi, simulation: true })
     )
@@ -281,35 +262,6 @@ it('refreshes the authoritative turn revision after cancel before scope change o
   expect(scope).toHaveBeenCalledTimes(1)
   await controller.send('继续')
   expect(send).toHaveBeenCalledTimes(2)
-})
-
-it('reloads authoritative committed and sibling-stale candidates after confirmation', async () => {
-  const { controller, api } = setup()
-  await controller.open(launch)
-  await controller.send('整理')
-  const run = controller.getSnapshot().run!
-  const candidate = run.candidates[0]
-  const sibling = { ...candidate, id: 'sibling' }
-  const get = api.getSession
-  vi.spyOn(api, 'getSession').mockImplementation(get)
-  vi.spyOn(api, 'getRun').mockResolvedValue({
-    ok: true,
-    value: {
-      ...run,
-      candidates: [
-        { ...candidate, state: 'committed' },
-        { ...sibling, state: 'stale' }
-      ]
-    }
-  })
-  await controller.preview(candidate, candidate.payload)
-  const revision = controller.getSnapshot().session!.revision
-  await controller.confirm()
-  expect(controller.getSnapshot().session!.revision).toBe(revision + 1)
-  expect(controller.getSnapshot().run!.candidates.map((c) => c.state)).toEqual([
-    'committed',
-    'stale'
-  ])
 })
 
 it.each(['close', 'replace'] as const)(

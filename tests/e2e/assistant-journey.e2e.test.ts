@@ -87,8 +87,8 @@ test('Assistant uses real preload/Main/SQLite for scoped tools, confirmation and
         previewId: preview.previewId,
         operationId: crypto.randomUUID()
       }
-      const receipt = value(await api.assistant.confirmWrite(input))
-      const repeated = value(await api.assistant.confirmWrite(input))
+      const receipt = await api.assistant.confirmWrite(input)
+      const repeated = await api.assistant.confirmWrite(input)
       const after = value(await api.dataControl.list()).actionRecords.find(
         (r) => r.id === ids.recordIds[0]
       )!
@@ -179,7 +179,8 @@ test('Assistant uses real preload/Main/SQLite for scoped tools, confirmation and
     })
     expect(result.run.state).toBe('completed')
     expect(result.before.summary).toBeNull()
-    expect(result.after.summary).toContain('桌面的一角')
+    expect(result.after).toEqual(result.before)
+    expect(result.receipt).toEqual({ ok: false, error: { code: 'unsupported' } })
     expect(result.after.note).toBe(result.before.note)
     expect(result.repeated).toEqual(result.receipt)
     expect(result.statistics.steps[0].statistics).toMatchObject({
@@ -190,6 +191,43 @@ test('Assistant uses real preload/Main/SQLite for scoped tools, confirmation and
     expect(result.followup.state).toBe('completed')
     expect(result.cancelled.state).toBe('cancelled')
     expect(result.configurationCancelled.state).toBe('cancelled')
+
+    // Optional isolated native exploration, using the exact same guarded synthetic fixture.
+    // This is an explicit local opt-in, never enabled in CI and never reads a normal profile.
+    if (process.env.MYTRACER_ASSISTANT_EXPLORE === '1' && !process.env.CI) {
+      test.setTimeout(0)
+      await page.reload()
+      await page.evaluate(() => {
+        document.title = 'MyTracer · 合成数据 / 模拟模型 · 隔离探索'
+        const label = document.createElement('p')
+        label.textContent = '隔离合成预览 · 响应为固定模拟，不代表真实模型质量 · 关闭后清理资料'
+        label.style.cssText =
+          'position:fixed;top:0;left:240px;z-index:9999;font-size:12px;pointer-events:none'
+        document.body.append(label)
+      })
+      await page.pause()
+      return // Manual exploration is not an automated journey result; finally still cleans up.
+    }
+    // Free conversation works before selecting any business object.
+    const free = await page.evaluate(async () => {
+      const api = window.myTracer.assistant
+      const session = await api.createSession({
+        entry: { object: { kind: 'conversation', id: 'free-chat' }, intent: 'chat' },
+        mode: 'temporary'
+      })
+      if (!session.ok) throw new Error(session.error.code)
+      const run = await api.sendTurn({
+        sessionId: session.value.id,
+        expectedRevision: session.value.revision,
+        requestId: crypto.randomUUID(),
+        text: '我想先聊聊'
+      })
+      await api.deleteSession({ sessionId: session.value.id })
+      return run
+    })
+    expect(free.ok && free.value.state).toBe('completed')
+    expect(free.ok && free.value.manifest.sources).toEqual([])
+    expect(free.ok && free.value.candidates).toEqual([])
 
     const review = await page.evaluate(async ({ actionId }) => {
       const api = window.myTracer
@@ -296,7 +334,7 @@ test('Assistant uses real preload/Main/SQLite for scoped tools, confirmation and
     await page.getByRole('button', { name: '关闭服务设置', exact: true }).click()
     await page.getByRole('button', { name: '目标', exact: true }).click()
     await page.getByRole('button', { name: /^整理居住空间/ }).click()
-    await page.getByRole('button', { name: '接上上次', exact: true }).click()
+    await page.getByRole('button', { name: 'AI 接上上次', exact: true }).click()
     await expect(page.getByRole('dialog')).toBeVisible()
     await expect(page.getByLabel('继续聊聊')).toBeVisible()
     await capture('goal-resume')
@@ -304,12 +342,12 @@ test('Assistant uses real preload/Main/SQLite for scoped tools, confirmation and
     await page.getByRole('button', { name: '复盘', exact: true }).click()
     await page.getByRole('button', { name: '选择作参考', exact: true }).first().click()
     const coreBeforeDraft = await page.evaluate(() => window.myTracer.dataControl.list())
-    await page.getByRole('button', { name: '选定内容回顾', exact: true }).click()
+    await page.getByRole('button', { name: 'AI 回顾选定内容', exact: true }).click()
     await page.getByLabel('继续聊聊').fill('根据选定事实起草复盘')
     await page.getByRole('button', { name: '发送', exact: true }).click()
-    await expect(page.getByRole('button', { name: '仅填入编辑草稿', exact: true })).toBeVisible()
+    await expect(page.getByRole('button', { name: '填入编辑草稿', exact: true })).toBeVisible()
     await capture('review-preview')
-    await page.getByRole('button', { name: '仅填入编辑草稿', exact: true }).click()
+    await page.getByRole('button', { name: '填入编辑草稿', exact: true }).click()
     await expect(
       page.getByText('已填入未保存草稿；请回到编辑器检查并手动保存。', { exact: true })
     ).toBeVisible()
@@ -325,10 +363,10 @@ test('Assistant uses real preload/Main/SQLite for scoped tools, confirmation and
     // Record entry uses a real editor; filling a candidate leaves the database untouched.
     await page.getByRole('button', { name: '查看完整记录或修改', exact: true }).first().click()
     await page.getByRole('button', { name: '编辑记录', exact: true }).click()
-    await page.getByRole('button', { name: '帮我整理', exact: true }).click()
-    await page.getByLabel('继续聊聊').fill('提炼简述')
+    await page.getByRole('button', { name: 'AI 整理笔记', exact: true }).click()
+    await page.getByLabel('整理要求（可修改）').fill('提炼简述')
     await page.getByRole('button', { name: '发送', exact: true }).click()
-    await expect(page.getByRole('button', { name: '仅填入编辑草稿', exact: true })).toBeVisible()
+    await expect(page.getByRole('button', { name: '填入编辑草稿', exact: true })).toBeVisible()
     await capture('record-preview')
     if (process.env.MYTRACER_ASSISTANT_VISUAL === '1') {
       await application.evaluate(({ BrowserWindow }) =>
@@ -336,17 +374,20 @@ test('Assistant uses real preload/Main/SQLite for scoped tools, confirmation and
       )
       await capture('record-narrow-native-820')
       await page.setViewportSize({ width: 420, height: 800 })
-      await expect(page.getByLabel('继续聊聊')).toBeVisible()
+      await expect(page.getByLabel('整理要求（可修改）')).toBeVisible()
       expect(
         await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)
       ).toBe(true)
       await capture('record-stress-420')
     }
-    await page.getByRole('button', { name: '仅填入编辑草稿', exact: true }).click()
+    await page.getByRole('button', { name: '填入编辑草稿', exact: true }).click()
     await expect(
       page.getByText('已填入未保存草稿；请回到编辑器检查并手动保存。', { exact: true })
     ).toBeVisible()
-    await page.getByRole('dialog').getByRole('button', { name: '关闭', exact: true }).click()
+    await page
+      .getByRole('region', { name: 'AI 整理笔记', exact: true })
+      .getByRole('button', { name: '关闭', exact: true })
+      .click()
     expect(await page.evaluate(() => window.myTracer.dataControl.list())).toEqual(coreBeforeDraft)
     const noReviewWrite = await page.evaluate(async () => {
       const context = await window.myTracer.review.begin({})
@@ -354,6 +395,14 @@ test('Assistant uses real preload/Main/SQLite for scoped tools, confirmation and
       return window.myTracer.review.getResult({ reviewContextId: context.value.reviewContextId })
     })
     expect(noReviewWrite).toEqual({ ok: true, value: null })
+    await page.getByRole('button', { name: '保存修改', exact: true }).click()
+    const manuallySaved = await page.evaluate(() => window.myTracer.dataControl.list())
+    expect(
+      manuallySaved.ok &&
+        manuallySaved.value.actionRecords.some(
+          (r) => r.summary === '整理了桌面的一角，剩余纸张下次继续。'
+        )
+    ).toBe(true)
     const quitRun = await page.evaluate(async ({ goalId }) => {
       const api = window.myTracer.assistant
       const created = await api.createSession({

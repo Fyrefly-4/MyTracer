@@ -4,8 +4,8 @@
   border: 1px solid var(--color-line);
   border-radius: 16px;
   padding: 0;
-  margin: auto 24px auto auto;
-  width: min(640px, calc(100vw - 48px));
+  margin: auto;
+  width: min(900px, calc(100vw - 48px));
   height: min(860px, calc(100vh - 64px));
   max-height: calc(100vh - 64px);
   box-shadow: 0 18px 60px #293a3426;
@@ -29,6 +29,7 @@
 }
 .assistant-body {
   min-height: 0;
+  flex: 1;
   overflow: auto;
   padding: 18px 24px;
   overscroll-behavior: contain;
@@ -121,4 +122,38 @@
 .assistant-settings input[type='checkbox'] {
   width: auto;
   justify-self: start;
+}
+
+.assistant-inline {
+  width: 100%;
+  height: auto;
+  max-height: none;
+  margin: 16px 0;
+  box-shadow: none;
+}
+.assistant-inline .assistant-body {
+  overflow: visible;
+  flex: none;
+}
+.assistant-inline .assistant-composer {
+  padding: 14px;
+}
+.assistant-inline .assistant-header {
+  padding: 14px;
+}
+.assistant-inline .assistant-header h2 {
+  font-size: 1rem;
+}
+.assistant-messages article {
+  max-width: 70ch;
+}
+.assistant-messages article p {
+  line-height: 1.7;
+}
+.assistant-panel textarea {
+  min-height: 72px;
+  resize: vertical;
+}
+.assistant-panel summary {
+  cursor: pointer;
 }

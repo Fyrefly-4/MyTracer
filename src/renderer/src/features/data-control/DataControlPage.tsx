@@ -256,6 +256,7 @@ function ActionRecordEditor(props: {
             <RecordNoteInput label="行动备注" value={note} onChange={setNote} />
             <AssistantEntryButton
               label={`${props.objectName} · 当前未保存笔记`}
+              originalDraft={`简述：${summary || '（空）'}\n笔记：${note}`}
               entry={{
                 object: { kind: 'action-record', id: props.record.id },
                 intent: 'organize',
@@ -274,7 +275,7 @@ function ActionRecordEditor(props: {
                 return false
               }}
             >
-              帮我整理
+              AI 整理笔记
             </AssistantEntryButton>
             <Field label="记录中的下一步（可选）" hint="仅写入这条记录，不替换目标的当前下一步。">
               <textarea
@@ -518,6 +519,7 @@ function RoutineRecordEditor(props: {
             <RecordNoteInput label="例行备注" value={note} onChange={setNote} />
             <AssistantEntryButton
               label={`${props.objectName} · 当前未保存笔记`}
+              originalDraft={`简述：${summary || '（空）'}\n笔记：${note}`}
               entry={{
                 object: { kind: 'routine-record', id: props.record.id },
                 intent: 'organize',
@@ -536,7 +538,7 @@ function RoutineRecordEditor(props: {
                 return false
               }}
             >
-              帮我整理
+              AI 整理笔记
             </AssistantEntryButton>
             {dateChanged ? (
               <label className="inline-check">

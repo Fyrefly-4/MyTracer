@@ -40,7 +40,12 @@ export function revision(value: unknown): number {
 export function ref(value: unknown): AssistantObjectRef {
   const v = object(value)
   keys(v, ['kind', 'id'])
-  check(['goal', 'action', 'action-record', 'routine-record', 'review'].includes(String(v.kind)))
+  check(
+    ['goal', 'action', 'action-record', 'routine-record', 'review', 'conversation'].includes(
+      String(v.kind)
+    )
+  )
+  check(v.kind !== 'conversation' || v.id === 'free-chat')
   return { kind: v.kind as AssistantObjectRef['kind'], id: id(v.id) }
 }
 export const refKey = (value: AssistantObjectRef): string => `${value.kind}:${value.id}`
@@ -71,7 +76,7 @@ export function scope(value: unknown): AssistantScope {
 export function entry(value: unknown): AssistantEntry {
   const v = object(value)
   keys(v, ['object', 'intent', 'editorText', 'editorRevision'])
-  check(['organize', 'clarify', 'resume', 'review'].includes(String(v.intent)))
+  check(['organize', 'clarify', 'resume', 'review', 'chat'].includes(String(v.intent)))
   check((v.editorText === undefined) === (v.editorRevision === undefined))
   return {
     object: ref(v.object),

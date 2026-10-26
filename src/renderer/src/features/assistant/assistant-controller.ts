@@ -15,6 +15,11 @@ import type { AssistantServiceStatus } from '../../../../contracts/assistant-ser
 export interface AssistantLaunch {
   readonly entry: AssistantEntry
   readonly label: string
+  readonly originalDraft?: string
+  readonly restoreLocation?: () => void
+  readonly trigger?: HTMLElement
+  readonly anchor?: HTMLElement
+  readonly presentation?: 'inline' | 'conversation'
   readonly selectedObjects?: AssistantScope['selectedObjects']
   /** Reads live editor state, not the snapshot captured when the panel opened. */
   readonly draft?: {
@@ -54,7 +59,7 @@ export function candidateText(payload: AssistantCandidatePayload): string {
 export const candidateLabels: Record<AssistantCandidatePayload['kind'], string> = {
   'record-summary': '替换记录简述',
   'note-append': '追加补充笔记',
-  'action-create': '创建行动（不设为下一步）',
+  'action-create': '下一步建议（不创建行动）',
   'review-draft': '复盘三字段草稿'
 }
 function unwrap<T>(result: AssistantResult<T>): T {
@@ -77,7 +82,12 @@ export class AssistantController {
   private epoch = 0
   private active: { sessionId: string; requestId: string } | null = null
   private cancellation: Promise<void> = Promise.resolve()
-  private operation: { previewId: string; operationId: string } | null = null
+  private readonly filled = new Set<string>()
+  private preferredMode: AssistantSession['mode'] = 'persistent'
+  expand(): void {
+    if (this.state.launch)
+      this.patch({ launch: { ...this.state.launch, presentation: 'conversation' } })
+  }
   constructor(
     readonly api: AssistantApi,
     public service: Pick<
@@ -125,14 +135,14 @@ export class AssistantController {
         .cancelTurn(active)
         .then(() => undefined)
         .catch(() => undefined)
-    this.operation = null
     return this.epoch
   }
   async open(
     launch: AssistantLaunch,
-    mode: AssistantSession['mode'] = 'persistent',
+    mode: AssistantSession['mode'] = this.preferredMode,
     resumeExisting = true
   ): Promise<void> {
+    this.preferredMode = mode
     const previousSession = this.state.session
     const token = this.invalidate()
     this.patch({
@@ -150,8 +160,11 @@ export class AssistantController {
         unwrap(await this.api.deleteSession({ sessionId: previousSession.id }))
       const sessions = unwrap(await this.api.listSessions()).filter((s) => s.mode === 'persistent')
       if (token !== this.epoch) return
+      this.patch({ sessions })
       const previous =
-        resumeExisting && mode === 'persistent' && launch.entry.intent === 'resume'
+        resumeExisting &&
+        mode === 'persistent' &&
+        (launch.entry.intent === 'resume' || launch.entry.intent === 'chat')
           ? sessions.find(
               (s) =>
                 s.entry.object.kind === launch.entry.object.kind &&
@@ -207,6 +220,8 @@ export class AssistantController {
     const session = this.state.session
     this.invalidate()
     this.patch({ visible: false, busy: false, preview: null, run: null })
+    this.state.launch?.trigger?.focus({ preventScroll: true })
+    this.state.launch?.restoreLocation?.()
     if (session?.mode === 'temporary') {
       this.patch({ session: null })
       void this.api.deleteSession({ sessionId: session.id }).catch(() => undefined)
@@ -372,7 +387,6 @@ export class AssistantController {
   }
   clearPreview(): void {
     if (!this.state.busy) {
-      this.operation = null
       this.patch({ preview: null })
     }
   }
@@ -382,11 +396,19 @@ export class AssistantController {
     fillDraft = false
   ): Promise<void> {
     const { session, launch } = this.state
-    if (payload.kind === 'review-draft' && !fillDraft) {
-      this.patch({ notice: 'Assistant 不直接保存复盘；填入三字段草稿后，请使用原复盘页面确认。' })
+    if (!fillDraft || payload.kind === 'action-create') {
+      this.patch({
+        notice: 'Assistant 不直接保存复盘或记录，也不创建行动；请在普通编辑器手动保存。'
+      })
       return
     }
-    if (!session || this.state.busy || candidate.state !== 'proposed') return
+    if (
+      !session ||
+      this.state.busy ||
+      candidate.state !== 'proposed' ||
+      this.filled.has(candidate.id)
+    )
+      return
     const token = this.epoch
     this.patch({ busy: true, preview: null })
     try {
@@ -413,14 +435,20 @@ export class AssistantController {
           !preview.editorRevision ||
           preview.editorRevision !== session.entry.editorRevision ||
           launch.draft.revision() !== preview.editorRevision ||
-          (preview.payload.kind === 'review-draft' && preview.destination !== 'editor-draft') ||
+          preview.destination !== 'editor-draft' ||
           !launch.draft.apply(preview.payload)
         )
           throw new Error('stale-context')
-        this.patch({ notice: '已填入未保存草稿；请回到编辑器检查并手动保存。' })
-      } else {
-        this.operation = { previewId: preview.previewId, operationId: crypto.randomUUID() }
-        this.patch({ preview })
+        this.filled.add(candidate.id)
+        this.patch({
+          notice: '已填入未保存草稿；请回到编辑器检查并手动保存。',
+          run: this.state.run
+            ? {
+                ...this.state.run,
+                candidates: this.state.run.candidates.map((c) => ({ ...c, state: 'stale' }))
+              }
+            : null
+        })
       }
     } catch (error) {
       if (token === this.epoch) {
@@ -441,65 +469,6 @@ export class AssistantController {
     }
   }
   async confirm(): Promise<void> {
-    const { session, preview } = this.state
-    if (!session || !preview || !this.operation || this.state.busy) return
-    const token = this.epoch
-    this.patch({ busy: true })
-    try {
-      unwrap(await this.api.confirmWrite({ sessionId: session.id, ...this.operation }))
-      if (token !== this.epoch) return
-      this.patch({
-        preview: null,
-        run: this.state.run
-          ? {
-              ...this.state.run,
-              candidates: this.state.run.candidates.map((c) =>
-                c.id === preview.candidateId
-                  ? { ...c, state: 'committed' }
-                  : c.state === 'committed'
-                    ? c
-                    : { ...c, state: 'stale' }
-              )
-            }
-          : null,
-        notice: '已确认保存。删除对话不会删除这条正式记录。'
-      })
-      this.operation = null
-      try {
-        const refreshed = unwrap(await this.api.getSession({ sessionId: session.id }))
-        if (token !== this.epoch) return
-        this.patch({ session: refreshed })
-        const run = this.state.run
-        if (run) {
-          const authoritative = unwrap(
-            await this.api.getRun({ sessionId: session.id, requestId: run.requestId })
-          )
-          if (token === this.epoch) this.patch({ run: authoritative })
-        }
-      } catch {
-        if (token === this.epoch)
-          this.patch({ notice: '已确认保存，但会话状态刷新失败；请重新打开对话后继续。' })
-      }
-    } catch (error) {
-      if (token === this.epoch) {
-        if (error instanceof Error && error.message === 'operation-uncertain') {
-          this.operation = null
-          this.patch({
-            preview: null,
-            run: this.state.run
-              ? {
-                  ...this.state.run,
-                  candidates: this.state.run.candidates.map((c) =>
-                    c.id === preview.candidateId ? { ...c, state: 'uncertain' } : c
-                  )
-                }
-              : null
-          })
-        }
-        this.fail(error)
-      }
-    } finally {
-      if (token === this.epoch) this.patch({ busy: false })
-    }
+    this.patch({ notice: '请回到普通编辑器检查草稿并手动保存。' })
   }
 }
