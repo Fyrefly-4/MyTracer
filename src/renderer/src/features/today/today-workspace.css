@@ -529,3 +529,43 @@
 .today-experiment .today-routine-detail .recording-fields {
   min-width: 0;
 }
+
+/* Adapt only history rows to the space left by the user's chosen master width. */
+.today-experiment .record-list {
+  container-type: inline-size;
+  container-name: action-history;
+}
+
+@container action-history (max-width: 440px) {
+  .today-experiment .today-history-table,
+  .today-experiment .today-history-table tbody,
+  .today-experiment .today-history-table tr,
+  .today-experiment .today-history-table td {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .today-experiment .today-history-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .today-experiment .today-history-table tr {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--color-line);
+  }
+
+  .today-experiment .today-history-table td {
+    padding: 4px 0;
+    border: 0;
+  }
+
+  .today-experiment .today-history-heading,
+  .today-experiment .today-history-pagination {
+    flex-wrap: wrap;
+  }
+}
