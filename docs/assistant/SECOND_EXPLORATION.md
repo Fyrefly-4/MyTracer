@@ -59,6 +59,6 @@ npm.cmd run test:e2e:run -- tests/e2e/assistant-journey.e2e.test.ts --headed
 Remove-Item Env:MYTRACER_ASSISTANT_EXPLORE
 ```
 
-在合成配置与记录准备后，Playwright Inspector 暂停，应用显示「隔离合成预览」标记；可自行导航操作三个路径。结束后点击 Inspector Resume，让测试继续并执行 finally 清理。不要强杀后复用临时资料，也不要改成默认用户目录运行 `npm run dev`。CI 不启用此暂停。Linux 缺少显示或无法保留沙箱时应记录原错误，不允许通过禁用沙箱绕过。
+在合成配置与记录准备后，Playwright Inspector 暂停，应用显示「隔离合成预览」标记；可自行导航操作三个路径。结束后点击 Inspector Resume，结束手动模式并执行 finally 清理（不会继续产品断言，不能算自动旅程通过）。不要强杀后复用临时资料，也不要改成默认用户目录运行 `npm run dev`。CI 不启用此暂停。Linux 缺少显示或无法保留沙箱时应记录原错误，不允许通过禁用沙箱绕过。
 
 本地及托管验证、确切 SHA 与最终交付状态记录在 PR 和 #161 评论，不将未执行的 Windows 人工／真实模型验证算作通过。

@@ -195,6 +195,8 @@ test('Assistant uses real preload/Main/SQLite for scoped tools, confirmation and
     // Optional isolated native exploration, using the exact same guarded synthetic fixture.
     // This is an explicit local opt-in, never enabled in CI and never reads a normal profile.
     if (process.env.MYTRACER_ASSISTANT_EXPLORE === '1' && !process.env.CI) {
+      test.setTimeout(0)
+      await page.reload()
       await page.evaluate(() => {
         document.title = 'MyTracer · 合成数据 / 模拟模型 · 隔离探索'
         const label = document.createElement('p')
@@ -204,6 +206,7 @@ test('Assistant uses real preload/Main/SQLite for scoped tools, confirmation and
         document.body.append(label)
       })
       await page.pause()
+      return // Manual exploration is not an automated journey result; finally still cleans up.
     }
     // Free conversation works before selecting any business object.
     const free = await page.evaluate(async () => {

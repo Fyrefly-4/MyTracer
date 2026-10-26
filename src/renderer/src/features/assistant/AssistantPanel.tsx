@@ -214,12 +214,16 @@ export function AssistantPanel({
               </label>
               <button
                 type="button"
-                disabled={state.busy || !state.launch}
+                disabled={state.busy}
                 onClick={() => {
-                  if (state.launch) {
-                    setInput('')
-                    void controller.createNew(state.launch, mode)
-                  }
+                  setInput('')
+                  void controller.createNew(
+                    state.launch ?? {
+                      entry: { object: { kind: 'conversation', id: 'free-chat' }, intent: 'chat' },
+                      label: '自由对话'
+                    },
+                    mode
+                  )
                 }}
               >
                 开始新会话

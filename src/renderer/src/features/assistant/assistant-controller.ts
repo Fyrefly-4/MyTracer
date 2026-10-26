@@ -159,6 +159,7 @@ export class AssistantController {
         unwrap(await this.api.deleteSession({ sessionId: previousSession.id }))
       const sessions = unwrap(await this.api.listSessions()).filter((s) => s.mode === 'persistent')
       if (token !== this.epoch) return
+      this.patch({ sessions })
       const previous =
         resumeExisting &&
         mode === 'persistent' &&

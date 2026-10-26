@@ -105,3 +105,32 @@ test('editing underneath an inline candidate rejects stale fill without losing t
   await expect(inline.getByRole('status')).toContainText('没有覆盖新输入')
   await expect(page.getByLabel('简述草稿')).toHaveValue('用户新写的简述')
 })
+
+test('unsent inline input and hidden settings remain recoverable and block installation', async ({
+  page
+}) => {
+  await page.goto(path)
+  const probe = async (dirty: boolean) => {
+    await page.getByRole('button', { name: '检查安装草稿' }).click()
+    await expect(page.getByTestId('install-dirty')).toHaveText(String(dirty))
+  }
+  await page.getByRole('button', { name: 'AI 整理笔记', exact: true }).click()
+  const inline = page.getByRole('region', { name: 'AI 整理笔记', exact: true })
+  await inline.getByLabel('整理要求（可修改）').fill('尚未发送的要求')
+  await inline.getByRole('button', { name: '关闭', exact: true }).click()
+  await probe(true)
+  await page.getByRole('button', { name: 'AI 整理笔记', exact: true }).click()
+  await expect(inline.getByLabel('整理要求（可修改）')).toHaveValue('尚未发送的要求')
+  await inline.getByRole('button', { name: '清空所有未发送输入' }).click()
+  await inline.getByRole('button', { name: '关闭', exact: true }).click()
+  await probe(false)
+  await page.getByRole('button', { name: '切换设置可见' }).click()
+  await page.getByLabel('模型名称').fill('synthetic-new-model')
+  await page.getByRole('button', { name: '切换设置可见' }).click()
+  await probe(true)
+  await page.getByRole('button', { name: '切换设置可见' }).click()
+  await expect(page.getByLabel('模型名称')).toHaveValue('synthetic-new-model')
+  await page.getByRole('button', { name: '保存配置', exact: true }).click()
+  await expect(page.getByRole('status').filter({ hasText: '配置已保存' })).toBeVisible()
+  await probe(false)
+})
