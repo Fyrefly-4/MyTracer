@@ -174,6 +174,7 @@ function parseRecord(args: readonly unknown[]): RecordRoutineInputDto {
 
 function parseDayState(args: readonly unknown[]): GetRoutineDayStateInputDto {
   const input = oneObject(args, ['routineId', 'localDate'])
+  if (input.localDate === undefined) return { routineId: requiredId(input.routineId) }
   if (typeof input.localDate !== 'string') {
     throw new RoutineRecordIpcValidationError('Expected a LocalDate.')
   }

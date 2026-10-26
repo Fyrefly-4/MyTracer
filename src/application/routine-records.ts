@@ -228,12 +228,12 @@ export class RoutineRecordService {
     }
   }
 
-  public getRoutineDayState(routineId: string, localDate: string): RoutineDayStateView {
+  public getRoutineDayState(routineId: string, localDate?: string): RoutineDayStateView {
     const repository = asRoutineRecordRepository(this.dependencies.repository)
     const routine = loadRoutine(repository, routineId)
     let normalizedDate: Parameters<typeof isRoutinePlannedOn>[1]
     try {
-      normalizedDate = createLocalDate(localDate)
+      normalizedDate = createLocalDate(localDate ?? this.dependencies.clock.currentLocalDate())
     } catch {
       throw new RoutineRecordApplicationError('validation', 'Routine day is invalid.')
     }

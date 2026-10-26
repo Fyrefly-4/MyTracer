@@ -483,7 +483,6 @@ button:focus-visible {
   font-size: 18px;
 }
 
-.data-workspace,
 .data-workspace > section {
   display: grid;
   gap: 16px;

@@ -46,6 +46,33 @@ function setup() {
 }
 
 describe('RoutineRecord IPC boundary', () => {
+  it('accepts omitted or explicit day but rejects malformed dates and unauthorized reads', () => {
+    const { invoke, service, assertSender } = setup()
+    expect(invoke(ROUTINE_RECORD_CHANNELS.getDayState, { routineId })).toMatchObject({ ok: true })
+    expect(service.getRoutineDayState).toHaveBeenLastCalledWith(routineId, undefined)
+    expect(
+      invoke(ROUTINE_RECORD_CHANNELS.getDayState, { routineId, localDate: '2026-08-10' })
+    ).toMatchObject({ ok: true })
+    expect(service.getRoutineDayState).toHaveBeenLastCalledWith(routineId, '2026-08-10')
+    for (const input of [
+      ...[null, 0, '', '2026-02-30'].map((localDate) => ({ routineId, localDate })),
+      { routineId, surprise: true },
+      { routineId: 'invalid' }
+    ])
+      expect(invoke(ROUTINE_RECORD_CHANNELS.getDayState, input)).toMatchObject({
+        ok: false,
+        error: { code: 'validation' }
+      })
+    expect(service.getRoutineDayState).toHaveBeenCalledTimes(2)
+    assertSender.mockImplementationOnce(() => {
+      throw Error('untrusted renderer')
+    })
+    expect(() => invoke(ROUTINE_RECORD_CHANNELS.getDayState, { routineId })).toThrow(
+      'untrusted renderer'
+    )
+    expect(service.getRoutineDayState).toHaveBeenCalledTimes(2)
+  })
+
   it('registers narrow channels and keeps the context until a cross-midnight choice saves', () => {
     const { handlers, invoke, service } = setup()
     expect([...handlers.keys()].sort()).toEqual(Object.values(ROUTINE_RECORD_CHANNELS).sort())
