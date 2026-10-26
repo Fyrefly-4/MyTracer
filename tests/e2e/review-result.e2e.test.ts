@@ -86,7 +86,7 @@ test('AC-06 cancels cleanly, saves and edits one stable ReviewResult, resolves n
     await page.getByLabel('一个真实进展').fill('完成了一个真实切片')
     await page.getByLabel('一个主要阻力').fill('上下文切换')
     await page.getByLabel('下一周期的一个调整').fill('保护一个专注时段')
-    await page.getByRole('button', { name: '保存复盘' }).click()
+    await page.getByRole('button', { name: '保存复盘', exact: true }).click()
     await expect(page.getByText('本周期复盘已保存。')).toBeVisible()
     await expect(page.getByLabel('一个真实进展')).toHaveValue('完成了一个真实切片')
 
@@ -109,7 +109,7 @@ test('AC-06 cancels cleanly, saves and edits one stable ReviewResult, resolves n
     await page.getByLabel('使用已有待行动').check()
     await page.getByLabel('选择已有下一步行动').selectOption(seeded.existingActionId)
     await page.getByLabel('一个真实进展').fill('编辑后的真实进展')
-    await page.getByRole('button', { name: '保存复盘' }).click()
+    await page.getByRole('button', { name: '保存复盘', exact: true }).click()
     await expect(page.getByText('本周期复盘已保存。')).toBeVisible()
     expect(
       await page.evaluate((goalId) => window.myTracer.goals.getDetail({ goalId }), seeded.goalId)
@@ -133,7 +133,7 @@ test('AC-06 cancels cleanly, saves and edits one stable ReviewResult, resolves n
     await expect(page.getByLabel('关联活跃目标（可选）')).toHaveValue(seeded.goalId)
     await page.getByLabel('创建并使用').check()
     await page.getByLabel('新的下一步行动').fill('新建轻量下一步')
-    await page.getByRole('button', { name: '保存复盘' }).click()
+    await page.getByRole('button', { name: '保存复盘', exact: true }).click()
     await expect(page.getByText('本周期复盘已保存。')).toBeVisible()
     const afterCreate = await page.evaluate(
       async (goalId) => ({
