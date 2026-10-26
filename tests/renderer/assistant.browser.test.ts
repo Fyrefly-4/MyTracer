@@ -158,3 +158,52 @@ test('leaving the editor cancels its inline request and preserves input for retu
   await expect(inline.getByLabel('整理要求（可修改）')).toHaveValue('离开前的输入')
   await expect(inline.getByRole('status')).not.toContainText('整理完成')
 })
+
+test('spontaneous raw note uses the ordinary first-record form without precreating or inventing facts', async ({
+  page
+}) => {
+  await page.goto(path)
+  await page.getByRole('button', { name: '记一笔', exact: true }).click()
+  const form = page.getByRole('dialog', { name: '记一笔', exact: true })
+  const raw = '桌面好像全收好了。等等，右边一叠纸没动。大概5分钟？也可能20，没看表。'
+  await expect(form.getByLabel('先随手写下来（可选）')).toBeFocused()
+  await form.getByLabel('先随手写下来（可选）').fill(raw)
+  await form.getByRole('button', { name: 'AI 整理这段原文' }).click()
+  const inline = form.getByRole('region', { name: 'AI 整理笔记' })
+  await inline.getByLabel('整理要求（可修改）').fill('提炼简述，保留不确定性')
+  await inline.getByRole('button', { name: '发送', exact: true }).click()
+  await expect(inline.getByRole('button', { name: '填入编辑草稿' })).toBeVisible()
+  await page.screenshot({ path: '.tmp/assistant-browser-results/first-note.png' })
+  await inline.getByRole('button', { name: '填入编辑草稿' }).click()
+  await expect(form.getByLabel('简述（可选）')).toHaveValue(
+    '整理了桌面的一部分；右侧一叠纸还没动，投入时长不确定。'
+  )
+  await expect(form.getByLabel('先随手写下来（可选）')).toHaveValue(raw)
+  await expect(form.getByLabel('刚才做了什么')).toHaveValue('')
+  await expect(form.getByLabel('真实投入（分钟）')).toHaveValue('')
+  await expect(form.getByLabel('这次不记时长（未知）')).not.toBeChecked()
+  await expect(form.getByLabel('本次结果', { exact: true })).toHaveValue('')
+  await expect(form.getByLabel('保存后，整个行动')).toHaveValue('')
+  expect(
+    await page.evaluate(
+      () => (window as unknown as { syntheticRecordCalls: unknown[] }).syntheticRecordCalls
+    )
+  ).toEqual([])
+  await inline.getByRole('button', { name: '带着内容继续对话' }).click()
+  const expanded = page.getByRole('dialog', { name: 'AI 助手', exact: true })
+  await expect(expanded.getByLabel('对话')).toContainText('提炼简述，保留不确定性')
+  await expect(expanded.getByText('历史对话与保存方式')).toHaveCount(0)
+  await page.keyboard.press('Escape')
+  await expect(form).toBeVisible()
+  await form.getByRole('button', { name: '收起并返回' }).click()
+  await page.getByRole('button', { name: '继续记一笔', exact: true }).click()
+  await expect(form.getByLabel('先随手写下来（可选）')).toHaveValue(raw)
+  await expect(form.getByLabel('简述（可选）')).not.toHaveValue('')
+  await form.getByRole('button', { name: 'AI 整理这段原文' }).click()
+  await inline.getByLabel('整理要求（可修改）').fill('再整理')
+  await inline.getByRole('button', { name: '发送', exact: true }).click()
+  await expect(inline.getByRole('button', { name: '填入编辑草稿' })).toBeVisible()
+  await form.getByLabel('刚才做了什么').fill('整理桌面')
+  await inline.getByRole('button', { name: '填入编辑草稿' }).click()
+  await expect(inline.getByRole('status')).toContainText('没有覆盖新输入')
+})

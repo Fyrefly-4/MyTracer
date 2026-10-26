@@ -1,4 +1,5 @@
-import { RecordSummaryInput, RecordNoteInput } from '../../app/RecordText'
+import { AssistantEntryButton } from '../assistant/AssistantContext'
+import { RecordSummaryInput } from '../../app/RecordText'
 import { createPortal } from 'react-dom'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { ActionDetailDto } from '../../../../contracts/actions'
@@ -35,7 +36,7 @@ export function FirstActionRecord(props: {
   const [dates, setDates] = useState<{ capturedOn: string; currentLocalDate: string } | null>(null)
   const dialog = useRef<HTMLDialogElement>(null)
   const trigger = useRef<HTMLButtonElement>(null)
-  const titleInput = useRef<HTMLInputElement>(null)
+  const noteInput = useRef<HTMLTextAreaElement>(null)
   const composing = useRef(false)
   const imeSubmit = useRef(false)
   useUnsavedContent('first-action-record', open)
@@ -46,7 +47,7 @@ export function FirstActionRecord(props: {
   useEffect(() => {
     if (open && !dialog.current?.open) {
       dialog.current?.showModal()
-      titleInput.current?.focus()
+      noteInput.current?.focus()
     }
     if (!open && dialog.current?.open) {
       dialog.current.close()
@@ -310,9 +311,51 @@ export function FirstActionRecord(props: {
               <fieldset disabled={busy || Boolean(draft.uncertainInput)}>
                 <legend>新行动的第一次记录</legend>
                 <label>
+                  先随手写下来（可选）
+                  <textarea
+                    ref={noteInput}
+                    rows={5}
+                    value={draft.note}
+                    placeholder="做了一点什么？没想清楚也可以，原文会留在这笔记录里。"
+                    onChange={(event) => change({ ...draft, note: event.target.value })}
+                  />
+                </label>
+                <p className="empty-copy">
+                  可以直接保存原文，也可以让 AI
+                  提炼简述。矛盾或不确定的细节请保留；时长、结果和状态由你填写。
+                </p>
+                {open ? (
+                  <AssistantEntryButton
+                    label="当前未保存的第一笔 · 只参考这段原文"
+                    originalDraft={`简述：${draft.summary || '（空）'}\n原文：${draft.note}`}
+                    entry={{
+                      object: { kind: 'record-draft', id: draft.context.recordingContextId },
+                      intent: 'organize',
+                      editorText: draft.note,
+                      editorRevision: JSON.stringify(draft)
+                    }}
+                    disabled={busy || Boolean(draft.uncertainInput)}
+                    apply={(payload) => {
+                      if (
+                        busyRef.current ||
+                        draft.uncertainInput ||
+                        payload.kind !== 'record-summary'
+                      )
+                        return false
+                      change({ ...draft, summary: payload.text })
+                      return true
+                    }}
+                  >
+                    AI 整理这段原文
+                  </AssistantEntryButton>
+                ) : null}
+                <RecordSummaryInput
+                  value={draft.summary}
+                  onChange={(summary) => change({ ...draft, summary })}
+                />
+                <label>
                   刚才做了什么
                   <input
-                    ref={titleInput}
                     required
                     value={draft.title}
                     onChange={(event) => change({ ...draft, title: event.target.value })}
@@ -384,14 +427,6 @@ export function FirstActionRecord(props: {
                 <p className="empty-copy">
                   本次达到预期不等于整个行动已完成。不会自动加入今天或改变目标下一步。
                 </p>
-                <RecordSummaryInput
-                  value={draft.summary}
-                  onChange={(summary) => change({ ...draft, summary })}
-                />
-                <RecordNoteInput
-                  value={draft.note}
-                  onChange={(note) => change({ ...draft, note })}
-                />
                 <label>
                   <span id="first-record-goal-label">关联目标（可选）</span>
                   <select

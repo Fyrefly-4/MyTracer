@@ -147,7 +147,8 @@ export function AssistantPanel({
       'action-record': '行动记录',
       'routine-record': '例行记录',
       review: '选定复盘',
-      conversation: '自由对话'
+      conversation: '自由对话',
+      'record-draft': '当前未保存的第一笔'
     }[ref.kind]
   const [composers, setComposers] = useState<Record<string, string>>({})
   const composersRef = useRef<Record<string, string>>({})
@@ -201,7 +202,7 @@ export function AssistantPanel({
           {state.launch?.label ?? '本地会话'} ·{' '}
           {session?.mode === 'temporary' ? '临时，不保存' : '保存在本机'}
         </p>
-        {!inline ? (
+        {!inline && session?.scope.current.kind !== 'record-draft' ? (
           <details>
             <summary>历史对话与保存方式</summary>
             <div className="assistant-actions">
@@ -270,7 +271,9 @@ export function AssistantPanel({
             ) : null}
           </details>
         ) : null}
-        {session ? (
+        {session?.scope.current.kind === 'record-draft' ? (
+          <p>参考范围 · 仅这份未保存原文和草稿日期，不读取其他记录。</p>
+        ) : session ? (
           <details
             onToggle={(event) => {
               if (event.currentTarget.open) onRequestSources?.()
@@ -394,7 +397,7 @@ export function AssistantPanel({
                   {source.truncated ? ' · 已截断' : ''}
                 </small>
                 <p>{readableExcerpt(source.excerpt)}</p>
-                {onSource ? (
+                {onSource && source.ref.kind !== 'record-draft' ? (
                   <button
                     type="button"
                     onClick={() => {
@@ -581,6 +584,7 @@ export function AssistantPanel({
 
 function readableExcerpt(excerpt: string): string {
   const labels: Record<string, string> = {
+    capturedOn: '草稿日期',
     title: '标题',
     description: '说明',
     status: '状态',

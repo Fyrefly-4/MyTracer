@@ -142,7 +142,8 @@ export class AssistantController {
     mode: AssistantSession['mode'] = this.preferredMode,
     resumeExisting = true
   ): Promise<void> {
-    this.preferredMode = mode
+    if (launch.entry.object.kind === 'record-draft') mode = 'temporary'
+    else this.preferredMode = mode
     const previousSession = this.state.session
     const token = this.invalidate()
     this.patch({

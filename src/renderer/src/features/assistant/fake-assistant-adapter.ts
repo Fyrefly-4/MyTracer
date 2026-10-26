@@ -81,6 +81,7 @@ export function createFakeAssistantAdapter(
         return failure('validation')
       if (
         entry.object.kind !== 'conversation' &&
+        !(entry.object.kind === 'record-draft' && entry.object.id === 'synthetic-first-context') &&
         !syntheticAssistantEntries.some(
           (item) =>
             item.entry.object.id === entry.object.id && item.entry.object.kind === entry.object.kind
@@ -180,7 +181,10 @@ export function createFakeAssistantAdapter(
               ? { kind: 'action-create', title: '整理书桌右侧的一小块' }
               : {
                   kind: 'record-summary',
-                  text: '整理了书桌左侧，把散落的纸集中到盒子里；右侧留待下次。'
+                  text:
+                    session.entry.object.kind === 'record-draft'
+                      ? '整理了桌面的一部分；右侧一叠纸还没动，投入时长不确定。'
+                      : '整理了书桌左侧，把散落的纸集中到盒子里；右侧留待下次。'
                 }
       }
       const messages = [

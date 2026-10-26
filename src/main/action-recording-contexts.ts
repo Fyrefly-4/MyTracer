@@ -49,6 +49,14 @@ export class ActionRecordingContextStore {
     return context
   }
 
+  /** Read-only capability for a still-unsaved first-record editor owned by this sender. */
+  public firstDraft(senderId: number, contextId: string): { readonly capturedOn: string } | null {
+    const context = this.contexts.get(contextId)
+    return context?.senderId === senderId && context.firstRecord && !context.savedFirstResult
+      ? { capturedOn: context.capturedOn }
+      : null
+  }
+
   public require(senderId: number, actionId: string, contextId: string): ActionRecordingContext {
     const context = this.contexts.get(contextId)
     if (!context || context.senderId !== senderId || context.actionId !== actionId) {
