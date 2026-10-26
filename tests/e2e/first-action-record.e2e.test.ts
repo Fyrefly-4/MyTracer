@@ -16,7 +16,7 @@ test('first record preserves drafts, explicit choices, retry identity and modal 
       args: [
         join(process.cwd(), 'out/main/index.js'),
         `--user-data-dir=${root.electronUserData}`,
-        ...(process.platform === 'linux' ? ['--headless'] : [])
+        ...(process.platform === 'linux' ? ['--headless', '--ozone-platform=headless'] : [])
       ],
       env: minimalElectronEnvironment(root)
     })
@@ -29,7 +29,8 @@ test('first record preserves drafts, explicit choices, retry identity and modal 
     await expect(dialog.getByLabel('刚才做了什么', { exact: true })).toBeFocused()
     await expect(dialog.getByLabel('保存后，整个行动')).toHaveValue('')
     await expect(dialog.getByLabel('本次结果', { exact: true })).toHaveValue('')
-    await expect(dialog).toContainText('当前没有可开始的行动')
+    await expect(dialog.getByLabel('选择已有行动')).toHaveCount(0)
+    await expect(dialog.getByLabel('刚才做了什么', { exact: true })).toBeInViewport({ ratio: 1 })
     await dialog.getByLabel('刚才做了什么', { exact: true }).fill('合成事实：整理了一部分')
     await dialog
       .getByRole('textbox', { name: '简述（可选）', exact: true })
@@ -126,6 +127,8 @@ test('first record preserves drafts, explicit choices, retry identity and modal 
     // Existing-action routing preserves the original deep-record path and creates no duplicate.
     await page.getByRole('button', { name: '记一笔', exact: true }).click()
     if (!saved.ok) throw Error('snapshot failed')
+    await dialog.getByLabel('刚才做了什么', { exact: true }).fill(saved.value.actions[0]!.title)
+    await expect(dialog.getByRole('status')).toContainText('已有同名行动')
     await dialog.getByLabel('选择已有行动').selectOption(saved.value.actions[0]!.id)
     await dialog.getByRole('button', { name: '打开已有行动记录' }).click()
     await expect(page.getByRole('button', { name: '开始记录', exact: true })).toBeVisible()
@@ -169,7 +172,7 @@ test('late begin cannot replace a newer draft; an authoritative rejection releas
         args: [
           join(process.cwd(), 'out/main/index.js'),
           `--user-data-dir=${root.electronUserData}`,
-          ...(process.platform === 'linux' ? ['--headless'] : [])
+          ...(process.platform === 'linux' ? ['--headless', '--ozone-platform=headless'] : [])
         ],
         env: minimalElectronEnvironment(root)
       }))
