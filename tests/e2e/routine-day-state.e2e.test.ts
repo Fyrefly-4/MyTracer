@@ -202,6 +202,7 @@ test('routine status distinguishes loading and failure, retries, and ignores a p
     await configureRead(app, 'hold', ids[0])
     await select(page, '零分钟例行')
     await waitForRead(app)
+    await expect(panel(page, '零分钟例行').getByRole('button', { name: /查看记录/ })).toHaveCount(0)
     await expect(panel(page, '零分钟例行').locator('.routine-record-state strong')).toHaveText(
       '正在读取记录…'
     )
@@ -216,6 +217,7 @@ test('routine status distinguishes loading and failure, retries, and ignores a p
     await select(page, '零分钟例行')
     const current = panel(page, '零分钟例行')
     await expect(current.getByRole('alert')).toContainText('无法确认这一天是否已有记录')
+    await expect(current.getByRole('button', { name: /查看记录/ })).toHaveCount(0)
     await expect(current.locator('.routine-record-state strong')).toHaveText('记录状态暂时无法读取')
     await expect(current.getByRole('button', { name: '记录例行', exact: true })).toHaveCount(0)
     await configureRead(app, 'reject', ids[0])

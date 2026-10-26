@@ -1723,6 +1723,7 @@ function TodayWorkspace(): ReactNode {
                 key={selectedRoutine.id}
                 routineId={selectedRoutine.id}
                 routineName={selectedRoutine.name}
+                source="today"
                 initialState={{
                   routineId: selectedRoutine.id,
                   localDate: today.localDate,
