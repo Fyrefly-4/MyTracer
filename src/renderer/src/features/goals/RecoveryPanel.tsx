@@ -305,15 +305,15 @@ export function RecoveryPanel(props: {
           </section>
 
           <div className="recovery-fact">
-            <span>距最近一次实际行动</span>
-            <strong>
-              {context.daysSinceLastRealAction === null
-                ? '还没有行动记录'
-                : `${context.daysSinceLastRealAction} 天`}
-            </strong>
+            <span>最近记录到的行动</span>
+            <strong>{context.lastRealActionOn ?? '还没有行动记录'}</strong>
             <small>
               截至 {context.asOfLocalDate}
-              {context.lastRealActionOn ? ` · 上次行动 ${context.lastRealActionOn}` : ''}
+              {context.daysSinceLastRealAction === null
+                ? ''
+                : context.daysSinceLastRealAction < 0
+                  ? ' · 行动发生日期晚于截至日'
+                  : ` · 相隔 ${context.daysSinceLastRealAction} 天`}
             </small>
           </div>
 
