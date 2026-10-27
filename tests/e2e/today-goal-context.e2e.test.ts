@@ -329,6 +329,8 @@ test('history expansion belongs to one action and goal, closes explicitly and en
     await summary(page).click()
     await expect(contextPanel(page)).toContainText('理解 18')
     await page.reload()
+    await navigate(page, '今天')
+    await page.getByRole('button', { name: /写一个并发更新的小例子.*待行动/ }).click()
     await expect(summary(page)).toBeVisible()
     await expect(contextPanel(page)).toHaveCount(0)
     expect(await reads()).toBe(4)
