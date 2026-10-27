@@ -107,9 +107,9 @@ export function HomePage(): ReactNode {
     >
       <header className="home-welcome">
         <div>
-          <p className="eyebrow">一点近况，一些可以继续的事</p>
+          <p className="eyebrow">MyTracer · 个人记录</p>
           <h1>看看最近走到了哪里。</h1>
-          <p className="home-intro">不必从头开始，下一步还在这里。</p>
+          <p className="home-intro">记下做过的事，也为下次留个线索。</p>
         </div>
         {today ? (
           <time className="home-date" dateTime={today}>
@@ -179,7 +179,7 @@ export function HomePage(): ReactNode {
                                   {record.summary || `${record.title} · ${record.outcomeText}`}
                                 </>
                               ) : recordDataAvailable ? (
-                                '还没有留下记录，可以从一个小步骤开始。'
+                                '还没有这个目标的记录。没有记录，不代表没有行动。'
                               ) : (
                                 '最近记录暂时无法读取。'
                               )}
@@ -188,9 +188,7 @@ export function HomePage(): ReactNode {
                               <span>当前下一步</span>
                               <p>
                                 {next?.title ??
-                                  (snapshot.data
-                                    ? '还没有设置，随时可以补上一小步。'
-                                    : '暂时无法读取。')}
+                                  (snapshot.data ? '尚未设置下一步。' : '暂时无法读取。')}
                               </p>
                               <div className="home-goal-actions">
                                 <button
@@ -224,16 +222,16 @@ export function HomePage(): ReactNode {
                   <h3>
                     {snapshot.data?.totalGoalCount
                       ? '这里暂时没有活跃的目标。'
-                      : '先给一件想做的事留个位置。'}
+                      : '给想做的事留一页。'}
                   </h3>
-                  <p>不必先写完整计划。一个方向、一个小步骤，就可以作为开始。</p>
+                  <p>目标用来放方向和下一步；记录用来留下实际发生的事。</p>
                   <button type="button" onClick={() => session.openSection('goals')}>
                     {snapshot.data?.totalGoalCount ? '查看已有目标' : '＋ 留下一个目标'}
                   </button>
                   {snapshot.data?.totalGoalCount === 0 ? (
                     <>
                       <p>
-                        也可以不建目标。去“今天”，用“记一笔”留下做过的一点；已有行动就继续记在原行动下，还没开始则用“新建行动”。
+                        只想记下刚才做的事？去“今天”点“记一笔”，无需先建目标。已有行动可接着记录，还没开始可用“新建行动”。
                       </p>
                       <button type="button" onClick={() => session.openSection('today')}>
                         去今天
@@ -289,7 +287,7 @@ export function HomePage(): ReactNode {
                     ))
                   ) : (
                     <p className="home-muted">
-                      今天没有安排例行。有想重复做的小事时，再添加也不迟。
+                      今天没有安排例行。需要时，可以在“例行”里设置重复做的事。
                     </p>
                   )
                 ) : (
@@ -339,7 +337,7 @@ export function HomePage(): ReactNode {
                   ))}
                 </div>
               ) : (
-                <p className="home-muted">现在还没有记录。做过一点以后，随时回来记下。</p>
+                <p className="home-muted">这里按日期留下最近的记录。没有记录，不代表没有行动。</p>
               )
             ) : (
               <p className="home-muted">最近记录暂时无法读取。</p>
