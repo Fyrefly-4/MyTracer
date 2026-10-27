@@ -355,7 +355,9 @@ export class AssistantController {
         session: completedSession,
         notice:
           run.state === 'completed'
-            ? '整理完成；候选尚未写入正式记录。'
+            ? run.candidates.length
+              ? '整理完成；候选尚未写入正式记录。'
+              : '回复完成。'
             : (errors[run.error?.code ?? 'cancelled'] ?? '整理失败，可以手动重试。')
       })
       return run.state === 'completed'
@@ -391,6 +393,9 @@ export class AssistantController {
       this.patch({ preview: null })
     }
   }
+  isFilled(candidateId: string): boolean {
+    return this.filled.has(candidateId)
+  }
   async preview(
     candidate: AssistantCandidate,
     payload: AssistantCandidatePayload,
@@ -407,6 +412,7 @@ export class AssistantController {
       !session ||
       this.state.busy ||
       candidate.state !== 'proposed' ||
+      this.state.run?.candidates.find((c) => c.id === candidate.id)?.state !== 'proposed' ||
       this.filled.has(candidate.id)
     )
       return
@@ -463,7 +469,16 @@ export class AssistantController {
             notice:
               '当前会话内核尚未提供复盘草稿的来源验证，暂不能安全填入；可查看候选并继续手工复盘。'
           })
-        else this.fail(error)
+        else {
+          if (error instanceof Error && error.message === 'stale-context' && this.state.run)
+            this.patch({
+              run: {
+                ...this.state.run,
+                candidates: this.state.run.candidates.map((c) => ({ ...c, state: 'stale' }))
+              }
+            })
+          this.fail(error)
+        }
       }
     } finally {
       if (token === this.epoch) this.patch({ busy: false })

@@ -157,3 +157,29 @@
 .assistant-panel summary {
   cursor: pointer;
 }
+
+/* Span the existing editor grid, never the host application's master/detail columns. */
+.assistant-entry-anchor,
+.assistant-entry-button {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+.assistant-entry-anchor {
+  width: 100%;
+}
+.assistant-inline {
+  box-sizing: border-box;
+  min-width: 0;
+}
+.assistant-inline .assistant-body {
+  padding: 14px;
+}
+.assistant-candidates {
+  scroll-margin-block: 12px;
+}
+.assistant-candidates > * + * {
+  margin-top: 12px;
+}
+.assistant-candidate h3 {
+  margin-top: 0;
+}

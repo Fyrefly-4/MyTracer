@@ -82,14 +82,21 @@ describe('Assistant renderer orchestration with synthetic-only adapter', () => {
     revision = 'draft-2'
     await controller.preview(candidate, candidate.payload, true)
     expect(apply).not.toHaveBeenCalled()
+    expect(controller.getSnapshot().run?.candidates[0].state).toBe('stale')
+    expect(renderToStaticMarkup(createElement(AssistantPanel, { controller }))).toContain(
+      '内容已变化，候选已过期'
+    )
     revision = 'draft-1'
+    await controller.open({ ...launch, draft: { revision: () => revision, apply } })
+    await controller.send('重新整理')
+    const fresh = controller.getSnapshot().run!.candidates[0]
     const preview = api.previewWrite
     vi.spyOn(api, 'previewWrite').mockImplementation(async (input) => {
       const result = await preview(input)
       revision = 'draft-3'
       return result
     })
-    await controller.preview(candidate, candidate.payload, true)
+    await controller.preview(fresh, fresh.payload, true)
     expect(apply).not.toHaveBeenCalled()
     expect(writes).toHaveLength(0)
     expect(controller.getSnapshot().notice).toContain('没有覆盖')
@@ -106,6 +113,9 @@ describe('Assistant renderer orchestration with synthetic-only adapter', () => {
     await controller.preview(candidate, candidate.payload)
     await controller.confirm()
     expect(apply).toHaveBeenCalledTimes(1)
+    const html = renderToStaticMarkup(createElement(AssistantPanel, { controller }))
+    expect(html).toContain('已填入未保存草稿')
+    expect(html).not.toContain('候选已过期')
     expect(confirm).not.toHaveBeenCalled()
     expect(writes).toHaveLength(0)
   })
@@ -317,4 +327,16 @@ it('cleans a newly created temporary session when its initial scope fails', asyn
   expect((await api.getSession({ sessionId: failedId })).ok).toBe(false)
   expect(controller.getSnapshot().session).toBeNull()
   expect(controller.getSnapshot().busy).toBe(false)
+})
+
+it('uses reply completion for zero-candidate chat', async () => {
+  const { controller, writes } = setup()
+  await controller.open({
+    label: '自由对话',
+    entry: { object: { kind: 'conversation', id: 'free-chat' }, intent: 'chat' }
+  })
+  await controller.send('只聊聊')
+  expect(controller.getSnapshot().notice).toBe('回复完成。')
+  expect(controller.getSnapshot().run?.candidates).toEqual([])
+  expect(writes).toEqual([])
 })

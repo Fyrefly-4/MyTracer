@@ -46,7 +46,7 @@ export function AssistantEntryButton(props: {
     <>
       <button
         type="button"
-        className="secondary-button"
+        className="secondary-button assistant-entry-button"
         disabled={props.disabled || textLimit}
         title={textLimit ? '请提供 1–12000 字的明确选定内容，再开始整理。' : undefined}
         onClick={(event) => {
@@ -82,7 +82,7 @@ export function AssistantEntryButton(props: {
       >
         {props.children}
       </button>
-      <div ref={anchor} />
+      <div ref={anchor} className="assistant-entry-anchor" />
     </>
   )
 }
