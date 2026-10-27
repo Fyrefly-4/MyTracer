@@ -237,6 +237,7 @@ export class UiSession {
   hasRetentionError = (): boolean => this.retentionError
 
   // Reading state only, retained across navigation within this app session.
+  readonly expandedTodayGoalContexts = new Set<string>()
   readonly expandedRecordNotes = new Set<string>()
   readonly expandedActionDescriptions = new Set<string>()
   readonly bookReading: { month: string | null; positions: Map<string, number> } = {
