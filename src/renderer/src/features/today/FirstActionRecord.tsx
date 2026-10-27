@@ -470,29 +470,46 @@ export function FirstActionRecord(props: {
                 <p className="empty-copy">
                   本次达到预期不等于整个行动已完成。不会自动加入今天或改变目标下一步。
                 </p>
-                <RecordSummaryInput
-                  value={draft.summary}
-                  onChange={(summary) => change({ ...draft, summary })}
-                />
-                <RecordNoteInput
-                  value={draft.note}
-                  onChange={(note) => change({ ...draft, note })}
-                />
-                <label>
-                  <span id="first-record-goal-label">关联目标（可选）</span>
-                  <select
-                    aria-labelledby="first-record-goal-label"
-                    value={draft.goalId}
-                    onChange={(event) => change({ ...draft, goalId: event.target.value })}
-                  >
-                    <option value="">不关联目标</option>
-                    {props.goals.map((goal) => (
-                      <option key={goal.id} value={goal.id}>
-                        {goal.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <details
+                  className="first-record-extras"
+                  onInvalidCapture={(event) => {
+                    // Keep mounted fields validatable and reveal an invalid hidden input
+                    // before the browser attempts to focus it.
+                    event.currentTarget.open = true
+                  }}
+                >
+                  <summary>
+                    补充简述、笔记或目标（可选）
+                    {draft.summary || draft.note || draft.goalId
+                      ? ' · 已有内容，保存时会一并留下'
+                      : ''}
+                  </summary>
+                  <div className="first-record-extra-fields">
+                    <RecordSummaryInput
+                      value={draft.summary}
+                      onChange={(summary) => change({ ...draft, summary })}
+                    />
+                    <RecordNoteInput
+                      value={draft.note}
+                      onChange={(note) => change({ ...draft, note })}
+                    />
+                    <label>
+                      <span id="first-record-goal-label">关联目标（可选）</span>
+                      <select
+                        aria-labelledby="first-record-goal-label"
+                        value={draft.goalId}
+                        onChange={(event) => change({ ...draft, goalId: event.target.value })}
+                      >
+                        <option value="">不关联目标</option>
+                        {props.goals.map((goal) => (
+                          <option key={goal.id} value={goal.id}>
+                            {goal.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                </details>
               </fieldset>
               {error ? (
                 <p className="form-error" role="alert">
