@@ -24,8 +24,8 @@ for (const scenario of ['empty', 'ordinary', 'long'] as const) {
       })
       const page = await app.firstWindow()
       await expect(page.getByRole('navigation')).toBeVisible()
-      await page.evaluate(async (variant) => {
-        if (variant === 'empty') return
+      const seeded = await page.evaluate(async (variant) => {
+        if (variant === 'empty') return null
         const suffix = variant === 'long' ? '，这是用于检查换行与阅读节奏的合成文字'.repeat(8) : ''
         const today = await window.myTracer.today.get({})
         const goal = await window.myTracer.goals.create({
@@ -59,7 +59,15 @@ for (const scenario of ['empty', 'ordinary', 'long'] as const) {
           note: null
         })
         if (!rest.ok) throw Error('seed routine record')
+        return {
+          goalName: '合成目标：整理阅读笔记' + suffix,
+          actionTitle: '合成行动：读一页并写下想法' + suffix,
+          routineName: '合成例行：舒展身体' + suffix
+        }
       }, scenario)
+      // Home mounted before IPC seeding. Re-enter through normal navigation so its
+      // snapshot is read again; clicking the already-active Home entry is a no-op.
+      await page.getByRole('navigation').getByRole('button', { name: '今天', exact: true }).click()
       for (const [width, height] of [
         [1024, 700],
         [1188, 848]
@@ -77,13 +85,71 @@ for (const scenario of ['empty', 'ordinary', 'long'] as const) {
             .click()
           await page.evaluate(() => document.fonts.ready)
           await expect(page.locator('.content-inner')).toBeVisible()
-          // Wait for UI reads to settle through two frames, without network/model requests.
-          await page.evaluate(
-            () =>
-              new Promise<void>((resolve) =>
-                requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+          // Positive business-state assertions, not elapsed frames, gate evidence.
+          if (section === '首页') {
+            await expect(page.locator('.home-page')).toHaveAttribute('aria-busy', 'false')
+            await expect(page.locator('.home-error')).toHaveCount(0)
+            await expect(
+              page.getByRole('heading', {
+                name: seeded ? seeded.goalName : '先给一件想做的事留个位置。',
+                exact: true
+              })
+            ).toBeVisible()
+            if (seeded)
+              await expect(page.locator('.home-routine')).toContainText(seeded.routineName)
+          } else if (section === '今天') {
+            await expect(
+              page.getByRole('heading', {
+                name: seeded ? seeded.actionTitle : '当前没有可查看的行动或例行',
+                exact: true
+              })
+            ).toBeVisible()
+            if (seeded) {
+              await expect(page.locator('.today-routine-row').first()).toContainText(
+                seeded.routineName
               )
-          )
+              await expect(page.getByRole('table', { name: '已有行动记录' })).toContainText(
+                seeded.actionTitle
+              )
+            }
+          } else if (section === '目标') {
+            if (seeded) {
+              await page.locator('.goal-list-item').filter({ hasText: seeded.goalName }).click()
+            }
+            await expect(
+              page.getByRole('heading', {
+                name: seeded ? seeded.goalName : '当前没有可查看的目标',
+                exact: true
+              })
+            ).toBeVisible()
+          } else if (section === '例行') {
+            if (seeded) {
+              await page.locator('.goal-list-item').filter({ hasText: seeded.routineName }).click()
+              await expect(
+                page.getByRole('heading', { name: seeded.routineName, exact: true })
+              ).toBeVisible()
+              await expect(page.locator('.routine-recording-panel')).toContainText('主动休息')
+              await expect(
+                page.locator('.routine-recording-panel').getByRole('button', { name: /^查看记录/ })
+              ).toBeVisible()
+            } else {
+              // The empty create form appears only after the routine list read completes.
+              await expect(
+                page.getByRole('button', { name: '创建例行', exact: true })
+              ).toBeVisible()
+              await expect(page.getByText('还没有例行。', { exact: true })).toBeVisible()
+            }
+          } else {
+            await expect(page.locator('.review-summary article').first()).toContainText(
+              seeded ? '1 条行动事实未记时长' : '0 条行动事实未记时长'
+            )
+            await expect(
+              page.locator('.review-summary article').first().locator('strong')
+            ).toHaveText(seeded ? '时长未记录' : '0 分钟')
+            await expect(page.getByText('正在读取本地周期记录…', { exact: true })).toHaveCount(0)
+          }
+          await expect(page.locator('.content-inner .form-error')).toHaveCount(0)
+          await page.evaluate(() => document.fonts.ready)
           expect(
             await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)
           ).toBe(true)
