@@ -36,7 +36,9 @@ test('Progress reads original optional text without changing statistics or curre
           outcome: 'partial',
           summary: null,
           note: day === 10 ? note : null,
-          nextStep: day === 9 ? nextStep : null
+          nextStep: day === 9 ? nextStep : null,
+          understanding: day === 10 ? '纸笔更适合这一步' : null,
+          confusion: day === 10 ? '下一次是否仍然适用？' : null
         })
         if (!record.ok) throw Error('record')
         ids.push(record.value.id)
@@ -58,7 +60,14 @@ test('Progress reads original optional text without changing statistics or curre
     await noteRow.locator('summary').focus()
     await noteRow.locator('summary').press('Enter')
     await noteRow.getByText('展开完整笔记', { exact: true }).click()
-    await expect(noteRow.locator('.progress-fact-group p')).toHaveText(seed.note)
+    await expect(noteRow.getByLabel('行动补充原文').locator('.progress-fact-group p')).toHaveText(
+      seed.note
+    )
+    await expect(noteRow.getByRole('heading', { level: 3 })).toHaveText([
+      '备注',
+      '已确认的理解',
+      '尚未解决的困惑'
+    ])
     await nextRow.locator('summary').click()
     await expect(nextRow.locator('.progress-fact-group p')).toHaveText(seed.nextStep)
     await expect(nextRow).toContainText('这是当时写下的内容，不代表当前计划。')
@@ -97,7 +106,9 @@ test('Progress reads original optional text without changing statistics or curre
     expect(edit.ok).toBe(true)
     await page.getByRole('button', { name: '查看记录', exact: true }).click()
     await noteRow.locator('summary').click()
-    await expect(noteRow.locator('.progress-fact-group p')).toHaveText('修改后的原文\n仍保留换行')
+    await expect(noteRow.getByLabel('行动补充原文').locator('.progress-fact-group p')).toHaveText(
+      '修改后的原文\n仍保留换行'
+    )
     await expect(page.getByLabel('进展汇总')).toContainText('10')
     const goal = await page.evaluate(
       async (goalId) => window.myTracer.goals.getDetail({ goalId }),
@@ -151,12 +162,21 @@ test('Progress fetches text only on demand and isolates retry, collapse and refr
       ipcMain.removeHandler('records:get-detail')
       ipcMain.handle('records:get-detail', () => {
         state.calls++
-        if (state.mode === 'hold')
+        if (state.mode === 'hold' || state.mode === 'hold-long') {
+          const long = state.mode === 'hold-long'
           return new Promise((resolve) =>
             state.pending.push(() =>
-              resolve({ ok: true, value: { ...detail, note: '迟到旧原文' } })
+              resolve({
+                ok: true,
+                value: {
+                  ...detail,
+                  summary: long ? '合成简述。'.repeat(80) : null,
+                  note: long ? '合成笔记。'.repeat(200) : '迟到旧原文'
+                }
+              })
             )
           )
+        }
         if (state.mode === 'fail')
           return { ok: false, error: { code: 'persistence-failed', message: 'synthetic' } }
         if (state.mode === 'reject') throw Error('synthetic rejection')
@@ -308,6 +328,34 @@ test('Progress fetches text only on demand and isolates retry, collapse and refr
       await row.locator('summary').click()
       await release()
     }
+    // Experimental counterexample evidence: facts remain readable while text is delayed,
+    // then a long summary is inserted above them. Do not hide/block facts to avoid the shift.
+    await page.setViewportSize({ width: 820, height: 650 })
+    await mode('hold-long')
+    await row.locator('summary').click()
+    await expect(row.getByRole('status')).toContainText('正在读取原文')
+    const understanding = row.getByRole('heading', { name: '已确认的理解' })
+    await understanding.scrollIntoViewIfNeeded()
+    const beforeText = await understanding.boundingBox()
+    await test
+      .info()
+      .attach('E4-delayed-before', { body: await page.screenshot(), contentType: 'image/png' })
+    await release()
+    await expect(row.getByLabel('行动补充原文')).toContainText('合成简述。')
+    await expect(row.getByRole('heading', { level: 3 })).toHaveText([
+      '简述',
+      '备注',
+      '已确认的理解'
+    ])
+    await expect(row.getByLabel('行动补充原文').locator('details')).not.toHaveAttribute('open')
+    const afterText = await understanding.boundingBox()
+    await test
+      .info()
+      .attach('E4-delayed-after', { body: await page.screenshot(), contentType: 'image/png' })
+    await test.info().attach('E4-delayed-layout', {
+      body: JSON.stringify({ viewport: page.viewportSize(), beforeText, afterText }),
+      contentType: 'application/json'
+    })
   } finally {
     await app?.close()
     await removeTemporaryTestRoot(root)

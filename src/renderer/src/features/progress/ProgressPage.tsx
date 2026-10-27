@@ -380,6 +380,7 @@ function ProgressWorkspace({ onOpenBook }: { onOpenBook: () => void }): ReactNod
                               <ProgressActionNotes
                                 key={`${record.recordId}:${detailRevision}`}
                                 record={item.record}
+                                originalFirst
                               />
                             ) : item.record.note || item.record.summary ? (
                               <details className="progress-record-notes">
