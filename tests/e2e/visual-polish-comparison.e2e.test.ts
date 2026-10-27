@@ -112,6 +112,18 @@ for (const scenario of ['empty', 'ordinary', 'long'] as const) {
                 seeded.actionTitle
               )
             }
+            const entries = page.locator('.today-master-header .today-date-row > button')
+            await expect(entries).toHaveCount(2)
+            const entryLayout = await entries.evaluateAll((buttons) => {
+              const row = buttons[0]!.parentElement!.getBoundingClientRect()
+              const boxes = buttons.map((button) => button.getBoundingClientRect())
+              return {
+                sameRow: Math.abs(boxes[0]!.top - boxes[1]!.top) < 1,
+                contained: boxes.every((box) => box.left >= row.left && box.right <= row.right),
+                unwrapped: buttons.every((button) => button.scrollWidth <= button.clientWidth)
+              }
+            })
+            expect(entryLayout).toEqual({ sameRow: true, contained: true, unwrapped: true })
           } else if (section === '目标') {
             if (seeded) {
               await page.locator('.goal-list-item').filter({ hasText: seeded.goalName }).click()
