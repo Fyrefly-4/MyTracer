@@ -1,3 +1,4 @@
+import { openRecordNote } from '../support/ui-disclosure'
 import { join } from 'node:path'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { expect, test, type ElectronApplication } from '@playwright/test'
@@ -413,10 +414,28 @@ test('Assistant uses real preload/Main/SQLite for scoped tools, confirmation and
     // Record entry uses a real editor; filling a candidate leaves the database untouched.
     await page.getByRole('button', { name: '查看完整记录或修改', exact: true }).first().click()
     await page.getByRole('button', { name: '编辑记录', exact: true }).click()
+    const longOriginal = '合成笔记：先以为已完成，右侧仍有半盒纸张；其他日期未知。\n'.repeat(60)
+    const noteEditor = page.getByRole('textbox', {
+      name: '行动备注',
+      exact: true,
+      includeHidden: true
+    })
+    await openRecordNote(noteEditor)
+    await noteEditor.fill(longOriginal)
     await page.getByRole('button', { name: 'AI 整理笔记', exact: true }).click()
     await page.getByLabel('整理要求（可修改）').fill('提炼简述')
     await page.getByRole('button', { name: '发送', exact: true }).click()
     await expect(page.getByRole('button', { name: '填入编辑草稿', exact: true })).toBeVisible()
+    const inlineCard = page.getByRole('region', { name: 'AI 整理笔记', exact: true })
+    const editorWidth = await inlineCard.evaluate(
+      (element) => element.closest('.data-edit-grid')!.getBoundingClientRect().width
+    )
+    expect((await inlineCard.boundingBox())!.width).toBeGreaterThanOrEqual(editorWidth - 2)
+    const originalNote = inlineCard
+      .locator('details')
+      .filter({ has: page.getByText(/原笔记 · 未保存内容/) })
+    await expect(originalNote).not.toHaveAttribute('open', '')
+    await expect(inlineCard.getByRole('button', { name: '填入编辑草稿' })).toBeInViewport()
     await capture('record-preview')
     if (process.env.MYTRACER_ASSISTANT_VISUAL === '1') {
       await application.evaluate(({ BrowserWindow }) =>
@@ -434,6 +453,8 @@ test('Assistant uses real preload/Main/SQLite for scoped tools, confirmation and
     await expect(
       page.getByText('已填入未保存草稿；请回到编辑器检查并手动保存。', { exact: true })
     ).toBeVisible()
+    await expect(inlineCard).not.toContainText('候选已过期')
+    await expect(noteEditor).toHaveValue(longOriginal)
     await page
       .getByRole('region', { name: 'AI 整理笔记', exact: true })
       .getByRole('button', { name: '关闭', exact: true })

@@ -24,6 +24,8 @@ test('inline organization compares source, preserves editor, and carries convers
   await expect(dialog.getByLabel('对话')).toContainText('整理一句简述')
   await dialog.getByRole('button', { name: '填入编辑草稿' }).click()
   await expect(dialog.getByRole('status')).toContainText('未保存草稿')
+  await expect(dialog).not.toContainText('已填入或已过期')
+  await expect(dialog).not.toContainText('候选已过期')
   await expect(dialog.getByRole('button', { name: '填入编辑草稿' })).toBeDisabled()
   await page.keyboard.press('Escape')
   await expect(page.getByLabel('原笔记')).toHaveValue(original)
@@ -48,6 +50,7 @@ test('free chat has no goal prerequisite, preserves unsent input, and resumes hi
   await expect(dialog.getByLabel('继续聊聊')).toHaveValue('今天想聊聊')
   await dialog.getByRole('button', { name: '发送', exact: true }).click()
   await expect(dialog.getByLabel('对话')).toContainText('当前未读取任何记录')
+  await expect(dialog.getByRole('status')).toHaveText('回复完成。')
   await expect(dialog.getByRole('button', { name: '填入编辑草稿' })).toHaveCount(0)
   await expect(dialog).not.toContainText('free-chat')
   await page.screenshot({ path: '.tmp/assistant-browser-results/conversation.png' })
@@ -109,6 +112,8 @@ test('editing underneath an inline candidate rejects stale fill without losing t
   await page.getByLabel('简述草稿').fill('用户新写的简述')
   await inline.getByRole('button', { name: '填入编辑草稿' }).click()
   await expect(inline.getByRole('status')).toContainText('没有覆盖新输入')
+  await expect(inline).toContainText('内容已变化，候选已过期')
+  await expect(inline.getByRole('button', { name: '填入编辑草稿' })).toBeDisabled()
   await expect(page.getByLabel('简述草稿')).toHaveValue('用户新写的简述')
 })
 
@@ -206,4 +211,33 @@ test('spontaneous raw note uses the ordinary first-record form without precreati
   await form.getByLabel('刚才做了什么').fill('整理桌面')
   await inline.getByRole('button', { name: '填入编辑草稿' }).click()
   await expect(inline.getByRole('status')).toContainText('没有覆盖新输入')
+})
+
+test('inline card spans an existing two-column editor and folds long original text without losing it', async ({
+  page
+}) => {
+  await page.goto(path + '?editor-grid=1')
+  const original = '合成原文：先以为整理完了，右侧仍有纸张，其他日期未知。\n'.repeat(60)
+  await page.getByLabel('原笔记', { exact: true }).fill(original)
+  await page.getByRole('button', { name: 'AI 整理笔记', exact: true }).click()
+  const inline = page.getByRole('region', { name: 'AI 整理笔记', exact: true })
+  await expect(inline.getByRole('heading', { name: 'AI 整理笔记' })).toBeInViewport()
+  const editor = page.getByTestId('record-editor')
+  expect((await inline.boundingBox())!.width).toBeGreaterThanOrEqual(
+    (await editor.boundingBox())!.width - 2
+  )
+  const originalDetails = inline
+    .locator('details')
+    .filter({ has: page.getByText(/原笔记 · 未保存内容/) })
+  await expect(originalDetails).not.toHaveAttribute('open', '')
+  await originalDetails.locator('summary').click()
+  await expect(originalDetails.locator('p')).toHaveText(original)
+  await originalDetails.locator('summary').click()
+  await inline.getByLabel('整理要求（可修改）').fill('整理一句简述')
+  await inline.getByRole('button', { name: '发送', exact: true }).click()
+  await expect(inline.getByRole('button', { name: '填入编辑草稿' })).toBeInViewport()
+  await page.screenshot({ path: '.tmp/assistant-browser-results/inline-editor-width.png' })
+  await inline.getByRole('button', { name: '填入编辑草稿' }).click()
+  await expect(page.getByLabel('原笔记', { exact: true })).toHaveValue(original)
+  await expect(page.getByTestId('formal-saves')).toHaveText('0')
 })

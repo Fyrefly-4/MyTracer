@@ -37,13 +37,15 @@ function CandidateEditor({
       ) : null}
       <p>
         AI 候选 ·{' '}
-        {candidate.state === 'committed'
-          ? '已处理'
-          : candidate.state === 'uncertain'
-            ? '结果不确定，请核对目标记录；不会自动重试'
-            : candidate.state === 'stale'
-              ? '已填入或已过期；如需修改请重新整理'
-              : '尚未保存'}
+        {controller.isFilled(candidate.id)
+          ? '已填入未保存草稿；请在原编辑器手动保存'
+          : candidate.state === 'committed'
+            ? '已处理'
+            : candidate.state === 'uncertain'
+              ? '结果不确定，请核对目标记录；不会自动重试'
+              : candidate.state === 'stale'
+                ? '内容已变化，候选已过期；请重新整理'
+                : '尚未保存'}
       </p>
       <fieldset disabled={!editable}>
         {payload.kind === 'review-draft' ? (
@@ -119,6 +121,15 @@ function CandidateEditor({
     </section>
   )
 }
+function OriginalNote({ text }: { readonly text: string }): ReactNode {
+  const [expanded, setExpanded] = useState(text.length <= 500 && text.split('\n').length <= 8)
+  return (
+    <details open={expanded} onToggle={(event) => setExpanded(event.currentTarget.open)}>
+      <summary>原笔记 · 未保存内容{!expanded ? '（展开查看）' : ''}</summary>
+      <p>{text}</p>
+    </details>
+  )
+}
 export function AssistantPanel({
   controller,
   scopeChoices = [],
@@ -136,7 +147,17 @@ export function AssistantPanel({
     controller.getSnapshot
   )
   const dialog = useRef<HTMLDialogElement>(null)
+  const header = useRef<HTMLElement>(null)
+  const candidates = useRef<HTMLDivElement>(null)
   const inline = state.launch?.presentation === 'inline' && Boolean(state.launch.anchor)
+  useEffect(() => {
+    if (state.visible && inline) header.current?.scrollIntoView({ block: 'nearest' })
+  }, [state.visible, inline, state.launch])
+  const resultId =
+    state.run?.state === 'completed' && state.run.candidates.length ? state.run.requestId : null
+  useEffect(() => {
+    if (state.visible && inline && resultId) candidates.current?.scrollIntoView({ block: 'start' })
+  }, [state.visible, inline, resultId])
   const labelFor = (ref: AssistantObjectRef): string =>
     scopeChoices.find((c) => c.ref.kind === ref.kind && c.ref.id === ref.id)?.label ??
     state.run?.manifest.sources.find((s) => s.ref.kind === ref.kind && s.ref.id === ref.id)
@@ -184,7 +205,7 @@ export function AssistantPanel({
   const session = state.session
   const content = (
     <>
-      <header className="assistant-header">
+      <header ref={header} className="assistant-header">
         <div>
           <small>
             {controller.simulation
@@ -420,10 +441,7 @@ export function AssistantPanel({
           <p>本次入口包含当前未保存笔记；发送后可查看实际参考内容。</p>
         ) : null}
         {inline && state.launch?.entry.editorText ? (
-          <details open>
-            <summary>原笔记 · 未保存内容</summary>
-            <p>{state.launch.entry.editorText}</p>
-          </details>
+          <OriginalNote key={session?.id} text={state.launch.entry.editorText} />
         ) : null}
         <section aria-label="对话" className="assistant-messages" hidden={inline}>
           {session?.messages.map((message) => (
@@ -465,13 +483,15 @@ export function AssistantPanel({
             </small>
           </details>
         ) : null}
-        {state.run?.candidates.map((candidate) => (
-          <CandidateEditor
-            key={`${session?.id}:${candidate.id}`}
-            candidate={candidate}
-            controller={controller}
-          />
-        ))}
+        <div ref={candidates} className="assistant-candidates">
+          {state.run?.candidates.map((candidate) => (
+            <CandidateEditor
+              key={`${session?.id}:${candidate.id}`}
+              candidate={candidate}
+              controller={controller}
+            />
+          ))}
+        </div>
       </div>
       <footer className="assistant-composer">
         <p role="status">{state.notice}</p>

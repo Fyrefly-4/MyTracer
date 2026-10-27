@@ -85,6 +85,18 @@ function Harness(): ReactNode {
         <button onClick={() => setEditorVisible(!editorVisible)}>切换记录编辑器</button>
         {editorVisible ? (
           <form
+            data-testid="record-editor"
+            style={
+              window.location.search.includes('editor-grid')
+                ? {
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                    gap: 14,
+                    width: 490,
+                    maxWidth: '100%'
+                  }
+                : undefined
+            }
             onSubmit={(e) => {
               e.preventDefault()
               setSaves(saves + 1)
