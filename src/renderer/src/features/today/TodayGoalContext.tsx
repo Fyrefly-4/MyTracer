@@ -10,12 +10,14 @@ interface ContextRead {
 }
 
 export function TodayGoalContext(props: {
+  readonly actionId: string
   readonly goalId: string
   readonly goalName: string
   readonly refreshVersion: number
 }): ReactNode {
   const session = useUiSession()
-  const [expanded, setExpanded] = useState(false)
+  const readingKey = JSON.stringify([props.actionId, props.goalId])
+  const [expanded, setExpanded] = useState(() => session.expandedTodayGoalContexts.has(readingKey))
   const [readVersion, setReadVersion] = useState(0)
   const [read, setRead] = useState<ContextRead | null>(null)
   const requestKey = `${props.goalId}:${props.refreshVersion}:${readVersion}`
@@ -28,27 +30,40 @@ export function TodayGoalContext(props: {
     void window.myTracer.recovery.getContext({ goalId: props.goalId }).then(
       (result) => {
         if (!active) return
-        setRead({
-          key: requestKey,
-          context: result.ok && result.value.goal.id === props.goalId ? result.value : null
-        })
+        const context = result.ok && result.value.goal.id === props.goalId ? result.value : null
+        // Remember only verified history, never a deleted/unavailable or empty goal.
+        if (
+          context &&
+          (context.latestRealRecord ||
+            context.confirmedUnderstandings.length ||
+            context.openConfusions.length)
+        )
+          session.expandedTodayGoalContexts.add(readingKey)
+        else session.expandedTodayGoalContexts.delete(readingKey)
+        setRead({ key: requestKey, context })
       },
       () => {
-        if (active) setRead({ key: requestKey, context: null })
+        if (active) {
+          session.expandedTodayGoalContexts.delete(readingKey)
+          setRead({ key: requestKey, context: null })
+        }
       }
     )
     return () => {
       active = false
     }
-  }, [expanded, props.goalId, requestKey])
+  }, [expanded, props.goalId, requestKey, readingKey, session])
 
   const latest = context?.latestRealRecord
   return (
     <details
       className="today-goal-context"
+      open={expanded}
       onToggle={(event) => {
         const open = event.currentTarget.open
+        if (open === expanded) return
         setExpanded(open)
+        if (!open) session.expandedTodayGoalContexts.delete(readingKey)
         if (open) setReadVersion((version) => version + 1)
       }}
     >

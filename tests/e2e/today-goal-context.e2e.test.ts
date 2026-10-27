@@ -12,6 +12,7 @@ async function withApplication(
   let app: ElectronApplication | undefined
   try {
     app = await electron.launch({
+      chromiumSandbox: true,
       cwd: root.root,
       args: [
         ...(process.platform === 'linux' ? ['--headless', '--ozone-platform=headless'] : []),
@@ -125,10 +126,10 @@ test('returning to a new next action can recall goal context without recording o
     await expect(page.getByLabel('所选记录')).toContainText('读完第一节')
     await navigate(page, '今天')
     await expect(actionPanel).toBeVisible()
+    await expect(contextPanel(page)).toContainText('困惑 18')
+    expect(await page.evaluate(() => window.myTracer.dataControl.list())).toEqual(before)
     await actionPanel.getByRole('button', { name: '开始记录', exact: true }).click()
     await actionPanel.getByLabel('投入时长（分钟，可选）').fill('7')
-    await summary(page).click()
-    await expect(contextPanel(page)).toContainText('困惑 18')
     await summary(page).focus()
     await page.keyboard.press('Space')
     await expect(contextPanel(page)).toHaveCount(0)
@@ -142,8 +143,8 @@ test('returning to a new next action can recall goal context without recording o
     await navigate(page, '今天')
     await expect(actionPanel.getByLabel('投入时长（分钟，可选）')).toHaveValue('7')
     expect(await page.evaluate(() => window.myTracer.dataControl.list())).toEqual(before)
-    // Saving this action refreshes the expanded historical context using the real backend.
-    await summary(page).click()
+    // Saving this action refreshes the restored historical context using the real backend.
+    await expect(contextPanel(page)).toContainText('困惑 18')
     await actionPanel.getByRole('button', { name: '保存记录', exact: true }).click()
     await expect(
       contextPanel(page).getByRole('button', { name: /查看上次完整记录/ })
@@ -275,5 +276,73 @@ test('the latest goal-linked routine record opens its exact data record', async 
     await page.keyboard.press('Enter')
     await expect(page.getByLabel('所选记录')).toContainText('练习状态模型')
     await expect(page.getByLabel('所选记录')).toContainText('2026-10-19')
+  })
+})
+
+test('history expansion belongs to one action and goal, closes explicitly and ends with the session', async () => {
+  await withApplication(async (app, page) => {
+    const data = await fixtures(page)
+    await page.evaluate(async (goalId) => {
+      const result = await window.myTracer.actions.create({ goalId, title: '同目标另一行动' })
+      if (!result.ok) throw Error('Synthetic action fixture failed')
+    }, data.first.goal.id)
+    await app.evaluate(({ ipcMain }, data) => {
+      const state = { calls: 0, missing: false }
+      Reflect.set(globalThis, '__historySessionReads', state)
+      ipcMain.removeHandler('recovery:get-context')
+      ipcMain.handle('recovery:get-context', (_event, input: { goalId: string }) => {
+        state.calls++
+        if (state.missing) return { ok: false, error: { code: 'not-found', message: 'synthetic' } }
+        return { ok: true, value: input.goalId === data.first.goal.id ? data.first : data.second }
+      })
+    }, data)
+    const reads = () => app.evaluate(() => Reflect.get(globalThis, '__historySessionReads').calls)
+    const roundTrip = async () => {
+      await navigate(page, '首页')
+      await navigate(page, '今天')
+    }
+    await openFirstFromHome(page)
+    await roundTrip()
+    await expect(contextPanel(page)).toHaveCount(0)
+    expect(await reads()).toBe(0)
+    await summary(page).click()
+    await expect(contextPanel(page)).toContainText('理解 18')
+    expect(await reads()).toBe(1)
+    await page.getByRole('button', { name: /同目标另一行动.*待行动/ }).click()
+    await expect(contextPanel(page)).toHaveCount(0)
+    expect(await reads()).toBe(1)
+    await page.getByRole('button', { name: /另一目标的新一步.*待行动/ }).click()
+    await summary(page).click()
+    await expect(contextPanel(page)).toContainText('这个目标还没有实际行动记录')
+    await roundTrip()
+    await expect(contextPanel(page)).toHaveCount(0)
+    expect(await reads()).toBe(2)
+    await page.getByRole('button', { name: /写一个并发更新的小例子.*待行动/ }).click()
+    await expect(contextPanel(page)).toContainText('理解 18')
+    expect(await reads()).toBe(3)
+    await summary(page).focus()
+    await page.keyboard.press('Space')
+    await expect(summary(page)).toBeFocused()
+    await roundTrip()
+    await expect(contextPanel(page)).toHaveCount(0)
+    expect(await reads()).toBe(3)
+    await summary(page).click()
+    await expect(contextPanel(page)).toContainText('理解 18')
+    await page.reload()
+    await navigate(page, '今天')
+    await page.getByRole('button', { name: /写一个并发更新的小例子.*待行动/ }).click()
+    await expect(summary(page)).toBeVisible()
+    await expect(contextPanel(page)).toHaveCount(0)
+    expect(await reads()).toBe(4)
+    await summary(page).click()
+    await expect(contextPanel(page)).toContainText('理解 18')
+    await app.evaluate(() => {
+      Reflect.get(globalThis, '__historySessionReads').missing = true
+    })
+    await roundTrip()
+    await expect(contextPanel(page).getByRole('alert')).toBeVisible()
+    await roundTrip()
+    await expect(contextPanel(page)).toHaveCount(0)
+    expect(await reads()).toBe(6)
   })
 })
