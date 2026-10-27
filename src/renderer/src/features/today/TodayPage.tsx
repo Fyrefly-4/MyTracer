@@ -1940,6 +1940,7 @@ function TodayWorkspace(): ReactNode {
               {detail.goal ? (
                 <TodayGoalContext
                   key={`goal-context-${detail.id}-${detail.goal.id}`}
+                  actionId={detail.id}
                   goalId={detail.goal.id}
                   goalName={detail.goal.name}
                   refreshVersion={activityVersion}

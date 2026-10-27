@@ -39,7 +39,7 @@ test('Home offers an optional goal-free route and preserves a recording draft on
     await expect(page.getByRole('button', { name: '＋ 留下一个目标', exact: true })).toBeVisible()
     await expect(
       page.getByText(
-        '也可以不建目标。去“今天”，用“记一笔”留下做过的一点；已有行动就继续记在原行动下，还没开始则用“新建行动”。'
+        '只想记下刚才做的事？去“今天”点“记一笔”，无需先建目标。已有行动可接着记录，还没开始可用“新建行动”。'
       )
     ).toBeVisible()
     const before = await page.evaluate(() => window.myTracer.dataControl.list())
