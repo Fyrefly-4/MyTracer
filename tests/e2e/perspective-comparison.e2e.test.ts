@@ -6,52 +6,53 @@ import { createTemporaryTestRoot, removeTemporaryTestRoot } from '../support/tem
 
 // Same fixture on stage and both candidates; never substitute mocked browser evidence.
 for (const scenario of ['empty', 'ordinary', 'long'] as const) {
-  test(`perspective comparison: ${scenario}`, async ({}, testInfo) => {
-    test.skip(process.env.MYTRACER_PERSPECTIVE_COMPARE !== '1', 'Opt-in native comparison')
-    test.slow()
-    const root = await createTemporaryTestRoot()
-    let app: ElectronApplication | undefined
-    try {
-      app = await electron.launch({
-        chromiumSandbox: true,
-        cwd: root.root,
-        args: [
-          join(process.cwd(), 'out/main/index.js'),
-          `--user-data-dir=${root.electronUserData}`
-        ],
-        env: minimalElectronEnvironment(root)
-      })
-      const page = await app.firstWindow()
-      const navigate = (name: string) =>
-        page.getByRole('navigation').getByRole('button', { name, exact: true }).click()
-      await expect(page.locator('.home-page')).toHaveAttribute('aria-busy', 'false')
-      await navigate('目标')
-      await page.evaluate(async (kind) => {
-        if (kind === 'empty') return
-        const day = await window.myTracer.today.get({})
-        if (!day.ok) throw Error('synthetic date unavailable')
-        for (let i = 1; i <= 3; i++) {
-          const goal = await window.myTracer.goals.create({
-            name: `合成目标 ${i}：${kind === 'long' ? '整理沿途观察与阅读摘记'.repeat(4) : '整理观察'}`,
-            initialNextAction: { title: `合成行动 ${i}：整理一页笔记` }
-          })
-          if (!goal.ok || !goal.value.currentNextActionId) throw Error('synthetic goal failed')
-          const record = await window.myTracer.dataControl.backfillActionRecord({
-            actionId: goal.value.currentNextActionId,
-            occurredOn: day.value.localDate,
-            durationMinutes: i === 2 ? null : 10,
-            outcome: 'partial',
-            summary:
-              kind === 'long' ? '对照观察，留下仍需核对的细节。'.repeat(20) : '整理了两条观察。',
-            note: kind === 'long' ? '## 合成笔记\n仍待核对的材料。\n'.repeat(40) : null
-          })
-          if (!record.ok) throw Error('synthetic record failed')
-        }
-      }, scenario)
-      for (const [width, height] of [
-        [1024, 700],
-        [1188, 848]
-      ]) {
+  for (const [width, height] of [
+    [1024, 700],
+    [1188, 848]
+  ]) {
+    test(`perspective comparison: ${scenario} ${width}x${height}`, async () => {
+      const testInfo = test.info()
+      test.skip(process.env.MYTRACER_PERSPECTIVE_COMPARE !== '1', 'Opt-in native comparison')
+      test.slow()
+      const root = await createTemporaryTestRoot()
+      let app: ElectronApplication | undefined
+      try {
+        app = await electron.launch({
+          chromiumSandbox: true,
+          cwd: root.root,
+          args: [
+            join(process.cwd(), 'out/main/index.js'),
+            `--user-data-dir=${root.electronUserData}`
+          ],
+          env: minimalElectronEnvironment(root)
+        })
+        const page = await app.firstWindow()
+        const navigate = (name: string) =>
+          page.getByRole('navigation').getByRole('button', { name, exact: true }).click()
+        await expect(page.locator('.home-page')).toHaveAttribute('aria-busy', 'false')
+        await navigate('目标')
+        await page.evaluate(async (kind) => {
+          if (kind === 'empty') return
+          const day = await window.myTracer.today.get({})
+          if (!day.ok) throw Error('synthetic date unavailable')
+          for (let i = 1; i <= 3; i++) {
+            const goal = await window.myTracer.goals.create({
+              name: `合成目标 ${i}：${kind === 'long' ? '整理沿途观察与阅读摘记'.repeat(4) : '整理观察'}`,
+              initialNextAction: { title: `合成行动 ${i}：整理一页笔记` }
+            })
+            if (!goal.ok || !goal.value.currentNextActionId) throw Error('synthetic goal failed')
+            const record = await window.myTracer.dataControl.backfillActionRecord({
+              actionId: goal.value.currentNextActionId,
+              occurredOn: day.value.localDate,
+              durationMinutes: i === 2 ? null : 10,
+              outcome: 'partial',
+              summary:
+                kind === 'long' ? '对照观察，留下仍需核对的细节。'.repeat(20) : '整理了两条观察。',
+              note: kind === 'long' ? '## 合成笔记\n仍待核对的材料。\n'.repeat(40) : null
+            })
+            if (!record.ok) throw Error('synthetic record failed')
+          }
+        }, scenario)
         await app.evaluate(
           ({ BrowserWindow }, size) => {
             const window = BrowserWindow.getAllWindows()[0]!
@@ -134,12 +135,10 @@ for (const scenario of ['empty', 'ordinary', 'long'] as const) {
           outcome: 'partial',
           summary: scenario === 'long' ? '合成长简述。'.repeat(30) : null
         })
-        // Start the next size outside Home so its snapshot is freshly queried.
-        await navigate('目标')
+      } finally {
+        await app?.close()
+        await removeTemporaryTestRoot(root)
       }
-    } finally {
-      await app?.close()
-      await removeTemporaryTestRoot(root)
-    }
-  })
+    })
+  }
 }
