@@ -222,9 +222,7 @@ test('home distinguishes failed reads from empty records and safely recovers inv
     await page.getByRole('navigation').getByRole('button', { name: '首页', exact: true }).click()
     await expect(page.getByRole('alert')).toContainText('历史记录暂时无法读取')
     await expect(page.locator('.hrc-cell')).toHaveCount(0)
-    await expect(
-      page.getByText('这里按日期留下最近的记录。没有记录，不代表没有行动。')
-    ).toHaveCount(0)
+    await expect(page.getByText('这里按日期留下最近的记录。')).toHaveCount(0)
     await expect(page.getByText('目标概览暂时不可用。', { exact: true })).toBeVisible()
     await page.getByRole('button', { name: '重新读取', exact: true }).click()
     await expect(page.getByRole('alert')).toContainText('历史记录暂时无法读取')

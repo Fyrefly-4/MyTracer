@@ -179,7 +179,7 @@ export function HomePage(): ReactNode {
                                   {record.summary || `${record.title} · ${record.outcomeText}`}
                                 </>
                               ) : recordDataAvailable ? (
-                                '还没有这个目标的记录。没有记录，不代表没有行动。'
+                                '还没有这个目标的记录。'
                               ) : (
                                 '最近记录暂时无法读取。'
                               )}
@@ -337,7 +337,7 @@ export function HomePage(): ReactNode {
                   ))}
                 </div>
               ) : (
-                <p className="home-muted">这里按日期留下最近的记录。没有记录，不代表没有行动。</p>
+                <p className="home-muted">这里按日期留下最近的记录。</p>
               )
             ) : (
               <p className="home-muted">最近记录暂时无法读取。</p>
