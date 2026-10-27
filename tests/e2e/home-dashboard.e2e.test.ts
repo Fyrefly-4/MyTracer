@@ -17,7 +17,7 @@ test('home reads real records, routes without mutations and remembers both calen
     app = await launch()
     let page = await app.firstWindow()
     await expect(page.getByRole('heading', { name: '看看最近走到了哪里。' })).toBeVisible()
-    await expect(page.getByRole('heading', { name: '先给一件想做的事留个位置。' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: '给想做的事留一页。' })).toBeVisible()
     await expect(page.getByRole('button', { name: '12 周', exact: true })).toHaveAttribute(
       'aria-pressed',
       'true'
@@ -222,7 +222,7 @@ test('home distinguishes failed reads from empty records and safely recovers inv
     await page.getByRole('navigation').getByRole('button', { name: '首页', exact: true }).click()
     await expect(page.getByRole('alert')).toContainText('历史记录暂时无法读取')
     await expect(page.locator('.hrc-cell')).toHaveCount(0)
-    await expect(page.getByText('现在还没有记录。做过一点以后，随时回来记下。')).toHaveCount(0)
+    await expect(page.getByText('这里按日期留下最近的记录。')).toHaveCount(0)
     await expect(page.getByText('目标概览暂时不可用。', { exact: true })).toBeVisible()
     await page.getByRole('button', { name: '重新读取', exact: true }).click()
     await expect(page.getByRole('alert')).toContainText('历史记录暂时无法读取')
