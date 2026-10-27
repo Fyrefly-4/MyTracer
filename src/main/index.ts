@@ -795,6 +795,10 @@ app.whenReady().then(async () => {
       store: new FileAssistantSessionStore(join(app.getPath('userData'), 'assistant')),
       provider: assistantProvider,
       readSnapshot,
+      resolveRecordDraft: (contextId) => {
+        if (!mainWindow || mainWindow.isDestroyed()) return null
+        return actionRecordingContexts.firstDraft(mainWindow.webContents.id, contextId)
+      },
       resolveReviewContext: (contextId) => {
         if (!mainWindow || mainWindow.isDestroyed()) return null
         try {

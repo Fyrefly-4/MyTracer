@@ -41,9 +41,15 @@ export function ref(value: unknown): AssistantObjectRef {
   const v = object(value)
   keys(v, ['kind', 'id'])
   check(
-    ['goal', 'action', 'action-record', 'routine-record', 'review', 'conversation'].includes(
-      String(v.kind)
-    )
+    [
+      'goal',
+      'action',
+      'action-record',
+      'routine-record',
+      'review',
+      'conversation',
+      'record-draft'
+    ].includes(String(v.kind))
   )
   check(v.kind !== 'conversation' || v.id === 'free-chat')
   return { kind: v.kind as AssistantObjectRef['kind'], id: id(v.id) }
@@ -62,6 +68,8 @@ export function scope(value: unknown): AssistantScope {
   const v = object(value)
   keys(v, ['current', 'selectedObjects', 'goalId', 'dateRange'])
   check(Array.isArray(v.selectedObjects) && v.selectedObjects.length <= 50)
+  if (ref(v.current).kind === 'record-draft')
+    check(v.selectedObjects.length === 0 && v.goalId === undefined && v.dateRange === undefined)
   const range = v.dateRange === undefined ? undefined : object(v.dateRange)
   if (range) keys(range, ['from', 'to'])
   const dateRange = range ? { from: date(range.from), to: date(range.to) } : undefined
@@ -78,6 +86,8 @@ export function entry(value: unknown): AssistantEntry {
   keys(v, ['object', 'intent', 'editorText', 'editorRevision'])
   check(['organize', 'clarify', 'resume', 'review', 'chat'].includes(String(v.intent)))
   check((v.editorText === undefined) === (v.editorRevision === undefined))
+  if (ref(v.object).kind === 'record-draft')
+    check(v.intent === 'organize' && v.editorText !== undefined)
   return {
     object: ref(v.object),
     intent: v.intent as AssistantEntry['intent'],

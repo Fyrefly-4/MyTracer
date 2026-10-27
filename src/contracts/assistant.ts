@@ -1,6 +1,13 @@
 /** Shared, data-only Assistant contract. No provider, storage or renderer authority. */
 export interface AssistantObjectRef {
-  readonly kind: 'goal' | 'action' | 'action-record' | 'routine-record' | 'review' | 'conversation'
+  readonly kind:
+    | 'goal'
+    | 'action'
+    | 'action-record'
+    | 'routine-record'
+    | 'review'
+    | 'conversation'
+    | 'record-draft'
   readonly id: string
 }
 export interface AssistantEntry {

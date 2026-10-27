@@ -51,6 +51,7 @@ const { ActionRecordingContextStore } = (await import(contextsModulePath)) as {
     }
     cancel(senderId: number, contextId: string): void
     consume(senderId: number, actionId: string, contextId: string): void
+    firstDraft(senderId: number, contextId: string): { readonly capturedOn: string } | null
     clearSender(senderId: number): void
   }
 }
@@ -372,11 +373,13 @@ describe('first Action record IPC', () => {
     lifecycle: 'keep-pending'
   }
   it('uses sender-bound first-record capability, retains retry identity and cancels drafts', () => {
-    const { invoke, invokeOther, service } = setup()
+    const { invoke, invokeOther, service, contexts } = setup()
     expect(invoke(RECORD_CHANNELS.beginFirst)).toMatchObject({
       ok: true,
       value: { actionId, recordingContextId: contextId }
     })
+    expect(contexts.firstDraft(7, contextId)).toEqual({ capturedOn: '2026-08-12' })
+    expect(contexts.firstDraft(8, contextId)).toBeNull()
     expect(service.recordFirstAction).not.toHaveBeenCalled()
     expect(invokeOther(RECORD_CHANNELS.saveFirst, request)).toMatchObject({
       ok: false,
@@ -392,6 +395,7 @@ describe('first Action record IPC', () => {
     ).toMatchObject({ ok: false, error: { code: 'invalid-recording-context' } })
     for (let i = 0; i < 2; i++)
       expect(invoke(RECORD_CHANNELS.saveFirst, request)).toMatchObject({ ok: true })
+    expect(contexts.firstDraft(7, contextId)).toBeNull()
     expect(service.recordFirstAction).toHaveBeenCalledTimes(1)
     expect(service.recordFirstAction).toHaveBeenLastCalledWith(
       expect.objectContaining({

@@ -1,3 +1,5 @@
+import { FirstActionRecord } from '../../src/renderer/src/features/today/FirstActionRecord'
+import { UiSession, UiSessionContext } from '../../src/renderer/src/app/ui-session'
 import { useState, type ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { AssistantController } from '../../src/renderer/src/features/assistant/assistant-controller'
@@ -13,6 +15,29 @@ const fake = createFakeAssistantAdapter({
   delayMs: window.location.search.includes('slow') ? 800 : 100
 })
 const controller = new AssistantController(fake.api, fake.status, true)
+const uiSession = new UiSession(() => undefined)
+const recordCalls: unknown[] = []
+// Synthetic browser-only API: production form/controller, no Main, SQLite or provider.
+Object.assign(window, {
+  myTracer: {
+    records: {
+      beginFirst: async () => ({
+        ok: true,
+        value: {
+          actionId: 'synthetic-first-action',
+          recordingContextId: 'synthetic-first-context',
+          capturedOn: '2026-10-26'
+        }
+      }),
+      cancel: async () => ({ ok: true, value: undefined }),
+      saveFirst: async (input: unknown) => {
+        recordCalls.push(input)
+        return { ok: false, error: { code: 'validation' } }
+      }
+    }
+  },
+  syntheticRecordCalls: recordCalls
+})
 function Harness(): ReactNode {
   const [note, setNote] = useState(syntheticAssistantEntries[0].entry.editorText!)
   const [summary, setSummary] = useState('')
@@ -36,6 +61,15 @@ function Harness(): ReactNode {
       >
         <button onClick={() => setDirty(controller.hasUnsavedInput())}>检查安装草稿</button>
         <span data-testid="install-dirty">{String(dirty)}</span>
+        <UiSessionContext value={uiSession}>
+          <FirstActionRecord
+            goals={[]}
+            actions={[]}
+            ready
+            onExisting={() => undefined}
+            onSaved={async () => undefined}
+          />
+        </UiSessionContext>
         <h1>整理居住空间 · 合成测试</h1>
         <p>仅模拟界面和响应，不代表 Electron、持久化或真实模型质量。</p>
         <button

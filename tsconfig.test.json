@@ -15,6 +15,7 @@
     "src/main/appearance-ipc.ts",
     "src/main/assistant-service-ipc.ts",
     "src/main/assistant-ipc.ts",
+    "src/main/action-recording-contexts.ts",
     "src/main/install-operation-gate.ts",
     "src/main/test-assistant-provider.ts",
     "src/main/exports-ipc.ts",

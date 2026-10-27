@@ -1,4 +1,3 @@
-import { openRecordNote } from '../support/ui-disclosure'
 import { join } from 'node:path'
 import { expect, test, type Page, type ElectronApplication } from '@playwright/test'
 import { _electron as electron } from 'playwright'
@@ -26,7 +25,7 @@ test('first record preserves drafts, explicit choices, retry identity and modal 
     await navigate('今天')
     await page.getByRole('button', { name: '记一笔', exact: true }).click()
     const dialog = page.getByRole('dialog', { name: '记一笔', exact: true })
-    await expect(dialog.getByLabel('刚才做了什么', { exact: true })).toBeFocused()
+    await expect(dialog.getByLabel('先随手写下来（可选）', { exact: true })).toBeFocused()
     await expect(dialog.getByLabel('保存后，整个行动')).toHaveValue('')
     await expect(dialog.getByLabel('本次结果', { exact: true })).toHaveValue('')
     await expect(dialog).toContainText('当前没有可开始的行动')
@@ -34,11 +33,8 @@ test('first record preserves drafts, explicit choices, retry identity and modal 
     await dialog
       .getByRole('textbox', { name: '简述（可选）', exact: true })
       .fill('合成简述\n第二行')
-    await openRecordNote(
-      dialog.getByRole('textbox', { name: '备注（可选）', exact: true, includeHidden: true })
-    )
     await dialog
-      .getByLabel('备注（可选）', { exact: true })
+      .getByLabel('先随手写下来（可选）', { exact: true })
       .fill('合成长文字，保留事实而不自动完成。'.repeat(80))
     // An IME composition Enter must not submit a valid-looking form.
     await dialog.getByLabel('这次不记时长（未知）').check()

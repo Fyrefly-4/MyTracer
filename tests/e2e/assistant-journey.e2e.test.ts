@@ -192,11 +192,14 @@ test('Assistant uses real preload/Main/SQLite for scoped tools, confirmation and
     expect(result.cancelled.state).toBe('cancelled')
     expect(result.configurationCancelled.state).toBe('cancelled')
 
+    // Setup configured Main through the API, bypassing the Settings onChanged callback.
+    // Remount the renderer so its controller reads the synthetic service status before UI work.
+    await page.reload()
+
     // Optional isolated native exploration, using the exact same guarded synthetic fixture.
     // This is an explicit local opt-in, never enabled in CI and never reads a normal profile.
     if (process.env.MYTRACER_ASSISTANT_EXPLORE === '1' && !process.env.CI) {
       test.setTimeout(0)
-      await page.reload()
       await page.evaluate(() => {
         document.title = 'MyTracer · 合成数据 / 模拟模型 · 隔离探索'
         const label = document.createElement('p')
@@ -208,6 +211,53 @@ test('Assistant uses real preload/Main/SQLite for scoped tools, confirmation and
       await page.pause()
       return // Manual exploration is not an automated journey result; finally still cleans up.
     }
+    // Spontaneous capture starts in the normal unsaved editor, without an existing record.
+    await page.getByRole('navigation').getByRole('button', { name: '今天', exact: true }).click()
+    const beforeFirst = await page.evaluate(() => window.myTracer.dataControl.list())
+    await page.getByRole('button', { name: '记一笔', exact: true }).click()
+    const firstForm = page.getByRole('dialog', { name: '记一笔', exact: true })
+    const rawFirst = '桌面好像全收好了。等等，右边一叠纸没动。大概5分钟？也可能20，没看表。'
+    await firstForm.getByLabel('先随手写下来（可选）').fill(rawFirst)
+    await firstForm.getByRole('button', { name: 'AI 整理这段原文' }).click()
+    const firstAssistant = firstForm.getByRole('region', { name: 'AI 整理笔记' })
+    await firstAssistant.getByLabel('整理要求（可修改）').fill('提炼简述，保留不确定性')
+    await firstAssistant.getByRole('button', { name: '发送', exact: true }).click()
+    await expect(firstAssistant.getByRole('status')).toContainText('整理完成')
+    await firstAssistant.getByRole('button', { name: '填入编辑草稿' }).click()
+    await expect(firstForm.getByLabel('简述（可选）')).toHaveValue(
+      '整理了桌面的一部分；右侧一叠纸还没动，投入时长不确定。'
+    )
+    await expect(firstForm.getByLabel('先随手写下来（可选）')).toHaveValue(rawFirst)
+    await expect(firstForm.getByLabel('刚才做了什么')).toHaveValue('')
+    await expect(firstForm.getByLabel('真实投入（分钟）')).toHaveValue('')
+    await expect(firstForm.getByLabel('本次结果', { exact: true })).toHaveValue('')
+    await expect(firstForm.getByLabel('保存后，整个行动')).toHaveValue('')
+    expect(await page.evaluate(() => window.myTracer.dataControl.list())).toEqual(beforeFirst)
+    await firstAssistant.getByRole('button', { name: '关闭', exact: true }).click()
+    await firstForm.getByRole('button', { name: '收起并返回' }).click()
+    await page.getByRole('button', { name: '继续记一笔', exact: true }).click()
+    await expect(firstForm.getByLabel('先随手写下来（可选）')).toHaveValue(rawFirst)
+    await firstForm.getByLabel('刚才做了什么').fill('合成随手记录：整理桌面')
+    await firstForm.getByLabel('这次不记时长（未知）').check()
+    await firstForm.getByLabel('本次结果', { exact: true }).selectOption('partial')
+    await firstForm.getByLabel('保存后，整个行动').selectOption('keep-pending')
+    await firstForm.getByRole('button', { name: '保存行动和第一笔', exact: true }).click()
+    await expect(firstForm).not.toBeVisible()
+    const afterFirst = await page.evaluate(() => window.myTracer.dataControl.list())
+    if (!afterFirst.ok || !beforeFirst.ok) throw Error('synthetic data snapshot failed')
+    expect(afterFirst.value.actions).toHaveLength(beforeFirst.value.actions.length + 1)
+    expect(afterFirst.value.actionRecords).toHaveLength(beforeFirst.value.actionRecords.length + 1)
+    const firstAction = afterFirst.value.actions.find((a) => a.title === '合成随手记录：整理桌面')!
+    expect(firstAction).toMatchObject({ status: 'pending', goalId: null })
+    expect(afterFirst.value.actionRecords.find((r) => r.actionId === firstAction.id)).toMatchObject(
+      {
+        durationMinutes: null,
+        outcome: 'partial',
+        note: rawFirst,
+        summary: '整理了桌面的一部分；右侧一叠纸还没动，投入时长不确定。'
+      }
+    )
+
     // Free conversation works before selecting any business object.
     const free = await page.evaluate(async () => {
       const api = window.myTracer.assistant

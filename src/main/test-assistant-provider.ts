@@ -105,7 +105,13 @@ export function createOfflineAssistantFixture(launch: {
                 mainObstacle: '还有一小叠需要分类。',
                 nextAdjustment: '下次只整理五分钟。'
               }
-            : { kind: 'record-summary', text: '整理了桌面的一角，剩余纸张下次继续。' }
+            : {
+                kind: 'record-summary',
+                text:
+                  current.kind === 'record-draft'
+                    ? '整理了桌面的一部分；右侧一叠纸还没动，投入时长不确定。'
+                    : '整理了桌面的一角，剩余纸张下次继续。'
+              }
       return reply(
         JSON.stringify({
           text: '合成演示：可以先从一小叠纸张开始；这只是候选，尚未保存。',
