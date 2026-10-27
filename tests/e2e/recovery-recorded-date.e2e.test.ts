@@ -9,7 +9,7 @@ const cases = [
   { name: '两周', date: '2026-10-13', days: 14, auxiliary: '相隔 14 天' },
   { name: '跨月', date: '2026-09-30', days: 27, auxiliary: '相隔 27 天' },
   { name: '无记录', date: null, days: null, auxiliary: '' },
-  { name: '晚于截至日', date: '2026-10-28', days: -1, auxiliary: '记录日期晚于截至日' }
+  { name: '晚于截至日', date: '2026-10-28', days: -1, auxiliary: '行动发生日期晚于截至日' }
 ] as const
 
 test('Recovery leads with the recorded occurrence date while preserving interval and persisted facts', async () => {

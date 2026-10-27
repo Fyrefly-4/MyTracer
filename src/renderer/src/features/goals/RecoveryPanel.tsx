@@ -312,7 +312,7 @@ export function RecoveryPanel(props: {
               {context.daysSinceLastRealAction === null
                 ? ''
                 : context.daysSinceLastRealAction < 0
-                  ? ' · 记录日期晚于截至日'
+                  ? ' · 行动发生日期晚于截至日'
                   : ` · 相隔 ${context.daysSinceLastRealAction} 天`}
             </small>
           </div>
