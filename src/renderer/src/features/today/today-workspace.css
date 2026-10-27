@@ -587,3 +587,28 @@
 .today-experiment .today-return-selection {
   margin-bottom: 12px;
 }
+
+/* Section labels share one hierarchy; explanatory subtitles stay quieter. */
+.today-experiment .today-master-list .card-heading .eyebrow,
+.today-experiment .today-master-list > .action-candidates > summary,
+.today-experiment .planned-routines > details > summary {
+  font-size: var(--font-section);
+  font-weight: 600;
+  color: var(--color-text);
+  letter-spacing: 0;
+}
+.today-experiment .today-master-list > .today-priority {
+  padding-inline: 0;
+}
+.today-experiment .today-master-list .card-heading h2,
+.today-experiment .today-master-list .card-heading .empty-copy {
+  font-size: 13px;
+}
+.today-experiment .today-master-title > button {
+  text-decoration: none;
+}
+.today-experiment .today-master-list .candidate-actions button {
+  color: var(--color-action);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}

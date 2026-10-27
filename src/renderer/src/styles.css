@@ -2832,7 +2832,6 @@ h1 {
   padding: var(--space-5) 0;
   border: 0;
   border-top: 1px solid var(--color-line);
-  border-bottom: 1px solid var(--color-line);
   border-radius: 0;
   background: transparent;
 }

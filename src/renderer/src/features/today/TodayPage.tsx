@@ -1602,7 +1602,7 @@ function TodayWorkspace(): ReactNode {
                 <button
                   ref={createTriggerRef}
                   type="button"
-                  className="quiet-button"
+                  className="secondary-button"
                   aria-haspopup="dialog"
                   aria-expanded={creating}
                   onClick={() => setCreating(true)}

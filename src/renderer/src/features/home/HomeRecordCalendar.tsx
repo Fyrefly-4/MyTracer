@@ -37,25 +37,21 @@ export function HomeRecordCalendar({ counts, today, onOpenRecord }: HomeRecordCa
     <section className="home-record-calendar" aria-label="留下的痕迹">
       <header className="hrc-heading">
         <h2>留下的痕迹</h2>
-        <div className="hrc-toggle" role="group" aria-label="日历时间范围">
-          {([12, 26] as const).map((weeks) => (
-            <button
-              key={weeks}
-              type="button"
-              aria-pressed={preferences.weeks === weeks}
-              onClick={() => updatePreferences({ ...preferences, weeks })}
-            >
-              {weeks === 12 ? '12 周' : '半年'}
-            </button>
-          ))}
-        </div>
       </header>
       <div className={`hrc-calendar ${preferences.weeks === 26 ? 'hrc-half-year' : ''}`}>
-        <div className="hrc-top">
-          <span className="hrc-title">
-            {days[0].date.replaceAll('-', '.')} — {days.at(-1)!.date.slice(5).replace('-', '.')} ·{' '}
-            {preferences.weeks} 周
-          </span>
+        <div className="hrc-controls">
+          <div className="hrc-toggle" role="group" aria-label="日历时间范围">
+            {([12, 26] as const).map((weeks) => (
+              <button
+                key={weeks}
+                type="button"
+                aria-pressed={preferences.weeks === weeks}
+                onClick={() => updatePreferences({ ...preferences, weeks })}
+              >
+                {weeks === 12 ? '12 周' : '半年'}
+              </button>
+            ))}
+          </div>
           <div className="hrc-toggle" role="group" aria-label="记录日历显示方式">
             {([false, true] as const).map((intensity) => (
               <button
@@ -68,6 +64,12 @@ export function HomeRecordCalendar({ counts, today, onOpenRecord }: HomeRecordCa
               </button>
             ))}
           </div>
+        </div>
+        <div className="hrc-top">
+          <span className="hrc-title">
+            {days[0].date.replaceAll('-', '.')} — {days.at(-1)!.date.slice(5).replace('-', '.')} ·{' '}
+            {preferences.weeks} 周
+          </span>
         </div>
         <div
           className="hrc-stage"
