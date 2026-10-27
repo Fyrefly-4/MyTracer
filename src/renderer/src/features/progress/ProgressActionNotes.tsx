@@ -114,9 +114,11 @@ function RecordedText({ record }: { readonly record: ProgressRecordFactDto }): R
 }
 
 export function ProgressActionNotes({
-  record
+  record,
+  originalFirst = false
 }: {
   readonly record: ProgressRecordFactDto
+  readonly originalFirst?: boolean
 }): ReactNode {
   const [expanded, setExpanded] = useState(false)
   if (!record.hasRecordedText && !record.understandings.length && !record.openConfusions.length)
@@ -127,6 +129,9 @@ export function ProgressActionNotes({
       onToggle={(event) => setExpanded(event.currentTarget.open)}
     >
       <summary>展开理解与记录</summary>
+      {originalFirst && expanded && record.hasRecordedText ? (
+        <RecordedText record={record} />
+      ) : null}
       {record.understandings.length ? (
         <div className="progress-fact-group">
           <h3>已确认的理解</h3>
@@ -143,7 +148,9 @@ export function ProgressActionNotes({
           ))}
         </div>
       ) : null}
-      {expanded && record.hasRecordedText ? <RecordedText record={record} /> : null}
+      {!originalFirst && expanded && record.hasRecordedText ? (
+        <RecordedText record={record} />
+      ) : null}
     </details>
   )
 }
