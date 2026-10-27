@@ -32,6 +32,7 @@ test('first record preserves drafts, explicit choices, retry identity and modal 
     await expect(dialog.getByLabel('选择已有行动')).toHaveCount(0)
     await expect(dialog.getByLabel('刚才做了什么', { exact: true })).toBeInViewport({ ratio: 1 })
     await dialog.getByLabel('刚才做了什么', { exact: true }).fill('合成事实：整理了一部分')
+    await dialog.locator('.first-record-extras > summary').click()
     await dialog
       .getByRole('textbox', { name: '简述（可选）', exact: true })
       .fill('合成简述\n第二行')
@@ -59,9 +60,7 @@ test('first record preserves drafts, explicit choices, retry identity and modal 
     await expect(dialog.getByLabel('刚才做了什么', { exact: true })).toHaveValue(
       '合成事实：整理了一部分'
     )
-    await expect(dialog.getByRole('textbox', { name: '简述（可选）', exact: true })).toHaveValue(
-      '合成简述\n第二行'
-    )
+    await expect(dialog.getByLabel('简述（可选）', { exact: true })).toHaveValue('合成简述\n第二行')
     for (const factor of [1, 1.25, 1.5]) {
       await app.evaluate(({ BrowserWindow }, zoom) => {
         const window = BrowserWindow.getAllWindows()[0]!
@@ -83,6 +82,21 @@ test('first record preserves drafts, explicit choices, retry identity and modal 
       await page.keyboard.press('Tab')
       await expect(dialog.getByRole('button', { name: '放弃这份草稿' })).toBeFocused()
     }
+    // A collapsed optional field must still block invalid content and become reachable.
+    const extras = dialog.locator('.first-record-extras')
+    const summary = dialog.getByLabel('简述（可选）', { exact: true })
+    if (!(await extras.evaluate((element) => (element as HTMLDetailsElement).open))) {
+      await extras.locator(':scope > summary').click()
+    }
+    await summary.fill('长'.repeat(501))
+    await extras.locator(':scope > summary').click()
+    await dialog.getByRole('button', { name: '保存行动和第一笔', exact: true }).click()
+    await expect(extras).toHaveAttribute('open', '')
+    await expect(summary).toBeFocused()
+    expect(await snapshot()).toMatchObject({ ok: true, value: { actions: [], actionRecords: [] } })
+    await summary.fill('合成简述\n第二行')
+    await extras.locator(':scope > summary').click()
+    await expect(extras.locator(':scope > summary')).toContainText('已有内容')
     // Inject one safe failure, followed by a commit whose reply is lost.
     await app.evaluate(({ ipcMain }) => {
       const handlers = Reflect.get(ipcMain, '_invokeHandlers') as Map<
@@ -255,6 +269,7 @@ test('late begin cannot replace a newer draft; an authoritative rejection releas
       await dialog.getByLabel('本次结果', { exact: true }).selectOption('partial')
     })
     await dialog.getByLabel('保存后，整个行动').selectOption('keep-pending')
+    await dialog.locator('.first-record-extras > summary').click()
     await dialog.getByLabel('关联目标（可选）', { exact: true }).selectOption(goalId)
     await test.step('install synthetic IPC interceptor', () =>
       app!.evaluate(({ ipcMain }) => {

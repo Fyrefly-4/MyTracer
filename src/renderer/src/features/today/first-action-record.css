@@ -55,3 +55,12 @@
     padding: 16px;
   }
 }
+
+.first-record-extra-fields {
+  display: grid;
+  gap: 10px;
+  padding-top: 10px;
+}
+.first-record-extras > summary {
+  cursor: pointer;
+}
