@@ -206,3 +206,117 @@ test('booklet save failure retains input and read failure hides previously resol
     await removeTemporaryTestRoot(root)
   }
 })
+
+test('long booklets own a scrollport, keep candidate width and preserve offscreen operation focus', async () => {
+  const root = await createTemporaryTestRoot()
+  let app: Awaited<ReturnType<typeof electron.launch>> | undefined
+  try {
+    app = await electron.launch({
+      chromiumSandbox: true,
+      cwd: root.root,
+      args: [join(process.cwd(), 'out/main/index.js'), `--user-data-dir=${root.electronUserData}`],
+      env: minimalElectronEnvironment(root)
+    })
+    const page = await app.firstWindow()
+    await page.setViewportSize({ width: 1188, height: 848 })
+    const ids = await page.evaluate(async () => {
+      const today = await window.myTracer.today.get({})
+      if (!today.ok) throw new Error('date')
+      const rows = []
+      for (const text of [
+        Array.from(
+          { length: 80 },
+          (_, index) => `Synthetic long line ${index}: reading should remain reachable.`
+        ).join('\n'),
+        'Synthetic short second',
+        'Synthetic short third'
+      ]) {
+        const thought = await window.myTracer.thoughts.create({
+          id: crypto.randomUUID(),
+          occurredOn: today.value.localDate,
+          text
+        })
+        if (!thought.ok) throw new Error('source')
+        rows.push(thought.value)
+      }
+      return rows.map((row) => row.id)
+    })
+    await page.getByRole('button', { name: '数据', exact: true }).click()
+    await page.getByRole('button', { name: /记录册/ }).click()
+    await page.getByRole('button', { name: '编选小册子' }).click()
+    await page.getByRole('button', { name: '创建小册子' }).click()
+    await page.getByRole('textbox', { name: '标题（可选）' }).fill('Long scrolling fixture')
+    await page.getByRole('button', { name: '保存小册子', exact: true }).click()
+    await page.getByRole('button', { name: '加入内容' }).click()
+    const container = page.locator('.personal-booklets')
+    const beforeWidth = (await container.boundingBox())!.width
+    await page
+      .locator('.booklet-candidates li')
+      .filter({ hasText: 'Synthetic long line' })
+      .getByRole('button', { name: '加入', exact: true })
+      .click()
+    await expect(page.locator('.booklet-candidates li')).toHaveCount(2)
+    expect(Math.abs((await container.boundingBox())!.width - beforeWidth)).toBeLessThan(2)
+    await page
+      .locator('.booklet-candidates li')
+      .filter({ hasText: 'Synthetic short second' })
+      .getByRole('button', { name: '加入', exact: true })
+      .click()
+    await page
+      .locator('.booklet-candidates li')
+      .filter({ hasText: 'Synthetic short third' })
+      .getByRole('button', { name: '加入', exact: true })
+      .click()
+    await page.getByRole('button', { name: '返回阅读' }).click()
+    const main = page.locator('main.content-booklets')
+    await expect(main).toHaveCSS('overflow-y', 'auto')
+    expect(
+      await main.evaluate((element) => element.scrollHeight > element.clientHeight + 1000)
+    ).toBe(true)
+    const mainBox = (await main.boundingBox())!
+    await page.mouse.move(mainBox.x + mainBox.width / 2, mainBox.y + mainBox.height / 2)
+    await page.mouse.wheel(0, 6000)
+    await expect.poll(() => main.evaluate((element) => element.scrollTop)).toBeGreaterThan(1000)
+    const last = page.getByRole('article', { name: '第 3 条' })
+    await expect(last.getByRole('button', { name: '上移' })).toBeInViewport()
+    const entryId = await last.getAttribute('data-booklet-entry')
+    const moved = page.locator(`[data-booklet-entry="${entryId}"]`)
+    const beforeY = (await last.getByRole('button', { name: '上移' }).boundingBox())!.y
+    await last.getByRole('button', { name: '上移' }).click()
+    await expect(moved).toHaveAttribute('aria-label', '第 2 条')
+    await expect(moved.getByRole('button', { name: '上移' })).toBeFocused()
+    expect(
+      Math.abs((await moved.getByRole('button', { name: '上移' }).boundingBox())!.y - beforeY)
+    ).toBeLessThan(20)
+    await moved.getByRole('button', { name: '移出小册子' }).click()
+    await expect(page.locator('.booklet-reading article')).toHaveCount(2)
+    await expect(
+      page.getByRole('article', { name: '第 2 条' }).getByRole('button', { name: '移出小册子' })
+    ).toBeFocused()
+    await expect(
+      page.getByRole('article', { name: '第 2 条' }).getByRole('button', { name: '移出小册子' })
+    ).toBeInViewport()
+    expect(await main.evaluate((element) => element.scrollTop)).toBeGreaterThan(1000)
+    await page.setViewportSize({ width: 620, height: 760 })
+    await page
+      .getByRole('article', { name: '第 2 条' })
+      .getByRole('button', { name: '移出小册子' })
+      .focus()
+    await page.keyboard.press('Control+End')
+    await expect(
+      page.getByRole('article', { name: '第 2 条' }).getByRole('button', { name: '移出小册子' })
+    ).toBeInViewport()
+    expect(await container.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(
+      true
+    )
+    expect(await main.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true)
+    const remaining = await page.evaluate(async () => window.myTracer.booklets.list())
+    expect(remaining).toMatchObject({
+      ok: true,
+      value: [{ entries: [{ sourceId: ids[0] }, { sourceId: ids[1] }] }]
+    })
+  } finally {
+    await app?.close()
+    await removeTemporaryTestRoot(root)
+  }
+})

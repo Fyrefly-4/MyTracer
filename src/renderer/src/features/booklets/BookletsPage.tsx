@@ -33,6 +33,12 @@ export function BookletsPage({ onBack }: { onBack: () => void }) {
   const heading = useRef<HTMLHeadingElement>(null)
   const readingPosition = useRef(0)
   const restoreReading = useRef(false)
+  const operationFocus = useRef<{
+    id: string | null
+    action: string
+    offset: number
+    scrollTop: number
+  } | null>(null)
   useUnsavedContent('booklet-editor', Boolean(editor) || busy)
   useEffect(() => {
     if (!confirm) return
@@ -51,11 +57,13 @@ export function BookletsPage({ onBack }: { onBack: () => void }) {
       restoreSource.current?.()
     }
   }, [])
-  const read = useCallback(async (id: string | null) => {
+  const read = useCallback(async (id: string | null, preserveLayout = false) => {
     const token = ++sequence.current
     setError('')
-    setSnapshot(null)
-    setCandidates(null)
+    if (!preserveLayout) {
+      setSnapshot(null)
+      setCandidates(null)
+    }
     if (!id) setBooks(null)
     try {
       const result = id ? unwrap(await window.myTracer.booklets.read({ id })) : null
@@ -64,8 +72,11 @@ export function BookletsPage({ onBack }: { onBack: () => void }) {
       if (result) setSnapshot(result)
       else setBooks(list)
     } catch (failure) {
-      if (alive.current && token === sequence.current)
+      if (alive.current && token === sequence.current) {
+        operationFocus.current = null
+        setSnapshot(null)
         setError(failure instanceof Error ? failure.message : unavailable)
+      }
     }
   }, [])
   useEffect(() => {
@@ -89,6 +100,45 @@ export function BookletsPage({ onBack }: { onBack: () => void }) {
       restoreReading.current = false
     }
   }, [original, adding, snapshot])
+  useLayoutEffect(() => {
+    if (busy || !snapshot || !operationFocus.current) return
+    const pending = operationFocus.current
+    operationFocus.current = null
+    const main = heading.current?.closest('main')
+    if (!main) return
+    main.scrollTop = pending.scrollTop
+    const entry = [...main.querySelectorAll<HTMLElement>('[data-booklet-entry]')].find(
+      (element) => element.dataset.bookletEntry === pending.id
+    )
+    const buttons = entry
+      ? [...entry.querySelectorAll<HTMLButtonElement>('button[data-booklet-action]')]
+      : []
+    const target =
+      buttons.find(
+        (button) => button.dataset.bookletAction === pending.action && !button.disabled
+      ) ?? buttons.find((button) => !button.disabled)
+    if (target) {
+      main.scrollTop +=
+        target.getBoundingClientRect().top - main.getBoundingClientRect().top - pending.offset
+      target.focus({ preventScroll: true })
+    } else heading.current?.focus({ preventScroll: true })
+  }, [snapshot, busy])
+  function changeEntries(
+    booklet: Booklet,
+    id: string | null,
+    action: string,
+    trigger: HTMLButtonElement
+  ) {
+    if (lock.current) return
+    const main = heading.current?.closest('main')
+    operationFocus.current = {
+      id,
+      action,
+      offset: trigger.getBoundingClientRect().top - (main?.getBoundingClientRect().top ?? 0),
+      scrollTop: main?.scrollTop ?? 0
+    }
+    void run(() => save(booklet))
+  }
   // Returning to the window re-resolves references; never treat the old body as current after a failed read.
   useEffect(() => {
     const refresh = () => {
@@ -107,6 +157,7 @@ export function BookletsPage({ onBack }: { onBack: () => void }) {
       await work()
     } catch (failure) {
       if (alive.current) {
+        operationFocus.current = null
         setSnapshot(null)
         setCandidates(null)
         setError(failure instanceof Error ? failure.message : unavailable)
@@ -129,7 +180,7 @@ export function BookletsPage({ onBack }: { onBack: () => void }) {
     if (!alive.current) return
     setEditor(null)
     setSelected(saved.id)
-    await read(saved.id)
+    await read(saved.id, saved.id === selected)
     setNotice('已保存。')
   }
   async function loadCandidates() {
@@ -435,7 +486,7 @@ export function BookletsPage({ onBack }: { onBack: () => void }) {
               const entry = snapshot.contents[index]
               return (
                 <li key={reference.id}>
-                  <article aria-label={`第 ${index + 1} 条`}>
+                  <article data-booklet-entry={reference.id} aria-label={`第 ${index + 1} 条`}>
                     <h2>{entry ? entry.title : '来源已删除'}</h2>
                     {entry ? (
                       <>
@@ -467,22 +518,26 @@ export function BookletsPage({ onBack }: { onBack: () => void }) {
                       {([-1, 1] as const).map((direction) => (
                         <button
                           key={direction}
+                          data-booklet-action={direction === -1 ? 'up' : 'down'}
                           type="button"
                           disabled={
                             busy ||
                             index + direction < 0 ||
                             index + direction >= booklet!.entries.length
                           }
-                          onClick={() =>
-                            void run(async () => {
-                              const entries = [...booklet!.entries]
-                              ;[entries[index], entries[index + direction]] = [
-                                entries[index + direction],
-                                entries[index]
-                              ]
-                              await save({ ...booklet!, entries })
-                            })
-                          }
+                          onClick={(event) => {
+                            const entries = [...booklet!.entries]
+                            ;[entries[index], entries[index + direction]] = [
+                              entries[index + direction],
+                              entries[index]
+                            ]
+                            changeEntries(
+                              { ...booklet!, entries },
+                              reference.id,
+                              direction === -1 ? 'up' : 'down',
+                              event.currentTarget
+                            )
+                          }}
                         >
                           {direction === -1 ? '上移' : '下移'}
                         </button>
@@ -490,12 +545,18 @@ export function BookletsPage({ onBack }: { onBack: () => void }) {
                       <button
                         type="button"
                         disabled={busy}
-                        onClick={() =>
-                          void run(() =>
-                            save({
+                        data-booklet-action="remove"
+                        onClick={(event) =>
+                          changeEntries(
+                            {
                               ...booklet!,
                               entries: booklet!.entries.filter((item) => item.id !== reference.id)
-                            })
+                            },
+                            booklet!.entries[index + 1]?.id ??
+                              booklet!.entries[index - 1]?.id ??
+                              null,
+                            'remove',
+                            event.currentTarget
                           )
                         }
                       >

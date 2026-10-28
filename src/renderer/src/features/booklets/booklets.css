@@ -1,4 +1,17 @@
+/* This view owns a continuous main scrollport, independently of Data's pane layout. */
+.content.content-booklets {
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+.content-booklets > .content-inner {
+  display: block;
+  height: auto;
+  min-height: 100%;
+  overflow: visible;
+}
 .personal-booklets {
+  width: 100%;
+  box-sizing: border-box;
   max-width: 920px;
   margin: 0 auto;
   padding: clamp(16px, 4vw, 48px);

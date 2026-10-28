@@ -287,7 +287,7 @@ export function AppShell({
           </nav>
 
           <main
-            className={`content content-${bookMode === 'reading' ? 'book' : bookMode === 'original' ? 'data' : activeSection}`}
+            className={`content content-${bookMode === 'reading' ? 'book' : bookMode === 'booklets' ? 'booklets' : bookMode === 'original' ? 'data' : activeSection}`}
             ref={mainRef}
             onScrollCapture={(event) => {
               const target = event.target
