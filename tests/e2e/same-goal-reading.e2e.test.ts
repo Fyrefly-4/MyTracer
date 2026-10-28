@@ -113,6 +113,17 @@ test('same-goal originals are read-only, full length, same-day aware and restore
     const other = dialog.getByRole('article', { name: '对读记录', exact: true })
     await expect(other).toContainText('2026-08-01')
     await expect(other).toContainText('时长未记录')
+    expect(
+      await dialog.evaluate((element) => element.getBoundingClientRect().width)
+    ).toBeGreaterThan(800)
+    expect(
+      await dialog.locator('.same-goal-originals').evaluate((element) => {
+        const [current, previous] = [...element.children].map((child) =>
+          child.getBoundingClientRect()
+        )
+        return previous.left >= current.right && Math.abs(previous.top - current.top) < 2
+      })
+    ).toBe(true)
     await expect(dialog.getByRole('article', { name: '当前记录', exact: true })).toContainText(
       '少于 1 分钟'
     )

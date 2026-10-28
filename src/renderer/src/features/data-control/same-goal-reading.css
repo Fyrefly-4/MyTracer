@@ -1,5 +1,5 @@
 /* One scroll surface for the transient reading layer; the original panes stay mounted. */
-.same-goal-reading {
+.confirmation-dialog.same-goal-reading {
   width: min(1100px, calc(100vw - 48px));
   max-width: none;
   max-height: calc(100dvh - 48px);
