@@ -51,6 +51,7 @@ test('personal booklets: create, append, retain order, follow originals, export 
     await expect(
       page.getByRole('heading', { name: 'Synthetic booklet', exact: true })
     ).toBeVisible()
+    console.info('booklet workflow: created; adding sources')
     await page.getByRole('button', { name: '加入内容' }).click()
     await page.getByRole('textbox', { name: '查找日期或文字' }).fill('First synthetic')
     await page.getByRole('button', { name: '加入', exact: true }).click()
@@ -73,6 +74,7 @@ test('personal booklets: create, append, retain order, follow originals, export 
       .getByRole('button', { name: '回到来源' })
       .click()
     await expect(page.getByRole('article', { name: '已保存的独立想法' })).toHaveCount(1)
+    console.info('booklet workflow: ordered; editing source')
     await page.getByRole('button', { name: '修改想法' }).click()
     await page.getByRole('textbox', { name: '想法正文' }).fill('Revised synthetic source')
     await page.getByRole('button', { name: '保存想法', exact: true }).click()
@@ -89,6 +91,7 @@ test('personal booklets: create, append, retain order, follow originals, export 
         .locator('.personal-booklets')
         .evaluate((element) => element.scrollWidth <= element.clientWidth)
     ).toBe(true)
+    console.info('booklet workflow: source revised; exporting')
     const destination = join(root.exports, 'booklet.html')
     await app.evaluate(({ dialog }, filePath) => {
       dialog.showSaveDialog = async () => ({ canceled: false, filePath })
@@ -97,6 +100,7 @@ test('personal booklets: create, append, retain order, follow originals, export 
     await expect(
       page.getByRole('region', { name: '小册子', exact: true }).getByRole('status')
     ).toContainText('内容已定格')
+    console.info('booklet workflow: exported; deleting source')
     const frozen = await readFile(destination, 'utf8')
     expect(frozen.indexOf('Revised synthetic source')).toBeLessThan(
       frozen.indexOf('First synthetic thought')
@@ -119,8 +123,11 @@ test('personal booklets: create, append, retain order, follow originals, export 
     expect(await readFile(destination, 'utf8')).toBe(frozen)
     await expect(page.locator('.booklet-reading article')).toHaveCount(1)
     await expect(page.getByRole('button', { name: '加入内容' })).toBeEnabled()
+    console.info('booklet workflow: removed placeholder; closing for restart')
     await app.close()
+    console.info('booklet workflow: closed; restarting')
     app = await launch()
+    console.info('booklet workflow: restarted')
     page = await app.firstWindow()
     await page.getByRole('button', { name: '数据', exact: true }).click()
     await page.getByRole('button', { name: '导出', exact: true }).click()
@@ -139,7 +146,13 @@ test('personal booklets: create, append, retain order, follow originals, export 
       thoughts[0]
     )
     expect(remaining).toMatchObject({ ok: true, value: [thoughts[0]] })
+    console.info('booklet workflow: all assertions complete')
+  } catch (failure) {
+    // Preserve the original failure if application cleanup is also blocked.
+    console.error('Personal booklet workflow failed before cleanup:', failure)
+    throw failure
   } finally {
+    console.info('booklet workflow: final cleanup')
     await app?.close()
     await removeTemporaryTestRoot(root)
   }
