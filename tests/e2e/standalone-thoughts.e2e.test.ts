@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { expect, test } from '@playwright/test'
 import { _electron as electron } from 'playwright'
@@ -69,12 +70,44 @@ test('thoughts stand alone across save, conflict, cancellation, day view and res
     await section.getByRole('button', { name: '保存想法' }).click()
     await expect(section.getByRole('status')).toContainText('想法已保存')
     await section.getByRole('button', { name: '留个想法' }).click()
+    await section.getByRole('textbox').fill('切换日期时不自动保存')
+    await page.getByLabel('回看想法日期').fill('2020-01-01')
+    section = page.getByRole('region', { name: '2020-01-01 的独立想法' })
+    await expect(section.getByRole('article')).toHaveCount(0)
+    await expect(section.getByRole('button', { name: '留个想法' })).toBeVisible()
+    await page.getByLabel('回看想法日期').fill(initial.date)
+    section = page.getByRole('region', { name: /的独立想法$/ })
+    await expect(section.getByRole('article')).toHaveCount(1)
+    await section.getByRole('button', { name: '留个想法' }).click()
     await section.getByRole('textbox').fill('切页时不自动保存')
     await page.getByRole('navigation').getByRole('button', { name: '首页', exact: true }).click()
     await page.getByRole('button', { name: '查看今天的记录与想法' }).click()
     section = page.getByRole('region', { name: /的独立想法$/ })
     await expect(section.getByRole('article')).toHaveCount(1)
     await expect(section.getByRole('textbox')).toHaveCount(0)
+    const exportPath = join(root.exports, 'synthetic-thoughts.json')
+    await app.evaluate(({ dialog }, path) => {
+      dialog.showSaveDialog = async () => ({ canceled: false, filePath: path })
+    }, exportPath)
+    expect(await page.evaluate(() => window.myTracer.exports.generate())).toMatchObject({
+      ok: true,
+      value: { exportVersion: 7 }
+    })
+    const exported = JSON.parse(await readFile(exportPath, 'utf8'))
+    expect(exported.data.thoughts).toHaveLength(1)
+    expect(exported.data.thoughts[0].text).toBe('最终保存的合成想法\n不产生行动。')
+    expect(exported.data.actions).toEqual([])
+    const book = await page.evaluate(() => window.myTracer.recordBook.read())
+    expect(book.ok).toBe(true)
+    if (book.ok)
+      expect(
+        book.value.book.months.flatMap((month) => month.days.flatMap((day) => day.entries))
+      ).toContainEqual(
+        expect.objectContaining({
+          kind: 'thought',
+          fields: [{ label: '正文', text: '最终保存的合成想法\n不产生行动。' }]
+        })
+      )
     await app.close()
     app = await launch()
     page = await app.firstWindow()

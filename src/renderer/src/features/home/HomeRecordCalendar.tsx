@@ -38,9 +38,6 @@ export function HomeRecordCalendar({ counts, today, onOpenRecord }: HomeRecordCa
     <section className="home-record-calendar" aria-label="留下的痕迹">
       <header className="hrc-heading">
         <h2>留下的痕迹</h2>
-        <button type="button" onClick={() => setSelected(today)}>
-          查看今天的记录与想法
-        </button>
         <div className="hrc-toggle" role="group" aria-label="日历时间范围">
           {([12, 26] as const).map((weeks) => (
             <button
@@ -129,6 +126,9 @@ export function HomeRecordCalendar({ counts, today, onOpenRecord }: HomeRecordCa
           <span>点击方格回看 · 数据截至 {today}</span>
         </p>
       </div>
+      <button type="button" onClick={() => setSelected(today)}>
+        查看今天的记录与想法
+      </button>
       {visibleSelected && (
         <section className="hrc-details" aria-label={`${visibleSelected} 的记录`}>
           <header>
