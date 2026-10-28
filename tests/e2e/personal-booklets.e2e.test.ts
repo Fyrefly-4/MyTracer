@@ -76,6 +76,9 @@ test('personal booklets: create, append, retain order, follow originals, export 
     await page.getByRole('button', { name: '修改想法' }).click()
     await page.getByRole('textbox', { name: '想法正文' }).fill('Revised synthetic source')
     await page.getByRole('button', { name: '保存想法', exact: true }).click()
+    await expect(page.getByRole('article', { name: '已保存的独立想法' })).toContainText(
+      'Revised synthetic source'
+    )
     await page.getByRole('button', { name: '返回小册子', exact: true }).click()
     await expect(page.getByRole('article', { name: '第 1 条' })).toContainText(
       'Revised synthetic source'
@@ -91,7 +94,9 @@ test('personal booklets: create, append, retain order, follow originals, export 
       dialog.showSaveDialog = async () => ({ canceled: false, filePath })
     }, destination)
     await page.getByRole('button', { name: '保存小册子 HTML' }).click()
-    await expect(page.getByRole('status')).toContainText('内容已定格')
+    await expect(
+      page.getByRole('region', { name: '小册子', exact: true }).getByRole('status')
+    ).toContainText('内容已定格')
     const frozen = await readFile(destination, 'utf8')
     expect(frozen.indexOf('Revised synthetic source')).toBeLessThan(
       frozen.indexOf('First synthetic thought')
@@ -112,6 +117,8 @@ test('personal booklets: create, append, retain order, follow originals, export 
       .getByRole('button', { name: '移出小册子' })
       .click()
     expect(await readFile(destination, 'utf8')).toBe(frozen)
+    await expect(page.locator('.booklet-reading article')).toHaveCount(1)
+    await expect(page.getByRole('button', { name: '加入内容' })).toBeEnabled()
     await app.close()
     app = await launch()
     page = await app.firstWindow()
