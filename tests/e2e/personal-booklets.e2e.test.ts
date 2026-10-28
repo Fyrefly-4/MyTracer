@@ -53,10 +53,10 @@ test('personal booklets: create, append, retain order, follow originals, export 
     ).toBeVisible()
     console.info('booklet workflow: created; adding sources')
     await page.getByRole('button', { name: '加入内容' }).click()
-    await page.getByRole('textbox', { name: '查找日期或文字' }).fill('First synthetic')
+    await page.getByRole('searchbox', { name: '查找日期或文字' }).fill('First synthetic')
     await page.getByRole('button', { name: '加入', exact: true }).click()
     await expect(page.getByRole('heading', { name: '加入行动记录或独立想法' })).toBeVisible()
-    await page.getByRole('textbox', { name: '查找日期或文字' }).fill('Second synthetic')
+    await page.getByRole('searchbox', { name: '查找日期或文字' }).fill('Second synthetic')
     await page.getByRole('button', { name: '加入', exact: true }).click()
     await page.getByRole('button', { name: '返回阅读' }).click()
     await expect(page.getByRole('article', { name: '第 1 条' })).toContainText(
