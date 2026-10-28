@@ -1,3 +1,4 @@
+import { THOUGHT_CHANNELS, type ThoughtApi } from '../contracts/thoughts'
 import { PendingCloseRequest } from './pending-close-request'
 import { DRAFT_CHANNELS, type RecordDraftApi } from '../contracts/record-drafts'
 import { RECORD_BOOK_CHANNELS, type RecordBookApi } from '../contracts/record-book'
@@ -149,7 +150,18 @@ ipcRenderer.on(DRAFT_CHANNELS.closeRequest, (_event, requestId: string) =>
   closeRequests.receive(requestId)
 )
 
+const thoughts: ThoughtApi = Object.freeze({
+  list: (input: Parameters<ThoughtApi['list']>[0]) =>
+    ipcRenderer.invoke(THOUGHT_CHANNELS.list, input),
+  create: (input: Parameters<ThoughtApi['create']>[0]) =>
+    ipcRenderer.invoke(THOUGHT_CHANNELS.create, input),
+  update: (input: Parameters<ThoughtApi['update']>[0]) =>
+    ipcRenderer.invoke(THOUGHT_CHANNELS.update, input),
+  delete: (input: Parameters<ThoughtApi['delete']>[0]) =>
+    ipcRenderer.invoke(THOUGHT_CHANNELS.delete, input)
+})
 const api: MyTracerApi = Object.freeze({
+  thoughts,
   recordDrafts: {
     load: () => ipcRenderer.invoke(DRAFT_CHANNELS.load),
     retain: (input: Parameters<RecordDraftApi['retain']>[0]) =>

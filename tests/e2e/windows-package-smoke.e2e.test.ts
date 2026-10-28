@@ -47,6 +47,7 @@ async function verifyPackagedApplication(
       ai: { configured: false, availability: 'not-configured' }
     })
     expect(await page.evaluate(() => Object.keys(window.myTracer))).toEqual([
+      'thoughts',
       'recordDrafts',
       'home',
       'shell',
@@ -65,6 +66,13 @@ async function verifyPackagedApplication(
       'aiStartHelp',
       'aiConfiguration'
     ])
+    expect(await page.evaluate(() => Object.keys(window.myTracer.thoughts))).toEqual([
+      'list',
+      'create',
+      'update',
+      'delete'
+    ])
+    expect(await page.evaluate(() => Object.isFrozen(window.myTracer.thoughts))).toBe(true)
     expect(await page.evaluate(() => Object.keys(window.myTracer.home))).toEqual(['get', 'day'])
     expect(await page.evaluate(() => Object.isFrozen(window.myTracer.home))).toBe(true)
     expect(await page.evaluate(() => Object.keys(window.myTracer.shell))).toEqual([
@@ -235,7 +243,7 @@ async function verifyPackagedApplication(
     expect(
       database.prepare("SELECT value FROM metadata WHERE key = 'schemaVersion'").get()
     ).toEqual({
-      value: '8'
+      value: '9'
     })
     expect(database.pragma('foreign_keys', { simple: true })).toBe(1)
   } finally {

@@ -1,0 +1,46 @@
+.thought-day {
+  min-width: 0;
+  margin-block: 16px;
+  padding: 14px;
+  border: 1px solid var(--border-color, #d8dfdb);
+  border-radius: 12px;
+}
+.thought-day header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.thought-day h3 {
+  margin: 0;
+}
+.thought-day article {
+  border-top: 1px solid var(--border-color, #d8dfdb);
+  margin-top: 14px;
+  padding-top: 8px;
+}
+.thought-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.7;
+}
+.thought-day label {
+  display: grid;
+  gap: 8px;
+}
+.thought-day textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 140px;
+  resize: vertical;
+}
+.thought-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.thought-day dialog {
+  max-height: 80vh;
+  overflow-y: auto;
+}

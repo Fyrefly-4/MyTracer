@@ -75,6 +75,7 @@ class MemoryRoutinePersistence implements RoutineRepositoryPort, UnitOfWorkPort 
       routineRecords: [],
       understandings: [],
       confusions: [],
+      thoughts: [],
       reviewResults: []
     }
   }

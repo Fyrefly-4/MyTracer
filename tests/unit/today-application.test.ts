@@ -129,6 +129,7 @@ function setup(goalStatus: GoalPersistenceRecord['status'] = 'active') {
       routineRecords: [],
       understandings: [],
       confusions: [],
+      thoughts: [],
       reviewResults: []
     })
   } as unknown as ActionRepositoryPort

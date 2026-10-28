@@ -91,6 +91,14 @@ export function buildRecordBook(data: CorePersistenceSnapshot): RecordBook {
       ]
     })
   }
+  for (const thought of data.thoughts)
+    entries.push({
+      id: thought.id,
+      kind: 'thought',
+      date: thought.occurredOn,
+      title: '独立想法',
+      fields: [field('正文', thought.text)]
+    })
   for (const review of data.reviewResults)
     entries.push({
       id: review.id,
@@ -140,7 +148,7 @@ export function buildRecordBook(data: CorePersistenceSnapshot): RecordBook {
       field('排除项', '设置、窗口状态、会话草稿、AI 草稿、凭据、技术日志与外部文件内容。'),
       field(
         '范围说明',
-        '当前保存的行动记录、例行记录、关联理解与困惑及复盘原文；不包含已删除文字或历史版本。完整 JSON 是独立的结构化导出。本册不是备份或恢复验证。'
+        '当前保存的行动记录、例行记录、独立想法、关联理解与困惑及复盘原文；不包含已删除文字或历史版本。完整 JSON 是独立的结构化导出。本册不是备份或恢复验证。'
       )
     ]
   }

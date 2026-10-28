@@ -1,3 +1,4 @@
+import { SqliteThoughtRepository } from './thought-repository'
 import type Database from 'better-sqlite3'
 import type {
   ActionPersistenceRecord,
@@ -946,6 +947,7 @@ export class SqliteRepository
 
   private readCoreSnapshot(): CorePersistenceSnapshot {
     return {
+      thoughts: new SqliteThoughtRepository(this.database).list(),
       goals: this.rows('SELECT * FROM goals ORDER BY id').map((row) => this.goalFromRow(row)),
       actions: this.rows('SELECT * FROM actions ORDER BY id').map((row) => this.actionFromRow(row)),
       routines: this.rows('SELECT * FROM routines ORDER BY id').map((row) =>
@@ -1012,6 +1014,7 @@ export class SqliteRepository
     const freezeRows = <T extends object>(rows: readonly T[]): readonly T[] =>
       Object.freeze(rows.map((row) => Object.freeze({ ...row })))
     return Object.freeze({
+      thoughts: freezeRows(snapshot.thoughts),
       goals: freezeRows(snapshot.goals),
       actions: freezeRows(snapshot.actions),
       routines: freezeRows(snapshot.routines),

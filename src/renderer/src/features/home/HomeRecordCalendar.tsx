@@ -1,3 +1,4 @@
+import { ThoughtDay } from '../thoughts/ThoughtDay'
 import { useEffect, useState, type CSSProperties } from 'react'
 import {
   buildCalendarDays,
@@ -121,9 +122,13 @@ export function HomeRecordCalendar({ counts, today, onOpenRecord }: HomeRecordCa
           </span>
         </div>
         <p className="hrc-caption">
-          没有记录，不代表没有行动。<span>点击方格回看 · 数据截至 {today}</span>
+          日历亮度仅计算行动与例行记录，独立想法可按日展开查看。没有记录，不代表没有行动。
+          <span>点击方格回看 · 数据截至 {today}</span>
         </p>
       </div>
+      <button type="button" onClick={() => setSelected(today)}>
+        查看今天的记录与想法
+      </button>
       {visibleSelected && (
         <section className="hrc-details" aria-label={`${visibleSelected} 的记录`}>
           <header>
@@ -132,6 +137,7 @@ export function HomeRecordCalendar({ counts, today, onOpenRecord }: HomeRecordCa
               收起
             </button>
           </header>
+          <ThoughtDay key={`thought-${visibleSelected}`} date={visibleSelected} />
           <CalendarDayRecords
             key={visibleSelected}
             date={visibleSelected}
@@ -202,7 +208,7 @@ function CalendarDayRecords({
       </div>
     )
   if (!result || result.page !== page) return <p role="status">正在读取当日记录…</p>
-  if (!result.total) return <p>这一天暂时没有留下记录。没有记录，不代表没有行动。</p>
+  if (!result.total) return <p>这一天暂时没有行动或例行记录。未记录行动，不代表没有行动。</p>
   const pageCount = Math.max(1, Math.ceil(result.total / 10))
   return (
     <>

@@ -123,13 +123,13 @@ function populate(connection: SqliteConnection): void {
 afterEach(async () => Promise.all(roots.splice(0).map(removeTemporaryTestRoot)))
 
 describe('complete export SQLite snapshot', () => {
-  it('binds schema version and all ten sorted core collections in one complete snapshot', async () => {
+  it('binds schema version and all eleven sorted core collections in one complete snapshot', async () => {
     const connection = await openConnection()
     populate(connection)
     const snapshot = asCompleteExportRepository(connection.repository).readCompleteCoreSnapshot()
-    expect(snapshot.sourceDataVersion).toBe(8)
+    expect(snapshot.sourceDataVersion).toBe(9)
     expect(Object.values(snapshot.coreSnapshot).map((rows) => rows.length)).toEqual([
-      1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+      0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
     ])
     const document = buildCompleteExport(snapshot, clock())
     expect(() => validateCompleteExport(document)).not.toThrow()

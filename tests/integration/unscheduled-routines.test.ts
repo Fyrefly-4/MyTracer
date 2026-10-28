@@ -92,8 +92,8 @@ describe('explicit unscheduled routine arrangements', () => {
         reopened.close()
       }
       expect(parsed).toMatchObject({
-        exportVersion: 6,
-        sourceDataVersion: 8,
+        exportVersion: 7,
+        sourceDataVersion: 9,
         data: { routines: [{ id: routine.id, arrangementMode: 'unscheduled' }] }
       })
     } finally {
@@ -209,7 +209,7 @@ describe('explicit unscheduled routine arrangements', () => {
           )
           expect(db.prepare('PRAGMA foreign_key_check').all()).toEqual([])
           migrateToCurrentSchema(db)
-          db.prepare("UPDATE metadata SET value = '9' WHERE key = 'schemaVersion'").run()
+          db.prepare("UPDATE metadata SET value = '10' WHERE key = 'schemaVersion'").run()
           expect(() => migrateToCurrentSchema(db)).toThrow(/newer/)
         } else {
           expect(() => migrateToCurrentSchema(db)).toThrow(/legacy weekdays/)

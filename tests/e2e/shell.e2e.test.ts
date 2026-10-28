@@ -75,6 +75,7 @@ test('runs the Electron shell with an isolated userData root', async () => {
     const status = await page.evaluate(() => window.myTracer.shell.getStatus())
     expect(status.ai).toEqual({ configured: false, availability: 'not-configured' })
     expect(await page.evaluate(() => Object.keys(window.myTracer))).toEqual([
+      'thoughts',
       'recordDrafts',
       'home',
       'shell',
@@ -98,6 +99,13 @@ test('runs the Electron shell with an isolated userData root', async () => {
       'export'
     ])
     expect(await page.evaluate(() => Object.isFrozen(window.myTracer.recordBook))).toBe(true)
+    expect(await page.evaluate(() => Object.keys(window.myTracer.thoughts))).toEqual([
+      'list',
+      'create',
+      'update',
+      'delete'
+    ])
+    expect(await page.evaluate(() => Object.isFrozen(window.myTracer.thoughts))).toBe(true)
     expect(await page.evaluate(() => Object.keys(window.myTracer.home))).toEqual(['get', 'day'])
     expect(await page.evaluate(() => Object.isFrozen(window.myTracer.home))).toBe(true)
     expect(await page.evaluate(() => Object.keys(window.myTracer.shell))).toEqual([
@@ -211,7 +219,7 @@ test('runs the Electron shell with an isolated userData root', async () => {
           expect(
             database.prepare("SELECT value FROM metadata WHERE key = 'schemaVersion'").get()
           ).toEqual({
-            value: '8'
+            value: '9'
           })
         } finally {
           database.close()

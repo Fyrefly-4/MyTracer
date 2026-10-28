@@ -1,3 +1,4 @@
+import { SqliteThoughtRepository } from './thought-repository'
 import { SqliteRecordContinuityStore } from './record-continuity-store'
 import { SqliteHomeQuery } from './home-query'
 import type { HomeQueryPort } from '../../application/home'
@@ -15,10 +16,12 @@ export interface SqlitePragmas {
 }
 
 export class SqliteConnection implements UnitOfWorkPort {
+  readonly thoughts: SqliteThoughtRepository
   readonly continuity: SqliteRecordContinuityStore
   readonly homeQuery: HomeQueryPort
   readonly repository: RepositoryPort
   private constructor(private readonly database: Database.Database) {
+    this.thoughts = new SqliteThoughtRepository(database)
     this.continuity = new SqliteRecordContinuityStore(database)
     this.repository = new SqliteRepository(database)
     this.homeQuery = new SqliteHomeQuery(database)
@@ -49,8 +52,8 @@ export class SqliteConnection implements UnitOfWorkPort {
         const version = database
           .prepare("SELECT value FROM metadata WHERE key = 'schemaVersion'")
           .get() as { value: string } | undefined
-        if (version && Number(version.value) < 8) {
-          const backupPath = `${databasePath}.before-record-continuity-v8-${randomUUID()}.sqlite3`
+        if (version && Number(version.value) < 9) {
+          const backupPath = `${databasePath}.before-${Number(version.value) < 8 ? 'record-continuity-v8' : 'standalone-thoughts-v9'}-${randomUUID()}.sqlite3`
           database.prepare('VACUUM INTO ?').run(backupPath)
           if (process.platform !== 'win32') chmodSync(backupPath, 0o600)
           const backup = new Database(backupPath, { readonly: true })

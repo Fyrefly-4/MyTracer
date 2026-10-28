@@ -12,6 +12,7 @@ const empty: CorePersistenceSnapshot = {
   routineRecords: [],
   understandings: [],
   confusions: [],
+  thoughts: [],
   reviewResults: []
 }
 const instant = '2026-01-01T00:30:00.000Z'
