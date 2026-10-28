@@ -1623,7 +1623,7 @@ function TodayWorkspace(): ReactNode {
             {today ? (
               <details className="today-thoughts">
                 <summary>当天独立想法</summary>
-                <ThoughtDayPicker key={today.localDate} today={today.localDate} />
+                <ThoughtDayPicker today={today.localDate} />
               </details>
             ) : null}
             <section className="goal-card goal-list-card today-priority" aria-label="今日重点">

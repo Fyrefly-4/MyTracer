@@ -136,3 +136,73 @@ test('thoughts stand alone across save, conflict, cancellation, day view and res
     await removeTemporaryTestRoot(root)
   }
 })
+
+test('background Today date refresh preserves an open thought until an explicit date change', async () => {
+  const root = await createTemporaryTestRoot()
+  let app: Awaited<ReturnType<typeof electron.launch>> | undefined
+  try {
+    app = await electron.launch({
+      chromiumSandbox: true,
+      cwd: root.root,
+      args: [join(process.cwd(), 'out/main/index.js'), `--user-data-dir=${root.electronUserData}`],
+      env: minimalElectronEnvironment(root)
+    })
+    const page = await app.firstWindow()
+    const today = await page.evaluate(async () => {
+      const action = await window.myTracer.actions.create({
+        title: '合成跨午夜刷新行动',
+        goalId: null
+      })
+      const result = await window.myTracer.today.get({})
+      if (!action.ok || !result.ok) throw new Error('synthetic fixture failed')
+      return result.value
+    })
+    const nextDate = new Date(`${today.localDate}T12:00:00Z`)
+    nextDate.setUTCDate(nextDate.getUTCDate() + 1)
+    const nextDay = nextDate.toISOString().slice(0, 10)
+    await page.getByRole('navigation').getByRole('button', { name: '今天', exact: true }).click()
+    await page.getByRole('button', { name: /合成跨午夜刷新行动.*待行动/ }).click()
+    const detail = page.getByLabel('合成跨午夜刷新行动 行动详情')
+    await detail.locator('summary').filter({ hasText: '编辑与管理行动' }).click()
+    await page.getByText('当天独立想法', { exact: true }).click()
+    const thought = page.getByRole('region', { name: `${today.localDate} 的独立想法` })
+    await thought.getByRole('button', { name: '留个想法' }).click()
+    await thought.getByRole('textbox', { name: '想法正文' }).fill('跨午夜仍保留的合成正文')
+    // Only the next background Today read advances; no OS clock or production data is changed.
+    await app.evaluate(
+      ({ ipcMain }, value) => {
+        ipcMain.removeHandler('today:get')
+        ipcMain.handle('today:get', () => ({ ok: true, value }))
+      },
+      { ...today, localDate: nextDay }
+    )
+    await detail.getByRole('button', { name: '选为今日重点' }).click()
+    await expect(page.locator('.today-date-label')).toHaveText(nextDay)
+    await expect(page.getByLabel('回看想法日期')).toHaveValue(today.localDate)
+    await expect(thought.getByRole('textbox', { name: '想法正文' })).toHaveValue(
+      '跨午夜仍保留的合成正文'
+    )
+    expect(
+      await page.evaluate((date) => window.myTracer.thoughts.list({ date }), today.localDate)
+    ).toEqual({ ok: true, value: [] })
+    await thought.getByRole('button', { name: '保存想法' }).click()
+    await expect(thought.getByRole('article')).toContainText('跨午夜仍保留的合成正文')
+    const saved = await page.evaluate(
+      (date) => window.myTracer.thoughts.list({ date }),
+      today.localDate
+    )
+    expect(saved).toMatchObject({
+      ok: true,
+      value: [{ occurredOn: today.localDate, text: '跨午夜仍保留的合成正文' }]
+    })
+    await thought.getByRole('button', { name: '留个想法' }).click()
+    await thought.getByRole('textbox', { name: '想法正文' }).fill('仅在显式切换时丢弃')
+    await page.getByLabel('回看想法日期').fill(nextDay)
+    const nextThought = page.getByRole('region', { name: `${nextDay} 的独立想法` })
+    await expect(nextThought.getByRole('button', { name: '留个想法' })).toBeVisible()
+    await expect(nextThought.getByRole('textbox')).toHaveCount(0)
+  } finally {
+    await app?.close()
+    await removeTemporaryTestRoot(root)
+  }
+})
