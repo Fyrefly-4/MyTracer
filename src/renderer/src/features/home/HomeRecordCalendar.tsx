@@ -208,7 +208,7 @@ function CalendarDayRecords({
       </div>
     )
   if (!result || result.page !== page) return <p role="status">正在读取当日记录…</p>
-  if (!result.total) return <p>这一天暂时没有留下记录。没有记录，不代表没有行动。</p>
+  if (!result.total) return <p>这一天暂时没有行动或例行记录。未记录行动，不代表没有行动。</p>
   const pageCount = Math.max(1, Math.ceil(result.total / 10))
   return (
     <>

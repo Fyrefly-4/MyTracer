@@ -43,6 +43,12 @@ test('thoughts stand alone across save, conflict, cancellation, day view and res
       }
     })
     expect(initial.calendar).toEqual([])
+    await expect(
+      page.getByText('这一天暂时没有行动或例行记录。未记录行动，不代表没有行动。', { exact: true })
+    ).toBeVisible()
+    await expect(
+      page.getByText('这一天暂时没有留下记录。没有记录，不代表没有行动。', { exact: true })
+    ).toHaveCount(0)
     await section.getByRole('button', { name: '修改想法' }).click()
     await section.getByRole('textbox', { name: '想法正文' }).fill('未保存的取消内容')
     await section.getByRole('button', { name: '取消', exact: true }).click()

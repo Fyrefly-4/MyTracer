@@ -283,7 +283,7 @@ test('Home calendar requests bounded day pages and reports day-query failure wit
     })
     await day.getByRole('button', { name: '上一页', exact: true }).click()
     await expect(day.getByRole('alert')).toContainText('当日记录暂时无法读取')
-    await expect(day).not.toContainText('这一天暂时没有留下记录')
+    await expect(day).not.toContainText('这一天暂时没有行动或例行记录')
   } finally {
     await app?.close()
     await removeTemporaryTestRoot(root)
