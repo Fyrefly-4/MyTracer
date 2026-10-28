@@ -1,3 +1,4 @@
+import { SameGoalReading } from './SameGoalReading'
 import { RecordSummaryInput, RecordNoteInput, RecordNote } from '../../app/RecordText'
 import { chooseVisibleSelection } from '../../app/selection-preferences'
 import {
@@ -178,6 +179,7 @@ function ActionRecordEditor(props: {
           <span className="data-editing-label">编辑中</span>
         )}
       </div>
+      {!editing ? <SameGoalReading recordId={props.record.id} /> : null}
       {!editing ? (
         <dl className="data-record-summary">
           <div>
