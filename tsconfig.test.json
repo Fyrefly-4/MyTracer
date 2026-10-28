@@ -37,6 +37,7 @@
     "src/renderer/src/features/goals/goal-content-draft.ts",
     "src/renderer/src/features/home/home-model.ts",
     "src/renderer/src/features/data-control/history-search.ts",
+    "src/renderer/src/features/data-control/same-goal-reading.ts",
     "src/renderer/src/app/ui-text.ts",
     "src/renderer/src/app/retained-record-text.ts",
     "src/presentation/**/*.ts"
