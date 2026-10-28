@@ -28,49 +28,52 @@ async function legacy() {
   const path = join(root.database, 'duration.sqlite3')
   const db = new Database(path)
   db.pragma('foreign_keys = ON')
-  db.exec(initial)
-  db.exec(v2)
-  db.exec(v3)
-  db.prepare('INSERT INTO metadata VALUES (?, ?)').run('schemaVersion', '3')
-  db.prepare('INSERT INTO actions VALUES (?, NULL, ?, NULL, ?, ?, ?)').run(
-    'action',
-    'Synthetic repair',
-    'pending',
-    instant,
-    instant
-  )
-  for (const duration of [0, 10]) {
-    db.prepare('INSERT INTO action_records VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
-      `r${duration}`,
+  // Build the synthetic legacy database atomically; production migration runs separately.
+  db.transaction(() => {
+    db.exec(initial)
+    db.exec(v2)
+    db.exec(v3)
+    db.prepare('INSERT INTO metadata VALUES (?, ?)').run('schemaVersion', '3')
+    db.prepare('INSERT INTO actions VALUES (?, NULL, ?, NULL, ?, ?, ?)').run(
       'action',
-      '2026-10-24',
-      duration,
-      'partial',
-      'next',
-      'note',
+      'Synthetic repair',
+      'pending',
       instant,
       instant
     )
-  }
-  db.prepare('INSERT INTO understandings VALUES (?, ?, ?, ?, ?, ?, ?)').run(
-    'u',
-    'r0',
-    'revoked fact',
-    'manual',
-    instant,
-    instant,
-    instant
-  )
-  db.prepare('INSERT INTO confusions VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(
-    'c',
-    'r10',
-    'resolved fact',
-    'resolved',
-    instant,
-    'answer',
-    instant,
-    instant
-  )
+    for (const duration of [0, 10]) {
+      db.prepare('INSERT INTO action_records VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
+        `r${duration}`,
+        'action',
+        '2026-10-24',
+        duration,
+        'partial',
+        'next',
+        'note',
+        instant,
+        instant
+      )
+    }
+    db.prepare('INSERT INTO understandings VALUES (?, ?, ?, ?, ?, ?, ?)').run(
+      'u',
+      'r0',
+      'revoked fact',
+      'manual',
+      instant,
+      instant,
+      instant
+    )
+    db.prepare('INSERT INTO confusions VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(
+      'c',
+      'r10',
+      'resolved fact',
+      'resolved',
+      instant,
+      'answer',
+      instant,
+      instant
+    )
+  })()
   return { path, db }
 }
 function rows(db: Database.Database) {
@@ -191,8 +194,9 @@ it('preserves null across creation, backfill, edits, queries, mixed/all-unknown 
     ).toMatchObject({ unknownDurationCount: 1, realActionCount: 3 })
     const snapshot = asCompleteExportRepository(connection.repository).readCompleteCoreSnapshot()
     const exported = JSON.parse(JSON.stringify(buildCompleteExport(snapshot, clock)))
-    expect(exported).toMatchObject({ exportVersion: 7, sourceDataVersion: 9 })
+    expect(exported).toMatchObject({ exportVersion: 8, sourceDataVersion: 10 })
     expect(() => validateCompleteExport(exported)).not.toThrow()
+    delete exported.data.booklets
     delete exported.data.thoughts
     for (const record of exported.data.actionRecords) delete record.summary
     for (const record of exported.data.routineRecords) delete record.summary

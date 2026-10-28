@@ -120,6 +120,7 @@ class MemoryPersistence implements RepositoryPort, UnitOfWorkPort {
       routineRecords: this.routineRecords,
       understandings: this.understandings,
       confusions: this.confusions,
+      booklets: [],
       thoughts: [],
       reviewResults: this.reviewResults
     }

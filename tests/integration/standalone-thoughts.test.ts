@@ -51,12 +51,13 @@ describe('standalone thoughts', () => {
       expect(home.overview(date, '2026-10-01')).toEqual(before)
       const document = buildCompleteExport(repository.readCompleteCoreSnapshot(), clock)
       expect(document).toMatchObject({
-        exportVersion: 7,
-        sourceDataVersion: 9,
+        exportVersion: 8,
+        sourceDataVersion: 10,
         data: { thoughts: [row], actions: [], actionRecords: [] }
       })
       validateCompleteExport(JSON.parse(JSON.stringify(document)))
-      const { thoughts, ...legacyData } = document.data
+      const { thoughts, booklets, ...legacyData } = document.data
+      expect(booklets).toEqual([])
       expect(thoughts).toHaveLength(1)
       expect(() => validateCompleteExport({ ...document, data: legacyData })).toThrow()
       expect(() =>
@@ -163,7 +164,7 @@ describe('standalone thoughts', () => {
       db.exec('DROP TRIGGER fail_v9')
       migrateToCurrentSchema(db)
       expect(db.prepare("SELECT value FROM metadata WHERE key='schemaVersion'").pluck().get()).toBe(
-        '9'
+        '10'
       )
     } finally {
       db.close()
@@ -212,7 +213,7 @@ describe('standalone thoughts', () => {
       expect(after.prepare('SELECT * FROM actions').all()).toEqual(before)
       expect(
         after.prepare("SELECT value FROM metadata WHERE key='schemaVersion'").pluck().get()
-      ).toBe('9')
+      ).toBe('10')
       migrateToCurrentSchema(after)
       expect(after.prepare('SELECT count(*) FROM thoughts').pluck().get()).toBe(1)
       after.close()

@@ -12,6 +12,7 @@ const empty: CorePersistenceSnapshot = {
   routineRecords: [],
   understandings: [],
   confusions: [],
+  booklets: [],
   thoughts: [],
   reviewResults: []
 }

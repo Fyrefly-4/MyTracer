@@ -1,0 +1,105 @@
+/* This view owns a continuous main scrollport, independently of Data's pane layout. */
+.content.content-booklets {
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+.content-booklets > .content-inner {
+  display: block;
+  height: auto;
+  min-height: 100%;
+  overflow: visible;
+}
+.personal-booklets {
+  width: 100%;
+  box-sizing: border-box;
+  max-width: 920px;
+  margin: 0 auto;
+  padding: clamp(16px, 4vw, 48px);
+  min-width: 0;
+}
+.personal-booklets h1,
+.personal-booklets h2,
+.personal-booklets p,
+.personal-booklets dd,
+.personal-booklets strong {
+  overflow-wrap: anywhere;
+}
+.personal-booklets h1:focus {
+  outline: none;
+}
+.personal-booklets form,
+.personal-booklets label {
+  display: grid;
+  gap: 12px;
+}
+.personal-booklets label {
+  margin-block: 16px;
+}
+.personal-booklets input,
+.personal-booklets textarea {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.booklet-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-block: 16px;
+}
+.booklet-reading {
+  padding-left: 1.6em;
+}
+.booklet-reading > li {
+  padding-block: 24px;
+  border-bottom: 1px solid var(--border, #bfcbbf);
+}
+.booklet-reading article {
+  min-width: 0;
+}
+.booklet-reading dd,
+.booklet-note {
+  white-space: pre-wrap;
+  line-height: 1.85;
+}
+.booklet-reading dd {
+  margin: 6px 0 24px;
+}
+.booklet-reading dt {
+  font-size: 0.85em;
+  opacity: 0.75;
+}
+.booklet-candidates,
+.booklet-list {
+  list-style: none;
+  padding: 0;
+}
+.booklet-candidates li {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-block: 20px;
+  border-bottom: 1px solid var(--border, #bfcbbf);
+}
+.booklet-candidates li > div {
+  min-width: 0;
+}
+.booklet-candidates li > button {
+  flex-shrink: 0;
+}
+.booklet-list li {
+  margin-block: 16px;
+}
+@media (max-width: 600px) {
+  .personal-booklets {
+    padding: 16px;
+  }
+  .booklet-candidates li {
+    flex-direction: column;
+  }
+  .booklet-actions button {
+    max-width: 100%;
+    white-space: normal;
+  }
+}

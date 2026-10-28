@@ -297,7 +297,7 @@ describe('independent linked goal stages', () => {
         asCompleteExportRepository(s.connection.repository).readCompleteCoreSnapshot(),
         s.dependencies.clock
       )
-      expect(document).toMatchObject({ exportVersion: 7, sourceDataVersion: 9 })
+      expect(document).toMatchObject({ exportVersion: 8, sourceDataVersion: 10 })
       expect(() => validateCompleteExport(JSON.parse(JSON.stringify(document)))).not.toThrow()
       for (const predecessorGoalId of ['missing', 'next', undefined, 123]) {
         const bad = structuredClone(document)
@@ -328,8 +328,9 @@ describe('independent linked goal stages', () => {
         expect(predecessorGoalId === null || predecessorGoalId === s.old.id).toBe(true)
         return goal
       })
-      const { thoughts, ...preThoughtData } = document.data
+      const { thoughts, booklets, ...preThoughtData } = document.data
       expect(thoughts).toEqual([])
+      expect(booklets).toEqual([])
       for (const exportVersion of [1, 2, 3, 4]) {
         const legacy = {
           ...document,

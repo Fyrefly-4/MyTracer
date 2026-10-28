@@ -52,6 +52,7 @@ describe('Main foundations integration', () => {
         routineRecords: [],
         understandings: [],
         confusions: [],
+        booklets: [],
         thoughts: [],
         reviewResults: []
       })

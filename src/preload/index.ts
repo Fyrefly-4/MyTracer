@@ -1,3 +1,4 @@
+import { BOOKLET_CHANNELS, type BookletApi } from '../contracts/booklets'
 import { THOUGHT_CHANNELS, type ThoughtApi } from '../contracts/thoughts'
 import { PendingCloseRequest } from './pending-close-request'
 import { DRAFT_CHANNELS, type RecordDraftApi } from '../contracts/record-drafts'
@@ -162,6 +163,18 @@ const thoughts: ThoughtApi = Object.freeze({
 })
 const api: MyTracerApi = Object.freeze({
   thoughts,
+  booklets: Object.freeze({
+    list: () => ipcRenderer.invoke(BOOKLET_CHANNELS.list),
+    sources: () => ipcRenderer.invoke(BOOKLET_CHANNELS.sources),
+    read: (input: Parameters<BookletApi['read']>[0]) =>
+      ipcRenderer.invoke(BOOKLET_CHANNELS.read, input),
+    save: (input: Parameters<BookletApi['save']>[0]) =>
+      ipcRenderer.invoke(BOOKLET_CHANNELS.save, input),
+    delete: (input: Parameters<BookletApi['delete']>[0]) =>
+      ipcRenderer.invoke(BOOKLET_CHANNELS.delete, input),
+    export: (input: Parameters<BookletApi['export']>[0]) =>
+      ipcRenderer.invoke(BOOKLET_CHANNELS.export, input)
+  } satisfies BookletApi),
   recordDrafts: {
     load: () => ipcRenderer.invoke(DRAFT_CHANNELS.load),
     retain: (input: Parameters<RecordDraftApi['retain']>[0]) =>

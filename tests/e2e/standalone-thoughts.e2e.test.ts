@@ -97,7 +97,7 @@ test('thoughts stand alone across save, conflict, cancellation, day view and res
     }, exportPath)
     expect(await page.evaluate(() => window.myTracer.exports.generate())).toMatchObject({
       ok: true,
-      value: { exportVersion: 7 }
+      value: { exportVersion: 8 }
     })
     const exported = JSON.parse(await readFile(exportPath, 'utf8'))
     expect(exported.data.thoughts).toHaveLength(1)

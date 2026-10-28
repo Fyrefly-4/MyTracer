@@ -15,7 +15,7 @@ import { FakeClock } from '../support/fake-clock'
 
 const instant = '2026-08-20T08:00:00.000Z'
 const emptySnapshot: CompleteCorePersistenceSnapshot = {
-  sourceDataVersion: 9,
+  sourceDataVersion: 10,
   coreSnapshot: {
     goals: [],
     actions: [],
@@ -26,6 +26,7 @@ const emptySnapshot: CompleteCorePersistenceSnapshot = {
     routineRecords: [],
     understandings: [],
     confusions: [],
+    booklets: [],
     thoughts: [],
     reviewResults: []
   }
@@ -68,13 +69,13 @@ describe('complete export application', () => {
     ).not.toThrow()
     expect(() => validateCompleteExport({ ...v2, exportVersion: 9 })).toThrow()
   })
-  it('builds the approved v7 envelope from one versioned snapshot and stable enums', () => {
+  it('builds the approved v8 envelope from one versioned snapshot and stable enums', () => {
     const clock = new FakeClock({ instant, localDate: '2026-08-20', timeZone: 'Asia/Shanghai' })
     const document = buildCompleteExport(emptySnapshot, clock)
     expect(document).toMatchObject({
       format: COMPLETE_EXPORT_FORMAT,
       exportVersion: COMPLETE_EXPORT_VERSION,
-      sourceDataVersion: 9,
+      sourceDataVersion: 10,
       exportedAt: instant,
       localTimeZone: 'Asia/Shanghai',
       enumValues: COMPLETE_EXPORT_ENUM_VALUES
@@ -106,8 +107,9 @@ describe('complete export application', () => {
 
   it('accepts every persisted status and enum value without serializing unknown as a Routine record', () => {
     const snapshot: CompleteCorePersistenceSnapshot = {
-      sourceDataVersion: 9,
+      sourceDataVersion: 10,
       coreSnapshot: {
+        booklets: [],
         thoughts: [],
         goals: ['active', 'ended', 'paused'].map((status) => ({
           id: `goal-${status}`,
@@ -341,7 +343,8 @@ it('discriminates v4 arrangement intent from legacy v1-v3 exports without reinte
 })
 
 function legacyData(data: typeof emptySnapshot.coreSnapshot) {
-  const { thoughts, ...rest } = data
+  const { thoughts, booklets, ...rest } = data
+  expect(booklets).toEqual([])
   expect(thoughts).toEqual([])
   return rest
 }

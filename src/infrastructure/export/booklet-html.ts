@@ -1,0 +1,8 @@
+import type { BookletRead } from '../../contracts/booklets'
+import { escapeBookText } from '../../presentation/record-book'
+
+/** User text is escaped; the fixed file needs no scripts or external resources. */
+export function renderBookletHtml(snapshot: BookletRead): string {
+  const e = escapeBookText
+  return `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'"><title>${e(snapshot.booklet.title || '小册子')} · MyTracer</title><style>body{margin:0;background:#f5f3ed;color:#293b31;font:18px/1.8 system-ui,sans-serif}main{max-width:48rem;margin:auto;padding:clamp(16px,5vw,64px)}article{border-top:1px solid #bdc9bd;padding:2rem 0}h1,h2,p,dd{overflow-wrap:anywhere;white-space:pre-wrap}dd{margin:0 0 1.5rem}dt,footer{color:#53665a}h1{font-size:2rem}h2{font-size:1.3rem}@media print{body{background:white}article{break-inside:auto}}</style></head><body><main><header><h1>${e(snapshot.booklet.title || '小册子')}</h1><p>${e(snapshot.booklet.note)}</p><p>固定导出时间 ${e(snapshot.readAt)}（UTC）</p></header>${snapshot.contents.map((entry, index) => `<article><h2>${index + 1}. ${entry ? e(entry.title) : '来源已删除'}</h2>${entry ? `<p>${e(entry.date)} · ${entry.kind === 'thought' ? '独立想法' : '行动记录'}</p><dl>${entry.fields.map((field) => `<dt>${e(field.label)}</dt><dd>${e(field.text)}</dd>`).join('')}</dl>` : '<p>此位置没有保留已删除的正文。</p>'}</article>`).join('')}<footer>本文件可以独立离线阅读，内容已定格，不随原文修正或删除变化。此文件不是完整数据备份。</footer></main></body></html>`
+}

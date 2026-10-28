@@ -1,3 +1,5 @@
+import { BookletService } from '../application/booklets'
+import { registerBookletIpc } from './booklets-ipc'
 import { RecordBookService } from '../application/record-book-service'
 import { registerRecordBookIpc } from './record-book-ipc'
 import appIcon from '../../resources/brand/MyTracer-app-icon-256.png?asset'
@@ -781,6 +783,14 @@ app.whenReady().then(async () => {
     ipc: guardedIpc,
     service: actionRecordService,
     contexts: actionRecordingContexts,
+    assertSender: (event) => assertTrustedSender(event, mainWindow, getRendererLocation())
+  })
+  registerBookletIpc({
+    ipc: guardedIpc,
+    service: new BookletService(sqliteConnection.booklets, clock, new SystemExportAdapter({
+      dialog: { showSaveDialog: (options) => dialog.showSaveDialog(options) },
+      generateToken: randomUUID
+    })),
     assertSender: (event) => assertTrustedSender(event, mainWindow, getRendererLocation())
   })
   registerThoughtIpc({

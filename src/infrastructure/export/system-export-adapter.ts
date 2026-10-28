@@ -1,3 +1,5 @@
+import type { BookletRead } from '../../contracts/booklets'
+import { renderBookletHtml } from './booklet-html'
 import type { RecordBookSnapshot } from '../../contracts/record-book'
 import { renderRecordBookHtml } from './record-book-html'
 import { open, readFile, rename, stat, unlink, type FileHandle } from 'node:fs/promises'
@@ -125,6 +127,14 @@ export class SystemExportAdapter implements ExportPort {
         }
       }
     )
+  }
+
+  public async deliverBooklet(snapshot: BookletRead, suggestedName: string) {
+    const bytes = Buffer.from(renderBookletHtml(snapshot), 'utf8')
+    return this.deliverBytes(bytes, suggestedName, '保存 MyTracer 小册子', 'html', (readBack) => {
+      if (!bytes.equals(Buffer.from(readBack)))
+        throw new ExportDeliveryError('export-validation-failed', 'The temporary booklet differs.')
+    })
   }
 
   private async deliverBytes(

@@ -205,6 +205,7 @@ export interface StartHelpContextQuerySnapshotPersistence {
 }
 
 export interface CorePersistenceSnapshot {
+  readonly booklets: readonly import('../../domain/booklet').Booklet[]
   readonly thoughts: readonly import('../../domain/thought').Thought[]
   readonly goals: readonly GoalPersistenceRecord[]
   readonly actions: readonly ActionPersistenceRecord[]

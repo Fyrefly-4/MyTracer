@@ -310,6 +310,8 @@ describe('SQLite persistence', () => {
         ).toEqual([
           { name: 'action_records' },
           { name: 'actions' },
+          { name: 'booklet_entries' },
+          { name: 'booklets' },
           { name: 'confusions' },
           { name: 'goals' },
           { name: 'metadata' },

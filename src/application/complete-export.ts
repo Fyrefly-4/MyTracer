@@ -14,7 +14,7 @@ import { createLocalDate } from '../domain/local-date'
 
 export const COMPLETE_EXPORT_FORMAT = 'mytracer-core-export' as const
 export const COMPLETE_EXPORT_VERSION_V1 = 1 as const
-export const COMPLETE_EXPORT_VERSION = 7 as const
+export const COMPLETE_EXPORT_VERSION = 8 as const
 
 export const COMPLETE_EXPORT_ENUM_VALUES = Object.freeze({
   goalStatus: Object.freeze(['active', 'paused', 'ended']),
@@ -41,7 +41,7 @@ interface ReviewResultExportV1 {
 
 interface PreSummarySnapshot extends Omit<
   CorePersistenceSnapshot,
-  'actionRecords' | 'routineRecords' | 'thoughts'
+  'actionRecords' | 'routineRecords' | 'thoughts' | 'booklets'
 > {
   readonly actionRecords: readonly Omit<
     CorePersistenceSnapshot['actionRecords'][number],
@@ -108,11 +108,16 @@ export interface MyTracerCoreExportV5 extends Omit<CompleteExportDocumentPort, '
 export interface MyTracerCoreExportV6 extends Omit<CompleteExportDocumentPort, 'data'> {
   readonly exportVersion: 6
   readonly enumValues: typeof COMPLETE_EXPORT_ENUM_VALUES
-  readonly data: Omit<CorePersistenceSnapshot, 'thoughts'>
+  readonly data: Omit<CorePersistenceSnapshot, 'thoughts' | 'booklets'>
 }
 
-export interface MyTracerCoreExportV7 extends CompleteExportDocumentPort {
+export interface MyTracerCoreExportV7 extends Omit<CompleteExportDocumentPort, 'data'> {
   readonly exportVersion: 7
+  readonly enumValues: typeof COMPLETE_EXPORT_ENUM_VALUES
+  readonly data: Omit<CorePersistenceSnapshot, 'booklets'>
+}
+export interface MyTracerCoreExportV8 extends CompleteExportDocumentPort {
+  readonly exportVersion: 8
   readonly enumValues: typeof COMPLETE_EXPORT_ENUM_VALUES
 }
 
@@ -140,6 +145,11 @@ function freezeRows<T extends object>(rows: readonly T[]): readonly T[] {
 
 function freezeSnapshot(snapshot: CorePersistenceSnapshot): CorePersistenceSnapshot {
   return Object.freeze({
+    booklets: Object.freeze(
+      snapshot.booklets.map((booklet) =>
+        Object.freeze({ ...booklet, entries: freezeRows(booklet.entries) })
+      )
+    ),
     thoughts: freezeRows(snapshot.thoughts),
     goals: freezeRows(snapshot.goals),
     actions: freezeRows(snapshot.actions),
@@ -248,7 +258,7 @@ const byOccurrence = (left: Record<string, unknown>, right: Record<string, unkno
 
 function validateCompleteExportVersion(
   value: unknown,
-  expectedVersion: 1 | 2 | 3 | 4 | 5 | 6 | 7
+  expectedVersion: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8
 ): void {
   const document = record(value, 'Export document')
   assertKeys(
@@ -271,6 +281,8 @@ function validateCompleteExportVersion(
     Number.isInteger(document.sourceDataVersion) && Number(document.sourceDataVersion) > 0,
     'Source data version is invalid.'
   )
+  if (expectedVersion === 8)
+    assert(document.sourceDataVersion === 10, 'Export v8 requires source data version 10.')
   if (expectedVersion === 7)
     assert(document.sourceDataVersion === 9, 'Export v7 requires source data version 9.')
   if (expectedVersion === 6)
@@ -316,7 +328,11 @@ function validateCompleteExportVersion(
   ] as const
   assertKeys(
     data,
-    expectedVersion >= 7 ? [...collectionNames, 'thoughts'] : collectionNames,
+    [
+      ...collectionNames,
+      ...(expectedVersion >= 7 ? ['thoughts'] : []),
+      ...(expectedVersion >= 8 ? ['booklets'] : [])
+    ],
     'Export data'
   )
   if (expectedVersion >= 7) {
@@ -335,6 +351,66 @@ function validateCompleteExportVersion(
         validInstant(thought.createdAt) && validInstant(thought.updatedAt),
         'Thought timestamps are invalid.'
       )
+    }
+  }
+  if (expectedVersion >= 8) {
+    const booklets = rows(data.booklets, 'Booklets')
+    unique(booklets, 'id', 'Booklets')
+    assertSorted(booklets, (a, b) => String(a.id).localeCompare(String(b.id)), 'Booklets')
+    const allEntryIds = new Set<string>()
+    for (const booklet of booklets) {
+      assertKeys(
+        booklet,
+        ['id', 'title', 'note', 'revision', 'createdAt', 'updatedAt', 'entries'],
+        'Booklet'
+      )
+      assert(typeof booklet.id === 'string' && booklet.id.length > 0, 'Booklet id is invalid.')
+      assert(
+        typeof booklet.title === 'string' && booklet.title.length <= 200,
+        'Booklet title is invalid.'
+      )
+      assert(
+        typeof booklet.note === 'string' && booklet.note.length <= 4000,
+        'Booklet note is invalid.'
+      )
+      assert(
+        Number.isSafeInteger(booklet.revision) && Number(booklet.revision) > 0,
+        'Booklet revision is invalid.'
+      )
+      assert(
+        validInstant(booklet.createdAt) && validInstant(booklet.updatedAt),
+        'Booklet timestamps are invalid.'
+      )
+      const entries = rows(booklet.entries, 'Booklet entries')
+      assert(entries.length <= 1000, 'Booklet is too large.')
+      const sources = new Set<string>()
+      for (const entry of entries) {
+        assertKeys(entry, ['id', 'kind', 'sourceId'], 'Booklet entry')
+        assert(
+          typeof entry.id === 'string' && entry.id.length > 0 && !allEntryIds.has(entry.id),
+          'Booklet entry id is invalid.'
+        )
+        allEntryIds.add(String(entry.id))
+        assert(
+          entry.kind === 'action-record' || entry.kind === 'thought',
+          'Booklet source kind is invalid.'
+        )
+        if (entry.sourceId !== null) {
+          assert(
+            typeof entry.sourceId === 'string' && entry.sourceId.length > 0,
+            'Booklet source id is invalid.'
+          )
+          const key = `${entry.kind}:${entry.sourceId}`
+          assert(!sources.has(key), 'Booklet source is duplicated.')
+          sources.add(key)
+          assert(
+            rows(entry.kind === 'thought' ? data.thoughts : data.actionRecords, 'Sources').some(
+              (source) => source.id === entry.sourceId
+            ),
+            'Booklet source is missing.'
+          )
+        }
+      }
     }
   }
   const collections = Object.fromEntries(
@@ -692,7 +768,8 @@ export function validateCompleteExport(
   | MyTracerCoreExportV4
   | MyTracerCoreExportV5
   | MyTracerCoreExportV6
-  | MyTracerCoreExportV7 {
+  | MyTracerCoreExportV7
+  | MyTracerCoreExportV8 {
   const document = record(value, 'Export document')
   if (document.exportVersion === COMPLETE_EXPORT_VERSION_V1) {
     validateCompleteExportV1(value)
@@ -718,6 +795,10 @@ export function validateCompleteExport(
     validateCompleteExportVersion(value, 6)
     return
   }
+  if (document.exportVersion === 7) {
+    validateCompleteExportVersion(value, 7)
+    return
+  }
   if (document.exportVersion === COMPLETE_EXPORT_VERSION) {
     validateCompleteExportVersion(value, COMPLETE_EXPORT_VERSION)
     return
@@ -728,9 +809,9 @@ export function validateCompleteExport(
 export function buildCompleteExport(
   snapshot: CompleteCorePersistenceSnapshot,
   clock: Pick<ClockPort, 'snapshot'>
-): MyTracerCoreExportV7 {
+): MyTracerCoreExportV8 {
   const now = clock.snapshot()
-  const document: MyTracerCoreExportV7 = Object.freeze({
+  const document: MyTracerCoreExportV8 = Object.freeze({
     format: COMPLETE_EXPORT_FORMAT,
     exportVersion: COMPLETE_EXPORT_VERSION,
     sourceDataVersion: snapshot.sourceDataVersion,
@@ -758,11 +839,11 @@ export class CompleteExportService {
         readonly kind: 'exported'
         readonly fileName: string
         readonly byteLength: number
-        readonly exportVersion: 7
+        readonly exportVersion: 8
         readonly exportedAt: string
       }
   > {
-    let document: MyTracerCoreExportV7
+    let document: MyTracerCoreExportV8
     const clockSnapshot = this.dependencies.clock.snapshot()
     try {
       document = buildCompleteExport(
@@ -776,7 +857,7 @@ export class CompleteExportService {
         'Could not read a complete export snapshot.'
       )
     }
-    const suggestedName = `mytracer-export-${String(clockSnapshot.localDate)}-v7.json`
+    const suggestedName = `mytracer-export-${String(clockSnapshot.localDate)}-v8.json`
     try {
       const result = await this.dependencies.exportPort.deliverCompleteExport(
         document,

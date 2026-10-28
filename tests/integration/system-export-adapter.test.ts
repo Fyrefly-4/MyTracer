@@ -16,7 +16,7 @@ const instant = '2026-08-20T08:00:00.000Z'
 const document = () =>
   buildCompleteExport(
     {
-      sourceDataVersion: 9,
+      sourceDataVersion: 10,
       coreSnapshot: {
         goals: [],
         actions: [],
@@ -27,6 +27,7 @@ const document = () =>
         routineRecords: [],
         understandings: [],
         confusions: [],
+        booklets: [],
         thoughts: [],
         reviewResults: []
       }
@@ -64,8 +65,8 @@ describe('system export adapter', () => {
     const bytes = await readFile(destination)
     expect(bytes.subarray(0, 3)).not.toEqual(Buffer.from([0xef, 0xbb, 0xbf]))
     expect(JSON.parse(bytes.toString('utf8'))).toMatchObject({
-      exportVersion: 7,
-      sourceDataVersion: 9
+      exportVersion: 8,
+      sourceDataVersion: 10
     })
     await expect(stat(join(root.exports, '.backup.json.owned.tmp'))).rejects.toMatchObject({
       code: 'ENOENT'

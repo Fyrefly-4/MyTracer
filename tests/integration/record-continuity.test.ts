@@ -368,7 +368,7 @@ describe('quiet record continuity', () => {
     close(f.c)
     const legacy = new Database(f.path)
     legacy.exec(
-      "DROP TABLE thoughts; DROP TABLE record_continuity; UPDATE metadata SET value = '7' WHERE key = 'schemaVersion'"
+      "DROP TABLE booklet_entries; DROP TABLE booklets; DROP TABLE thoughts; DROP TABLE record_continuity; UPDATE metadata SET value = '7' WHERE key = 'schemaVersion'"
     )
     const original = legacy.prepare('SELECT * FROM actions').all()
     legacy.close()
@@ -389,7 +389,7 @@ describe('quiet record continuity', () => {
     }
     expect(reopened.repository.readSnapshot().actions).toHaveLength(1)
     const snapshot = asCompleteExportRepository(reopened.repository).readCompleteCoreSnapshot()
-    expect(snapshot.sourceDataVersion).toBe(9)
+    expect(snapshot.sourceDataVersion).toBe(10)
     expect(Object.keys(snapshot.coreSnapshot)).not.toContain('record_continuity')
   })
   it('preserves completion and next-action creation exactly once after a lost reply', async () => {
@@ -462,7 +462,7 @@ describe('quiet record continuity', () => {
     close(f.c)
     const legacy = new Database(f.path)
     legacy.exec(
-      "DROP TABLE thoughts; DROP TABLE record_continuity; UPDATE metadata SET value = '7' WHERE key = 'schemaVersion'; CREATE TRIGGER fail_v8 BEFORE UPDATE ON metadata WHEN NEW.value = '8' BEGIN SELECT RAISE(ABORT, 'synthetic migration failure'); END"
+      "DROP TABLE booklet_entries; DROP TABLE booklets; DROP TABLE thoughts; DROP TABLE record_continuity; UPDATE metadata SET value = '7' WHERE key = 'schemaVersion'; CREATE TRIGGER fail_v8 BEFORE UPDATE ON metadata WHEN NEW.value = '8' BEGIN SELECT RAISE(ABORT, 'synthetic migration failure'); END"
     )
     legacy.close()
     expect(() => SqliteConnection.open(f.path)).toThrow('synthetic migration failure')

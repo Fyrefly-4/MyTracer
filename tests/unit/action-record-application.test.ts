@@ -96,6 +96,7 @@ function memoryContext(seed?: {
       routineRecords: [],
       understandings: [...understandings.values()],
       confusions: [...confusions.values()],
+      booklets: [],
       thoughts: [],
       reviewResults: []
     })
