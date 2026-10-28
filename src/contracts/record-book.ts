@@ -5,7 +5,7 @@ export interface RecordBookField {
 }
 export interface RecordBookEntry {
   readonly id: string
-  readonly kind: 'action-record' | 'routine-record' | 'review'
+  readonly kind: 'action-record' | 'routine-record' | 'review' | 'thought'
   readonly date: string
   readonly title: string
   readonly fields: readonly RecordBookField[]

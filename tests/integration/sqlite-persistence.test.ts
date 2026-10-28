@@ -318,6 +318,7 @@ describe('SQLite persistence', () => {
           { name: 'routine_records' },
           { name: 'routine_schedule_days' },
           { name: 'routines' },
+          { name: 'thoughts' },
           { name: 'today_selections' },
           { name: 'understandings' }
         ])

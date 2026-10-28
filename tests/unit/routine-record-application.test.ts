@@ -48,6 +48,7 @@ function setup(status: RoutinePersistenceRecord['status'] = 'active') {
       routineRecords: [...records.values()],
       understandings: [],
       confusions: [],
+      thoughts: [],
       reviewResults: []
     })
   } as unknown as RepositoryPort

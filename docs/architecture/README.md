@@ -29,3 +29,5 @@
 - [记录简述与补充笔记](RECORD_SUMMARY_NOTES.md)：#150 的独立文字字段、安全 Markdown、schema 7 / JSON 6 与回退边界。
 
 - [未完成记录续写](RECORD_CONTINUITY.md)：#157 的三类新增记录输入、本机加密、schema 8 与提交核对。
+
+- [独立想法](STANDALONE_THOUGHTS.md)：独立正文与日期、schema 9 / JSON v7、按日回看及统计边界。

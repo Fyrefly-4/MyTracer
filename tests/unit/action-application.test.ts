@@ -89,6 +89,7 @@ function memoryContext(seed?: {
       routineRecords: [],
       understandings: [],
       confusions: [],
+      thoughts: [],
       reviewResults: []
     })
   } as unknown as ActionRepositoryPort

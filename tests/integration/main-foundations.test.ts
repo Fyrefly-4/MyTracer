@@ -52,6 +52,7 @@ describe('Main foundations integration', () => {
         routineRecords: [],
         understandings: [],
         confusions: [],
+        thoughts: [],
         reviewResults: []
       })
       const beforeReview = connection.repository.readSnapshot()

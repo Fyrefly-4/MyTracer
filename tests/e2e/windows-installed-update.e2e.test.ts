@@ -258,9 +258,10 @@ test('preserves one fixture through manual A to B and application-installed B to
     application = await launch(root, executable)
     expect(await application.evaluate(({ app }) => app.getVersion())).toBe(targetVersion)
     expect(await application.evaluate(({ app }) => app.getPath('userData'))).toBe(userData)
-    const after = await exportInstalledFacts(application, join(root.exports, 'after.json'), 6)
+    const after = await exportInstalledFacts(application, join(root.exports, 'after.json'), 7)
     expect(after.data).toEqual({
       ...(beforeInstall.data as object),
+      thoughts: [],
       actionRecords: (beforeInstall.data as { actionRecords: object[] }).actionRecords.map(
         (record) => ({ ...record, summary: null })
       ),
@@ -276,7 +277,7 @@ test('preserves one fixture through manual A to B and application-installed B to
         arrangementMode: 'weekly'
       }))
     })
-    expect(after.sourceDataVersion).toBe(8)
+    expect(after.sourceDataVersion).toBe(9)
     expect(
       await (
         await application.firstWindow()

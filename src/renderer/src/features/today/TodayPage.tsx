@@ -1,3 +1,4 @@
+import { ThoughtDayPicker } from '../thoughts/ThoughtDay'
 import { RecordContinuityNotice, UnavailableRecordInputs } from '../../app/RecordContinuityNotice'
 import { hasRecordInput } from '../../../../contracts/record-drafts'
 import { RecordSummaryInput, RecordNoteInput, RecordNote } from '../../app/RecordText'
@@ -1619,6 +1620,12 @@ function TodayWorkspace(): ReactNode {
             data-scroll-key="master"
             hidden={masterCollapsed}
           >
+            {today ? (
+              <details className="today-thoughts">
+                <summary>当天独立想法</summary>
+                <ThoughtDayPicker key={today.localDate} today={today.localDate} />
+              </details>
+            ) : null}
             <section className="goal-card goal-list-card today-priority" aria-label="今日重点">
               <div className="card-heading">
                 <p className="eyebrow">今日重点</p>

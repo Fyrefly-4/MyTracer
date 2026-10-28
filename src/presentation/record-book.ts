@@ -28,7 +28,7 @@ function renderEntry(
     ...fields.filter((row) => isCurrent(row.label))
   ]
   const description = entry.fields.find((row) => row.label === '名称说明')?.text
-  return `<article class="rb-entry"><h3>${e(entry.title)}</h3><p class="rb-kind">${entry.kind === 'action-record' ? '行动记录' : entry.kind === 'routine-record' ? '例行记录' : '复盘'}${description ? ` · ${e(description)}` : ''}</p><dl>${ordered
+  return `<article class="rb-entry"><h3>${e(entry.title)}</h3><p class="rb-kind">${entry.kind === 'action-record' ? '行动记录' : entry.kind === 'routine-record' ? '例行记录' : entry.kind === 'thought' ? '独立想法' : '复盘'}${description ? ` · ${e(description)}` : ''}</p><dl>${ordered
     .map((row) => {
       const style =
         row.label === '原备注'
@@ -42,7 +42,7 @@ function renderEntry(
     })
     .join(
       ''
-    )}</dl>${viewOriginal && entry.kind !== 'review' ? `<button type="button" data-source-kind="${e(entry.kind)}" data-source-id="${e(entry.id)}">查看原记录</button>` : ''}</article>`
+    )}</dl>${viewOriginal && (entry.kind === 'action-record' || entry.kind === 'routine-record') ? `<button type="button" data-source-kind="${e(entry.kind)}" data-source-id="${e(entry.id)}">查看原记录</button>` : ''}</article>`
 }
 
 export function renderBookMonth(month: RecordBookMonth, viewOriginal = false): string {

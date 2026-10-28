@@ -15,7 +15,7 @@ import { FakeClock } from '../support/fake-clock'
 
 const instant = '2026-08-20T08:00:00.000Z'
 const emptySnapshot: CompleteCorePersistenceSnapshot = {
-  sourceDataVersion: 7,
+  sourceDataVersion: 9,
   coreSnapshot: {
     goals: [],
     actions: [],
@@ -26,6 +26,7 @@ const emptySnapshot: CompleteCorePersistenceSnapshot = {
     routineRecords: [],
     understandings: [],
     confusions: [],
+    thoughts: [],
     reviewResults: []
   }
 }
@@ -41,7 +42,7 @@ describe('complete export application', () => {
       exportVersion: 1,
       sourceDataVersion: 2,
       data: {
-        ...v2.data,
+        ...legacyData(v2.data),
         reviewResults: [
           {
             id: 'legacy-review',
@@ -62,16 +63,18 @@ describe('complete export application', () => {
     expect(parsed.data.reviewResults[0]?.summary).toBe('Progress')
     expect(() => validateCompleteExport(v1)).not.toThrow()
     expect(() => validateCompleteExport({ ...v1, exportVersion: 2 })).toThrow()
-    expect(() => validateCompleteExport({ ...v2, exportVersion: 1 })).not.toThrow()
+    expect(() =>
+      validateCompleteExport({ ...v2, exportVersion: 1, data: legacyData(v2.data) })
+    ).not.toThrow()
     expect(() => validateCompleteExport({ ...v2, exportVersion: 9 })).toThrow()
   })
-  it('builds the approved v6 envelope from one versioned snapshot and stable enums', () => {
+  it('builds the approved v7 envelope from one versioned snapshot and stable enums', () => {
     const clock = new FakeClock({ instant, localDate: '2026-08-20', timeZone: 'Asia/Shanghai' })
     const document = buildCompleteExport(emptySnapshot, clock)
     expect(document).toMatchObject({
       format: COMPLETE_EXPORT_FORMAT,
       exportVersion: COMPLETE_EXPORT_VERSION,
-      sourceDataVersion: 7,
+      sourceDataVersion: 9,
       exportedAt: instant,
       localTimeZone: 'Asia/Shanghai',
       enumValues: COMPLETE_EXPORT_ENUM_VALUES
@@ -103,8 +106,9 @@ describe('complete export application', () => {
 
   it('accepts every persisted status and enum value without serializing unknown as a Routine record', () => {
     const snapshot: CompleteCorePersistenceSnapshot = {
-      sourceDataVersion: 7,
+      sourceDataVersion: 9,
       coreSnapshot: {
+        thoughts: [],
         goals: ['active', 'ended', 'paused'].map((status) => ({
           id: `goal-${status}`,
           title: status,
@@ -330,8 +334,14 @@ it('discriminates v4 arrangement intent from legacy v1-v3 exports without reinte
         ...current,
         exportVersion,
         sourceDataVersion: exportVersion + 1,
-        data: { ...current.data, routines: [legacy] }
+        data: { ...legacyData(current.data), routines: [legacy] }
       })
     ).not.toThrow()
   }
 })
+
+function legacyData(data: typeof emptySnapshot.coreSnapshot) {
+  const { thoughts, ...rest } = data
+  expect(thoughts).toEqual([])
+  return rest
+}

@@ -1,3 +1,4 @@
+import type { ThoughtApi } from './thoughts'
 import type { RecordDraftApi } from './record-drafts'
 import type { RecordBookApi } from './record-book'
 import type { AppearanceSettings, AppearanceState } from './appearance'
@@ -29,6 +30,7 @@ export interface ShellStatus {
 }
 
 export interface MyTracerApi {
+  readonly thoughts: ThoughtApi
   readonly recordDrafts: RecordDraftApi
   readonly shell: {
     readonly getStatus: () => Promise<ShellStatus>

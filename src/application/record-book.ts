@@ -91,6 +91,14 @@ export function buildRecordBook(data: CorePersistenceSnapshot): RecordBook {
       ]
     })
   }
+  for (const thought of data.thoughts)
+    entries.push({
+      id: thought.id,
+      kind: 'thought',
+      date: thought.occurredOn,
+      title: '独立想法',
+      fields: [field('正文', thought.text)]
+    })
   for (const review of data.reviewResults)
     entries.push({
       id: review.id,

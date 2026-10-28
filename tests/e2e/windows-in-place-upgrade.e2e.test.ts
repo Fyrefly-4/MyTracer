@@ -339,9 +339,10 @@ test('keeps all old-version facts and synthetic configuration through an in-plac
       newPage,
       join(root.exports, 'after-upgrade.json')
     )
-    expect(afterExport).toMatchObject({ exportVersion: 6, sourceDataVersion: 8 })
+    expect(afterExport).toMatchObject({ exportVersion: 7, sourceDataVersion: 9 })
     expect(afterExport.data).toEqual({
       ...(beforeExport.data as object),
+      thoughts: [],
       actionRecords: (beforeExport.data as { actionRecords: object[] }).actionRecords.map(
         (record) => ({ ...record, summary: null })
       ),
@@ -378,7 +379,7 @@ test('keeps all old-version facts and synthetic configuration through an in-plac
         arrangement_mode: 'weekly'
       })),
       metadata: beforeDatabase.metadata.map((row) =>
-        (row as { key: string }).key === 'schemaVersion' ? { ...(row as object), value: '8' } : row
+        (row as { key: string }).key === 'schemaVersion' ? { ...(row as object), value: '9' } : row
       )
     })
 
@@ -508,6 +509,7 @@ test('observes a running old application during installation', async () => {
     )
     expect(afterExport.data).toEqual({
       ...(beforeExport.data as object),
+      thoughts: [],
       actionRecords: (beforeExport.data as { actionRecords: object[] }).actionRecords.map(
         (record) => ({ ...record, summary: null })
       ),
@@ -544,7 +546,7 @@ test('observes a running old application during installation', async () => {
         arrangement_mode: 'weekly'
       })),
       metadata: beforeDatabase.metadata.map((row) =>
-        (row as { key: string }).key === 'schemaVersion' ? { ...(row as object), value: '8' } : row
+        (row as { key: string }).key === 'schemaVersion' ? { ...(row as object), value: '9' } : row
       )
     })
   } finally {
@@ -646,6 +648,7 @@ test('repairs a failed package launch without replacing old facts', async () => 
     )
     expect(afterExport.data).toEqual({
       ...(beforeExport.data as object),
+      thoughts: [],
       actionRecords: (beforeExport.data as { actionRecords: object[] }).actionRecords.map(
         (record) => ({ ...record, summary: null })
       ),
@@ -682,7 +685,7 @@ test('repairs a failed package launch without replacing old facts', async () => 
         arrangement_mode: 'weekly'
       })),
       metadata: beforeDatabase.metadata.map((row) =>
-        (row as { key: string }).key === 'schemaVersion' ? { ...(row as object), value: '8' } : row
+        (row as { key: string }).key === 'schemaVersion' ? { ...(row as object), value: '9' } : row
       )
     })
 

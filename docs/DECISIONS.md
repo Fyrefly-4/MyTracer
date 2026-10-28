@@ -84,3 +84,7 @@
 - v0.1 明确延期范围。
 
 如架构认为某项 MUST 无法成立，应按 [REQUIREMENTS_CHANGE_POLICY.md](./REQUIREMENTS_CHANGE_POLICY.md) 提出变更请求，不得静默改写。
+
+## 2026-10-28：独立想法（用户批准）
+
+想法保存即成立，与行动/例行记录区分，不要求标题、目标、计划或下一步，不设整理/完成状态，不计行动统计。最小对象及前向安全迁移已批准；本轮不做目标关联、转换或通用笔记系统。见[独立想法设计与验收边界](architecture/STANDALONE_THOUGHTS.md)。

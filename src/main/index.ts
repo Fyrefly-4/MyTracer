@@ -7,6 +7,8 @@ import { release } from 'node:os'
 import { APPEARANCE_CHANNELS } from '../contracts/appearance'
 import { AppearanceStore, applyAppearance, supportsMica, SHELL_COLOR, CAPTION_OVERLAY } from './appearance'
 import { HomeService } from '../application/home'
+import { ThoughtService } from '../application/thoughts'
+import { registerThoughtIpc } from './thoughts-ipc'
 import { registerHomeIpc } from './home-ipc'
 import { randomUUID } from 'node:crypto'
 import { join } from 'node:path'
@@ -779,6 +781,11 @@ app.whenReady().then(async () => {
     ipc: guardedIpc,
     service: actionRecordService,
     contexts: actionRecordingContexts,
+    assertSender: (event) => assertTrustedSender(event, mainWindow, getRendererLocation())
+  })
+  registerThoughtIpc({
+    ipc: guardedIpc,
+    service: new ThoughtService(sqliteConnection.thoughts, clock),
     assertSender: (event) => assertTrustedSender(event, mainWindow, getRendererLocation())
   })
   registerHomeIpc({

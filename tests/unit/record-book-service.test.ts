@@ -5,7 +5,7 @@ import { FakeClock } from '../support/fake-clock'
 
 function setup() {
   const snapshot = {
-    sourceDataVersion: 7,
+    sourceDataVersion: 9,
     coreSnapshot: {
       goals: [],
       actions: [],
@@ -16,6 +16,7 @@ function setup() {
       routineRecords: [],
       understandings: [],
       confusions: [],
+      thoughts: [],
       reviewResults: []
     }
   }

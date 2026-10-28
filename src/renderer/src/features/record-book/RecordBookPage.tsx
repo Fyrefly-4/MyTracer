@@ -227,7 +227,10 @@ export function RecordBookPage({
                             entry.id === source.dataset.sourceId &&
                             entry.kind === source.dataset.sourceKind
                         )
-                      if (entry && entry.kind !== 'review')
+                      if (
+                        entry &&
+                        (entry.kind === 'action-record' || entry.kind === 'routine-record')
+                      )
                         onOriginal({ type: entry.kind, id: entry.id })
                     }
                     const link = target.closest<HTMLAnchorElement>('a[href^="#book-day-"]')

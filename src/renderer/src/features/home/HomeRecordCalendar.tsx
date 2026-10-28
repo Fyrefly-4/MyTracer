@@ -1,3 +1,4 @@
+import { ThoughtDay } from '../thoughts/ThoughtDay'
 import { useEffect, useState, type CSSProperties } from 'react'
 import {
   buildCalendarDays,
@@ -37,6 +38,9 @@ export function HomeRecordCalendar({ counts, today, onOpenRecord }: HomeRecordCa
     <section className="home-record-calendar" aria-label="留下的痕迹">
       <header className="hrc-heading">
         <h2>留下的痕迹</h2>
+        <button type="button" onClick={() => setSelected(today)}>
+          查看今天的记录与想法
+        </button>
         <div className="hrc-toggle" role="group" aria-label="日历时间范围">
           {([12, 26] as const).map((weeks) => (
             <button
@@ -121,7 +125,8 @@ export function HomeRecordCalendar({ counts, today, onOpenRecord }: HomeRecordCa
           </span>
         </div>
         <p className="hrc-caption">
-          没有记录，不代表没有行动。<span>点击方格回看 · 数据截至 {today}</span>
+          日历亮度仅计算行动与例行记录，独立想法可按日展开查看。没有记录，不代表没有行动。
+          <span>点击方格回看 · 数据截至 {today}</span>
         </p>
       </div>
       {visibleSelected && (
@@ -132,6 +137,7 @@ export function HomeRecordCalendar({ counts, today, onOpenRecord }: HomeRecordCa
               收起
             </button>
           </header>
+          <ThoughtDay key={`thought-${visibleSelected}`} date={visibleSelected} />
           <CalendarDayRecords
             key={visibleSelected}
             date={visibleSelected}

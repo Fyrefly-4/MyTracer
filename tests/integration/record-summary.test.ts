@@ -137,7 +137,7 @@ describe('summary migration and lossless storage', () => {
       const parsed = JSON.parse(JSON.stringify(exported))
       expect(() => validateCompleteExport(parsed)).not.toThrow()
       expect(parsed.data).toEqual(before)
-      expect(parsed).toMatchObject({ exportVersion: 6, sourceDataVersion: 8 })
+      expect(parsed).toMatchObject({ exportVersion: 7, sourceDataVersion: 9 })
       for (const summary of [undefined, 1, {}, 'x'.repeat(501)]) {
         const bad = structuredClone(parsed)
         bad.data.actionRecords[0].summary = summary
@@ -146,6 +146,7 @@ describe('summary migration and lossless storage', () => {
       // Explicit old-format fixtures, not a product down-conversion API.
       for (const version of [1, 2, 3, 4, 5]) {
         const old = structuredClone(parsed)
+        delete old.data.thoughts
         old.exportVersion = version
         old.sourceDataVersion = version + 1
         for (const record of [...old.data.actionRecords, ...old.data.routineRecords])

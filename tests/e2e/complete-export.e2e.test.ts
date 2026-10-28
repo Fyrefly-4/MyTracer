@@ -67,8 +67,8 @@ test('exports complete retained facts through the UI without exposing a destinat
     const exported = JSON.parse(await readFile(destination, 'utf8'))
     expect(exported).toMatchObject({
       format: 'mytracer-core-export',
-      exportVersion: 6,
-      sourceDataVersion: 8
+      exportVersion: 7,
+      sourceDataVersion: 9
     })
     expect(exported.data).toMatchObject({
       goals: [{ title: 'Export goal' }],
