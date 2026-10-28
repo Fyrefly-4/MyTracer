@@ -114,7 +114,9 @@ export function HomePage(): ReactNode {
         {today ? (
           <time className="home-date" dateTime={today}>
             <strong>{Number(today.slice(8))}</strong>
-            {today.slice(0, 4)} 年 {Number(today.slice(5, 7))} 月
+            <span className="home-date-month">
+              {today.slice(0, 4)} 年 {Number(today.slice(5, 7))} 月
+            </span>
           </time>
         ) : null}
       </header>
@@ -141,7 +143,11 @@ export function HomePage(): ReactNode {
             <div className="home-section-heading">
               <h2 id="home-goals-title">最近在推进</h2>
               {snapshot.goals ? <span>{activeGoals} 个活跃目标</span> : null}
-              <button type="button" onClick={() => session.openSection('goals')}>
+              <button
+                className="quiet-button"
+                type="button"
+                onClick={() => session.openSection('goals')}
+              >
                 查看所有目标 →
               </button>
             </div>
@@ -227,7 +233,11 @@ export function HomePage(): ReactNode {
                       : '先给一件想做的事留个位置。'}
                   </h3>
                   <p>不必先写完整计划。一个方向、一个小步骤，就可以作为开始。</p>
-                  <button type="button" onClick={() => session.openSection('goals')}>
+                  <button
+                    className="secondary-button"
+                    type="button"
+                    onClick={() => session.openSection('goals')}
+                  >
                     {snapshot.data?.totalGoalCount ? '查看已有目标' : '＋ 留下一个目标'}
                   </button>
                   {snapshot.data?.totalGoalCount === 0 ? (

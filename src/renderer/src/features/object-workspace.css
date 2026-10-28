@@ -293,7 +293,12 @@
   font-size: 12px;
 }
 .object-history-table td button {
-  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-action);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  padding: 4px 6px;
   min-height: 24px;
   font-size: 13px;
 }

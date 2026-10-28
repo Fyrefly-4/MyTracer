@@ -8,6 +8,10 @@
   --color-support: #e3ebe1;
   --color-hover: #edf1e9;
   --color-line: #dedfd5;
+  --font-caption: 12px;
+  --font-body: 14px;
+  --font-section: 15px;
+  --radius-control: 8px;
   --font-interface: 'Segoe UI', 'Microsoft YaHei UI', 'Noto Sans CJK SC', sans-serif;
   --font-editorial: Georgia, 'Noto Serif CJK SC', 'Songti SC', 'SimSun', serif;
   font-family: var(--font-interface);
@@ -27,7 +31,7 @@ button {
   font-size: 14px;
   font-weight: 500;
   min-height: 38px;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
 }
 input,
 select,
@@ -84,7 +88,7 @@ small {
   font-size: 14px;
   font-weight: 500;
   min-height: 40px;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   padding: 9px 16px;
 }
 .primary-button {
@@ -97,8 +101,36 @@ small {
   border: 1px solid #bcc9be;
 }
 .quiet-button {
+  color: var(--color-action);
   font-weight: 500;
-  font-size: 13px;
+  font-size: var(--font-body);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
+
+/* Native scroll ownership and keyboard behavior stay with each feature. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #9aa99b transparent;
+}
+
+/* Shared disclosure affordance without changing native open/focus behavior. */
+details > summary,
+.disclosure > summary,
+.action-candidates > summary,
+.previous-adjustment > summary,
+.today-action-description > summary,
+.record-note-details > summary {
+  cursor: pointer;
+  color: var(--color-action);
+  font-size: var(--font-body);
+  font-weight: 600;
+  line-height: 1.6;
+  padding-block: 8px;
+}
+details > summary:hover {
+  text-decoration: underline;
   text-underline-offset: 4px;
 }
 
@@ -312,8 +344,8 @@ small {
   padding-top: 12px;
 }
 .disclosure > summary {
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--font-body);
+  font-weight: 600;
 }
 
 .today-workspace,
@@ -674,4 +706,10 @@ body {
   display: block;
   max-width: 100%;
   height: auto;
+}
+
+/* Keep value baselines independent of the optional explanation below them. */
+.review-summary article {
+  align-content: start;
+  grid-template-rows: auto auto 1fr;
 }

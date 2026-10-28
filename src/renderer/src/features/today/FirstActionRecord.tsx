@@ -271,7 +271,7 @@ export function FirstActionRecord(props: {
       <button
         ref={trigger}
         type="button"
-        className="quiet-button"
+        className="secondary-button"
         aria-haspopup="dialog"
         disabled={busy || !props.ready}
         onClick={() => void start()}
