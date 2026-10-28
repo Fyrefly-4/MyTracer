@@ -57,6 +57,7 @@ function setup() {
       routineRecords: [],
       understandings: [],
       confusions: [],
+      booklets: [],
       thoughts: [],
       reviewResults: []
     }))

@@ -31,3 +31,5 @@
 - [未完成记录续写](RECORD_CONTINUITY.md)：#157 的三类新增记录输入、本机加密、schema 8 与提交核对。
 
 - [独立想法](STANDALONE_THOUGHTS.md)：独立正文与日期、schema 9 / JSON v7、按日回看及统计边界。
+
+- [编选留念小册子](PERSONAL_BOOKLETS.md)：持续加入原文引用、删除占位、schema10 / JSON v8 与独立 HTML 定格。

@@ -1,4 +1,5 @@
 import { usePanelDismiss } from './use-panel-dismiss'
+import { BookletsPage } from '../features/booklets/BookletsPage'
 import { RecordBookPage } from '../features/record-book/RecordBookPage'
 import wordmark from '../../../../resources/brand/MyTracer-wordmark-green.svg'
 import type { AppearanceSettings, AppearanceState } from '../../../contracts/appearance'
@@ -27,7 +28,7 @@ export function AppShell({
   setActiveSection(section: AppSectionId): void
 }): ReactNode {
   const mainRef = useRef<HTMLElement | null>(null)
-  const [bookMode, setBookMode] = useState<'reading' | 'original' | null>(null)
+  const [bookMode, setBookMode] = useState<'reading' | 'original' | 'booklets' | null>(null)
   const restoreDataContext = useRef<(() => void) | null>(null)
   const restoreData = () => {
     restoreDataContext.current?.()
@@ -49,8 +50,9 @@ export function AppShell({
   }, [pendingDataNavigation])
   const guardedNavigation = (run: () => void): void => {
     if (
-      (bookMode === 'original' || (!bookMode && activeSection === 'data')) &&
-      session.hasDataUnsavedContent()
+      ((bookMode === 'original' || (!bookMode && activeSection === 'data')) &&
+        session.hasDataUnsavedContent()) ||
+      (bookMode === 'booklets' && session.hasActiveUnsavedContent())
     ) {
       setPendingDataNavigation({ run })
     } else run()
@@ -393,9 +395,12 @@ export function AppShell({
               ) : null}
               {!inputsReady ? (
                 <p>正在打开…</p>
+              ) : bookMode === 'booklets' ? (
+                <BookletsPage onBack={() => setBookMode('reading')} />
               ) : bookMode === 'reading' ? (
                 <RecordBookPage
                   onBack={() => setBookMode(null)}
+                  onBooklets={() => setBookMode('booklets')}
                   onOriginal={(selection) => {
                     restoreDataContext.current = session.visitBookOriginal(selection)
                     setBookMode('original')

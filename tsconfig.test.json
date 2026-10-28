@@ -12,6 +12,7 @@
     "tests/**/*.ts",
     "src/main/appearance.ts",
     "src/main/thoughts-ipc.ts",
+    "src/main/booklets-ipc.ts",
     "src/preload/pending-close-request.ts",
     "src/main/record-continuity.ts",
     "src/main/record-drafts-ipc.ts",

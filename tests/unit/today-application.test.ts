@@ -129,6 +129,7 @@ function setup(goalStatus: GoalPersistenceRecord['status'] = 'active') {
       routineRecords: [],
       understandings: [],
       confusions: [],
+      booklets: [],
       thoughts: [],
       reviewResults: []
     })

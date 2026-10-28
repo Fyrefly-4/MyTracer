@@ -1,3 +1,4 @@
+import type { BookletApi } from './booklets'
 import type { ThoughtApi } from './thoughts'
 import type { RecordDraftApi } from './record-drafts'
 import type { RecordBookApi } from './record-book'
@@ -30,6 +31,7 @@ export interface ShellStatus {
 }
 
 export interface MyTracerApi {
+  readonly booklets: BookletApi
   readonly thoughts: ThoughtApi
   readonly recordDrafts: RecordDraftApi
   readonly shell: {

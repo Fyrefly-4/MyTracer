@@ -14,7 +14,9 @@ import recordContinuity from './migrations/008_record_continuity.sql?raw'
 
 import standaloneThoughts from './migrations/009_standalone_thoughts.sql?raw'
 
-export const schemaVersion = 9
+import personalBooklets from './migrations/010_personal_booklets.sql?raw'
+
+export const schemaVersion = 10
 
 interface Migration {
   readonly version: number
@@ -35,7 +37,8 @@ const migrations: readonly Migration[] = [
   { version: 6, name: '006_goal_stages', sql: goalStages },
   { version: 7, name: '007_record_summaries', sql: recordSummaries },
   { version: 8, name: '008_record_continuity', sql: recordContinuity },
-  { version: 9, name: '009_standalone_thoughts', sql: standaloneThoughts }
+  { version: 9, name: '009_standalone_thoughts', sql: standaloneThoughts },
+  { version: 10, name: '010_personal_booklets', sql: personalBooklets }
 ]
 
 function assertReviewResultsV2CanMigrate(database: Database.Database): void {

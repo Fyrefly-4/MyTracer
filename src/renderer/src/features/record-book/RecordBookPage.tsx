@@ -20,9 +20,11 @@ const errors: Record<RecordBookErrorCode, string> = {
 }
 export function RecordBookPage({
   onBack,
+  onBooklets,
   onOriginal
 }: {
   onBack: () => void
+  onBooklets: () => void
   onOriginal: (selection: DataRecordSelection) => void
 }): ReactNode {
   const session = useUiSession()
@@ -110,6 +112,9 @@ export function RecordBookPage({
       <style>{recordBookCss}</style>
       <button className="rb-return" type="button" onClick={onBack}>
         返回来源页面
+      </button>
+      <button type="button" onClick={onBooklets}>
+        编选小册子
       </button>
       {error ? (
         <div role="alert" className="rb-message">

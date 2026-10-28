@@ -4,7 +4,7 @@ import { useUnsavedContent } from '../../app/ui-session'
 import './thoughts.css'
 
 /** Unsaved input is local to this view. Only an explicit submit writes a thought. */
-export function ThoughtDay({ date }: { date: string }) {
+export function ThoughtDay({ date, thoughtId }: { date: string; thoughtId?: string }) {
   const [rows, setRows] = useState<readonly ThoughtDto[] | null>(null)
   const [reload, setReload] = useState(0)
   const [error, setError] = useState('')
@@ -33,17 +33,23 @@ export function ThoughtDay({ date }: { date: string }) {
       .then((result) => {
         if (!active) return
         if (result.ok) {
-          setRows(result.value)
+          setRows(thoughtId ? result.value.filter((row) => row.id === thoughtId) : result.value)
           setError('')
-        } else setError(result.error.message)
+        } else {
+          setRows(null)
+          setError(result.error.message)
+        }
       })
       .catch(() => {
-        if (active) setError('想法暂时无法读取，请重试。')
+        if (active) {
+          setRows(null)
+          setError('想法暂时无法读取，请重试。')
+        }
       })
     return () => {
       active = false
     }
-  }, [date, reload])
+  }, [date, reload, thoughtId])
   useEffect(() => {
     if (!deleting) return
     const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null
@@ -95,12 +101,13 @@ export function ThoughtDay({ date }: { date: string }) {
           </button>
         </div>
       )}
+      {thoughtId && rows?.length === 0 && <p>来源已删除。</p>}
       {notice && <p role="status">{notice}</p>}
       {rows === null ? (
         <p role="status">正在读取想法…</p>
       ) : (
         <>
-          {!editor && (
+          {!editor && !thoughtId && (
             <button
               type="button"
               disabled={busy}

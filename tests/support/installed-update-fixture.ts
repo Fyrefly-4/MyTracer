@@ -102,7 +102,7 @@ export async function createInstalledUpdateFacts(page: Page, legacy = false): Pr
 export async function exportInstalledFacts(
   application: ElectronApplication,
   destination: string,
-  exportVersion: 2 | 3 | 4 | 5 | 6 | 7
+  exportVersion: 2 | 3 | 4 | 5 | 6 | 7 | 8
 ): Promise<Record<string, unknown>> {
   await application.evaluate(({ dialog }, path) => {
     dialog.showSaveDialog = async () => ({ canceled: false, filePath: path })
@@ -114,7 +114,14 @@ export async function exportInstalledFacts(
   const document = JSON.parse(await readFile(destination, 'utf8')) as Record<string, unknown>
   expect(document).toMatchObject({
     exportVersion,
-    sourceDataVersion: exportVersion === 7 ? 9 : exportVersion === 6 ? 8 : exportVersion + 1
+    sourceDataVersion:
+      exportVersion === 8
+        ? 10
+        : exportVersion === 7
+          ? 9
+          : exportVersion === 6
+            ? 8
+            : exportVersion + 1
   })
   return document
 }
