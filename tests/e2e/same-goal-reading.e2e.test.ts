@@ -109,7 +109,11 @@ test('same-goal originals are read-only, full length, same-day aware and restore
     await page.keyboard.press('Enter')
     const dialog = page.getByRole('dialog', { name: '同目标对读' })
     await expect(dialog.getByRole('button', { name: '返回原记录' })).toBeFocused()
+    const current = dialog.getByRole('article', { name: '当前记录', exact: true })
+    await current.getByText('展开完整笔记', { exact: true }).click()
+    await expect(current.locator('.record-note-details')).toHaveAttribute('open', '')
     await dialog.getByLabel('选择另一条记录').selectOption(ids[0])
+    await expect(current.locator('.record-note-details')).toHaveAttribute('open', '')
     const other = dialog.getByRole('article', { name: '对读记录', exact: true })
     await expect(other).toContainText('2026-08-01')
     await expect(other).toContainText('时长未记录')
@@ -132,6 +136,8 @@ test('same-goal originals are read-only, full length, same-day aware and restore
     await expect(other).toContainText('原始理解')
     await dialog.getByLabel('选择另一条记录').selectOption(ids[1])
     await expect(other).toContainText('同日记录')
+    await expect(current.locator('.record-note-details')).toHaveAttribute('open', '')
+    await expect(current).toContainText('合成笔记第 40 段')
     await expect(dialog.locator('option:checked')).toContainText('同日')
     await page.keyboard.press('Escape')
     await expect(dialog).toHaveCount(0)
@@ -171,6 +177,8 @@ test('failed, late, edited and deleted reads never present stale originals as cu
     await dialog.getByRole('button', { name: '重新读取对读' }).click()
     await expect(dialog.getByRole('status')).toContainText('正在读取')
     await expect(dialog.getByRole('article')).toHaveCount(0)
+    await expect(dialog.locator('.same-goal-originals')).toHaveAttribute('inert', '')
+    await expect(dialog.locator('.same-goal-originals')).toBeHidden()
     const edited = {
       ...data,
       actionRecords: data.actionRecords.map((r) =>

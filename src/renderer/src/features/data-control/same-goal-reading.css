@@ -41,3 +41,10 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Preserve this dialog session's disclosures and space while fresh originals
+   are unavailable. Inert + aria-hidden also exclude stale text from interaction
+   and the accessibility tree; no previous response is presented as current. */
+.same-goal-originals[aria-hidden='true'] {
+  visibility: hidden;
+}

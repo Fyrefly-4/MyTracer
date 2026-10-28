@@ -194,26 +194,28 @@ function ReadingDialog({
                 所选记录已不在当前对读范围，可能已修改、删除或关联变化。请重新选择。
               </p>
             ) : null}
-            {state === 'ready' ? (
-              <div className="same-goal-originals">
+            <div
+              className="same-goal-originals"
+              aria-hidden={state !== 'ready'}
+              inert={state !== 'ready'}
+            >
+              <Original
+                key={`current:${view.current.id}`}
+                record={view.current}
+                title={view.action.title}
+                data={data}
+                label="当前记录"
+              />
+              {selected ? (
                 <Original
-                  key={`current:${view.current.id}`}
-                  record={view.current}
-                  title={view.action.title}
+                  key={selected.record.id}
+                  record={selected.record}
+                  title={selected.action.title}
                   data={data}
-                  label="当前记录"
+                  label="对读记录"
                 />
-                {selected ? (
-                  <Original
-                    key={selected.record.id}
-                    record={selected.record}
-                    title={selected.action.title}
-                    data={data}
-                    label="对读记录"
-                  />
-                ) : null}
-              </div>
-            ) : null}
+              ) : null}
+            </div>
           </>
         )
       ) : null}
