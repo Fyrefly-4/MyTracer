@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.13.0](https://github.com/Fyrefly-4/MyTracer/compare/v1.12.0...v1.13.0) (2026-10-28)
+
+
+### Features
+
+* 从当前行动记录临时对读同目标旧记录 ([7925741](https://github.com/Fyrefly-4/MyTracer/commit/7925741d56fdd2d5363d7728f5a02243628bdfc1))
+* 独立想法保存与按日回看 ([4f74fcf](https://github.com/Fyrefly-4/MyTracer/commit/4f74fcf2798a2e33e01002cc383a2aab07b4cff2))
+* 编选留念小册子，引用原文并独立导出 ([#191](https://github.com/Fyrefly-4/MyTracer/issues/191)) ([aea59fb](https://github.com/Fyrefly-4/MyTracer/commit/aea59fb7ea57494f8e6ffb1620ce9092f86b2990))
+
 ## [1.12.0](https://github.com/Fyrefly-4/MyTracer/compare/v1.11.1...v1.12.0) (2026-10-26)
 
 
