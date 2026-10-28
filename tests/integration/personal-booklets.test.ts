@@ -316,10 +316,14 @@ describe('personal booklets', () => {
     try {
       const db = new Database(path)
       const folder = join(process.cwd(), 'src/infrastructure/sqlite/migrations')
-      for (const file of readdirSync(folder)
-        .filter((name) => /^00[1-9]_.*\.sql$/.test(name))
-        .sort())
-        db.exec(readFileSync(join(folder, file), 'utf8'))
+      // Construct the old fixture atomically instead of fsyncing each DDL on Windows.
+      // The production migration and its rollback assertions below remain separate.
+      db.transaction(() => {
+        for (const file of readdirSync(folder)
+          .filter((name) => /^00[1-9]_.*\.sql$/.test(name))
+          .sort())
+          db.exec(readFileSync(join(folder, file), 'utf8'))
+      })()
       db.exec(
         "INSERT INTO metadata(key,value) VALUES('schemaVersion','9'); CREATE TRIGGER fail_v10 BEFORE UPDATE ON metadata WHEN NEW.value = '10' BEGIN SELECT RAISE(ABORT, 'synthetic failure'); END"
       )

@@ -48,6 +48,7 @@ async function verifyPackagedApplication(
     })
     expect(await page.evaluate(() => Object.keys(window.myTracer))).toEqual([
       'thoughts',
+      'booklets',
       'recordDrafts',
       'home',
       'shell',
@@ -73,6 +74,15 @@ async function verifyPackagedApplication(
       'delete'
     ])
     expect(await page.evaluate(() => Object.isFrozen(window.myTracer.thoughts))).toBe(true)
+    expect(await page.evaluate(() => Object.keys(window.myTracer.booklets))).toEqual([
+      'list',
+      'sources',
+      'read',
+      'save',
+      'delete',
+      'export'
+    ])
+    expect(await page.evaluate(() => Object.isFrozen(window.myTracer.booklets))).toBe(true)
     expect(await page.evaluate(() => Object.keys(window.myTracer.home))).toEqual(['get', 'day'])
     expect(await page.evaluate(() => Object.isFrozen(window.myTracer.home))).toBe(true)
     expect(await page.evaluate(() => Object.keys(window.myTracer.shell))).toEqual([
