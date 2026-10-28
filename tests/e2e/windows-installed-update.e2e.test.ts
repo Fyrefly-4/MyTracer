@@ -332,7 +332,7 @@ test('offline upgrade fixture covers lifecycle states and preserves facts throug
     ).toBeVisible()
     await test.step('create synthetic lifecycle facts', () => createInstalledUpdateFacts(page))
     const exported = await test.step('export synthetic baseline', () =>
-      exportInstalledFacts(application!, join(root.exports, 'offline.json'), 6))
+      exportInstalledFacts(application!, join(root.exports, 'offline.json'), 7))
     const data = exported.data as Record<string, Record<string, unknown>[]>
     expect(new Set(data.goals.map((v) => v.status))).toEqual(new Set(['active', 'paused', 'ended']))
     expect(new Set(data.actions.map((v) => v.status))).toEqual(
@@ -353,7 +353,7 @@ test('offline upgrade fixture covers lifecycle states and preserves facts throug
     await test.step('close baseline application', () => application!.close())
     application = await test.step('reopen isolated fixture application', open)
     const reopened = await test.step('export reopened facts', () =>
-      exportInstalledFacts(application!, join(root.exports, 'offline-reopened.json'), 6))
+      exportInstalledFacts(application!, join(root.exports, 'offline-reopened.json'), 7))
     expect(reopened.data).toEqual(exported.data)
   } finally {
     await application?.close().catch(() => undefined)
